@@ -340,14 +340,20 @@ def test_selected_paid_l20_native_candidate_is_sent_to_one_live_world_screen(tmp
     first = _request()
     better = copy.deepcopy(first)
     better["raid"]["parties"][0]["players"][0]["talentsString"] = "1-0-0"
+    better["simOptions"]["randomSeed"] = "913"
     (tmp_path / "a.json").write_text(json.dumps(first))
     (tmp_path / "b.json").write_text(json.dumps(better))
     seen = []
 
     def scorer(binary, candidate, **kwargs):
+        from hashlib import sha256
         score = 21. if candidate["raid"]["parties"][0]["players"][0]["talentsString"] == "1-0-0" else 10.
+        effective = copy.deepcopy(candidate)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
         return {
-            "effective_request_sha256": "paid-" + str(score),
+            "effective_request_sha256": sha256(json.dumps(
+                effective, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest(),
             "score": score, "rng_mode": "balanced",
             "native_action_cast_receipts": [
                 {"id": {"spellId": 585}, "casts": 2}],
@@ -361,7 +367,9 @@ def test_selected_paid_l20_native_candidate_is_sent_to_one_live_world_screen(tmp
 
     result = score_source_priest_l20_candidates(
         "/native", tmp_path, score_request=scorer, world_screen=world_screen)
-    assert seen == [better]
+    expected_live = copy.deepcopy(better)
+    expected_live["simOptions"].update(iterations=1, randomSeed="42")
+    assert seen == [expected_live]
     assert result["native_paid_whole_builds"] == 2
     assert result["native_2d_live_ack_attempted"] == 1
     assert result["native_2d_live_ack_verified"] == 1
@@ -376,8 +384,13 @@ def test_native_paid_world_refusal_does_not_grant_completion(tmp_path):
     (tmp_path / "a.json").write_text(json.dumps(_request()))
 
     def scorer(binary, candidate, **kwargs):
+        from hashlib import sha256
+        effective = copy.deepcopy(candidate)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
         return {
-            "effective_request_sha256": "native-request",
+            "effective_request_sha256": sha256(json.dumps(
+                effective, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest(),
             "score": 12., "rng_mode": "balanced",
             "native_action_cast_receipts": [
                 {"id": {"spellId": 585}, "casts": 1}],
