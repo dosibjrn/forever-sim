@@ -5,16 +5,11 @@ and weapon values are explicitly scenario proxies. Never promote that result
 to P3 evidence until a source-backed actor/weapon context replaces them.
 """
 import json
-from pathlib import Path
-
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_gear import run_source_budgeted_gear
 from src.v2.source_budgeted_prefix import AUTO_ONLY_FALLBACK
 from src.v2.source_stateful_budgeted import _make_policy
-
-
-P3_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_paladin_l20_stateful_auto_fallback_reproduces_within_44_evaluations():
