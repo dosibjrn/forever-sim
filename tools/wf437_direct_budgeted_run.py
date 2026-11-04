@@ -45,11 +45,9 @@ if not (1 <= level <= 60):
     ap.error('--checkpoint-level must be 1..60')
 if not class_key or not spec:
     ap.error('--checkpoint-class and --checkpoint-spec must be nonempty')
-# Preserve the existing source-paid L30 reference. Other checkpoints use
-# the canonical ability SQLite instead of borrowing the L30 staged facts.
-db=(root/'data/forever/staged_druid_l30_talents_70338.sqlite'
-    if (class_key,level,spec)==('druid',30,'unrestricted')
-    else Path(DEFAULT_DB))
+# Use the canonical ability SQLite for every checkpoint. The old L30-only
+# staged copy is not a tracked production source or a clean-checkout dependency.
+db=Path(DEFAULT_DB)
 if not db.is_file():
     raise ValueError('SOURCE_COLD_CHECKPOINT_ABILITY_DB_MISSING')
 sourcehash=hashlib.sha256(db.read_bytes()).hexdigest()
