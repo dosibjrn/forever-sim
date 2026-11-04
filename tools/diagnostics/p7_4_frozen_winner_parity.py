@@ -15,7 +15,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPECTED_WINNER_SHA256 = "67069c454ae125cecd958cf8987ba9af467a52f0e04f57ee0e3c44bc3ee48e2b"
-EXPECTED_BASE_RAW_SHA256 = "e99b06e50e2a0f2b7db1c5b5c4c6a5f7c4fda8b8f8e2f8f1a1f0b8d9c3a5e7f1"
+EXPECTED_BASE_RAW_SHA256 = "e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac48c6c646a"
 DIAGNOSTIC_PHASE = "baseline-before-native-iteration-override"
 ITERATION_GEAR = [
     (16441, 8692), (281281, 904), (231659, 7882), (277206, 1888),
