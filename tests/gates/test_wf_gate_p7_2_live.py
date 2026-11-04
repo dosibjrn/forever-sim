@@ -162,15 +162,19 @@ def test_unrestricted_p72_reuses_actual_balance_reference_and_pays_native(
     assert selected_binary == binary.resolve()
     assert meta["selected_reference_profile"] == "balance"
     assert original["raid"]["parties"][0]["players"][0]["balanceDruid"]
-    # Unrestricted is now executable for both approved single-axis producers;
-    # P7.4 still retains its own independent selection.
+    # All three approved single-axis producers can select this authentic
+    # unrestricted Druid build; P7.5 retains its separate joint-search path.
     p73_reference = gate._pinned_source_runtime(
         root, "druid", 60, "unrestricted", "P7.3",
         require_world=False)
     assert isinstance(p73_reference, tuple)
     assert p73_reference[1]["selected_reference_profile"] == "balance"
+    p74_reference = gate._pinned_source_runtime(
+        root, "druid", 60, "unrestricted", "P7.4", require_world=False)
+    assert isinstance(p74_reference, tuple)
+    assert p74_reference[1]["selected_reference_profile"] == "balance"
     assert gate._pinned_source_runtime(
-        root, "druid", 60, "unrestricted", "P7.4",
+        root, "druid", 60, "unrestricted", "P7.5",
         require_world=False)["status"] == "BLOCKED"
 
     source_player = original["raid"]["parties"][0]["players"][0]
