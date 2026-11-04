@@ -162,6 +162,138 @@ def _native_item_stat_probe_deltas(item_check: dict, axis: str):
             [source for _delta, source in ordered])
 
 
+def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
+    """Prove Intellect can affect this same combat objective before paying for it.
+
+    A prefix spell having a mana cost is not enough: it was already cast in the
+    paid baseline. Require a mana-costed action in the selected continuation,
+    an exact executed-action trace, and evidence that the baseline pool could
+    not pay that action again while the target was still alive. Between-pull
+    recovery is deliberately outside this check.
+    """
+    def rejected(reason, **details):
+        return {"eligible": False, "reason": reason, **details}
+
+    resources = tuple(getattr(ir, "resources", ()) or ())
+    mana = next((resource for resource in resources
+                 if str(getattr(resource, "id", "")) == "mana"
+                 and str(getattr(resource, "owner_actor_id", "")) ==
+                 str(getattr(getattr(ir, "actor", None), "id", ""))), None)
+    if mana is None or not bool(getattr(mana, "active_by_default", False)):
+        return rejected("ACTOR_MANA_RESOURCE_UNAVAILABLE")
+    initial_mana = getattr(mana, "initial_amount", None)
+    if type(initial_mana) not in (int, float) or not isfinite(float(initial_mana)):
+        return rejected("BASELINE_MANA_AMOUNT_UNAVAILABLE")
+    if tuple(getattr(mana, "event_gain_rules", ()) or ()):
+        return rejected("MANA_EVENT_GAIN_RULES_UNRESOLVED")
+
+    selected = record.get("selected_actions")
+    if not isinstance(selected, (list, tuple)) or not selected:
+        return rejected("PAID_SELECTED_ACTION_TRACE_UNAVAILABLE")
+    action_map = {str(action.id): action for action in tuple(getattr(ir, "actions", ()) or ())}
+    selected_ids = []
+    selected_mana_cost = 0.0
+    mana_gained = 0.0
+    for row in selected:
+        if not isinstance(row, dict) or not isinstance(row.get("action_id"), str):
+            return rejected("PAID_SELECTED_ACTION_TRACE_INVALID")
+        action_id = row["action_id"]
+        action = action_map.get(action_id)
+        if action is None:
+            return rejected("SELECTED_ACTION_MISSING_FROM_SOURCE_IR",
+                            selected_action_id=action_id)
+        selected_ids.append(action_id)
+        for cost in tuple(getattr(action, "costs", ()) or ()):
+            if str(getattr(cost, "resource_id", "")) != "mana":
+                continue
+            amount = float(getattr(cost, "amount", 0.0))
+            if not isfinite(amount) or amount < 0.0:
+                return rejected("SELECTED_MANA_COST_INVALID",
+                                selected_action_id=action_id)
+            selected_mana_cost += amount
+        for effect in tuple(getattr(action, "effects", ()) or ()):
+            if (str(getattr(effect, "resource_id", "")) != "mana"
+                    or str(getattr(effect, "target", "")) not in ("actor", "self")):
+                continue
+            if (str(getattr(effect, "operation", "")) != "add"
+                    or not hasattr(effect, "amount")):
+                return rejected("SELECTED_MANA_GAIN_EFFECT_UNRESOLVED",
+                                selected_action_id=action_id)
+            amount = float(effect.amount)
+            if not isfinite(amount):
+                return rejected("SELECTED_MANA_GAIN_EFFECT_INVALID",
+                                selected_action_id=action_id)
+            mana_gained += amount
+
+    policy_mana_action_costs = []
+    for rule in tuple(getattr(policy, "rules", ()) or ()):
+        action_id = str(getattr(rule, "action_id", ""))
+        action = action_map.get(action_id)
+        if action is None:
+            return rejected("POLICY_ACTION_MISSING_FROM_SOURCE_IR",
+                            policy_action_id=action_id)
+        amount = sum(
+            float(cost.amount) for cost in tuple(getattr(action, "costs", ()) or ())
+            if str(getattr(cost, "resource_id", "")) == "mana")
+        if amount > 0.0:
+            policy_mana_action_costs.append({
+                "action_id": action_id, "mana_cost": amount,
+            })
+    if not policy_mana_action_costs:
+        return rejected(
+            "NO_MANA_COSTED_POLICY_CONTINUATION",
+            selected_action_ids=selected_ids,
+            selected_mana_cost=selected_mana_cost,
+            policy_mana_action_costs=[],
+            initial_mana=float(initial_mana),
+        )
+    if selected_mana_cost <= 0.0:
+        return rejected(
+            "NO_SELECTED_IN_COMBAT_MANA_SPEND",
+            selected_action_ids=selected_ids,
+            policy_mana_action_costs=policy_mana_action_costs,
+            initial_mana=float(initial_mana),
+        )
+
+    kill_s = record.get("kill_s")
+    if type(kill_s) not in (int, float) or not isfinite(float(kill_s)) or float(kill_s) <= 0.0:
+        return rejected("PAID_COMBAT_KILL_TIME_UNAVAILABLE")
+    last_end = selected[-1].get("end_time_s")
+    if type(last_end) not in (int, float) or not isfinite(float(last_end)):
+        return rejected("PAID_SELECTED_ACTION_TIMING_UNAVAILABLE")
+
+    mana_regenerated = max(
+        0.0, float(getattr(mana, "regeneration_per_s", 0.0) or 0.0)
+    ) * float(kill_s)
+    mana_at_kill = (
+        float(initial_mana) + mana_regenerated + mana_gained - selected_mana_cost)
+    if not isfinite(mana_at_kill) or mana_at_kill < -1e-9:
+        return rejected(
+            "RECONSTRUCTED_MANA_TRACE_INCONSISTENT",
+            selected_action_ids=selected_ids,
+            selected_mana_cost=selected_mana_cost,
+        )
+    next_cost = min(row["mana_cost"] for row in policy_mana_action_costs)
+    common = {
+        "selected_action_ids": selected_ids,
+        "selected_mana_cost": selected_mana_cost,
+        "mana_gained_during_combat": mana_gained,
+        "mana_regenerated_during_combat": mana_regenerated,
+        "estimated_mana_at_kill": max(0.0, mana_at_kill),
+        "next_policy_mana_cost": next_cost,
+        "policy_mana_action_costs": policy_mana_action_costs,
+        "last_selected_action_end_s": float(last_end),
+        "kill_s": float(kill_s),
+        "initial_mana": float(initial_mana),
+    }
+    if mana_at_kill >= next_cost - 1e-9:
+        return rejected("BASELINE_MANA_REMAINS_ABOVE_NEXT_POLICY_COST", **common)
+    if float(kill_s) <= float(last_end) + 1e-9:
+        return rejected("TARGET_DIED_BEFORE_NEXT_MANA_COSTED_ACTION", **common)
+    return {"eligible": True, "reason": "BASELINE_MANA_LIMITED_BEFORE_TARGET_DEATH",
+            **common}
+
+
 def _source_actor_context_summary(ir) -> dict:
     """Expose source actor/weapon provenance when the paid naked search blocks."""
     actor = getattr(ir, "actor", None)
@@ -470,6 +602,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
 
     paladin_paid_winner_validation = None
     paladin_paid_winner_eligible = False
+    paladin_mana_constraint = None
+    paladin_paid_winner_policy = None
     if paladin_l20_native:
         paid_prefix = tuple(record.get("prefix") or ())
         # Keep the existing strict paid_search_winner_baseline predicate. The
@@ -481,12 +615,31 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         if paladin_paid_winner_eligible != paladin_paid_winner_validation["accepted"]:
             raise AssertionError("PAID_SEARCH_WINNER_VALIDATOR_RESULT_MISMATCH")
         if paladin_paid_winner_eligible:
-            # The remaining paid budget belongs first to the exact already-paid
-            # Paladin winner, not to another attempt at paladin:source_seed.
-            witness_axes = [
+            paladin_paid_winner_policy = {
+                "policy_id": str(policy.id),
+                "opening_action_ids": list(paid_prefix),
+                "selected_action_ids": [
+                    row.get("action_id") for row in record.get("selected_actions", ())
+                    if isinstance(row, dict)
+                ],
+                "fallback": record.get("fallback"),
+                "guarded_action": record.get("guarded_action"),
+                "guarded_conditions": list(record.get("guarded_conditions") or ()),
+                "score_s_per_mob": paid_score,
+            }
+            paladin_mana_constraint = _paladin_policy_mana_constraint(
+                ir, policy, record)
+            # Agility is always first. Intellect is paid only when the exact
+            # selected continuation is demonstrably mana-limited before kill;
+            # prefix mana costs alone and between-pull recovery do not qualify.
+            paladin_axes = [
                 axis for axis in ("agility", "intellect")
                 if f"NONPOSITIVE_RELEVANT_WEIGHT:{axis}" in witness_blockers
             ]
+            witness_axes = (["agility"] if "agility" in paladin_axes else [])
+            if (paladin_mana_constraint["eligible"]
+                    and "intellect" in paladin_axes):
+                witness_axes.append("intellect")
         else:
             # A rejected winner is not replaced with a generic delta or a
             # weaker source-IR baseline. Report the precise failed invariant.
@@ -580,6 +733,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
         "paid_search_winner_baseline_validation": paladin_paid_winner_validation,
+        "paid_search_winner_policy": paladin_paid_winner_policy,
+        "paladin_in_combat_mana_constraint": paladin_mana_constraint,
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
