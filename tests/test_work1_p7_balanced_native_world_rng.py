@@ -57,7 +57,7 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
     request.write_text(json.dumps({
         "simOptions": {"iterations": 10000, "randomSeed": "1179706472"},
         "raid": {"parties": [{"players": [{"distanceFromTarget": 15}]}]},
-        "encounter": {"targets": [{"level": 63}]},
+        "encounter": {"targets": [{"level": 63, "stats": [0.0] * 32 + [127393.0]}]},
     }))
     binary = tmp_path / "forever-engine"
     binary.write_text("injected test only")
@@ -80,6 +80,76 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
     assert seen[0][0][seen[0][0].index("--rng-mode") + 1] == mode
     assert "WOWSIM_RNG_MODE" not in seen[0][1]
     assert seen[0][1]["FOREVER_GSIM_WORLD_BRIDGE"] == "1"
+
+
+def test_native_and_live_world_use_identical_iteration_limited_request(
+        monkeypatch, tmp_path):
+    """The native control and live bridge must run the same first N RNG stream."""
+    producer = _producer()
+    request = tmp_path / "source.json"
+    original = {
+        "simOptions": {"iterations": 10000, "randomSeed": "1179706472"},
+        "raid": {"parties": [{"players": [{"distanceFromTarget": 15}]}]},
+        "encounter": {"targets": [{"level": 63, "stats": [0.0] * 32 + [127393.0]}]},
+    }
+    request.write_text(json.dumps(original))
+    binary = tmp_path / "forever-engine"
+    binary.write_text("injected test only")
+    seen = []
+
+    def fake_run(argv, **kwargs):
+        source_path = Path(argv[argv.index("--request") + 1])
+        source = json.loads(source_path.read_text())
+        seen.append((argv[1], source))
+        output = Path(argv[argv.index("--outfile") + 1])
+        if argv[1] == "prepare":
+            output.write_text(json.dumps({"request_sha256": "prepared-id"}))
+        else:
+            output.write_text(json.dumps({
+                "identity": {"engine": "forever-engine"},
+                "result": {"iterationsDone": 3,
+                           "raidMetrics": {"dps": {"avg": 730.0}},
+                           "firstIterationDuration": 120.0},
+            }))
+        return SimpleNamespace(returncode=0, stderr="")
+
+    def fake_popen(argv, **kwargs):
+        source_path = Path(argv[argv.index("--request") + 1])
+        seen.append(("world-sim", json.loads(source_path.read_text())))
+        raise RuntimeError("EXPECTED_NATIVE_WORLD_ENV_CAPTURE")
+
+    monkeypatch.setattr(producer.subprocess, "run", fake_run)
+    monkeypatch.setattr(producer.subprocess, "Popen", fake_popen)
+    native = producer.native_source_control(
+        binary, request, 3, rng_mode="stochastic")
+    assert native["iterations"] == 3
+    with pytest.raises(RuntimeError, match="EXPECTED_NATIVE_WORLD_ENV_CAPTURE"):
+        producer.run(binary, request, distance=15., iterations=3,
+                     rng_mode="stochastic")
+
+    assert [kind for kind, _ in seen] == ["sim", "prepare", "world-sim"]
+    assert seen[0][1] == seen[1][1] == seen[2][1]
+    assert all(source["simOptions"]["iterations"] == 3 for _, source in seen)
+    assert all(source["simOptions"]["randomSeed"] == "1179706472"
+               for _, source in seen)
+    assert request.read_text() == json.dumps(original)
+
+
+def test_finite_source_world_restores_original_target_health_each_iteration():
+    """A lethal fight cannot carry its depleted HP into the next stochastic fight."""
+    producer = _producer()
+    first, _, _ = producer._fresh_source_world(
+        distance=15., target_health=127393., source_in_front=False)
+    assert first.targets["m1"].health == 127393.
+    first.targets["m1"].apply_damage(127393.)
+    assert not first.targets["m1"].alive
+
+    second, _, _ = producer._fresh_source_world(
+        distance=15., target_health=127393., source_in_front=False)
+    assert second is not first
+    assert second.targets["m1"].alive
+    assert second.targets["m1"].health == second.targets["m1"].max_health == 127393.
+    assert first.targets["m1"].health == 0.
 
 
 def test_invalid_rng_mode_fails_before_source_execution(tmp_path):
@@ -135,7 +205,7 @@ def test_reference_cli_uses_explicit_stochastic_mode(monkeypatch, tmp_path, caps
             "class": "ClassDruid", "balanceDruid": {},
             "distanceFromTarget": 15.0,
         }]}]},
-        "encounter": {"targets": [{"level": 63}]},
+        "encounter": {"targets": [{"level": 63, "stats": [0.0] * 32 + [127393.0]}]},
     }))
     binary = tmp_path / "forever-engine"
     calls = []
@@ -181,7 +251,6 @@ def test_upstream_candidate_verification_passes_explicit_rng_mode():
     assert calls
     assert all(any(keyword.arg == "rng_mode" for keyword in node.keywords)
                for node in calls)
-
 
 
 def _world_parity_fixture(*, first_lethal=False, second_lethal=True,
