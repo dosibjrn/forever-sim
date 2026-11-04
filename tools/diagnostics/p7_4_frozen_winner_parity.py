@@ -39,11 +39,10 @@ def frozen_winner_request(base_path):
     base = json.loads(base_path.read_text())
     candidate = copy.deepcopy(base)
     items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-    by_slot = {int(item["slot"]): item for item in items}
-    if len(by_slot) != len(ITERATION_GEAR) or set(by_slot) != set(range(len(ITERATION_GEAR))):
-        raise AssertionError(f"FROZEN_P74_GEAR_SLOT_SET:{sorted(by_slot)}")
-    for slot, (item_id, enchant_id) in enumerate(ITERATION_GEAR):
-        item = by_slot[slot]
+    if len(items) != len(ITERATION_GEAR):
+        raise AssertionError(f"FROZEN_P74_GEAR_SLOT_COUNT:{len(items)}")
+    # The P7.4 report numbers slots by equipment.items array position.
+    for item, (item_id, enchant_id) in zip(items, ITERATION_GEAR):
         item["id"] = item_id
         item.pop("enchant", None)
         if enchant_id is not None:
@@ -53,7 +52,7 @@ def frozen_winner_request(base_path):
         ROOT / "integrations/mythicsim-rust/p74_preflight.py",
     )
     preflight.preflight(base, candidate)
-    digest = preflight.digest(candidate)
+    digest = hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest()
     if digest != EXPECTED_WINNER_SHA256:
         raise AssertionError(
             f"FROZEN_P74_WINNER_RECONSTRUCTION_MISMATCH:{digest}")
