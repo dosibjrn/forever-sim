@@ -387,3 +387,22 @@ def test_p73_native_transfer_follows_rank_refusal(monkeypatch, tmp_path):
     reference = base["raid"]["parties"][0]["players"][0]
     assert all(p["equipment"] == reference["equipment"] and
                p["rotation"] == reference["rotation"] for p in native_requests)
+
+
+def test_bounded_native_talent_transfers_explore_within_and_across_trees():
+    """Search diversity only: these are not Python legality decisions."""
+    original = "10-10-10"
+    proposals = native_talent_proposals.one_point_transfer_neighbors(
+        original, limit=4)
+    assert len(proposals) == 4
+    assert len(set(proposals)) == 4
+    original_tree_points = [sum(map(int, part)) for part in original.split("-")]
+    tree_points = [[sum(map(int, part)) for part in value.split("-")]
+                   for value in proposals]
+    assert any(points == original_tree_points for points in tree_points)
+    assert any(points != original_tree_points for points in tree_points)
+    assert all(sum(points) == sum(original_tree_points) for points in tree_points)
+    assert native_talent_proposals.one_point_transfer_neighbors(
+        original, limit=0) == []
+    with pytest.raises(ValueError, match="TALENT_PROPOSAL_LIMIT_NEGATIVE"):
+        native_talent_proposals.one_point_transfer_neighbors(original, limit=-1)
