@@ -96,6 +96,14 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
         "native_item_options_status": "partial_level_unknown",
         "native_unverified_candidate_count": 2267,
         "native_item_options_source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+        "native_spell_coefficients_source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "native_spell_coefficients_engine_revision": "native-engine-revision",
+        "native_spell_coefficients_applied": [{
+            "action_id": "fireball:8401",
+            "spell_id": 8401,
+            "spell_power_coefficient": 0.857,
+        }],
+        "native_paid_winner_spell_probe_enabled": True,
         "real_catalogue_legal_items": 1314,
         "real_catalogue_slots_scored": 16,
         "real_catalogue_top5_items_scored": 42,
@@ -113,5 +121,9 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
     assert row["native_item_options_status"] == "partial_level_unknown"
     assert row["native_unverified_candidate_count"] == 2267
     assert row["native_item_options_source"] == report["native_item_options_source"]
+    assert row["native_spell_coefficients_source"] == "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS"
+    assert row["native_spell_coefficients_engine_revision"] == "native-engine-revision"
+    assert row["native_spell_coefficients_applied"] == report["native_spell_coefficients_applied"]
+    assert row["native_paid_winner_spell_probe_enabled"] is True
     assert row["real_catalogue_legal_items"] == 1314
     assert row["real_catalogue_top5_items_scored"] == 42

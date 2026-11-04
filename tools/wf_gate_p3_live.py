@@ -108,12 +108,13 @@ def _p3_stat_witness_priority(ir, policy) -> tuple[str, ...]:
 
 
 def _native_item_stat_probe_deltas(item_check: dict, axis: str):
-    """Return source-item-sized perturbations and their exact native origins.
+    """Return native item-sized deltas in descending measurement value.
 
-    The first probe is the largest single positive stat amount among the
-    already selected legal top-five items. A second probe, when available,
-    sums the largest amounts from two different slots. This is a measured
-    multi-item stat delta, not a claim that the pair is a jointly legal build.
+    Candidate probes are the largest single positive stat amount among the
+    selected legal top-five items and, when available, the sum from two
+    different slots. Return the largest delta first so a tight paid-evaluation
+    budget tests the strongest real item-sized perturbation before smaller
+    deltas. The pair is a measured stat delta, not a jointly legal build claim.
     """
     best_by_slot = {}
     for slot, slot_report in item_check.get("slots", {}).items():
@@ -154,7 +155,9 @@ def _native_item_stat_probe_deltas(item_check: dict, axis: str):
                 "delta": total,
                 "items": [dict(item) for item in pair],
             })
-    return tuple(deltas), sources
+    ordered = sorted(zip(deltas, sources), key=lambda pair: -pair[0])
+    return (tuple(delta for delta, _source in ordered),
+            [source for _delta, source in ordered])
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
@@ -170,7 +173,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
 
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
-    from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
+    from src.v2.source_budgeted_gear import (
+        run_source_budgeted_gear, paid_search_winner_baseline,
         paid_source_policy_stat_witness)
     from src.v2.source_stateful_budgeted import _make_policy
     from src.game.model import PolicyCondition
@@ -190,6 +194,24 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "P3_SOURCE_PROFILE_PRODUCTION_BUILD_UNAVAILABLE:"
             + str(exc)], "production_component":
             "src.v2.source_bounded_joint_frontier.source_spec_talent_frontier"}
+    native_spell_facts = None
+    native_spell_coefficients_applied = []
+    if (str(class_key).lower() == "mage" and int(level) == 30
+            and str(spec).lower() == "unrestricted"):
+        from src.game.native_p3_item_options import (
+            NativeItemOptionsError, apply_native_mage_spell_coefficients,
+            query_native_mage_spell_coefficients,
+        )
+        try:
+            native_spell_facts = query_native_mage_spell_coefficients(native_binary)
+            ir, native_spell_coefficients_applied = (
+                apply_native_mage_spell_coefficients(ir, native_spell_facts))
+        except (NativeItemOptionsError, ValueError, TypeError, OSError) as exc:
+            return {
+                "status": "BLOCKED",
+                "reasons": [str(exc)],
+                "production_component": "src.game.native_p3_item_options",
+            }
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
@@ -214,6 +236,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "real_source_search_attempts": result.get("attempted", 0),
             "real_source_search_evaluated": result.get("evaluated", 0)}
     record = naked["winner"]
+    native_spell_action_ids = {
+        str(row.get("action_id")) for row in native_spell_coefficients_applied
+        if isinstance(row, dict) and row.get("action_id")
+    }
+    native_fallback_action = str(record.get("fallback") or "") in native_spell_action_ids
     policy = _make_policy(
         ir, record["fallback"],
         guarded_action=record.get("guarded_action"),
@@ -262,6 +289,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         and str(spec).lower() == "unrestricted"
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
+    paid_winner_baseline_available = (
+        mage_l30_native
+        and paid_search_winner_baseline(
+            policy, record, tuple(record.get("prefix") or ())) is not None
+    )
     for blocker in witness_blockers:
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
@@ -285,7 +317,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             for key, value in source_policy_baseline_cache.items()
         )
         minimum_evaluations = (
-            1 if has_reusable_baseline
+            1 if (has_reusable_baseline or paid_winner_baseline_available)
             else (3 if mage_l30_native and record.get("prefix") else 2)
         )
         if remaining < minimum_evaluations:
@@ -295,7 +327,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
-            opening_action_ids=tuple(record.get("prefix", ())))
+            opening_action_ids=tuple(record.get("prefix", ())),
+            preferred_policy=(policy if mage_l30_native else None),
+            baseline_record=(record if mage_l30_native else None),
+            allow_paid_winner_after_nonpositive=native_fallback_action)
         if mage_l30_native:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
@@ -353,4 +388,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_measured_stat_weight_axes": sorted(weights),
         "actual_search_result_status": result.get("status"),
         "source_context_sha256": result.get("source_context_sha256"),
+        "native_spell_coefficients_source": (
+            native_spell_facts.get("source") if native_spell_facts else None),
+        "native_spell_coefficients_engine_revision": (
+            native_spell_facts.get("engine_revision") if native_spell_facts else None),
+        "native_spell_coefficients_applied": native_spell_coefficients_applied,
+        "native_paid_winner_spell_probe_enabled": native_fallback_action,
     }
