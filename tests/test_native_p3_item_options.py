@@ -151,6 +151,7 @@ def test_native_p3_projects_unit_preserving_fields_and_marks_unmapped_ratings():
     assert metadata == {
         "status": "partial_level_unknown",
         "unverified_candidate_count": 2267,
+        "excluded_non_client_item_count": 0,
         "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
     }
     assert records[0].weapon_type == "wand"
