@@ -474,10 +474,12 @@ def run_range_perturbation_pair(binary: Path, request: Path) -> dict:
 
 
 def native_source_control(binary: Path, request: Path, iterations: int, *,
-                          rng_mode: str) -> dict:
+                          rng_mode: str, go_rules: bool = False) -> dict:
     """Independent real Rust source engine with only iteration count reduced.
 
     Keeps saved gear, talents, rotation, encounter and RNG seed unchanged.
+    Explicit go_rules uses the selected Rust engine's Go-reference rules for
+    historical saved requests; Forever never rewrites talent indices.
     The world path receives the ORIGINAL request and same first N fights.
     """
     if rng_mode not in ("balanced", "stochastic"):
@@ -490,9 +492,12 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
     request_dir, reduced = _iteration_limited_request(source, iterations)
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "native_result.json"
+        command = [str(binary.resolve()), "sim", "--request", str(reduced),
+                   "--outfile", str(output), "--gate", "--rng-mode", rng_mode]
+        if go_rules:
+            command.append("--go-rules")
         completed = subprocess.run(
-            [str(binary.resolve()), "sim", "--request", str(reduced),
-             "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
+            command,
             capture_output=True, text=True, timeout=120,
             env={k: v for k, v in os.environ.items()
                  if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS", "WOWSIM_RNG_MODE")},
@@ -528,7 +533,8 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
         assert measured["iterationsDone"] == iterations
         return {"native_dps": measured["raidMetrics"]["dps"].get("avg", 0.),
                 "first_duration_s": measured["firstIterationDuration"],
-                "iterations": iterations}
+                "iterations": iterations,
+                "native_rules": "go_reference" if go_rules else "forever"}
 
 
 def main() -> None:
