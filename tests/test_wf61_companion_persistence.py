@@ -222,6 +222,8 @@ def test_actual_sourced_hunter_persistent_combat_and_pet_evidence(mobs):
         candidate,level=20,mobs=mobs,trace_pulls=True)
     assert result['status']=='COMPLETE',result
     assert result['count']==mobs
+    assert result['settle_final_recovery'] is True
+    assert result['pull_trace'][-1]['full_recovery'] is True
     assert result['continuous_actor_state']
     assert result['persistent_companion_count']==1
     assert len(result['persistent_source_actor_links_applied_once'])==2
