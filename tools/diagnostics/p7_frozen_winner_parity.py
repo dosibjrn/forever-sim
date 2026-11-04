@@ -180,6 +180,29 @@ def main() -> None:
             label="diagnostic_high_target_health_original_iterations",
         ),
     ]
+    # The saved finite-HP request must exercise at least one real world lethal
+    # ACK. A standalone native-only aggregate is then not comparable, but the
+    # coupled native result must still match every gsim 2D damage receipt.
+    for pair in results[:2]:
+        if pair["world_target_lethal_fights"] <= 0:
+            raise RuntimeError(
+                f"P74_SAVED_HEALTH_DID_NOT_EXERCISE_WORLD_LETHAL:{pair['label']}"
+            )
+        if pair["parity_failure_allowing_world_lethal"] is not None:
+            raise RuntimeError(
+                "P74_SAVED_HEALTH_LETHAL_AWARE_PARITY_FAILED:"
+                f"{pair['label']}:{pair['parity_failure_allowing_world_lethal']}"
+            )
+        coupled = pair["world"]["native_dps"] - pair["world"]["world_mean_dps"]
+        if abs(coupled) >= 1e-5:
+            raise RuntimeError(
+                f"P74_COUPLED_NATIVE_WORLD_DPS_DIVERGED:{pair['label']}:{coupled}"
+            )
+    high_health = results[2]
+    if (high_health["world_target_lethal_fights"] != 0
+            or high_health["parity_failure"] is not None):
+        raise RuntimeError("P74_HIGH_HEALTH_DIAGNOSTIC_CONTROL_INVALID")
+
     report = {
         "diagnostic": "P7_4_FROZEN_WINNER_NATIVE_WORLD_PARITY",
         "checkpoint_certified": False,
