@@ -574,3 +574,85 @@ def test_native_cold_records_only_executed_changed_talent_apl_witness(tmp_path):
     assert witnesses[0]["native_action_id"] == '{"spellId":15407}'
     assert witnesses[0]["native_casts"] == 1
     assert witnesses[0]["source_talents_changed"] is True
+
+
+def test_priest_cold_adapter_emits_real_runtime_provenance_on_eligible_pass(
+        tmp_path, monkeypatch):
+    # A fake accepted producer exercises Forever's status/provenance mapping.
+    # It is not a mock claim that MythicSim has passed this gate.
+    from tools import wf_gate_p4_p5_partial as gate
+    from tools import wf_native_priest_l20_cold as cold
+    from src.game import native_p3_item_options as items
+
+    binary = tmp_path / "native-engine"
+    binary.write_bytes(b"exact-executed-native-engine-test-binary")
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_source()))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", str(binary))
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST", str(source))
+    monkeypatch.delenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR", raising=False)
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD", "1")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", "100")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH", "1")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42424242")
+    monkeypatch.setattr(items, "query_native_p3_item_options",
+                        lambda *args, **kwargs: {
+                            "items": _options(), "status": "ok",
+                            "unverified_candidate_count": 0,
+                        })
+
+    build = _source()
+    digest = hashlib.sha256(json.dumps(
+        build, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    selection = lambda t: {
+        "source_build": build, "source_request_sha256": digest,
+        "paid_completed_elapsed_s": t}
+    world = {
+        "native_2d_persistent_actor_verified": True,
+        "native_2d_persistent_world_ack_verified": True,
+        "native_2d_persistent_paid_recovery": True,
+        "native_2d_persistent_world_targets_killed": 100,
+        "native_2d_persistent_source_action_events": 100,
+        "native_2d_persistent_source_action_counts_by_target":
+            [{"native:585": 1} for _ in range(100)],
+        "native_2d_persistent_elapsed_seconds": 4201.0,
+    }
+    winner = {**selection(5.0), "route_s_per_mob": 42.01,
+              "real_100mob_receipt": world}
+    receipt = {
+        "native_cold_300s_reached": True,
+        "native_cold_30s_paid_selection": selection(5.0),
+        "native_cold_300s_paid_selection": selection(75.0),
+        "native_cold_snapshot_30": winner,
+        "native_cold_final_300": winner,
+        "native_cold_native_paid_before_30": 1,
+        "native_cold_native_paid_after_30": 2,
+        "native_cold_paid_world_route_builds": 3,
+        "native_cold_completed_100mob_finalists": 1,
+        "native_cold_completed_routes_before_30": 0,
+        "native_cold_completed_routes_after_30": 0,
+        "native_cold_talent_action_witnesses": [{
+            "source_talents_changed": True,
+            "native_action_id": '{"spellId":15407}', "native_casts": 10}],
+    }
+    monkeypatch.setattr(cold, "run_native_priest_l20_cold",
+                        lambda *args: copy.deepcopy(receipt))
+    for gate_name in ("P4", "P5"):
+        result = gate._native_cold_options_without_paid_executor(
+            "priest", 20, "unrestricted", gate=gate_name)
+        assert result["status"] == "PASS", result["reasons"]
+        assert result["reasons"] == []
+        assert result["coverage_scope_complete"] is True
+        proof = result["runtime_proof"]
+        assert proof["executed"] is True
+        assert proof["engine_revision"] == (
+            "mythicsim-rust-bin-sha256:"
+            + hashlib.sha256(binary.read_bytes()).hexdigest())
+        assert proof["source_revision"] == "source-request-sha256:" + digest
+        assert proof["run_id"] == "42424242"
+
+    binary.unlink()
+    denied = gate._native_cold_options_without_paid_executor(
+        "priest", 20, "unrestricted", gate="P4")
+    assert denied["status"] == "FAIL"
+    assert "P4_P5_EXECUTED_NATIVE_BINARY_IDENTITY_UNAVAILABLE" in denied["reasons"]
