@@ -125,6 +125,7 @@ on:
       - 'src/game/native_p3_item_options.py'
       - 'src/game/native_p3_player_context.py'
       - 'tests/test_work2_paladin_native_context.py'
+      - 'tests/test_work2_paladin_p3_paid_winner.py'
       - 'tests/test_native_p3_item_options.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/tests/test_port_native_typed_rng.py'
@@ -218,6 +219,7 @@ jobs:
           tests/test_prio_p3_source_policy_sp.py
           tests/test_work2_paladin_p3_source_naked.py
           tests/test_work2_paladin_native_context.py
+          tests/test_work2_paladin_p3_paid_winner.py
           tests/test_native_p3_item_options.py
           integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
           tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
