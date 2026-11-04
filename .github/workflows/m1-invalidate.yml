@@ -11,7 +11,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: m1-invalidate-\${{ github.event.comment.id || github.run_id }}
+  group: m1-invalidate-${{ github.event.comment.id || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -28,23 +28,23 @@ jobs:
         id: request
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
-          COMMENT_BODY: \${{ github.event.comment.body }}
-          PR_NUMBER: \${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
           [[ "$COMMENT_BODY" != *$'\n'* ]] || { echo "M1_INVALIDATION_COMMAND_MUST_BE_SINGLE_LINE"; exit 1; }
-          payload="\${COMMENT_BODY#/m1-invalidate }"
+          payload="${COMMENT_BODY#/m1-invalidate }"
           [[ "$payload" == *" --expected-run "* && "$payload" == *" --reason "* ]] || {
             echo 'Usage: /m1-invalidate mage:30:unrestricted:P3 --expected-run 41764632715 --reason <reason>'; exit 1;
           }
-          target="\${payload%% --expected-run *}"
-          rest="\${payload#* --expected-run }"
-          expected_run="\${rest%% --reason *}"
-          reason="\${rest#* --reason }"
+          target="${payload%% --expected-run *}"
+          rest="${payload#* --expected-run }"
+          expected_run="${rest%% --reason *}"
+          reason="${rest#* --reason }"
           [[ "$target" == "mage:30:unrestricted:P3" ]] || { echo "M1_INVALIDATION_TARGET_NOT_APPROVED"; exit 1; }
           [[ "$expected_run" == "41764632715" ]] || { echo "M1_INVALIDATION_EXPECTED_RUN_NOT_APPROVED"; exit 1; }
-          [[ -n "$reason" && \${#reason} -le 240 && "$reason" == *"#359"* && "$reason" == *"#790"* ]] || {
+          [[ -n "$reason" && ${#reason} -le 240 && "$reason" == *"#359"* && "$reason" == *"#790"* ]] || {
             echo "M1_INVALIDATION_REASON_MUST_CITE_OWNER_DECISION_359_AND_ISSUE_790"; exit 1;
           }
           pr="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
@@ -72,14 +72,14 @@ jobs:
       - name: Invalidate only the named PARTIAL receipt and publish ledger plus chart atomically
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
-          TARGET: \${{ steps.request.outputs.target }}
-          EXPECTED_RUN: \${{ steps.request.outputs.expected_run }}
-          REASON: \${{ steps.request.outputs.reason }}
-          PR_NUMBER: \${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ steps.request.outputs.target }}
+          EXPECTED_RUN: ${{ steps.request.outputs.expected_run }}
+          REASON: ${{ steps.request.outputs.reason }}
+          PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
-          read -r class level spec gate <<< "\${TARGET//:/ }"
+          read -r class level spec gate <<< "${TARGET//:/ }"
           token_header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           for attempt in 1 2 3 4 5; do
             git fetch origin main
