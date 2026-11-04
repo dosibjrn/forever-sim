@@ -141,7 +141,9 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     max_policies=8,
     max_recovery_policies=2,
     max_paid_builds=(1000 if args.budget==30 else 20000),
-    max_cpu_s=float(args.budget),screen_mobs=2,finalist_mobs=100,
+    max_cpu_s=float(args.budget),
+    snapshot_at_s=(30. if args.budget==300 else None),
+    screen_mobs=2,finalist_mobs=100,
     per_candidate_wall_s=1.,search_only=True,screen_evaluator_backend='direct',
     # The short search previously promoted only four paid parent builds;
     # measured 30s/100-mob production runs missed later legal talent
@@ -200,7 +202,7 @@ summary['shortlist_summary']=[{k:x.get(k) for k in ('allocation','gear_move','po
     for x in r['validation_shortlist']]
 summary['p4_acceptance_status']='NOT_ACCEPTED_SOURCE_COVERAGE_GATES_NOT_PROVEN'
 summary['p5_acceptance_status']='NOT_ACCEPTED_SOURCE_COVERAGE_GATES_NOT_PROVEN'
-summary['p6_acceptance_status']='NOT_RUN_TWO_BUDGETS_IN_THIS_PROCESS'
+summary['p6_acceptance_status']='SHARED_SEARCH_REQUIRES_COMPARABLE_100MOB_REPLAY'
 Path(args.output).parent.mkdir(parents=True,exist_ok=True)
 Path(args.output).write_text(json.dumps(summary,indent=2,default=str))
 print('WROTE',args.output,'elapsed',summary['search_runner_wall_s'],flush=True)
