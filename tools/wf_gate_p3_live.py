@@ -82,6 +82,7 @@ def native_item_options_required(
     return (
         (key in ("priest", "mage") and level == 20)
         or (key == "shaman" and level == 20 and profile == "unrestricted")
+        or (key == "paladin" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
     )
 
