@@ -416,3 +416,82 @@ def test_bounded_native_talent_transfers_explore_within_and_across_trees():
         original, limit=0) == []
     with pytest.raises(ValueError, match="TALENT_PROPOSAL_LIMIT_NEGATIVE"):
         native_talent_proposals.one_point_transfer_neighbors(original, limit=-1)
+
+
+def test_feral_p73_reuses_original_source_and_pays_changed_talents_with_go_rules(
+        monkeypatch, tmp_path):
+    """Selected native transport regression, not standalone Warcraft validation."""
+    import json
+    from pathlib import Path
+    from tools import wf_gate_p7_2_live as p72
+    from tools.wf_gate_p7_1_live import FERAL_REFERENCE_DPS, SAVED_FERAL_RAW_SHA
+
+    root = Path(__file__).resolve().parents[2]
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("native executable placeholder")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.delenv("FOREVER_P7_FULL_SOURCE_SEARCH", raising=False)
+    monkeypatch.setattr(p72, "_selected_rust_submodule",
+                        lambda *args: "feral-selected-rust-pin")
+
+    prepared = gate._pinned_source_runtime(
+        root, "druid", 60, "feral", "P7.3", require_world=False)
+    assert isinstance(prepared, tuple)
+    reference, meta, selected_binary = prepared
+    player = reference["raid"]["parties"][0]["players"][0]
+    assert meta["selected_reference_profile"] == "feral"
+    assert meta["source_request_raw_sha256"] == SAVED_FERAL_RAW_SHA
+    assert meta["reference_dps"] == FERAL_REFERENCE_DPS
+    assert selected_binary == binary.resolve()
+    assert "feralCatDruid" in player
+    original = player["talentsString"]
+    candidate_talents = original[:-1] + ("2" if original[-1] != "2" else "1")
+    assert candidate_talents != original
+
+    proposals = SimpleNamespace(
+        lower_one_rank_neighbors=lambda value: [candidate_talents],
+        one_point_transfer_neighbors=lambda value: [],
+        cold_talent_string=lambda *args: pytest.fail("paid first proposal"),
+        mutate_talent_string=lambda *args: pytest.fail("paid first proposal"))
+    monkeypatch.setattr(gate, "native_talent_proposals", proposals)
+    paid = []
+
+    def native_score(native_binary, request_path, iterations, *,
+                     rng_mode, go_rules=False):
+        assert (native_binary, iterations, rng_mode, go_rules) == (
+            binary.resolve(), 3, "balanced", True)
+        request = json.loads(request_path.read_text())
+        changed = request["raid"]["parties"][0]["players"][0]
+        assert changed["talentsString"] == candidate_talents
+        assert changed["equipment"] == player["equipment"]
+        assert changed["rotation"] == player["rotation"]
+        paid.append(request)
+        return {"iterations": 3, "native_dps": 817.5}
+
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda *args: SimpleNamespace(native_source_control=native_score))
+    report = gate.run_live(root, "druid", 60, spec="feral")
+    assert report["status"] == "PASS"  # mocked transport; not native evidence
+    assert report["native_rules"] == "go_reference"
+    assert report["source_request_raw_sha256"] == SAVED_FERAL_RAW_SHA
+    assert report["saved_reference_dps"] == FERAL_REFERENCE_DPS
+    assert report["reference_profile"] == report["checkpoint_spec"] == "feral"
+    assert report["native_source_revision"] == "feral-selected-rust-pin"
+    assert report["cold_winner_talents"] == candidate_talents
+    assert report["winner_native_dps"] == 817.5
+    assert report["source_legal_cold_candidates_paid"] == len(paid) == 1
+
+
+def test_feral_p73_pinned_source_identity_still_fails_closed(
+        monkeypatch, tmp_path):
+    from tools import wf_gate_p7_2_live as p72
+    root = tmp_path
+    request = root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json"
+    request.parent.mkdir(parents=True)
+    request.write_text('{"raid":{},"encounter":{}}')
+    result = p72._pinned_source_runtime(
+        root, "druid", 60, "feral", "P7.3", require_world=False)
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == ["P7_3_PINNED_SOURCE_REQUEST_CHANGED"]
