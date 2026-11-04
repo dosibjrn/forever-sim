@@ -44,8 +44,15 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
         "winner_selection": "paid_4x3_balanced_native_world_confirmed",
         "paid_balanced_finalists": 6,
         "paid_balanced_confirmed": 2,
+        "source_candidate_failure_count": 146,
+        "native_gear_options_unique_items": 321,
+        "native_gear_options_unique_enchants": 22,
+        "native_gear_options_applied": True,
+        "native_gear_options_reference_revision": "native-source-revision",
+        "item_candidate_admission": "pinned_rust_native_gear_options",
         "paid_stochastic_finalists": 0,
         "source_candidate_failures": ["SOURCE_REJECT_" + "x" * 300] * 5,
+        "balanced_finalist_failures": ["BALANCED_RERANK_" + "z" * 300] * 6,
         "paid_stochastic_finalist_failures": ["NATIVE_TIMEOUT_" + "y" * 300] * 6,
         "frozen_stochastic_world_dps": 717.5,
         "frozen_stochastic_iterations": 1000,
@@ -64,9 +71,17 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
     assert receipt["paid_balanced_finalists"] == 6
     assert receipt["paid_balanced_confirmed"] == 2
     assert receipt["paid_stochastic_finalists"] == 0
+    assert receipt["source_candidate_failure_count"] == 146
+    assert receipt["native_gear_options_unique_items"] == 321
+    assert receipt["native_gear_options_unique_enchants"] == 22
+    assert receipt["native_gear_options_applied"] is True
+    assert receipt["native_gear_options_reference_revision"] == "native-source-revision"
+    assert receipt["item_candidate_admission"] == "pinned_rust_native_gear_options"
     assert len(receipt["source_candidate_failures"]) == 4
+    assert len(receipt["balanced_finalist_failures"]) == 4
     assert len(receipt["paid_stochastic_finalist_failures"]) == 4
+    assert all(len(message) == 300 for message in receipt["source_candidate_failures"])
     assert all(len(message) == 180 for name in
-               ("source_candidate_failures", "paid_stochastic_finalist_failures")
+               ("balanced_finalist_failures", "paid_stochastic_finalist_failures")
                for message in receipt[name])
     assert receipt["status"] == "FAIL"
