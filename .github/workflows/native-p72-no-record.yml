@@ -24,6 +24,7 @@ jobs:
       - name: Checkout exact PR source and pinned native gitlink
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           submodules: true
           lfs: true
           fetch-depth: 0
