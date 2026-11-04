@@ -27,10 +27,11 @@ def test_rogue_l20_native_p3_uses_paid_item_sized_stat_probes(monkeypatch):
             (source_ir, {"profile": spec, "full_point_source_allocation": None}))
 
     requests = []
+    native_payload = {"items": [{"item_id": 101}]}
 
     def native_query(binary, class_key, level, **kwargs):
         requests.append((binary, class_key, level, kwargs))
-        return {"items": [{"item_id": 101}]}
+        return native_payload
 
     monkeypatch.setattr(native_options, "query_native_p3_item_options", native_query)
     record = {
@@ -71,6 +72,16 @@ def test_rogue_l20_native_p3_uses_paid_item_sized_stat_probes(monkeypatch):
         "native_excluded_non_client_item_count": 0,
         "native_item_options_source": "selected-Rust",
     })
+    # Both the initial scorer and any re-score must use the exact source
+    # snapshot accepted before paid search, not a second native CLI query.
+    original_smoke = smoke.fast_p3_smoke_for_policy
+    scorer_snapshots = []
+
+    def smoke_with_snapshot(**kwargs):
+        scorer_snapshots.append(kwargs.get("native_options_response"))
+        return original_smoke(**kwargs)
+
+    monkeypatch.setattr(smoke, "fast_p3_smoke_for_policy", smoke_with_snapshot)
     captures = []
 
     def paid_witness(source_ir, **kwargs):
@@ -86,6 +97,8 @@ def test_rogue_l20_native_p3_uses_paid_item_sized_stat_probes(monkeypatch):
 
     assert requests == [("selected-native", "rogue", 20,
                          {"spec": "unrestricted", "slot": "all"})]
+    assert scorer_snapshots == [native_payload]
+    assert scorer_snapshots[0] is native_payload
     assert len(captures) == 1
     assert captures[0]["stat"] == "agility"
     assert captures[0]["probe_deltas"] == (25.0, 15.0)
@@ -105,3 +118,30 @@ def test_rogue_l20_native_p3_uses_paid_item_sized_stat_probes(monkeypatch):
     assert result["status"] == "FAIL"
     assert result["real_source_search_evaluated"] == 42
     assert result["real_measured_stat_weights"]["agility"] == 0.0
+
+
+def test_native_rogue_item_records_reuse_validated_snapshot_without_second_query():
+    from src.game.native_p3_item_options import native_p3_item_records
+
+    snapshot = {
+        "status": "ok", "source": "selected-native",
+        "unverified_candidate_count": 0,
+        "excluded_non_client_item_count": 2775,
+        "items": [{
+            "item_id": 401, "name": "Native Rogue chest",
+            "slot": "chest", "item_level": 12, "required_level": 10,
+            "stats": {"Agility": 5.0},
+        }],
+    }
+
+    def unexpected_query(*args, **kwargs):
+        raise AssertionError("P3 must reuse the already accepted native response")
+
+    records, unmapped, metadata = native_p3_item_records(
+        "selected-native", "rogue", 20,
+        native_response=snapshot, runner=unexpected_query)
+    assert len(records) == 1
+    assert records[0].item_id == 401
+    assert records[0].agility == 5.0
+    assert unmapped == {}
+    assert metadata["excluded_non_client_item_count"] == 2775

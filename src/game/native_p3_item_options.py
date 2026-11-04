@@ -423,7 +423,8 @@ _DIRECT_SCORE_FIELDS = {
 
 
 def native_p3_item_records(binary: str | Path, class_key: str, level: int,
-                           *, runner: Callable = subprocess.run):
+                           *, runner: Callable = subprocess.run,
+                           native_response: dict | None = None):
     """Project Rust items into the existing scorer's shape.
 
     Return (records, unmapped_by_item, source_metadata). Nonzero unmapped
@@ -432,7 +433,12 @@ def native_p3_item_records(binary: str | Path, class_key: str, level: int,
     """
     from src.rulesets.forever.items.catalogue import ItemRecord
 
-    response = query_native_p3_item_options(binary, class_key, level, runner=runner)
+    # The Rogue P3 entry point has already queried and validated the exact
+    # selected native snapshot before spending its paid search budget. Reuse
+    # that same response for scoring instead of issuing a second query whose
+    # candidate set could differ from the preflight source universe.
+    response = (native_response if native_response is not None else
+                query_native_p3_item_options(binary, class_key, level, runner=runner))
     records = []
     unmapped_by_item = {}
     for option in response["items"]:

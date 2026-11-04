@@ -1,9 +1,9 @@
-"""PROCESS v2 P3: fast, source-legal top-five-by-ilvl gear scorer smoke.
+"""P3 gear-scoring smoke over source-legal native item alternatives.
 
-The five *test* items per slot are selected by item level, never by their
-computed score. This is NOT a BiS ranking, complete-source attestation, or a
-replacement for gear×talent×policy optimization. No game/class-specific
-weights or invented positive epsilons are created by this validator.
+Selected native items are sampled as one or two representative candidates per
+slot, never an exhaustive top-five-by-ilvl certificate. The legacy SQLite
+scorer retains its previous scope until its native consumer is migrated.
+No invented positive stat weights or separate game-legality rules live here.
 """
 from __future__ import annotations
 
@@ -158,7 +158,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   equipped_weapon_dps_relevant: bool | None = None,
                   defensive_positive_required: bool = True,
                   required_level_policy: str = 'catalogue',
-                  native_options_binary: str | None = None) -> dict:
+                  native_options_binary: str | None = None,
+                  native_options_response: dict | None = None) -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
     Failures are explicit, not silently clipped or filled with tiny positives.
@@ -167,17 +168,24 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     """
     if not class_key or not 1 <= int(level) <= 60:
         raise ValueError('P3_INVALID_CHECKPOINT')
+    if native_options_response is not None and native_options_binary is None:
+        raise ValueError('P3_NATIVE_OPTIONS_SNAPSHOT_REQUIRES_SELECTED_BINARY')
     if not isinstance(defensive_positive_required, bool):
         raise ValueError('P3_DEFENSIVE_APPLICABILITY_NOT_BOOLEAN')
-    # All ordinary weights are nonnegative. Outside Warrior/Bear, defensive
-    # zeros are meaningful measurements rather than artificial P3 blockers.
-    strictly_positive_axes = (POSITIVE_WHEN_PRESENT if defensive_positive_required
-                              else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
+    # The legacy SQLite-only smoke retains its historic positivity diagnostic.
+    # Native item alternatives follow the approved P3 contract: an irrelevant
+    # stat may have a genuinely measured zero, and a negative trade-off is not
+    # invalid solely because the item exposes that axis.
+    strictly_positive_axes = (
+        (POSITIVE_WHEN_PRESENT if defensive_positive_required
+         else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
+        if native_options_binary is None else frozenset())
     native_options_metadata = None
     if native_options_binary is not None:
         from src.game.native_p3_item_options import native_p3_item_records
         rows, unmapped_by_item, native_options_metadata = native_p3_item_records(
-            native_options_binary, class_key, level)
+            native_options_binary, class_key, level,
+            native_response=native_options_response)
         source_name = 'MYTHICSIM_NATIVE_ITEM_OPTIONS'
     else:
         rows = available_items(class_key, level, required_level_policy=required_level_policy)
@@ -197,7 +205,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         blockers.add('UNVERIFIED_CONTEXT_WEIGHTS')
     parsed = {str(axis): _weight_value(value) for axis, value in weights.items()}
     for axis, weight in parsed.items():
-        if weight is not None and weight < 0:
+        if weight is not None and weight < 0 and native_options_binary is None:
             blockers.add('NEGATIVE_WEIGHT:' + axis)
     by_slot = defaultdict(list)
     for item in rows:
@@ -209,9 +217,22 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     verified_stat_assertions = 0
     encountered_dps = set()
     for slot, items in sorted(by_slot.items()):
-        # The legal test set is chosen *only* by item level and stable ID.
-        selected = sorted(items, key=lambda item:(
-            -(item.item_level if item.item_level is not None else -1), item.item_id))[:5]
+        # Candidate legality comes solely from the selected source. Sample up
+        # to two real native alternatives, favoring a different stat vector so
+        # the gear scorer can distinguish meaningful candidate configurations.
+        # The untouched SQLite fallback retains its historical diagnostic set.
+        ordered = sorted(items, key=lambda item:(
+            -(item.item_level if item.item_level is not None else -1), item.item_id))
+        if native_options_binary is not None:
+            selected = ordered[:1]
+            if len(ordered) > 1:
+                first_stats = _ordinary_stats(ordered[0])
+                alternative = next((item for item in ordered[1:]
+                                    if _ordinary_stats(item) != first_stats),
+                                   ordered[1])
+                selected.append(alternative)
+        else:
+            selected = ordered[:5]
         reports = []
         for item in selected:
             tested += 1
@@ -242,7 +263,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                     if axis in POSITIVE_WHEN_PRESENT:
                         blockers.add('MISSING_WEIGHT:' + axis)
                     continue
-                if weight < 0:
+                if weight < 0 and native_options_binary is None:
                     blockers.add('NEGATIVE_WEIGHT:' + axis)
                     continue
                 if weight <= 0 and axis in strictly_positive_axes:
@@ -252,9 +273,12 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                     blockers.add('NONFINITE_CONTRIBUTION:' + axis)
                     continue
                 parts[axis] = contribution
-                if required_axis and (weight > 0 or
+                if required_axis and (native_options_binary is not None or weight > 0 or
                         (weight == 0 and axis in DEFENSIVE_STAT_AXES
                          and not defensive_positive_required)):
+                    # Native scoring of a zero/negative measured weight is a
+                    # legitimate finite selector assertion, not a claim that
+                    # the underlying native combat effect is beneficial.
                     item_valid_weight_checks += 1
             # Check the ACTUAL selector scorer; do not certify a parallel
             # dot-product that the optimizer itself never uses.
@@ -282,7 +306,10 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                             'source_url': item.source_url})
         slots[slot] = {'legal_count': len(items),
                        'selected_ids': [int(x.item_id) for x in selected],
-                       'items': reports, 'selection': 'HIGHEST_ITEM_LEVEL_NOT_SCORE'}
+                       'items': reports,
+                       'selection': ('NATIVE_REPRESENTATIVE_UP_TO_TWO' if
+                                     native_options_binary is not None else
+                                     'HIGHEST_ITEM_LEVEL_NOT_SCORE')}
     # At least ONE legally applicable DPS channel is required, not every
     # melee/wand/ranged weapon in the world. Its axis must be from actual gear.
     # Legacy direct callers retain the original default smoke semantics. The

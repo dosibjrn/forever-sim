@@ -363,7 +363,7 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
     ("paladin", 1240),
     ("rogue", 1789),
 ])
-def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
+def test_native_p3_scores_only_two_representative_source_candidates(
         class_key, excluded_count):
     levels = [3, 12, 7, 11, 9, 10, 8]
     items = tuple(ItemRecord(
@@ -395,10 +395,42 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
     assert report["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     assert report["legal_item_count"] == 7
     assert report["native_excluded_non_client_item_count"] == excluded_count
-    assert report["tested_item_count"] == 5
-    assert report["slots"]["chest"]["selected_ids"] == [101, 103, 105, 104, 106]
-    assert report["slots"]["chest"]["selection"] == "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    assert report["tested_item_count"] == 2
+    assert report["slots"]["chest"]["selected_ids"] == [101, 103]
+    assert report["slots"]["chest"]["selection"] == "NATIVE_REPRESENTATIVE_UP_TO_TWO"
 
+
+
+def test_native_p3_prefers_distinct_stat_vector_and_keeps_zero_negative_paid_weights():
+    """Only the native option universe supplies candidates; no arbitrary
+    all-stats-positive predicate or Python class-specific eligibility."""
+    items = (
+        ItemRecord(item_id=991001, name="Agility top", slot="chest", item_level=25,
+                   required_level=1, agility=5.0, identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=991002, name="Same stats", slot="chest", item_level=24,
+                   required_level=1, agility=5.0, identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=991003, name="Stamina tradeoff", slot="chest", item_level=23,
+                   required_level=1, stamina=8.0, identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+    )
+    metadata = {"status": "ok", "unverified_candidate_count": 0,
+                "excluded_non_client_item_count": 0, "source": "native"}
+    with patch("src.game.native_p3_item_options.native_p3_item_records",
+               return_value=(items, {}, metadata)):
+        report = fast_p3_smoke(
+            class_key="rogue", level=20,
+            weights={"agility": 0.0, "stamina": -0.2},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=True, native_options_binary="selected-native")
+    assert report["slots"]["chest"]["selected_ids"] == [991001, 991003]
+    assert report["tested_item_count"] == 2
+    assert report["verified_stat_assertions"] == 2
+    assert not any(reason.startswith(("NONPOSITIVE_RELEVANT_WEIGHT:",
+                                      "NEGATIVE_WEIGHT:"))
+                   for reason in report["blockers"])
 
 
 def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():

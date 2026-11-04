@@ -270,6 +270,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return {'status': 'BLOCKED',
                 'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
                 'production_component': 'src.game.native_p3_item_options'}
+    native_options = None
     if (str(class_key).lower() == "rogue" and int(level) == 20
             and str(spec).lower() == "unrestricted"):
         # Rogue's selected engine capability was previously untested because
@@ -468,7 +469,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
-            native_options_binary=native_binary)
+            native_options_binary=native_binary,
+            native_options_response=native_options)
     except ValueError as exc:
         if native_binary is None:
             raise
@@ -594,12 +596,12 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
-            native_options_binary=native_binary)
+            native_options_binary=native_binary,
+            native_options_response=native_options)
     reasons = list(item_check["blockers"])
-    # The same source-legal selected IR was used for actual CombatRuntime
-    # sensitivity and the real item scorer. Never fake a positive stat weight.
-    # Source-ranked, real CombatRuntime measurements were used for each
-    # measured derivative; the ordinary source item scorer tested ilvl top5.
+    # The source policy was paid by CombatRuntime, but item scoring does NOT
+    # become native equipped-build execution merely because candidate items
+    # originated in Rust. Preserve real provenance and the measured receipt.
     status = "FAIL" if reasons else "PASS"
     proof = {}
     if status == "PASS":
@@ -622,7 +624,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
+        # Compatibility alias for existing gate/recorder consumers. Native
+        # options are now an explicit <=2 representative per-slot sample.
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
+        "real_native_representative_items_scored": (
+            item_check["tested_item_count"] if item_check["source"] ==
+            "MYTHICSIM_NATIVE_ITEM_OPTIONS" else None),
+        "real_selected_item_alternatives_by_slot": item_check["slots"],
         "real_catalogue_slots_scored": item_check["slot_count"],
         # Comparable measured unit: one source-legal top-ilvl item x
         # applicable ordinary stat requirement, checked in the real selector.
@@ -631,7 +639,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "reachability_count": item_check["tested_stat_assertions"],
         "pass_count": item_check["verified_stat_assertions"],
         "behavior_probes_executed": result.get("evaluated", 0) + extra_evaluations,
-        "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
+        "partial_scope": (
+            "CURRENT_NATIVE_REPRESENTATIVE_ITEM_STAT_WEIGHT_ASSERTIONS"
+            if item_check["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+            else "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS"),
         "coverage_basis": "executed_behavior_assertions",
         "coverage_scope_complete": False,
         "real_item_score_checked": item_check["source"] in (
