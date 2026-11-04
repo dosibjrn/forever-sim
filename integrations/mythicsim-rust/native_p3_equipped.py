@@ -11,6 +11,8 @@ import copy
 import json
 import math
 import sys
+import tempfile
+import subprocess
 import time
 from pathlib import Path
 
@@ -72,15 +74,52 @@ def first_equipped_proposal(reference: dict, selection: dict):
     return None, None
 
 
+def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run):
+    """Read the *executed engine's* prepared actor, not the request's level hint.
+
+    A source request may say level 20 while an older Rust build still creates
+    its player at level 60. Never spend the two paid P3 attempts on that proxy.
+    """
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "rogue-p3-request.json"
+        path.write_text(json.dumps(reference, separators=(",", ":")), encoding="utf-8")
+        try:
+            completed = runner(
+                [str(binary), "prepare", "--request", str(path)],
+                capture_output=True, text=True, timeout=60, check=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {"status": "NATIVE_PREPARE_ERROR", "reason": str(exc)[-500:]}
+    try:
+        prepared = json.loads(completed.stdout)
+    except (TypeError, ValueError):
+        prepared = None
+    if completed.returncode != 0:
+        refusal = prepared.get("refusal") if isinstance(prepared, dict) else None
+        reason = (refusal.get("reason") or refusal.get("code")
+                  if isinstance(refusal, dict) else None)
+        return {"status": "NATIVE_PREPARE_REFUSED",
+                "reason": str(reason or completed.stderr or completed.stdout)[-500:]}
+    if not isinstance(prepared, dict) or not isinstance(prepared.get("player"), dict):
+        return {"status": "NATIVE_PREPARED_ACTOR_MISSING"}
+    player = prepared["player"]
+    reference = prepared.get("reference")
+    return {"status": "PREPARED", "actor_class": player.get("class"),
+            "actor_level": player.get("level"),
+            "engine_revision": (reference.get("engine_revision")
+                                if isinstance(reference, dict) else None),
+            "prepared_request_sha256": prepared.get("request_sha256")}
+
+
 def compare_equipped_native(binary, reference: dict, selection: dict, *,
                             iterations: int = 5, seed: int = 914,
-                            evaluator=run, seconds: float = 90.0):
+                            evaluator=run, seconds: float = 90.0,
+                            preparer=prepared_native_actor):
     """Pay for both original and equipped build, with identical non-gear inputs.
 
     Any native INVALID/UNSUPPORTED/UNSCORED/ERROR is reported verbatim and
     debited, never substituted with a Python score or awarded gate credit.
-    The selected request's checkpoint/actor identity must be established by
-    the gate caller before any P3 promotion; this helper does not infer it.
+    The same selected binary's prepared actor must match the actual Rogue L20
+    checkpoint before a paid comparison can become gate evidence.
     """
     if type(iterations) is not int or iterations < 1 or seconds <= 0:
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
@@ -98,6 +137,33 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             "paid_attempts": 0, "comparison": None, "swap": swap,
             "actor_checkpoint_verified": False,
             "actor_requested_level": requested_level,
+            "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
+        }
+    # The request's level field is only a hint: the selected Rust engine can
+    # prepare an L60 actor even from a level-20 request. Read the actual
+    # prepared actor from that same binary before consuming paid evaluations.
+    prepared = preparer(binary, copy.deepcopy(reference))
+    if not isinstance(prepared, dict) or prepared.get("status") != "PREPARED":
+        return {
+            "status": (prepared.get("status", "NATIVE_PREPARE_ERROR")
+                       if isinstance(prepared, dict) else "NATIVE_PREPARE_ERROR"),
+            "reason": prepared.get("reason") if isinstance(prepared, dict) else None,
+            "paid_attempts": 0, "comparison": None, "swap": swap,
+            "actor_requested_level": requested_level,
+            "native_prepared_actor": prepared,
+            "actor_checkpoint_verified": False,
+            "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
+        }
+    actor_matched = (prepared.get("actor_class") == "ClassRogue"
+                     and type(prepared.get("actor_level")) is int
+                     and prepared["actor_level"] == requested_level)
+    if not actor_matched:
+        return {
+            "status": "NATIVE_ACTOR_CHECKPOINT_MISMATCH",
+            "paid_attempts": 0, "comparison": None, "swap": swap,
+            "actor_requested_level": requested_level,
+            "native_prepared_actor": prepared,
+            "actor_checkpoint_verified": False,
             "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
         }
     original = copy.deepcopy(reference)
@@ -138,7 +204,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         # Both actual selected-native evaluations must have returned finite
         # scores for this exact L20 request and its one-item mutation.
         # This is not by itself a P3 PASS: the caller retains other blockers.
-        "actor_checkpoint_verified": paired,
+        "actor_checkpoint_verified": actor_matched and paired,
+        "native_prepared_actor": prepared,
         "promotion": (
             "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE"
             if paired and delta != 0 else
