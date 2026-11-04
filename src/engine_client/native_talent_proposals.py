@@ -98,47 +98,54 @@ def lower_one_rank_neighbors(parent: str) -> list[str]:
 
 
 def one_point_transfer_neighbors(parent: str, *, limit: int = 48) -> list[str]:
-    """Offer rank-preserving, one-point source edits for native evaluation.
+    """Sample both within-tree and cross-tree one-point transfers.
 
-    Changing one position at a time keeps the source's point budget and avoids
-    arbitrary multi-rank random proposals. Same-tree edits come first; this
-    ordering is a search heuristic, NOT a talent-tree eligibility rule.
-    MythicSim alone decides which of these proposed strings are legal.
+    A bounded search must not exhaust its entire candidate budget in the
+    first tree. The two proposal streams are interleaved without inferring
+    Warcraft prerequisites or rank caps; selected native Rust alone decides
+    which changed allocation is legal.
     """
     parts, digits = _decode(parent)
     if limit < 0:
         raise ValueError("TALENT_PROPOSAL_LIMIT_NEGATIVE")
+    if limit == 0:
+        return []
     boundaries = []
     offset = 0
     for part in parts:
         boundaries.append(range(offset, offset + len(part)))
         offset += len(part)
-    result = []
 
-    def propose(donors, recipients):
-        for donor in reversed(list(donors)):
-            if digits[donor] == 0:
-                continue
-            for recipient in recipients:
-                if donor == recipient or digits[recipient] >= 9:
+    def collect(*, within_tree: bool) -> list[str]:
+        proposals = []
+        for donor_tree in reversed(boundaries):
+            for recipient_tree in reversed(boundaries):
+                if (donor_tree is recipient_tree) != within_tree:
                     continue
-                modified = digits.copy()
-                modified[donor] -= 1
-                modified[recipient] += 1
-                result.append(_encode(parts, modified))
-                if len(result) >= limit:
-                    return True
-        return False
+                for donor in reversed(donor_tree):
+                    if digits[donor] == 0:
+                        continue
+                    for recipient in recipient_tree:
+                        if donor == recipient or digits[recipient] >= 9:
+                            continue
+                        modified = digits.copy()
+                        modified[donor] -= 1
+                        modified[recipient] += 1
+                        proposals.append(_encode(parts, modified))
+                        if len(proposals) >= limit:
+                            return proposals
+        return proposals
 
-    if limit == 0:
-        return result
-    for tree in reversed(boundaries):
-        if propose(tree, tree):
-            return result
-    for donor_tree in reversed(boundaries):
-        for recipient_tree in reversed(boundaries):
-            if donor_tree is recipient_tree:
-                continue
-            if propose(donor_tree, recipient_tree):
-                return result
+    within = collect(within_tree=True)
+    across = collect(within_tree=False)
+    result = []
+    for index in range(max(len(within), len(across))):
+        if index < len(within):
+            result.append(within[index])
+            if len(result) == limit:
+                break
+        if index < len(across):
+            result.append(across[index])
+            if len(result) == limit:
+                break
     return result
