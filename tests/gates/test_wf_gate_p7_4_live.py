@@ -940,3 +940,104 @@ def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
     assert metadata["unique_item_options"] > 0
     assert metadata["unique_enchant_options"] > 0
     assert all(choices and choices[0] is None for choices in enchant_pools.values())
+
+
+
+def test_p74_native_axis_pays_changed_gear_without_world_or_holdout(
+        monkeypatch, tmp_path):
+    """Native owns game legality; P7.4 needs only one changed paid gear axis."""
+    import json
+    import pytest
+
+    base = {"raid": {"parties": [{"players": [{
+        "class": "ClassDruid",
+        "equipment": {"items": [{"id": 10}, {"id": 20}]},
+        "talentsString": "fixed-talents",
+        "rotation": {"priorityList": [{"action": {"castSpell": {"spellId": 1}}}]},
+    }]}]}}
+    original = copy.deepcopy(base)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock binary never executed")
+    data = binary.parents[2] / "data"
+    data.mkdir()
+    (data / "items.jsonl").write_text("{}\n")
+    (data / "enchants.jsonl").write_text("{}\n")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
+    preflights = []
+    def preflight(*args, **kw):
+        preflights.append((args, kw))
+        return base, {"reference_dps": 728.19,
+                      "selected_reference_profile": "balance",
+                      "selected_engine_revision": "selected-rust"}, binary
+    monkeypatch.setattr(gate, "_pinned_source_runtime", preflight)
+    source = SimpleNamespace(pinned_rust_candidate_pool=lambda *a: (
+        {0: [10, 11], 1: [20]},
+        {0: [None], 1: [None, 222]},
+        {"unique_item_options": 3, "unique_enchant_options": 1}))
+    calls = []
+    def native(binary_arg, request_path, n, *, rng_mode):
+        request = json.loads(request_path.read_text())
+        calls.append(request)
+        assert n == 3 and rng_mode == "balanced"
+        original_player = original["raid"]["parties"][0]["players"][0]
+        player = request["raid"]["parties"][0]["players"][0]
+        assert player["talentsString"] == original_player["talentsString"]
+        assert player["rotation"] == original_player["rotation"]
+        assert player["equipment"] != original_player["equipment"]
+        if len(calls) == 1:
+            raise RuntimeError(
+                'NATIVE_SOURCE_CONTROL_FAILED exit=5 request_sha256=abc '
+                'output={"prepared":false,"refusal":{"code":"gear",'
+                '"reason":"native rejected first option"}}')
+        return {"iterations": 3, "native_dps": 735.0}
+    def world(*a, **kw):
+        pytest.fail("P7.4 stationary DPS must not call the 2D world")
+    monkeypatch.setattr(gate, "_source_module", lambda path, *a: (
+        source if "p74_gear_search" in str(path) else
+        SimpleNamespace(native_source_control=native, run=world)))
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert preflights[0][0][-1] == "P7.4"
+    assert preflights[0][1] == {"require_world": False}
+    assert report["status"] == "PASS"
+    assert report["winner_native_dps"] == 735.0
+    assert report["source_legal_cold_candidates_paid"] == 1
+    assert report["native_invalid_candidates"] == 1
+    assert report["cold_unique_source_requests"] == 2
+    assert report["reference_profile"] == "balance"
+    assert report["checkpoint_spec"] == "unrestricted"
+    assert report["source_fixed_rotation_and_talents"] is True
+    assert report["independent_300s_search_completed"] is False
+    assert "frozen_stochastic_iterations" not in report
+    assert report["runtime_proof"]["executed"] is True
+    assert base == original
+
+
+def test_p74_native_axis_never_passes_unchanged_reference(monkeypatch, tmp_path):
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}]},
+        "talentsString": "fixed", "rotation": {"priorityList": []},
+    }]}]}}
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock")
+    data = binary.parents[2] / "data"
+    data.mkdir()
+    (data / "items.jsonl").write_text("{}\n")
+    (data / "enchants.jsonl").write_text("{}\n")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
+    monkeypatch.setattr(gate, "_pinned_source_runtime", lambda *a, **kw: (
+        base, {"reference_dps": 728.19}, binary))
+    source = SimpleNamespace(pinned_rust_candidate_pool=lambda *a: (
+        {0: [10]}, {0: [None]},
+        {"unique_item_options": 1, "unique_enchant_options": 0}))
+    monkeypatch.setattr(gate, "_source_module", lambda path, *a: (
+        source if "p74_gear_search" in str(path) else
+        SimpleNamespace(native_source_control=lambda *a, **kw:
+                        (_ for _ in ()).throw(AssertionError(
+                            "unchanged reference must not be paid")))))
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert report["status"] == "FAIL"
+    assert report["reasons"] == ["P7_4_NO_NATIVE_PAID_CHANGED_GEAR_CANDIDATE"]
+    assert report["cold_unique_source_requests"] == 0
+    assert report["source_legal_cold_candidates_paid"] == 0
