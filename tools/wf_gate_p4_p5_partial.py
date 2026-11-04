@@ -147,7 +147,7 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                     receipt_path = Path(receipt_out)
                     receipt_path.parent.mkdir(parents=True, exist_ok=True)
                     receipt_path.write_text(json.dumps(
-                        cold, sort_keys=True, ensure_ascii=False) + "\\n",
+                        cold, sort_keys=True, ensure_ascii=False) + "\n",
                         encoding="utf-8")
                 report.update(cold)
                 report["status"] = "FAIL"
