@@ -1,0 +1,78 @@
+name: Work1 Priest L20 native cold P4-P5 no-record
+on:
+  push:
+    branches:
+      - work/work1-priest-l20-native-pin-20261104
+    paths:
+      - '.github/workflows/work1-priest-l20-cold-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  priest-cold:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact selected Rust pin
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing Forever bridge dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build selected native engine
+        run: |
+          set -euo pipefail
+          selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
+          actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
+          test "$selected" = "$actual"
+          echo "PRIEST_COLD_HEAD=$GITHUB_SHA RUST_ENGINE_PIN=$actual"
+          cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+      - name: One fresh 300s native paid cold P4/P5 producer, NO RECORD
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: integrations/mythicsim-rust/engine/target/debug/forever-engine
+          FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST: integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json
+          FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD: '1'
+          FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS: '100'
+          FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH: '1'
+          FOREVER_P4_P5_PRIEST_L20_COLD_RECEIPT_OUT: priest-l20-cold-receipts.json
+        run: |
+          set +e
+          python tools/wf_gate.py --class priest --level 20 --spec unrestricted --gate P4 --out priest-l20-cold-gate.json
+          gate_exit=$?
+          set -e
+          echo "NONCERTIFYING_GATE_EXIT=$gate_exit"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          gate = json.loads(Path("priest-l20-cold-gate.json").read_text())
+          receipts = json.loads(Path("priest-l20-cold-receipts.json").read_text())
+          print("PRIEST_NATIVE_COLD_REAL_RESULT", json.dumps({
+              "head": gate["class"], "gate_status": gate["status"],
+              "native_paid_before_30": receipts["native_cold_native_paid_before_30"],
+              "native_paid_after_30": receipts["native_cold_native_paid_after_30"],
+              "completed_routes_before_30": receipts["native_cold_completed_routes_before_30"],
+              "completed_routes_after_30": receipts["native_cold_completed_routes_after_30"],
+              "elapsed_wall_s": receipts["native_cold_search_wall_s"],
+              "reached_300": receipts["native_cold_300s_reached"],
+              "overrun": receipts["native_cold_300s_overrun"],
+              "snapshot_30_available": receipts["native_cold_snapshot_30"] is not None,
+              "final_300_available": receipts["native_cold_final_300"] is not None,
+          }, sort_keys=True), flush=True)
+          assert gate["status"] != "PASS", "No-record producer must not silently certify"
+          assert receipts["native_cold_attempted_distinct_builds"] > 0, "No genuine candidate attempted"
+          PY
+      - name: Preserve exact real-run native receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: priest-l20-native-cold-no-record
+          path: |
+            priest-l20-cold-gate.json
+            priest-l20-cold-receipts.json
+          if-no-files-found: warn
+          retention-days: 14
