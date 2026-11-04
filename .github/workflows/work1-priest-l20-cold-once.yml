@@ -50,7 +50,10 @@ jobs:
           import json
           from pathlib import Path
           gate = json.loads(Path("priest-l20-cold-gate.json").read_text())
-          receipts = json.loads(Path("priest-l20-cold-receipts.json").read_text())
+          receipt_file = Path("priest-l20-cold-receipts.json")
+          if not receipt_file.exists():
+              raise SystemExit("NATIVE_COLD_PRODUCER_ABORTED: " + repr(gate["results"]))
+          receipts = json.loads(receipt_file.read_text())
           print("PRIEST_NATIVE_COLD_REAL_RESULT", json.dumps({
               "head": gate["class"], "gate_status": gate["status"],
               "native_paid_before_30": receipts["native_cold_native_paid_before_30"],
