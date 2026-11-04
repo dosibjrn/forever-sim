@@ -23,7 +23,6 @@ def test_classic_proxy_target_curve_has_one_scenario_owner_and_legacy_identity_a
 def test_live_leveling_target_consumers_import_the_scenario_boundary():
     consumers = (
         "src/game/checkpoint_pipeline.py",
-        "src/game/data/forever/source_checkpoint_l0.py",
         "src/v2/generic_backend.py",
         "src/v2/source_legal_beam.py",
         "src/v2/source_multi_pull_joint.py",
