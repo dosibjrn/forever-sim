@@ -14,6 +14,10 @@ RETIRED_TOOLS = (
     # Retired GameIR-only cold 30s source benchmark; live cold gates use wf_gate.py.
     "tools/wf299_30s_acceptance.py",
     "tools/wf299_30s_worker.py",
+    # Historical Warrior L30 Python GameIR paid-gear runners; frozen reports remain.
+    "tools/wf368_warrior_l30_p3_paid_swaps.py",
+    "tools/wf370_warrior_l30_paid_bis_challenge.py",
+    "tools/wf370_warrior_l30_paid_aware_top5.py",
     "tools/wf261_stateful_benchmark.py",
     "tools/wf263_l1_value_benchmark.py",
     "tools/wf276_resource_prefix_benchmark.py",
