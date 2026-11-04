@@ -218,9 +218,11 @@ fi
 # The canonical RNG contract is typed and required at the native boundary.
 # Never publish an environment-selected stochastic optimizer fallback.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
-# Final idempotent pass normalizes src/lib.rs after all preceding source ports.
+# Final idempotent pass normalizes the talent API before the bounded runtime
+# iteration option is added to the public sim CLI.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_talent_layout_api.py" "$PWD"
-git add src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_sim_iterations.py" "$PWD"
+git add README.md src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
   src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs
 git add tests/
 if ! git diff --cached --quiet; then
