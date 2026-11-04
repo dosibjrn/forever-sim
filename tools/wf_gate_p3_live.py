@@ -85,6 +85,28 @@ def native_item_options_required(
     )
 
 
+def _p3_stat_witness_priority(ir, policy) -> tuple[str, ...]:
+    """Order paid stat probes by their causal proximity to the selected policy.
+
+    The P3 evaluation budget is shared and hard-capped. Alphabetically probing
+    zero-weight axes spent Mage's remaining budget on Agility/Attack Power
+    before the selected caster policy's Spell Power/Intellect witnesses.
+    This is scheduling only: every accepted weight still requires a real paid
+    before/after CombatRuntime witness; no value or applicability is inferred.
+    """
+    from src.game.checkpoint_p3_smoke import policy_uses_weapon_damage
+
+    if policy_uses_weapon_damage(ir, policy):
+        return (
+            "attack_power", "strength", "agility", "hit", "crit",
+            "spell_power", "intellect", "spirit", "mp5",
+        )
+    return (
+        "spell_power", "intellect", "spirit", "mp5", "hit", "crit",
+        "agility", "attack_power", "strength",
+    )
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Priest/Mage L20 and unrestricted Mage L30 P3 use the native
     # ItemSparse provider; all other profiles/levels retain their existing path.
@@ -177,9 +199,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # this, repeated baseline runs consume the fixed P3 budget before later
     # required axes (such as Spirit) receive their own paid perturbation.
     source_policy_baseline_cache = {}
-    for blocker in item_check["blockers"]:
-        if not blocker.startswith("NONPOSITIVE_RELEVANT_WEIGHT:"):
-            continue
+    witness_priority = _p3_stat_witness_priority(ir, policy)
+    witness_rank = {axis: index for index, axis in enumerate(witness_priority)}
+    witness_blockers = sorted(
+        (blocker for blocker in item_check["blockers"]
+         if blocker.startswith("NONPOSITIVE_RELEVANT_WEIGHT:")),
+        key=lambda blocker: (
+            witness_rank.get(blocker.split(":", 1)[1], len(witness_rank)),
+            blocker.split(":", 1)[1]))
+    for blocker in witness_blockers:
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
             continue

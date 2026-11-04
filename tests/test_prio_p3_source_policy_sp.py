@@ -191,7 +191,7 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     }
     monkeypatch.setattr(budgeted, "run_source_budgeted_gear",
                         lambda **kwargs: search_result)
-    winner_policy = SimpleNamespace(id="paid-search-winner", provenance={})
+    winner_policy = SimpleNamespace(id="paid-search-winner", provenance={}, rules=())
     monkeypatch.setattr(stateful, "_make_policy",
                         lambda *args, **kwargs: winner_policy)
     monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "native-test-binary")
@@ -266,3 +266,85 @@ def test_source_policy_witness_uses_last_paid_probe_for_cached_later_policy(monk
     assert result["policy_id"] == "cached-second"
     assert result["paid_evaluations"] == 1
     assert calls == [("cached-second", ("spell_power", 5.0))]
+
+
+def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
+    """A hard remaining budget must reach caster damage/resource axes first."""
+    from types import SimpleNamespace
+    import src.game.checkpoint_p3_smoke as p3_smoke
+    import src.game.data.forever.registry as registry
+    import src.v2.source_budgeted_gear as budgeted
+    import src.v2.source_stateful_budgeted as stateful
+    import tools.wf_gate_p3_live as p3
+
+    ir = SimpleNamespace(
+        actor=SimpleNamespace(metadata={"class_key": "mage", "level": 30}),
+        policies=(), actions=())
+    monkeypatch.setattr(registry, "build_game_ir_slice",
+                        lambda **kwargs: ir)
+    monkeypatch.setattr(
+        p3, "_source_profile_build_ir",
+        lambda root, source_ir, class_key, level, spec:
+            (source_ir, {"profile": spec, "full_point_source_allocation": None}))
+    record = {
+        "fallback": "fireball", "prefix": ["mage:fireball"],
+        "score_s_per_mob": 12.5, "guarded_action": None,
+        "guarded_conditions": [],
+    }
+    search_result = {
+        "stages": [{"stage": "source_naked", "winner": record}],
+        "sensitivity_history": [{
+            "stage": "source_naked",
+            "values": {
+                "agility": 0.0, "attack_power": 0.0, "intellect": 0.0,
+                "mp5": 0.0, "spell_power": 0.0, "spirit": 0.0,
+            },
+        }],
+        "attempted": 40, "evaluated": 40, "status": "EVALUATED_BOUNDED",
+        "source_context_sha256": "test-source-context",
+    }
+    monkeypatch.setattr(budgeted, "run_source_budgeted_gear",
+                        lambda **kwargs: search_result)
+    winner_policy = SimpleNamespace(
+        id="paid-search-winner", provenance={}, rules=())
+    monkeypatch.setattr(stateful, "_make_policy",
+                        lambda *args, **kwargs: winner_policy)
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "native-test-binary")
+
+    blockers = [
+        "NONPOSITIVE_RELEVANT_WEIGHT:agility",
+        "NONPOSITIVE_RELEVANT_WEIGHT:attack_power",
+        "NONPOSITIVE_RELEVANT_WEIGHT:intellect",
+        "NONPOSITIVE_RELEVANT_WEIGHT:mp5",
+        "NONPOSITIVE_RELEVANT_WEIGHT:spell_power",
+        "NONPOSITIVE_RELEVANT_WEIGHT:spirit",
+    ]
+    monkeypatch.setattr(p3_smoke, "fast_p3_smoke_for_policy", lambda **kwargs: {
+        "blockers": blockers,
+        "legal_item_count": 1, "tested_item_count": 1, "slot_count": 1,
+        "tested_stat_assertions": 6, "verified_stat_assertions": 0,
+        "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "native_item_options_status": "partial_level_unknown",
+        "native_unverified_candidate_count": 2239,
+        "native_item_options_source": "mythicsim:test-ItemSparse.RequiredLevel",
+    })
+
+    witness_calls = []
+
+    def witness(_ir, **kwargs):
+        witness_calls.append((kwargs["stat"], kwargs["max_evaluations"]))
+        return {
+            "status": "NO_POSITIVE_SOURCE_POLICY_WITNESS",
+            "paid_evaluations": kwargs["max_evaluations"],
+            "stat": kwargs["stat"],
+            "attempted_policies": [],
+        }
+
+    monkeypatch.setattr(budgeted, "paid_source_policy_stat_witness", witness)
+    result = p3.run_live(ROOT, "mage", 30, spec="unrestricted")
+
+    # Four evaluations remain. The old alphabetical order spent them on
+    # Agility; the selected caster policy must test Spell Power first.
+    assert witness_calls == [("spell_power", 4)]
+    assert result["real_source_search_evaluated"] == 44
+    assert result["status"] == "FAIL"
