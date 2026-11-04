@@ -2614,6 +2614,9 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                 # exception or timeout is still paid work.
                                 evaluated+=1;any_attempt=True
                                 talent_probes+=1;policy_probes+=1
+                                trace['screen_started_elapsed_s'] = (
+                                    monotonic()-search_started_at
+                                    if search_started_at is not None else None)
                                 result=_quick_joint_evaluation(fresh,level=level,mobs=screen_mobs,
                                     backend=quick_backend,
                                     timeout_s=min(per_candidate_wall_s,max(.01,deadline-monotonic())),
@@ -2713,6 +2716,9 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                         seen.add(key)
                         evaluated+=1;any_attempt=True
                         gear_probes+=1;policy_probes+=1
+                        trace['screen_started_elapsed_s'] = (
+                            monotonic()-search_started_at
+                            if search_started_at is not None else None)
                         result=_quick_joint_evaluation(fresh,level=level,mobs=screen_mobs,
                             backend=quick_backend,
                             timeout_s=min(per_candidate_wall_s,max(.01,deadline-monotonic())),
@@ -3161,6 +3167,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                 remaining=max(.01,(active_deadline if screen_then_finalists
                                     else t0+max_cpu_s)-monotonic())
                 row['screen_invoked']=True
+                row['screen_started_elapsed_s']=monotonic()-t0
                 screen=_quick_joint_evaluation(candidate,level=level,
                     backend=screen_evaluator_backend,
                     mobs=screen_mobs,timeout_s=min(per_candidate_wall_s,remaining),
@@ -3330,8 +3337,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             'unique_full_builds':_unique_paid_full_builds(boundary_rows),
             'post_boundary_paid_evaluations':sum(
                 bool(row.get('screen_invoked')) for row in attempted
-                if type(row.get('screen_finished_elapsed_s')) in (int,float)
-                and row['screen_finished_elapsed_s'] > snapshot_at_s),
+                if type(row.get('screen_started_elapsed_s')) in (int,float)
+                and row['screen_started_elapsed_s'] >= snapshot_at_s),
         }
     # Three phase times partition one shared wall budget without double counting.
     finalist_phase_wall_s=monotonic()-t0-screen_phase_wall_s-qualification_phase_wall_s
