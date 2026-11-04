@@ -1,7 +1,8 @@
 """Keep unreferenced one-off GameIR diagnostics out of the live CLI surface.
 
-These historical probes had no production, test, workflow, or documentation
-callers. Their useful implementation history remains available in Git.
+The retired tool modules had no direct production, test, workflow, or
+documentation callers. Separate source/runtime regression tests remain.
+Their implementation history is retained in Git.
 """
 from pathlib import Path
 
