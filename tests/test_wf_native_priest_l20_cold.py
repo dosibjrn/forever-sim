@@ -6,7 +6,7 @@ import json
 import pytest
 
 from tools.wf_native_priest_l20_cold import (
-    _source_native_builds, run_native_priest_l20_cold,
+    _source_native_builds, native_cold_gate_verdicts, run_native_priest_l20_cold,
 )
 
 
@@ -201,8 +201,8 @@ def test_cold_opt_in_uses_one_real_producer_and_does_not_grant_gate_pass(
     assert result["status"] == "FAIL"
     assert result["paid_candidates"] == 4
     assert result["screen_complete_candidates"] == 3
-    assert result["reasons"] == [
-        "P4_P5_NATIVE_COLD_PRODUCER_EXECUTED_GATE_NOT_ACCEPTED"]
+    assert "P4_P5_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED" in result["reasons"]
+    assert "P4_FROZEN_WINNER_REAL_100MOB_RECEIPT_INCOMPLETE" in result["reasons"]
 
 
 def test_native_equipped_builds_precede_naked_baseline():
@@ -437,7 +437,7 @@ def test_gate_cold_source_directory_forwards_real_source_requests(
         "priest", 20, "unrestricted")
     assert forwarded == [("/native", str(source_folder), _options())]
     assert report["status"] == "FAIL"
-    assert report["reasons"] == ["P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED"]
+    assert "P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED" in report["reasons"]
 
 
 
@@ -488,3 +488,89 @@ def test_cold_preserves_distinct_actual_native_apl_cast_identities(tmp_path):
     assert receipt["native_cold_30s_paid_selection"]["source_build"] == paid[1]
     assert len(world) == 1
     assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_native_cold_accepts_genuine_window_receipts_not_hardcoded_fail():
+    # Test only Forever's receipt classification, never Rust spell mechanics.
+    build = _source()
+    digest = hashlib.sha256(json.dumps(
+        build, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    world = {
+        "native_2d_persistent_actor_verified": True,
+        "native_2d_persistent_world_ack_verified": True,
+        "native_2d_persistent_paid_recovery": True,
+        "native_2d_persistent_world_targets_killed": 100,
+        "native_2d_persistent_source_action_events": 100,
+        "native_2d_persistent_source_action_counts_by_target":
+            [{"native:585": 1} for _ in range(100)],
+        "native_2d_persistent_elapsed_seconds": 4000.0,
+    }
+    def selected(elapsed):
+        return {"source_request_sha256": digest, "source_build": build,
+                "paid_completed_elapsed_s": elapsed}
+    def winner():
+        return {**selected(4.0), "route_s_per_mob": 40.0,
+                "real_100mob_receipt": copy.deepcopy(world)}
+    cold = {
+        "native_cold_300s_reached": True,
+        "native_cold_30s_paid_selection": selected(4.0),
+        "native_cold_300s_paid_selection": selected(32.0),
+        "native_cold_snapshot_30": winner(),
+        "native_cold_final_300": winner(),
+        "native_cold_native_paid_after_30": 2,
+        "native_cold_paid_world_route_builds": 3,
+        # Proven by a source-authored changed talent/APL request with
+        # positive actual native ActionID casts, not a guessed rule.
+        "native_cold_talent_action_witnesses": [{
+            "source_request_sha256": "other-real-paid-candidate",
+            "source_talents_changed": True,
+            "native_action_id": '{"spellId":15407}',
+            "native_casts": 8,
+        }],
+    }
+    verdicts = native_cold_gate_verdicts(cold)
+    assert verdicts["P4"] == {"status": "PASS", "reasons": []}
+    assert verdicts["P5"] == {"status": "PASS", "reasons": []}
+    # P4 cannot borrow the later winner's 100-mob receipt.
+    changed = copy.deepcopy(cold)
+    changed["native_cold_snapshot_30"]["real_100mob_receipt"][
+        "native_2d_persistent_world_targets_killed"] = 99
+    assert native_cold_gate_verdicts(changed)["P4"]["status"] == "FAIL"
+    assert native_cold_gate_verdicts(changed)["P5"]["status"] == "PASS"
+    # A proposed, never-executed unlock has no gate credit.
+    changed = copy.deepcopy(cold)
+    changed["native_cold_talent_action_witnesses"][0]["native_casts"] = 0
+    assert all(v["status"] == "FAIL"
+               for v in native_cold_gate_verdicts(changed).values())
+    # Post-30 continuation and distinct real paid world routes matter for P5.
+    changed = copy.deepcopy(cold)
+    changed["native_cold_native_paid_after_30"] = 0
+    changed["native_cold_paid_world_route_builds"] = 1
+    assert native_cold_gate_verdicts(changed)["P4"]["status"] == "PASS"
+    assert native_cold_gate_verdicts(changed)["P5"]["status"] == "FAIL"
+    changed = copy.deepcopy(cold)
+    changed["native_cold_300s_reached"] = False
+    assert all(v["status"] == "FAIL"
+               for v in native_cold_gate_verdicts(changed).values())
+
+
+def test_native_cold_records_only_executed_changed_talent_apl_witness(tmp_path):
+    folder = tmp_path / "talent-policy-variants"
+    folder.mkdir()
+    baseline = _source()
+    changed = copy.deepcopy(baseline)
+    actor = changed["raid"]["parties"][0]["players"][0]
+    actor["talentsString"] = "changed-native-judged-talents"
+    actor["rotation"]["priorityList"].insert(
+        0, {"action": {"castSpell": {"spellId": {"spellId": 15407}}}})
+    (folder / "01-baseline.json").write_text(json.dumps(baseline))
+    (folder / "02-talent.json").write_text(json.dumps(changed))
+    receipt, paid, _ = _runner(
+        tmp_path, budget=300.0, snapshot=30.0, max_attempts=2,
+        options=[], source_request=folder)
+    assert len(paid) == 2
+    witnesses = receipt["native_cold_talent_action_witnesses"]
+    assert len(witnesses) == 1
+    assert witnesses[0]["native_action_id"] == '{"spellId":15407}'
+    assert witnesses[0]["native_casts"] == 1
+    assert witnesses[0]["source_talents_changed"] is True
