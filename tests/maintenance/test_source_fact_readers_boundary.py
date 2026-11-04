@@ -193,7 +193,7 @@ def test_repair_planner_keeps_staged_db_and_fail_closed_contract(tmp_path):
 
 
 def test_capture_ingesters_import_without_loading_legacy_gameir():
-    """The six source-only ingestion CLIs need the SQLite path, not GameIR."""
+    """The remaining source-only ingestion CLIs need SQLite, not GameIR."""
     code = """
 import importlib
 import sys
@@ -205,8 +205,6 @@ names = (
     'wf250_ingest_source_capture',
     'wf252_ingest_companions',
     'wf253_ingest_seal',
-    'wf254_ingest_paladin_talents',
-    'wf257_ingest_flash_recovery',
 )
 for name in names:
     module = importlib.import_module('tools.' + name)
@@ -298,7 +296,6 @@ operations = {
     'wf251_ingest_two_classes': 'ingest',
     'wf255_ingest_command': 'ingest',
     'wf256_ingest_seals': 'ingest',
-    'wf257_ingest_paladin_corridor': 'ingest',
 }
 for name, function_name in operations.items():
     module = importlib.import_module('tools.' + name)
