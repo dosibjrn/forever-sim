@@ -185,9 +185,24 @@ def test_source_budgeted_search_measures_naked_policy_without_named_gear_roles(m
         class_key='mage', level=20, ir_slice=ir,
         max_evaluations=3, initial_search=1, search_per_gear=1,
         max_gear_states=1, probe_stats=('intellect',),
-        probe_deltas=(5.0,))
+        probe_deltas=(5.0,),
+        allow_naked_source_without_named_gear_roles=True)
     assert result['status'] == 'EVALUATED_NAKED_ONLY_NO_GEAR_ROLES'
     assert result['sensitivity_history'][0]['values']['intellect'] == 1.0
     assert result['named_gear_states_evaluated'] == 0
     assert result['gear_role_search_skipped'] is True
     assert result['winner']['stage'] == 'source_naked'
+
+
+def test_source_budgeted_search_still_requires_named_roles_without_p3_opt_in(monkeypatch):
+    import pytest
+    import src.v2.source_budgeted_gear as budgeted
+
+    ir = build_mage_source_slice(20)
+    assert ir is not None
+    monkeypatch.setattr(budgeted, 'available_gear_roles', lambda _class_key: ())
+    with pytest.raises(ValueError, match='no canonical named gear role for requested class'):
+        budgeted.run_source_budgeted_gear(
+            class_key='mage', level=20, ir_slice=ir,
+            max_evaluations=3, initial_search=1, search_per_gear=1,
+            max_gear_states=1)
