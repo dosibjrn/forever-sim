@@ -7,7 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from tools.wf_native_priest_l20_paid import score_source_priest_l20
+from tools.wf_native_priest_l20_paid import (
+    score_source_priest_l20,
+    score_source_priest_l20_candidates,
+)
 
 
 def _request():
