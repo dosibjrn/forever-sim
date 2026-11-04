@@ -821,6 +821,176 @@ class NativeObjectiveDonorProbeContracts(unittest.TestCase):
             self.assertTrue(witnesses[talent])
 
 
+class NativeJointExecuteObjectiveProbeContracts(unittest.TestCase):
+    @staticmethod
+    def cast(spell_id=25903):
+        return {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": spell_id},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+
+    def test_hps_execute_probes_talents_before_building_candidate_domain(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassPaladin"
+        baseline_player["talentsString"] = "baseline-build"
+        source_cast = self.cast()
+        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(source_cast)]
+
+        valid_donor = copy.deepcopy(baseline)
+        valid_donor["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            "native-valid-build"
+        )
+        refused_donor = copy.deepcopy(baseline)
+        refused_donor["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            "native-refused-build"
+        )
+        inventory = [
+            ({
+                "profile_id": "paladin/holy",
+                "source_sha256": "a" * 64,
+                "source_type": "PINNED_SOURCE_FIXTURE",
+                "source_path": "profiles/paladin/holy.request.json",
+            }, baseline),
+            ({
+                "profile_id": "paladin/protection",
+                "source_sha256": "b" * 64,
+                "source_type": "PINNED_SOURCE_FIXTURE",
+                "source_path": "fixtures/paladin/protection.request.json",
+            }, valid_donor),
+            ({
+                "profile_id": "paladin/retribution",
+                "source_sha256": "c" * 64,
+                "source_type": "PINNED_SOURCE_FIXTURE",
+                "source_path": "fixtures/paladin/retribution.request.json",
+            }, refused_donor),
+        ]
+        witness = copy.deepcopy(source_cast["action"]["castSpell"])
+        probe_receipts = [
+            {
+                "status": "VALID",
+                "talentsString": "native-valid-build",
+                "positive_witnesses": [copy.deepcopy(witness)],
+            },
+            {
+                "status": "INVALID",
+                "talentsString": "native-refused-build",
+                "error": "native refusal: talent rank exceeds current rules",
+            },
+        ]
+        witnesses_by_talent = {
+            "baseline-build": [copy.deepcopy(witness)],
+            "native-valid-build": [copy.deepcopy(witness)],
+        }
+        source_apls_by_talent = {
+            "native-valid-build": [[copy.deepcopy(source_cast)]],
+        }
+        probe_context = {}
+
+        def fake_probe(binary, reference, source_records, baseline_witnesses, **kwargs):
+            probe_context["source_records"] = copy.deepcopy(source_records)
+            probe_context["objective"] = kwargs["objective"]
+            probe_context["baseline_witnesses"] = copy.deepcopy(baseline_witnesses)
+            return (
+                copy.deepcopy(witnesses_by_talent),
+                copy.deepcopy(probe_receipts),
+                copy.deepcopy(source_apls_by_talent),
+            )
+
+        def fake_native_score_request(
+            binary, candidate, iterations, seed, rng_mode, deadline, *, objective
+        ):
+            effective = native_payload(candidate, iterations, seed)
+            raw = {}
+            return ({
+                "score": 100.0,
+                "effective_request_sha256": fingerprint(effective),
+                "raw_response_sha256": fingerprint(raw),
+                "rng_mode": rng_mode,
+                "iterations": iterations,
+                "seed": seed,
+                "native_duration_s": 0.01,
+            }, raw)
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.reference = reference
+                self.mutable_indices = [0]
+
+            def validate(self, request_value):
+                return None
+
+            def mutate_one(self, rng):
+                return copy.deepcopy(self.reference), {}
+
+            def mutate_from(self, request_value, rng):
+                return copy.deepcopy(request_value), {}
+
+        def fake_search_joint(**kwargs):
+            return {
+                "status": "BLOCKED_NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE",
+                "paid_candidates": 0,
+                "engine_errors": 0,
+                "unscored_candidates": 0,
+                "native_unscored_samples": [],
+                "native_refusals": 0,
+                "native_invalid": 0,
+                "native_unsupported": 0,
+                "native_refusal_samples": [],
+                "legal_rejections": 0,
+                "elapsed_s": 0.0,
+                "best_score": None,
+                "best_candidate": None,
+            }
+
+        with tempfile.TemporaryDirectory() as temporary:
+            with (
+                patch.object(
+                    joint, "native_score_request",
+                    side_effect=fake_native_score_request,
+                ),
+                patch.object(
+                    joint, "_native_positive_source_casts",
+                    return_value=[copy.deepcopy(witness)],
+                ),
+                patch.object(
+                    joint, "_probe_native_objective_donor_witnesses",
+                    side_effect=fake_probe,
+                ) as probe,
+                patch.object(joint, "NativeGearAdapter", FakeGear),
+                patch.object(joint, "search_joint", side_effect=fake_search_joint),
+            ):
+                row = joint.execute(
+                    "paladin/holy",
+                    inventory,
+                    binary=Path("forever-engine"),
+                    engine_src=Path("."),
+                    seconds=5.0,
+                    iterations=40,
+                    seed=731,
+                    outdir=Path(temporary),
+                    donor_fixtures=[],
+                )
+
+        self.assertEqual(1, probe.call_count)
+        self.assertEqual("HPS", probe_context["objective"])
+        self.assertEqual(3, len(probe_context["source_records"]))
+        self.assertEqual([witness], probe_context["baseline_witnesses"])
+        self.assertEqual(2, row["native_donor_probe_attempts"])
+        self.assertEqual(1, row["native_donor_probe_paid"])
+        self.assertEqual(1, row["native_donor_probe_positive_builds"])
+        selected = row["native_positive_objective_witnesses_by_talentsString"]
+        self.assertEqual(
+            {"baseline-build", "native-valid-build"},
+            set(selected),
+        )
+        self.assertNotIn("native-refused-build", row["talent_builds"])
+
+
 class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
     @staticmethod
     def cast(spell_id):
