@@ -106,7 +106,8 @@ def apply_native_player_context(ir, context: dict):
                   "base_stats_are_zero_proxy": False,
                   "race_key": context["race"],
                   "native_player_context_id": identity,
-                  "native_player_context_kind": context["context_kind"]})
+                  "native_player_context_kind": context["context_kind"],
+                  "weapon_speed_s": float(context["weapon"]["weapon_speed_s"])})
     resources = []
     for resource in ir.resources:
         key = {"health": "max_health", "mana": "max_mana"}.get(resource.id)
