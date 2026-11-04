@@ -27,6 +27,9 @@ RETIRED_TOOLS = (
     # WF359 one-off P3 rebase depended on the retired staged P2 SQLite database.
     "tools/wf359_druid_l30_p3_rebase.py",
     # Historical GameIR/SQLite continuity runner; no active callers.
+    # WF341 provisional-rating 100-mob probes were used only by retired WF342 reporters.
+    "tools/wf341_rating_probe.py",
+    "tools/wf341_defense_check.py",
     "tools/wf300_continuous_source_policy_benchmark.py",
     # One-off Python talent-source transcription; frozen stage retained.
     "tools/wf350_build_source_evidence.py",
@@ -99,6 +102,8 @@ RETIRED_IMPORT_NAMES = (
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
     "wf359_druid_l30_p3_rebase",
+    "wf341_rating_probe",
+    "wf341_defense_check",
     "wf300_continuous_source_policy_benchmark",
     "wf350_build_source_evidence",
     "wf399_qualification_probe",
