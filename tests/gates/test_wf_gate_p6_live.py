@@ -149,6 +149,7 @@ def test_priest_p6_uses_native_shared_cold_receipt_not_legacy_gameir(
     report = p6.run_live(ROOT, "priest", 20, spec="unrestricted")
     assert report["status"] == "PASS"
     assert report["source_replay_T30_T300"] == 1.0
+    assert report["source_replay_300s_nonregression"] is True
     assert report["runtime_proof"]["run_id"] == "987654"
     assert report["runtime_proof"]["engine_revision"].endswith(
         hashlib.sha256(binary.read_bytes()).hexdigest())
