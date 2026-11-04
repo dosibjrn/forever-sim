@@ -135,6 +135,23 @@ def test_native_and_live_world_use_identical_iteration_limited_request(
     assert request.read_text() == json.dumps(original)
 
 
+def test_finite_source_world_restores_original_target_health_each_iteration():
+    """A lethal fight cannot carry its depleted HP into the next stochastic fight."""
+    producer = _producer()
+    first, _, _ = producer._fresh_source_world(
+        distance=15., target_health=127393., source_in_front=False)
+    assert first.targets["m1"].health == 127393.
+    first.targets["m1"].apply_damage(127393.)
+    assert not first.targets["m1"].alive
+
+    second, _, _ = producer._fresh_source_world(
+        distance=15., target_health=127393., source_in_front=False)
+    assert second is not first
+    assert second.targets["m1"].alive
+    assert second.targets["m1"].health == second.targets["m1"].max_health == 127393.
+    assert first.targets["m1"].health == 0.
+
+
 def test_invalid_rng_mode_fails_before_source_execution(tmp_path):
     producer = _producer()
     with pytest.raises(ValueError, match="RNG_MODE_INVALID"):
