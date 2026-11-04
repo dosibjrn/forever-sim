@@ -5,6 +5,14 @@ on:
     paths:
       - .gitmodules
       - integrations/mythicsim-rust/engine
+      - .github/workflows/m1-on-demand-record.yml
+      - .github/workflows/rust-submodule-verify.yml
+      - src/game/checkpoint_p3_smoke.py
+      - src/game/native_p3_item_options.py
+      - tests/gates/test_wf_gate_class_cli.py
+      - tests/test_native_p3_item_options.py
+      - tools/wf_gate.py
+      - tools/wf_gate_p3_live.py
 
 permissions:
   contents: read
