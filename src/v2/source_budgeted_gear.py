@@ -581,7 +581,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    opening_action_ids: tuple[str, ...] = (),
                                    preferred_policy=None,
                                    baseline_record: dict | None = None,
-                                   allow_paid_winner_after_nonpositive: bool = False) -> dict:
+                                   allow_paid_winner_after_nonpositive: bool = False,
+                                   prefer_policy_breadth: bool = False) -> dict:
     """Find a measured beneficial stat delta on an executable source policy.
 
     Keep source-IR policies first. On the Mage L30 native-item path, use the
@@ -593,6 +594,12 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     result. Reuse the exact already-paid winner baseline; do not spend another
     baseline evaluation. Every perturbation still runs through the real
     executor; no synthetic policy, epsilon, or inferred stat weight is used.
+
+    When the opted-in paid scorer has both a source-authored policy and an
+    already-paid native-action winner, try the largest real item delta on
+    each policy before spending a second delta on the first. This spends a
+    bounded budget on distinct executable policies and leaves the remaining
+    paid calls available for other failed P3 stat assertions.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -657,6 +664,12 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             # baseline has been established.
             continue
         policy_probe_deltas = tuple(probe_deltas)
+        if (policy_source == 'source_ir_policy' and prefer_policy_breadth
+                and allow_paid_winner_after_nonpositive
+                and preferred_score is not None):
+            # Source-native whole-build policy breadth beats a second delta
+            # on the same policy when only a few paid calls remain.
+            policy_probe_deltas = tuple(probe_deltas[:1])
         if (policy_source == 'paid_search_winner'
                 and source_policy_baseline_established
                 and allow_paid_winner_after_nonpositive):
