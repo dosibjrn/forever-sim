@@ -12,11 +12,12 @@ permissions:
 jobs:
   verify-selected-engine:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          lfs: true
       - name: Require exact selected engine pin
         shell: bash
         run: |
@@ -27,6 +28,63 @@ jobs:
           test -n "$expected" && test "$expected" = "$actual"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Set up Python for the live P3 provider
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install the existing P3 source-search dependency
+        run: python -m pip install --disable-pip-version-check "beautifulsoup4==4.13.4"
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
+      - name: Run no-record Priest and Mage L20 P3 with native item options
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/native-p3-no-record"
+          for class in priest mage; do
+            report="$RUNNER_TEMP/native-p3-no-record/$class-l20-p3.json"
+            rc=0
+            timeout 600s python tools/wf_gate.py --class "$class" --level 20 \
+              --spec unrestricted --gate P3 --out "$report" || rc=$?
+            python - "$report" "$class" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text())
+          class_key, rc = sys.argv[2], int(sys.argv[3])
+          assert report["class"] == class_key and report["level"] == 20
+          assert report["spec"] == "unrestricted" and report["gate"] == "P3"
+          assert report["status"] == "FAIL" and rc == 1, (report, rc)
+          assert len(report["results"]) == 1
+          row = report["results"][0]
+          assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+          assert row["native_item_options_status"] == "partial_level_unknown"
+          assert type(row["native_unverified_candidate_count"]) is int
+          assert row["native_unverified_candidate_count"] > 0
+          assert row["native_item_options_source"]
+          assert row["real_catalogue_legal_items"] > 0
+          assert row["real_catalogue_slots_scored"] > 0
+          assert row["real_catalogue_top5_items_scored"] > 0
+          assert row["real_source_search_evaluated"] > 0
+          assert row["reachability_count"] > 0
+          assert any(reason.startswith("NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:")
+                     for reason in row["reasons"])
+          assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row["reasons"]
+          print("NO_RECORD_NATIVE_P3_MEASURED", class_key,
+                "known_items", row["real_catalogue_legal_items"],
+                "top5_scored", row["real_catalogue_top5_items_scored"],
+                "reachability", row["reachability_count"],
+                "unverified", row["native_unverified_candidate_count"], flush=True)
+          PY
+          done
+      - name: Upload no-record native P3 reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-p3-no-record-${{ github.sha }}
+          path: ${{ runner.temp }}/native-p3-no-record/*.json
+          if-no-files-found: warn
+          retention-days: 30

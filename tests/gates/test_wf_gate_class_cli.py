@@ -86,3 +86,32 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
     assert all(len(message) == len("SOURCE_REJECT_") + 300 for message in receipt["source_candidate_failures"])
     assert all(len(message) == 180 for message in receipt["balanced_finalist_failures"])
     assert receipt["status"] == "FAIL"
+
+
+def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, capsys):
+    report = {
+        "status": "FAIL",
+        "reasons": ["NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:2267"],
+        "item_options_source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "native_item_options_status": "partial_level_unknown",
+        "native_unverified_candidate_count": 2267,
+        "native_item_options_source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+        "real_catalogue_legal_items": 1314,
+        "real_catalogue_slots_scored": 16,
+        "real_catalogue_top5_items_scored": 42,
+        "real_source_search_evaluated": 44,
+        "reachability_count": 12,
+        "pass_count": 0,
+    }
+    monkeypatch.setattr(mod, "_run_live_gate", lambda *args, **kwargs: report)
+    assert mod.main(["--class", "priest", "--level", "20", "--spec", "unrestricted",
+                     "--gate", "P3"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    row = result["results"][0]
+    assert result["status"] == "FAIL"
+    assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    assert row["native_item_options_status"] == "partial_level_unknown"
+    assert row["native_unverified_candidate_count"] == 2267
+    assert row["native_item_options_source"] == report["native_item_options_source"]
+    assert row["real_catalogue_legal_items"] == 1314
+    assert row["real_catalogue_top5_items_scored"] == 42
