@@ -658,6 +658,10 @@ def main(argv=None) -> int:
                         "winner_live_dps", "winner_screen_dps",
                         "paid_stochastic_finalists",
                         "paid_stochastic_confirmed_finalists",
+                        "paid_balanced_finalists",
+                        "paid_balanced_confirmed_finalists",
+                        "paid_balanced_deep_confirmed_finalists",
+                        "balanced_finalist_failure_count",
                         "source_legal_cold_candidates_paid",
                         "native_world_scored_candidates_paid",
                         "native_invalid_candidates",
@@ -684,7 +688,8 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
-            for key in ("native_refusal_samples", "native_unscored_samples"):
+            for key in ("native_refusal_samples", "native_unscored_samples",
+                        "balanced_finalist_failures"):
                 value = report.get(key)
                 if isinstance(value, list):
                     record[key] = value[:4]
