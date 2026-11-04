@@ -166,12 +166,12 @@ def test_feral_rejected_native_source_is_not_a_stochastic_dps_failure(tmp_path, 
     provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
     provider.parent.mkdir(parents=True)
     provider.write_text(
-        "class NativeSourceRefusal(RuntimeError):\\n"
-        "    def __init__(self):\\n"
-        "        self.code = 'talents'\\n"
-        "        self.reason = 'Predatory Discipline has 1 rank, the string gives 3'\\n"
-        "def native_source_control(*args, **kwargs):\\n"
-        "    raise NativeSourceRefusal()\\n"
+        "class NativeSourceRefusal(RuntimeError):\n"
+        "    def __init__(self):\n"
+        "        self.code = 'talents'\n"
+        "        self.reason = 'Predatory Discipline has 1 rank, the string gives 3'\n"
+        "def native_source_control(*args, **kwargs):\n"
+        "    raise NativeSourceRefusal()\n"
     )
     result = gate.run_live(tmp_path, "druid", 60, spec="feral")
     assert result["status"] == "BLOCKED"
