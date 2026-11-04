@@ -292,8 +292,14 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     module = importlib.util.module_from_spec(module_spec)
     try:
         module_spec.loader.exec_module(module)
+        # The saved Feral string uses the original Go/proto talent order.
+        # The selected Rust binary already implements that source-owned parser
+        # and the corresponding pre-hotfix mechanics via --go-rules. Do not
+        # translate talent digits, mutate the request, or guess talent ranks.
+        native_options = {"go_rules": True} if feral else {}
         native = module.native_source_control(
-            binary, request, run_iterations, rng_mode="stochastic")
+            binary, request, run_iterations, rng_mode="stochastic",
+            **native_options)
     except (AssertionError, KeyError, TypeError, ValueError, OSError,
             RuntimeError, subprocess.SubprocessError) as exc:
         if isinstance(exc, getattr(module, "NativeSourceRefusal", ())):
@@ -304,6 +310,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     "native_refusal_code": exc.code,
                     "native_refusal_reason": exc.reason,
                     "native_source_revision": selected_rust,
+                    "native_rules": "go_reference" if feral else "forever",
                     "source_request_raw_sha256": raw_sha}
         return {"status": "FAIL",
                 "reasons": ["P7_1_NATIVE_STOCHASTIC_EXECUTION_FAILED"],
@@ -326,6 +333,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
         "native_dps": float(score),
         "native_source_revision": selected_rust,
+        "native_rules": "go_reference" if feral else "forever",
         "source_request_raw_sha256": raw_sha,
         "saved_reference_dps": reference,
         "required_dps": p7_required_dps("P7.1", reference),

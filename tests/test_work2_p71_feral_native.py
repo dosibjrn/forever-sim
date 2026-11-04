@@ -59,8 +59,9 @@ def test_feral_native_stochastic_forwarding_and_99_percent_floor(
     provider.parent.mkdir(parents=True)
     score = gate.FERAL_REFERENCE_DPS * dps_factor
     provider.write_text(
-        "def native_source_control(binary, request, iterations, *, rng_mode):\n"
+        "def native_source_control(binary, request, iterations, *, rng_mode, go_rules=False):\n"
         "    assert rng_mode == 'stochastic'\n"
+        "    assert go_rules is True\n"
         "    assert request.name == 'saved_811_request.json'\n"
         "    assert iterations == 1000\n"
         f"    return {{'native_dps': {score!r}, 'iterations': iterations}}\n"
@@ -76,6 +77,7 @@ def test_feral_native_stochastic_forwarding_and_99_percent_floor(
     assert result["source_report_url"] == gate.FERAL_REPORT_URL
     assert result["reference_profile"] == result["checkpoint_spec"] == "feral"
     assert result["native_source_revision"] == selected
+    assert result["native_rules"] == "go_reference"
     assert result["iterations"] == result["sampled_source_fights"] == 1000
 
 
@@ -198,3 +200,42 @@ def test_cli_keeps_native_refusal_code_and_full_reason(monkeypatch, capsys):
     assert row["status"] == "BLOCKED"
     assert row["native_refusal_code"] == "talents"
     assert row["native_refusal_reason"] == reason
+
+
+@pytest.mark.parametrize("go_rules", [False, True])
+def test_selected_native_source_control_forwards_explicit_go_rules(
+        tmp_path, monkeypatch, go_rules):
+    """CLI transport only: test mode forwarding, not talent or DPS mechanics."""
+    import importlib.util
+    import json
+    from types import SimpleNamespace
+
+    path = ROOT / "integrations/mythicsim-rust/live_world_probe.py"
+    spec = importlib.util.spec_from_file_location("work2_native_rules", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    request = _copy_authentic_source(tmp_path)
+    commands = []
+
+    def fake_run(command, **kwargs):
+        commands.append(command)
+        assert command[:2] == [str((tmp_path / "forever-engine").resolve()), "sim"]
+        assert "--request" in command and "--rng-mode" in command
+        assert command[command.index("--rng-mode") + 1] == "stochastic"
+        output = Path(command[command.index("--outfile") + 1])
+        output.write_text(json.dumps({
+            "identity": {"engine": "forever-engine"},
+            "result": {"iterationsDone": 3, "firstIterationDuration": 120.0,
+                       "raidMetrics": {"dps": {"avg": 811.2}}},
+        }))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    measured = module.native_source_control(
+        tmp_path / "forever-engine", request, 3,
+        rng_mode="stochastic", go_rules=go_rules)
+    assert len(commands) == 1
+    assert ("--go-rules" in commands[0]) is go_rules
+    assert measured["native_rules"] == ("go_reference" if go_rules else "forever")
+    assert measured["iterations"] == 3
+    assert measured["native_dps"] == 811.2  # Mocked transport, never a P7.1 PASS.
