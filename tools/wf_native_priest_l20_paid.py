@@ -214,17 +214,22 @@ def score_source_priest_l20_candidates(binary: str | Path,
     # the existing live Rust↔2D ACK loop once per bounded diagnostic.
     # A strong native-only score cannot prove that the same build works in
     # the ACKed 2D world. Try the next genuinely paid source candidate if the
-    # first live request fails or remains nonlethal, with at most two diagnostics.
+    # first live request fails or remains nonlethal, within the native-paid frontier budget.
     # Neither result may count as a persistent 100-mob paid screen.
     live_attempted = 0
     live_verified = 0
     live_killed = 0
+    live_kill_candidate = None
+    live_kill_request_sha256 = None
     if world_screen is not None:
         from tempfile import TemporaryDirectory
         ranked = sorted(
             (row for row in paid if row["native_source_action_casts"] > 0),
             key=lambda row: row["native_score"], reverse=True)
-        for candidate in ranked[:min(2, max_paid_builds)]:
+        # Native DPS alone is not a 2D kill criterion: every already-paid
+        # source build in this bounded frontier can be genuinely world-tested.
+        # Stop at the first ACKed lethal world result, never at a nonlethal ACK.
+        for candidate in ranked[:max_paid_builds]:
             live_attempted += 1
             try:
                 # Replay the exact normalized request paid by the native scorer.
@@ -257,6 +262,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
                 # lethal world ACK, without treating either as a 100-mob screen.
                 if live.get("native_2d_world_target_killed") is True:
                     live_killed += 1
+                    live_kill_candidate = candidate["candidate"]
+                    live_kill_request_sha256 = candidate["native_request_sha256"]
                     break
             except (OSError, ValueError, RuntimeError, TimeoutError,
                     AssertionError, KeyError, TypeError,
@@ -274,6 +281,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_2d_live_ack_attempted": live_attempted,
         "native_2d_live_ack_verified": live_verified,
         "native_2d_live_world_kills": live_killed,
+        "native_2d_live_kill_candidate": live_kill_candidate,
+        "native_2d_live_kill_request_sha256": live_kill_request_sha256,
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
