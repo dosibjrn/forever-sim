@@ -94,3 +94,19 @@ def test_source_policy_missing_optional_requirements_does_not_exempt_bear(monkey
     assert report['source_policy']['defensive_positive_required'] is True
     assert report['p3_pass'] is False
     assert 'NONPOSITIVE_RELEVANT_WEIGHT:armor' in report['blockers']
+
+
+
+def test_p3_report_preserves_raw_stat_values_for_paid_witness(monkeypatch):
+    item = ItemRecord(306, 'Caster robe', 'chest', item_level=30,
+                      required_level=20, spell_power=17)
+    monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',
+                        lambda *a, **k: (item,))
+    report = fast_p3_smoke(
+        class_key='mage', level=30, weights={'spell_power': 0.0},
+        weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
+        weapon_damage_dependent=False,
+    )
+    row = report['slots']['chest']['items'][0]
+    assert row['stat_values'] == {'spell_power': 17.0}
+    assert row['contributions']['spell_power'] == 0.0
