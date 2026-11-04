@@ -69,12 +69,11 @@ def test_wrong_reference_never_reaches_native(tmp_path):
     assert "P7_4_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT" in report["reasons"]
 
 
-def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
+def test_full_p74_freezes_best_60_fight_balanced_finalist_for_stochastic_holdout(
         monkeypatch, tmp_path):
     """Producer routing regression; mocked backend is NOT a P7.4 acceptance run."""
     import hashlib
     import json
-    from pathlib import Path
     from types import SimpleNamespace
 
     base = {"raid": {"parties": [{"players": [{
@@ -97,9 +96,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     catalogue.write_text("fake catalogue; validator injected")
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Routing clock: start, two paid candidates, then 300s observation.
-    # No per-final-step timestamp calls are required for gate acceptance.
-    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
+    # Two cold screens, then two 60-fight Balanced finalist reranks, then
+    # complete the 300s window before the frozen stochastic holdout.
+    monkeypatch.setattr(gate, "_paid_step_has_budget",
+                        lambda *a, **kw: True)
     clock = iter([0.0, 0.0, 0.0, 300.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
@@ -108,6 +108,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
                         lambda *a, **kw: None)
 
     pool_calls = []
+
     class Validator:
         @staticmethod
         def require_sqlite_catalogue(path):
@@ -139,23 +140,35 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     gear = SimpleNamespace(
         GearValidator=Validator, candidate_pool=candidate_pool, _swap=swap,
         preflight=lambda reference, candidate: True,
-        source_enchant_pools=lambda validator, pools: {0: [None, 201], 1: [None]},
+        source_enchant_pools=lambda validator, pools: {
+            0: [None, 201], 1: [None]},
         RejectedGear=ValueError)
-    # Force two actually paid mock candidates. The first wins, the last
-    # candidate loses: reporting the final loop SHA would misidentify it.
     candidates = iter([[11, 21], [12, 21]])
-    monkeypatch.setattr(gate, "_cold_gear",
-                        lambda request, *args, **kwargs: swap(request, next(candidates)))
+    monkeypatch.setattr(
+        gate, "_cold_gear",
+        lambda request, *args, **kwargs: swap(request, next(candidates)))
+
     calls = []
+
+    def score(item_id, iterations, rng_mode):
+        if iterations == 3:
+            return 729.0 if item_id == 11 else 725.0
+        if iterations == 60:
+            return 710.0 if item_id == 11 else 725.0
+        return 700.0 if item_id == 11 else 730.0
+
     def native(binary, path, n, *, rng_mode):
+        request = json.loads(path.read_text())
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
         calls.append(("native", n, rng_mode, path.read_text()))
-        return {"native_dps": 730.0}
+        return {"native_dps": score(item_id, n, rng_mode)}
 
     def world(binary, path, distance, iterations, *, rng_mode):
         assert distance == 15
+        request = json.loads(path.read_text())
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
         calls.append(("world", iterations, rng_mode, path.read_text()))
-        item_id = json.loads(path.read_text())["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
-        return {"world_mean_dps": 729.0 if item_id == 11 else 700.0,
+        return {"world_mean_dps": score(item_id, iterations, rng_mode),
                 "iterations_done": iterations, "native_damage_events": 12,
                 "native_world_ticks": 25}
 
@@ -170,36 +183,42 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 3, "balanced"), ("world", 3, "balanced"),
+        ("native", 60, "balanced"), ("world", 60, "balanced"),
+        ("native", 60, "balanced"), ("world", 60, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
-    assert json.loads(calls[0][3]) == json.loads(calls[5][3])
+        json.loads(calls[0][3]) != json.loads(calls[8][3]))
+    assert json.loads(calls[2][3]) == json.loads(calls[8][3])
     assert json.loads(calls[0][3]) != json.loads(calls[2][3])
     assert report["frozen_request_raw_sha256"] == hashlib.sha256(
-        calls[5][3].encode()).hexdigest()
+        calls[9][3].encode()).hexdigest()
     assert report["cold_winner_request_sha256"] == hashlib.sha256(
-        json.dumps(json.loads(calls[5][3]), sort_keys=True).encode()).hexdigest()
+        json.dumps(json.loads(calls[9][3]), sort_keys=True).encode()).hexdigest()
     assert report["cold_unique_source_requests"] == 2
-    frozen_items = json.loads(calls[5][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    frozen_items = json.loads(calls[9][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
     assert report["cold_winner_gear"] == [
         {"slot": slot, "item_id": item["id"], "enchant_id": item.get("enchant")}
         for slot, item in enumerate(frozen_items)]
     assert report["source_legal_cold_candidates_paid"] == 2
-    assert report["winner_selection"] == "best_balanced_live_screen"
+    assert report["cold_search_best_screen_dps"] == 729.0
+    assert report["winner_screen_dps"] == 725.0
+    assert report["winner_live_dps"] == 725.0
+    assert report["winner_selection"] == "best_balanced_60_fight_finalist"
+    assert report["paid_balanced_finalists"] == 2
+    assert report["paid_balanced_finalist_iterations"] == 60
+    assert report["selected_validation"] == (
+        "60_native_world_fights_per_paid_balanced_finalist")
     assert report["search_rng_mode"] == "balanced"
     assert report["paid_stochastic_finalists"] == 0
     assert report["stochastic_parent_proposals"] == 0
-    # The real chosen winner is NOT the last attempted candidate.
-    assert report["cold_winner_request_sha256"] != hashlib.sha256(
-        json.dumps(json.loads(calls[2][3]), sort_keys=True).encode()).hexdigest()
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
+    assert report["frozen_stochastic_world_dps"] == 730.0
     assert report["frozen_stochastic_reference_floor_met"] is True
     assert report["status"] == "PASS"  # mocked routing, not real source/native proof
     assert report["runtime_proof"]["executed"] is True
     assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
     assert report["reasons"] == []
     assert base == original
-
-
 
 def test_p74_invalid_full_search_flag_blocks_before_source_work(
         monkeypatch, tmp_path):
