@@ -307,3 +307,34 @@ def test_feral_p72_native_refusals_remain_blocked_not_paid(monkeypatch, tmp_path
         "P7_2_NATIVE_REFUSED_ALL_DISTINCT_APL_CANDIDATES"]
     assert result["source_legal_cold_candidates_paid"] == 0
     assert result["native_refusals"][0]["code"] == "apl"
+
+
+def test_p72_cli_keeps_actual_native_mode_refusals_and_paid_build(
+        monkeypatch, capsys):
+    """The public no-record receipt must retain Feral's native evidence."""
+    import json
+    from tools import wf_gate as cli
+
+    winner = _request()
+    report = {
+        "status": "PASS", "reasons": [],
+        "production_engine": "pinned_mythicsim_rust_native",
+        "native_rules": "go_reference",
+        "source_request_raw_sha256": gate.SAVED_FERAL_RAW_SHA,
+        "native_source_revision": "selected-rust",
+        "source_legal_cold_candidates_paid": 1,
+        "winner_native_dps": 800.0,
+        "cold_winner_request": winner,
+        "cold_winner_apl": winner["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"],
+        "native_refusals": [{"code": "apl", "reason": "first candidate refused"}],
+    }
+    monkeypatch.setattr(cli, "_run_live_gate",
+                        lambda *args, **kwargs: report)
+    assert cli.main(["--class", "druid", "--level", "60", "--spec", "feral",
+                     "--gate", "P7.2"]) == 0
+    result = json.loads(capsys.readouterr().out)["results"][0]
+    assert result["native_rules"] == "go_reference"
+    assert result["native_refusals"] == report["native_refusals"]
+    assert result["cold_winner_request"] == winner
+    assert result["winner_native_dps"] == 800.0

@@ -357,6 +357,21 @@ def main(argv=None) -> int:
             if (isinstance(apl, list) and 0 < len(apl) <= 50
                     and len(json.dumps(apl, ensure_ascii=False).encode("utf-8")) <= 8192):
                 record["cold_winner_apl"] = apl
+            # Keep the full actually paid P7.2 build and selected native mode
+            # in the no-record Actions receipt. A hash/APL alone cannot show
+            # whether source equipment and talents were frozen.
+            if gate == "P7.2":
+                rules = report.get("native_rules")
+                if rules in ("go_reference", "forever"):
+                    record["native_rules"] = rules
+                refusals = report.get("native_refusals")
+                if isinstance(refusals, list):
+                    record["native_refusals"] = refusals[:4]
+                winner = report.get("cold_winner_request")
+                if isinstance(winner, dict):
+                    encoded = json.dumps(winner, ensure_ascii=False)
+                    if len(encoded.encode("utf-8")) <= 100000:
+                        record["cold_winner_request"] = winner
         if gate == "P7.5":
             # The live provider now returns the exact independently paid
             # frozen winner. Preserve it in the CLI/M1 Actions receipt so a
