@@ -29,7 +29,8 @@ def _options():
 
 def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
-            first_world_native_failure=False, cast_receipts=1):
+            first_world_native_failure=False, cast_receipts=1,
+            options=None, refuse_dense_at=None):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -42,6 +43,10 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
     def paid(_binary, source, **kwargs):
         now[0] += 3.0
         paid_builds.append(copy.deepcopy(source))
+        if refuse_dense_at is not None and len(
+                source["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        ) >= refuse_dense_at:
+            raise RuntimeError("MythicSim UNSUPPORTED: level-20 rating conversion source")
         digest = hashlib.sha256(json.dumps(
             source, sort_keys=True, separators=(",", ":")
         ).encode()).hexdigest()
@@ -77,8 +82,8 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
         }
 
     receipt = run_native_priest_l20_cold(
-        "/native", source_path, _options(), score_request=paid,
-        world_screen=world, clock=clock, budget_s=budget,
+        "/native", source_path, _options() if options is None else options,
+        score_request=paid, world_screen=world, clock=clock, budget_s=budget,
         snapshot_s=snapshot, max_attempts=max_attempts)
     return receipt, paid_builds, world_builds
 
@@ -222,3 +227,33 @@ def test_paid_native_no_source_cast_cannot_count_as_cold_paid_build(tmp_path):
     assert receipt["native_cold_final_300"] is None
     assert all(row["status"] == "NATIVE_NO_SOURCE_CAST"
                for row in receipt["native_cold_rows"])
+
+
+def test_real_native_rating_refusals_do_not_starve_sparse_paid_proposals(tmp_path):
+    # Real cold run #41893190218 refused 4095 full-build combinations
+    # with the same native UNSUPPORTED L20 rating-conversion reason. Exercise
+    # Forever's response handling only; the fixture does not assert Warcraft
+    # item legality or supply a Python rating/stat catalogue.
+    options = [
+        {"item_id": 11, "slot": "head"},
+        {"item_id": 21, "slot": "chest"},
+        {"item_id": 31, "slot": "legs"},
+    ]
+    receipt, paid, world = _runner(
+        tmp_path, options=options, refuse_dense_at=2,
+        max_attempts=7, budget=40.0, snapshot=10.0)
+    sizes = [
+        len(build["raid"]["parties"][0]["players"][0]["equipment"]["items"])
+        for build in paid
+    ]
+    assert sizes == [3, 2, 2, 2, 1, 1, 0]
+    assert len(world) == 3  # Only native-accepted candidates reach 2D.
+    assert all(row["status"] == "NATIVE_REFUSED"
+               and "UNSUPPORTED" in row["reason"]
+               for row in receipt["native_cold_rows"][:4])
+    assert all(row["status"] == "COMPLETE"
+               for row in receipt["native_cold_rows"][4:])
+    assert receipt["native_cold_completed_routes_after_30"] == 3
+    assert receipt["native_cold_snapshot_30"] is None
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 8.0
+    assert receipt["native_cold_gate_accepted"] is False
