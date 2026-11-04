@@ -37,7 +37,8 @@ jobs:
       (github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
-        startsWith(github.event.comment.body, '/m1-run ')))
+        (startsWith(github.event.comment.body, '/m1-run ') ||
+         startsWith(github.event.comment.body, '/m1-invalidate '))))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -53,14 +54,40 @@ jobs:
         run: |
           set -euo pipefail
           heavy=false
+          invalidate=false
+          invalidate_target=""
+          invalidate_reason=""
           if [[ "$GITHUB_EVENT_NAME" == issue_comment ]]; then
-            [[ "$COMMENT_BODY" == '/m1-run '* && "$COMMENT_BODY" != *$'\n'* ]] ||
-              { echo 'Expected a single-line /m1-run command' >&2; exit 2; }
+            [[ "$COMMENT_BODY" != *$'\n'* ]] ||
+              { echo 'Expected a single-line Merge command' >&2; exit 2; }
             pr="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
             [[ "$(jq -r '.merged' <<< "$pr")" == true &&
                "$(jq -r '.base.ref' <<< "$pr")" == main &&
                "$(jq -r '.base.repo.full_name' <<< "$pr")" == "$GITHUB_REPOSITORY" ]] ||
               { echo 'M1 command must belong to an already merged PR into main' >&2; exit 2; }
+            if [[ "$COMMENT_BODY" == '/m1-invalidate '* ]]; then
+              invalidate=true
+              command="${COMMENT_BODY#'/m1-invalidate '}"
+              invalidate_target="${command%% *}"
+              invalidate_reason="${command#"$invalidate_target"}"
+              invalidate_reason="${invalidate_reason# }"
+              [[ "$invalidate_target" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[3-6]|P7\.[1-5])$ ]] ||
+                { echo "Invalid active M1 invalidation target: $invalidate_target" >&2; exit 2; }
+              [[ -n "$invalidate_reason" ]] ||
+                { echo 'M1 invalidation requires a non-empty reason' >&2; exit 2; }
+              IFS=: read -r invalidate_class invalidate_level invalidate_spec invalidate_gate <<< "$invalidate_target"
+              printf 'invalidate=true\n' >> "$GITHUB_OUTPUT"
+              printf 'invalidate_target=%s\n' "$invalidate_target" >> "$GITHUB_OUTPUT"
+              printf 'invalidate_reason=%s\n' "$invalidate_reason" >> "$GITHUB_OUTPUT"
+              printf 'targets=\n' >> "$GITHUB_OUTPUT"
+              printf 'heavy=false\n' >> "$GITHUB_OUTPUT"
+              printf 'p7_needed=false\n' >> "$GITHUB_OUTPUT"
+              printf 'p3_native_needed=false\n' >> "$GITHUB_OUTPUT"
+              echo "Accepted explicit M1 receipt invalidation: $invalidate_target"
+              exit 0
+            fi
+            [[ "$COMMENT_BODY" == '/m1-run '* ]] ||
+              { echo 'Expected /m1-run or /m1-invalidate command' >&2; exit 2; }
             targets="${COMMENT_BODY#'/m1-run '}"
             if [[ "$targets" == '--heavy '* ]]; then
               heavy=true
@@ -91,6 +118,7 @@ jobs:
               seen[$entry]=1
             fi
           done
+          printf 'invalidate=false\n' >> "$GITHUB_OUTPUT"
           printf 'targets=%s\n' "$(IFS=' '; echo "${unique[*]}")" >> "$GITHUB_OUTPUT"
           printf 'heavy=%s\n' "$heavy" >> "$GITHUB_OUTPUT"
           p7_needed=false
@@ -123,7 +151,7 @@ jobs:
       # the native-world workflow plus its deterministic tracked typed-mode port.
       # No floating branch or environment-selected RNG mode.
       - name: Hydrate and verify production Rust fork gitlink for selected P7 gate
-        if: steps.targets.outputs.p7_needed == 'true'
+        if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p7_needed == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -153,7 +181,7 @@ jobs:
           echo "M1 selected exact checked-in Rust fork revision $actual with typed RNG port"
 
       - name: Apply tracked typed RNG port and build exact fork-submodule production Rust engine
-        if: steps.targets.outputs.p7_needed == 'true'
+        if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p7_needed == 'true'
         working-directory: upstream
         env:
           CARGO_PROFILE_RELEASE_LTO: "off"
@@ -161,7 +189,7 @@ jobs:
         run: cargo build --release --locked
 
       - name: Build exact Rust fork for native Priest/Mage P3 item options
-        if: steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'
+        if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -181,6 +209,7 @@ jobs:
           echo "M1_NATIVE_P3_ENGINE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run real production gates and update one TSV
+        if: steps.targets.outputs.invalidate != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -314,8 +343,62 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          INVALIDATE: ${{ steps.targets.outputs.invalidate }}
+          INVALIDATE_TARGET: ${{ steps.targets.outputs.invalidate_target }}
+          INVALIDATE_REASON: ${{ steps.targets.outputs.invalidate_reason }}
         run: |
           set -euo pipefail
+          if [[ "$INVALIDATE" == true ]]; then
+            IFS=: read -r class level spec gate <<< "$INVALIDATE_TARGET"
+            for attempt in 1 2 3 4 5; do
+              # Explicit invalidations are separate from concurrent new receipts.
+              # Re-fetch main, run the canonical invalidator, and CAS-publish.
+              git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" fetch origin main
+              git reset --hard FETCH_HEAD
+              if ! awk -F '\t' -v c="$class" -v l="$level" -v s="$spec" -v g="$gate" \
+                'NR>1 && $1==c && $2==l && $3==s && $4==g {found=1} END {exit !found}' \
+                docs/planning/M1_PASSES.tsv; then
+                echo "M1 receipt already absent: $INVALIDATE_TARGET"
+                exit 0
+              fi
+              python tools/m1_progress.py --invalidate "$class" "$level" "$spec" "$gate" \
+                --plot-svg docs/planning/M1_HISTORY.svg | tee "$RUNNER_TEMP/m1-invalidation-scoreboard.txt"
+              ledger_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_PASSES.tsv |
+                gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
+              plot_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_HISTORY.svg |
+                gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
+              parent="$(git rev-parse HEAD)"
+              base_tree="$(git rev-parse "$parent^{tree}")"
+              new_tree="$(jq -nc --arg base "$base_tree" --arg ledger "$ledger_blob" --arg svg "$plot_blob" \
+                '{base_tree:$base,tree:[
+                  {path:"docs/planning/M1_PASSES.tsv",mode:"100644",type:"blob",sha:$ledger},
+                  {path:"docs/planning/M1_HISTORY.svg",mode:"100644",type:"blob",sha:$svg}
+                ]}' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq .sha)"
+              message="M1: invalidate $INVALIDATE_TARGET ($INVALIDATE_REASON)"
+              new_commit="$(jq -nc --arg tree "$new_tree" --arg parent "$parent" --arg message "$message" \
+                '{message:$message,tree:$tree,parents:[$parent]}' |
+                gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq .sha)"
+              current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+              if [[ "$current" != "$parent" ]]; then
+                echo "main advanced during invalidation (attempt $attempt); retrying"
+                continue
+              fi
+              if jq -nc --arg sha "$new_commit" '{sha:$sha,force:false}' |
+                gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/main" --input - >/dev/null; then
+                echo "M1 invalidation published: $new_commit"
+                {
+                  echo "### Explicit M1 receipt invalidation"
+                  echo "- Target: \`$INVALIDATE_TARGET\`"
+                  echo "- Reason: $INVALIDATE_REASON"
+                  echo "- Commit: $new_commit"
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              echo "main advanced during invalidation publication (attempt $attempt); retrying"
+            done
+            echo 'M1 invalidation retry limit exhausted; no stale ledger was published.' >&2
+            exit 1
+          fi
           if git diff --quiet -- docs/planning/M1_PASSES.tsv; then
             echo 'No genuinely improved gate evidence; M1 and chart stay unchanged.'
             exit 0
