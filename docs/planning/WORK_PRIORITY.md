@@ -1,33 +1,33 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `4ca0163f8c5676d5d1c78324e9c803d4f9a68d71`. Canonical ledger blob: `c45f50ea4fe1aad3d9cf972d24a1981b823600ad`; current `tools/m1_progress.py` blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
+Refreshed against main `494ad2bfe675b96a5aabfd9f22f912b8aaf9ec1e`. Canonical ledger blob: `ab3e8ad0faa686e8782c236b45177e0042fb6eb3`; current `tools/m1_progress.py` blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
 
 ## Current M1 scoreboard
 
-- **M1 measured: 2.1391% (float=0.0213906002)**; **28.492 / 1,332** measured gate-equivalents; **23 PASS / 10 PARTIAL** active rows. This is partial-inclusive diagnostic coverage, not certification. The script and canonical ledger blobs are unchanged since the latest script output.
-- Only Merge runs the trusted recorder and writes `M1_PASSES.tsv`; no other agent edits the ledger.
+- **M1 measured: 2.1391% (float=0.0213906002)**; **28.492 / 1,332** measured gate-equivalents; **23 PASS / 10 PARTIAL** active rows. This is partial-inclusive diagnostic coverage, not certification. The canonical ledger and scoreboard script blobs are unchanged. Only Merge writes `M1_PASSES.tsv`.
 
-## 1. Work1 — start now: Shaman L20 unrestricted P3 Spell Power witness ([#859](https://github.com/dosibjrn/forever-sim/issues/859))
+## 1. Merge — Shaman L20 unrestricted P3 official receipt in progress (#859 / PR #862)
 
-- **Baseline:** official recorder [#41800797285](https://github.com/dosibjrn/forever-sim/actions/runs/41800797285) recorded FAIL / PARTIAL **66/204**. The native ItemSparse integration is complete: PR #860 merged as `4ca0163`; exact-head selected-engine run [#41803884068](https://github.com/dosibjrn/forever-sim/actions/runs/41803884068) succeeded and confirmed 1,955 legal native items, 3,075 excluded non-client rows, zero unverified candidates and the unchanged **66/204** result. No additional M1 credit.
-- **Action:** query the selected MythicSim Rust engine for the exact PreparedV2 coefficient of the existing source-ranked `lightning_bolt:915`; attach it only to that matching existing direct-damage action, then enable the paid-winner Spell Power witness only when the exact native coefficient was applied.
-- **Causal chain:** native coefficient on the existing Lightning Bolt rank → real paid source-policy sensitivity → measured positive Spell Power weight → `pass_count > 66` with the same 204 denominator.
-- **Smallest verification:** focused exact-rank/fail-closed adapter regression, then one changed-HEAD no-record Shaman L20 P3 run within the 44-evaluation cap. Require the coefficient application, `MEASURED_POSITIVE_SOURCE_POLICY_WITNESS`, `spell_power > 0`, and increased comparable count. If the engine does not expose the exact rank or the paid witness is not positive, preserve 66/204; Merge records only a real improvement.
-- Each added comparable assertion is **+0.000368 percentage points**; maximum remaining room to full P3 PASS is **+0.05079 pp**, not a forecast.
-- **Why this is #1:** one existing direct-damage source action and one missing source coefficient are a narrower, higher-probability change than a new L20 actor plus complete paid P4/P5 screens (#817). Paladin P3 (#845) still has zero eligible source evaluations because its actor and weapon are proxies. Mage L30 P3 already has positive Spell Power and multiple other residual axes. Priest P3's current opener is `shadow_word_pain:970` (`PeriodicEffect`), not a drop-in reuse of this direct-damage coefficient path. No unmeasured active gate currently has a comparably evidenced cheap PASS path. PR #860 is merged; #859 is unblocked and not yet in flight.
+- PR #862 merged as `d0185e1ad7e0b3ceb6ead1133af846ff06db71df`. Merge's single official recorder [#41808193281](https://github.com/dosibjrn/forever-sim/actions/runs/41808193281) is running on the merged main SHA; the pre-run canonical row remains PARTIAL **66/204**. Do not dispatch a duplicate.
+- The merged change's exact-head no-record selected-engine run [#41807584155](https://github.com/dosibjrn/forever-sim/actions/runs/41807584155) returned actual P3 **FAIL 93/204 (45.59%)**, 35 paid evaluations, **+27 comparable assertions** versus 66/204. Exact native untagged `lightning_bolt:915` coefficient `0.7139999866485596`; explicit `MEASURED_POSITIVE_SOURCE_POLICY_WITNESS` for Spell Power, weight `0.03283717129264803`, two paid evaluations. Native ItemSparse: 1,955 legal items, 3,075 excluded non-client rows, zero unverified.
+- Exact-head maintenance [#41807584069](https://github.com/dosibjrn/forever-sim/actions/runs/41807584069): **SUCCESS, 514 passed**. Generic source-paid [#41807584164](https://github.com/dosibjrn/forever-sim/actions/runs/41807584164): **SUCCESS, 317 passed**.
+- **Next:** wait for [#41808193281](https://github.com/dosibjrn/forever-sim/actions/runs/41808193281) to become terminal and verify the trusted ledger publication. If the official result preserves 93/204, the conditional high-water improvement is +27/204/1,332 = **+0.009936 pp**. Not earned until the ledger changes; P3 remains FAIL, not PASS. Do not rerun unchanged code.
+- M1 affected gate: `shaman:20:unrestricted:P3`.
 
-## 2. Work1 — after #859: Priest L20 unrestricted P4/P5 native actor ([#817](https://github.com/dosibjrn/forever-sim/issues/817))
+## 2. Work1 — start next: Priest L20 unrestricted P4/P5 (#817)
 
-- The official light run [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) returned BLOCKED at `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED`: zero complete paid screens and zero source-action casts.
-- **Action:** complete MythicSim-owned source-backed Priest L20 base stats and level-dependent conversions; prepare a real L20 actor; connect it to the existing paid whole-build evaluator and real 2D/source-action screen. No L60 proxy, guessed stats or Forever GameIR/SQLite fallback.
-- **Verification:** one changed-HEAD no-record light P4/P5 invocation showing a real level-20 actor, complete paid screens and positive source-action casts. Only then hand to Merge for one official recorder. If both gates reach 2/6 comparable behaviors, the conditional combined float is **+0.05005 pp**; not earned. Work2 may reuse this actor only if its native source contract actually supports Paladin.
+- Shaman PR #862 is now merged; its official recorder is running independently. Work1's next implementation can start without waiting for the recorder.
+- Official Priest light run [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) returned **BLOCKED** for both gates at `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED`: zero complete paid screens and zero source-action casts; no ledger rows.
+- **Action:** finish MythicSim-owned source-backed Priest L20 actor preparation and connect the actual level-20 actor to the existing paid whole-build evaluator and real 2D/source-action screen. No L60 proxy, guessed stats, Forever GameIR/SQLite fallback or separate MythicSim rules audit.
+- **Smallest verification:** one changed-HEAD no-record light P4/P5 invocation showing the actual L20 actor, complete paid screens and positive source-action casts. Only then hand to Merge for an official recorder. Two genuine 2/6 slices would be conditional **+0.05005 pp combined**, not earned.
+- **Why #817 next:** Hunter L20 P3 #827 was already attempted and closed after zero-source-evaluation BLOCKED results; Druid L40 and L60 unrestricted P3/P4/P5 are already PASS; Mage L30 P5 already has a PARTIAL row. No unassigned unmeasured gate has a better evidenced low-cost PASS path. #817 is the clearest independent two-gate implementation opportunity.
 
-## Parallel Work2 — Paladin L20 unrestricted P3 source-backed actor and weapon ([#845](https://github.com/dosibjrn/forever-sim/issues/845))
+## 3. Work2 — independent Paladin L20 unrestricted P3 (#845 / PR #865)
 
-- PR #851 is merged. Merge's official recorder [#41802054768](https://github.com/dosibjrn/forever-sim/actions/runs/41802054768) returned BLOCKED, with 12 source-naked attempts / 11 diagnostic evaluations but **zero eligible source evaluations** because actor stats and the 14-DPS weapon remain proxies. No Paladin ledger row or M1 credit.
-- **Action:** establish source-backed Paladin L20 actor and equipped-weapon facts in MythicSim; reuse #817's native level-aware actor if its actual source contract supports Paladin. No proxy credit, synthetic values or unchanged redispatch.
+- Official recorder [#41802054768](https://github.com/dosibjrn/forever-sim/actions/runs/41802054768) returned **BLOCKED**, with zero eligible source evaluations because actor stats and weapon were proxies; no Paladin ledger row or M1 credit.
+- Work2's draft PR #865 at `ed2b72cb416ba33ec5fd718902a936098c693336` adds selected-native player-context transport. Exact parent checks: maintenance [#41807326163](https://github.com/dosibjrn/forever-sim/actions/runs/41807326163) **512 passed**, selected-engine [#41807325995](https://github.com/dosibjrn/forever-sim/actions/runs/41807325995) **SUCCESS**, generic source-paid [#41807326633](https://github.com/dosibjrn/forever-sim/actions/runs/41807326633) **317 passed**. This is a partial context transport, not yet a complete PreparedV2 actor or a P3 result; native fork PR #12 is still draft.
+- **Action:** complete the native source-backed Paladin L20 actor/equipped-weapon context and legal item-options path; then one changed-HEAD no-record P3 run. Keep the 44-evaluation cap. No official recorder until real source evaluations are eligible. Work2 owns this lane; do not duplicate #817's actor work or assume cross-class reuse without native support.
 
 ## Operating constraints
 
-- Active gates only: P3–P6 and P7.1–P7.5. No P1/P2, HPS/TPS witnesses, MythicSim self-validation, duplicate unchanged runs, invented weights or fabricated M1 rows.
-- Keep tasks dependency-ordered: Work1 #859 → #817; Work2 #845 remains independent; Merge alone records; Clean owns discretionary cleanup.
+- Active gates only: P3–P6 and P7.1–P7.5. No P1/P2, HPS/TPS, MythicSim self-validation, proxy credit, duplicate unchanged runs, invented weights or manual ledger edits. Merge alone records; Clean owns discretionary cleanup.
