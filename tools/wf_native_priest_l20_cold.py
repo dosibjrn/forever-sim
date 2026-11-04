@@ -245,8 +245,8 @@ def native_cold_p6_verdict(cold: dict) -> dict:
             same_scenario = False
         if not same_scenario:
             reasons.append("P6_NATIVE_COLD_INCOMPARABLE_SOURCE_SCENARIO")
-        if t300 > 1.01 * t30:
-            reasons.append("P6_300S_REGRESSION_EXCEEDS_1_PERCENT")
+        if t30 > 1.01 * t300:
+            reasons.append("P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT")
 
     ratio = t30 / t300 if t30 is not None and t300 is not None else None
     return {

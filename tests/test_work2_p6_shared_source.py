@@ -1,4 +1,4 @@
-"""Regression: one P6 cold search, paid snapshot, replay reuse and 1% 300s non-regression."""
+"""Regression: one P6 cold search, paid snapshot, replay reuse and original 1% saturation."""
 from pathlib import Path
 
 import pytest
@@ -84,7 +84,7 @@ def test_p6_paid_replay_recovers_faster_30s_incumbent_after_incomplete_validatio
     assert result['status'] == 'PASS'
     assert result['reasons'] == []
     assert result['source_replay_T30_T300'] == 1.
-    assert result['source_replay_300s_nonregression'] is True
+    assert result['source_replay_numeric_saturation'] is True
     assert result['source_replay_results'][0]['reused'] is False
     assert result['source_replay_results'][1]['shared_with_30s'] is True
     assert result['retained_paid_30s_incumbent_after_replay'] is True
@@ -96,8 +96,8 @@ def test_p6_paid_replay_recovers_faster_30s_incumbent_after_incomplete_validatio
         _winner('earlier')['policy_ir'], _winner('earlier')['policy_ir']]
 
 
-def test_p6_300s_large_improvement_is_always_allowed():
-    """A better 300s winner must never fail because it improved by >1%."""
+def test_p6_original_saturation_rejects_large_improvement():
+    """Restore the original asymmetric T30 <= 1.01*T300 predicate."""
     def execute(root, args, output, timeout):
         if '--budget' in args:
             return _report(snapshot=_winner('earlier')), None
@@ -106,9 +106,10 @@ def test_p6_300s_large_improvement_is_always_allowed():
             'mob_completed': 100, 'full_s_per_mob': 12.0}]}}, None
     with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
         result = run_full_source_comparison(Path('.'), 'druid', 30)
-    assert result['status'] == 'PASS'
+    assert result['status'] == 'FAIL'
+    assert 'P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT' in result['reasons']
     assert result['source_replay_T30_T300'] == 1.2
-    assert result['source_replay_300s_nonregression'] is True
+    assert result['source_replay_numeric_saturation'] is False
 
 
 def test_p6_300s_slightly_slower_within_one_percent_is_allowed():
@@ -123,7 +124,7 @@ def test_p6_300s_slightly_slower_within_one_percent_is_allowed():
         result = run_full_source_comparison(Path('.'), 'druid', 30)
     assert result['status'] == 'PASS'
     assert result['source_replay_T30_T300'] == 1.
-    assert result['source_replay_300s_nonregression'] is True
+    assert result['source_replay_numeric_saturation'] is True
     assert result['source_replay_results'][1]['shared_with_30s'] is True
 
 

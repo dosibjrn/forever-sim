@@ -246,14 +246,14 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
                    and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
                    for r in results)
     t30, t300 = (r['s_per_mob'] for r in results) if complete else (None, None)
-    ratio = t30 / t300 if complete else None  # Diagnostic only; not a saturation cap.
+    ratio = t30 / t300 if complete else None  # Diagnostic ratio for the approved 1% saturation gate.
     reasons = []
     if not complete:
         reasons.append('P6_SHARED_WINNER_REAL_100MOB_REPLAY_INCOMPLETE')
     if not snapshot.get('post_boundary_paid_evaluations', 0):
         reasons.append('P6_NO_GENUINE_PAID_30S_TO_300S_CONTINUATION')
-    if complete and t300 > 1.01 * t30:
-        reasons.append('P6_300S_REGRESSION_EXCEEDS_1_PERCENT')
+    if complete and t30 > 1.01 * t300:
+        reasons.append('P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT')
     proof = {}
     if not reasons:
         from src.version import SOFTWARE_VERSION
@@ -300,7 +300,7 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         'source_replay_T30_T300': ratio,
         'source_replay_T30_s_per_mob': t30,
         'source_replay_T300_s_per_mob': t300,
-        'source_replay_300s_nonregression': bool(complete and t300 <= 1.01*t30),
+        'source_replay_numeric_saturation': bool(complete and t30 <= 1.01*t300),
         'N30_unique_paid': snapshot.get('unique_full_builds'),
         'N300_unique_paid': report.get('unique_full_builds'),
         'search_wall_s': [report.get('wall_s')],

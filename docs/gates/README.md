@@ -9,7 +9,7 @@
 | [COMMON](COMMON.md) | 148-checkpoint accounting; selected engines, provenance, migration and source discipline |
 | Retired [P1–P2](P1-P2.md) | Historical contract only; not active acceptance and not counted in M1 |
 | [P3](P3.md) | Representative source-legal gear and real score sensitivity |
-| [P4–P6](P4-P6.md) | Shared cold 300s search with 30s snapshot, genuine 100-mob winners and 1% non-regression |
+| [P4–P6](P4-P6.md) | Shared cold 300s search with 30s snapshot, genuine 100-mob winners and 1% measured saturation |
 | [P7](P7.md) | Pinned native DPS reference, paid single-axis alternatives and 300s joint search |
 | [RUNTIME_AUTHORITY](RUNTIME_AUTHORITY.md) | Current CLI live-provider contract (implementation guide, not a new acceptance gate) |
 

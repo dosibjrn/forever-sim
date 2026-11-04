@@ -149,7 +149,7 @@ def test_priest_p6_uses_native_shared_cold_receipt_not_legacy_gameir(
     report = p6.run_live(ROOT, "priest", 20, spec="unrestricted")
     assert report["status"] == "PASS"
     assert report["source_replay_T30_T300"] == 1.0
-    assert report["source_replay_300s_nonregression"] is True
+    assert report["source_replay_numeric_saturation"] is True
     assert report["runtime_proof"]["run_id"] == "987654"
     assert report["runtime_proof"]["engine_revision"].endswith(
         hashlib.sha256(binary.read_bytes()).hexdigest())
@@ -162,7 +162,7 @@ def test_priest_p6_uses_native_shared_cold_receipt_not_legacy_gameir(
 
 
 
-def test_p6_public_cli_forwards_source_nonregression_without_recomputing(
+def test_p6_public_cli_forwards_source_saturation_without_recomputing(
         monkeypatch, capsys):
     """CLI forwards the provider verdict; it never infers a gate PASS."""
     import json
@@ -170,7 +170,7 @@ def test_p6_public_cli_forwards_source_nonregression_without_recomputing(
     monkeypatch.setattr(p6, "run_live", lambda *args, **kwargs: {
         "status": "PASS", "reasons": [],
         "source_replay_T30_T300": 1.0,
-        "source_replay_300s_nonregression": True,
+        "source_replay_numeric_saturation": True,
         "runtime_proof": {
             "executed": True, "engine_revision": "mock-engine",
             "source_revision": "mock-source", "run_id": "mock-run"},
@@ -178,6 +178,6 @@ def test_p6_public_cli_forwards_source_nonregression_without_recomputing(
     assert main(["--class", "priest", "--level", "20",
                  "--spec", "unrestricted", "--gate", "P6"]) == 0
     result = json.loads(capsys.readouterr().out)
-    assert result["results"][0]["source_replay_300s_nonregression"] is True
+    assert result["results"][0]["source_replay_numeric_saturation"] is True
 
 

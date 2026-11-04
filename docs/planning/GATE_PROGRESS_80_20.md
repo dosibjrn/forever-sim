@@ -18,7 +18,7 @@ class / level / spec / scenario
 
 - **P3:** genuinely pay for representative *native-supplied* equipped alternatives and mechanically relevant score sensitivity; finite zero or negative irrelevant-weight values are not automatic failures. Native item inventory alone is not paid equipped optimization.
 - **P4/P5:** one real cold 300s search with frozen genuine 30s best-so-far, and real continuous spatial/native 100-distinct-mob winner runs. Preserve movement, resource, combat, recovery, survival and native action ACK. Reuse identical compatible winner receipts, not a second cold restart or duplicate 100-mob replay.
-- **P6:** actual comparable 300s time-per-mob non-regression (1% tolerance) and missing/changed winner replay as defined in the gate contract; a measured partial `200/200` is not an automatic PASS.
+- **P6:** actual comparable time-per-mob saturation (T30 <= 1.01 × T300) and missing/changed winner replay as defined in the gate contract; a measured partial `200/200` is not an automatic PASS.
 - **P7:** **stationary non-attacking native-only** DPS evaluation is sufficient; there is **no P7-only 2D handshake**. P7.1 is the genuine reproducible stochastic reference; P7.2–P7.4 each genuinely pay for an axis-changed legal candidate where available, without an independent 300s search, 1,000-fight holdout or 99% floor. **P7.5 alone** retains independent 300s cold joint search, frozen winner, 1,000 stochastic native fights and its accepted-compatible 93% comparator. Do not impose retired predicates in producers or the recorder.
 
 ## How Prio picks work

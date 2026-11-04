@@ -331,7 +331,7 @@ def test_300s_best_of_uses_paid_100mob_not_two_target_proxy(tmp_path):
     assert receipt["native_cold_completed_100mob_finalists"] == 2
     p6 = receipt["native_cold_p6_verdict"]
     assert p6["T30_s_per_mob"] == p6["T300_s_per_mob"] == 7.0
-    assert "P6_300S_REGRESSION_EXCEEDS_1_PERCENT" not in p6["reasons"]
+    assert "P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT" not in p6["reasons"]
     # A 40-second discovery run is not a 300-second gate PASS.
     assert receipt["native_cold_300s_reached"] is False
     assert p6["status"] == "FAIL"
@@ -650,18 +650,18 @@ def test_priest_native_p6_reuses_real_frozen_100mob_receipts_without_replay():
     changed["native_cold_final_300"]["real_100mob_receipt"][
         "native_2d_persistent_elapsed_seconds"] = 4000.0
     changed["native_cold_final_300"]["route_s_per_mob"] = 40.0
-    # A substantially BETTER 300s finalist must not be rejected.
-    assert native_cold_p6_verdict(changed)["status"] == "PASS"
+    # The original saturation predicate rejects >1% improvement.
+    assert "P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT" in (
+        native_cold_p6_verdict(changed)["reasons"])
     changed["native_cold_final_300"]["real_100mob_receipt"][
         "native_2d_persistent_elapsed_seconds"] = 4242.0
     changed["native_cold_final_300"]["route_s_per_mob"] = 42.42
-    # Less than 1% slower is within the owner-approved tolerance.
+    # Slower 300s remains accepted by the restored original criterion.
     assert native_cold_p6_verdict(changed)["status"] == "PASS"
     changed["native_cold_final_300"]["real_100mob_receipt"][
         "native_2d_persistent_elapsed_seconds"] = 4250.0
     changed["native_cold_final_300"]["route_s_per_mob"] = 42.50
-    assert "P6_300S_REGRESSION_EXCEEDS_1_PERCENT" in (
-        native_cold_p6_verdict(changed)["reasons"])
+    assert native_cold_p6_verdict(changed)["status"] == "PASS"
     changed = copy.deepcopy(cold)
     changed["native_cold_native_paid_after_30"] = 0
     assert "P6_NATIVE_COLD_NO_PAID_CONTINUATION" in (
