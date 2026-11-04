@@ -218,7 +218,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
                                       score_request=None, world_screen=None,
                                       persistent_world=None,
                                       budget_s: float = 6.0,
-                                      max_paid_builds: int = 4) -> dict:
+                                      max_paid_builds: int = 4,
+                                      persistent_target_count: int = 2) -> dict:
     """Pay a bounded cold frontier of explicit source/native build requests.
 
     Each JSON supplies its *own* gear, talents and APL. Forever never derives
@@ -233,6 +234,9 @@ def score_source_priest_l20_candidates(binary: str | Path,
         raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATE_DIRECTORY_REQUIRED")
     if not (0 < budget_s <= 30 and 1 <= max_paid_builds <= 16):
         raise ValueError("P4_P5_NATIVE_CANDIDATE_BUDGET_INVALID")
+    if (type(persistent_target_count) is not int
+            or not 2 <= persistent_target_count <= 100):
+        raise ValueError("P4_P5_NATIVE_PERSISTENT_TARGET_COUNT_INVALID")
     paths = sorted(folder.glob("*.json"))
     if not paths:
         raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATES_EMPTY")
@@ -328,7 +332,16 @@ def score_source_priest_l20_candidates(binary: str | Path,
                             and persistent_world is not None):
                         persistent_attempted += 1
                         try:
-                            retained = persistent_world(binary, execution_request)
+                            # Preserve existing two-target behavior by default.
+                            # Opt-in longer runs use the *same* selected native
+                            # process/actor and gsim world ACK loop, not 100
+                            # independent fights or a synthesized route.
+                            if persistent_target_count == 2:
+                                retained = persistent_world(binary, execution_request)
+                            else:
+                                retained = persistent_world(
+                                    binary, execution_request,
+                                    target_count=persistent_target_count)
                             if (not isinstance(retained, dict)
                                     or retained.get("native_2d_persistent_actor_verified") is not True
                                     or retained.get("native_2d_persistent_world_ack_verified") is not True
@@ -386,6 +399,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_2d_persistent_attempted": persistent_attempted,
         "native_2d_persistent_verified": persistent_verified,
         "native_2d_persistent_targets_killed": persistent_targets_killed,
+        "native_2d_persistent_target_goal": persistent_target_count,
         "native_2d_persistent_candidate": persistent_candidate,
         "native_2d_persistent_request_sha256": persistent_request_sha256,
         "native_2d_screen_complete": False,
@@ -399,7 +413,8 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
                                           score_request=None, world_screen=None,
                                           persistent_world=None,
                                           budget_s: float = 6.0,
-                                          max_paid_builds: int = 4) -> dict:
+                                          max_paid_builds: int = 4,
+                                          persistent_target_count: int = 2) -> dict:
     """Score progressive source-native multi-slot whole-build requests.
 
     The source retains its actor, talent, APL and world. Each candidate adds
@@ -458,7 +473,8 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
         receipt = score_source_priest_l20_candidates(
             binary, folder, score_request=score_request,
             world_screen=world_screen, persistent_world=persistent_world,
-            budget_s=budget_s, max_paid_builds=max_paid_builds)
+            budget_s=budget_s, max_paid_builds=max_paid_builds,
+            persistent_target_count=persistent_target_count)
     return {
         **receipt,
         "native_item_options_proposed": len(proposals),
