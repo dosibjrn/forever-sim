@@ -263,8 +263,8 @@ def _source_actor_context_summary(ir) -> dict:
 
 def _native_equipped_p3_reservation(
         class_key: str, level: int, spec: str, native_binary: str | None) -> int:
-    """Reserve two paid attempts only for the selected Rogue native request."""
-    return (2 if native_binary and str(class_key).lower() == "rogue"
+    """Reserve one baseline and up to 17 native slot alternatives for Rogue L20."""
+    return (18 if native_binary and str(class_key).lower() == "rogue"
             and int(level) == 20 and str(spec).lower() == "unrestricted"
             and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
 
@@ -288,7 +288,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
 
     script = root / "integrations/mythicsim-rust/native_p3_equipped.py"
     command = [sys.executable, str(script), "--binary", str(native_binary),
-               "--request", str(request_path)]
+               "--request", str(request_path),
+               "--max-paid-attempts", str(min(remaining, 18))]
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -299,7 +300,7 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
         receipt = json.loads(completed.stdout)
         if (not isinstance(receipt, dict)
                 or type(receipt.get("paid_attempts")) is not int
-                or not 0 <= receipt["paid_attempts"] <= 2):
+                or not 0 <= receipt["paid_attempts"] <= min(remaining, 18)):
             raise ValueError("P3_NATIVE_EQUIPPED_INVALID_RECEIPT")
         return receipt
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
@@ -426,9 +427,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "production_component": "src.game.native_p3_player_context",
             }
     max_p3_evaluations = 44
-    # Reserve a real baseline+equipped Rust pair when a native source request
-    # is supplied. Otherwise the earlier 44-budget Python source search can
-    # consume both slots and the selected-native pair never executes.
+    # Reserve the shared budget for one native baseline and representative
+    # per-slot Rust alternatives. Never run these after 44 source+native pays.
     native_pair_reserved = _native_equipped_p3_reservation(
         class_key, level, spec, native_binary)
     source_search_budget = max_p3_evaluations - native_pair_reserved
@@ -658,6 +658,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 - int(result.get("attempted", 0)) - extra_evaluations))
         if rogue_l20_native else None)
     reasons = list(item_check["blockers"])
+    # The native slot sweep is measured separately; it does not erase any
+    # unresolved P3 source-policy stat assertion or award an automatic PASS.
     # An item-options source snapshot and Python weighted score alone cannot
     # certify an actual selected-Rust equipped L20 actor. The native pair
     # receipt remains explicit until the authoritative actor matches L20.
