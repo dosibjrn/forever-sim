@@ -145,7 +145,7 @@ def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
 
     def save():
         with ledger.open('w', newline='', encoding='utf-8') as stream:
-            writer = csv.DictWriter(stream, fieldnames=FIELDS, delimiter='\\t')
+            writer = csv.DictWriter(stream, fieldnames=FIELDS, delimiter='\t')
             writer.writeheader()
             writer.writerows(rows)
 
@@ -159,6 +159,8 @@ def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
     incompatible = scoreboard(ledger)
     assert incompatible['certified_checkpoints'] == 0
     assert incompatible['passed_gates'] == len(GATES)
+
+
 def test_registry_metadata_selection_defers_legacy_class_builder_imports(monkeypatch):
     """Presentation/eligibility reads must not instantiate every GameIR provider."""
     from types import SimpleNamespace
