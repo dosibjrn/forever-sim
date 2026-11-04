@@ -7,7 +7,42 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from port_native_typed_rng import (add_explicit_mode_to_test_calls, edit,
-                                   migrate_test_simulate_calls)
+                                   ensure_rng_mode_import, migrate_test_simulate_calls)
+
+
+class TypedRngImportTests(unittest.TestCase):
+    def test_adds_mode_to_multiline_legacy_import_and_is_idempotent(self):
+        source = (
+            "use forever_engine::{\\n"
+            "    PreparedError, Refusal,\\n"
+            "    Request, Rules, SOURCE_REVISION,\\n"
+            "};\\n"
+        )
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            path = root / "src/main.rs"
+            path.write_text(source)
+            ensure_rng_mode_import(root, "src/main.rs")
+            migrated = path.read_text()
+            self.assertIn("Request, RngMode, Rules", migrated)
+            ensure_rng_mode_import(root, "src/main.rs")
+            self.assertEqual(path.read_text(), migrated)
+
+    def test_accepts_existing_wrapped_mode_import_unchanged(self):
+        source = (
+            "use forever_engine::{\\n"
+            "    PreparedError, Refusal,\\n"
+            "    Request, RngMode, Rules, SOURCE_REVISION,\\n"
+            "};\\n"
+        )
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            path = root / "src/main.rs"
+            path.write_text(source)
+            ensure_rng_mode_import(root, "src/main.rs")
+            self.assertEqual(path.read_text(), source)
 
 
 class TypedRngTestCallMigrationTests(unittest.TestCase):
