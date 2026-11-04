@@ -11,10 +11,34 @@ from src.game.multi_pull import search_repeated_pull_policies
 from src.shared.leveling.objective import representative_hp
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2 import source_multi_pull_joint as joint
-from tools.wf243_joint_multi_pull_replay import frozen_policy
+from src.v2.source_multi_pull_joint import policy_from_record
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = json.loads((ROOT / 'tests/fixtures/wf243_heldout_feral_l20.json').read_text())
+
+
+def test_policy_from_record_preserves_frozen_rule_sequence_and_provenance():
+    policy = policy_from_record(FIXTURE['policy'])
+    source = FIXTURE['policy']
+    assert policy.id == source['id']
+    assert policy.label == source['label']
+    assert tuple(rule.action_id for rule in policy.rules) == tuple(
+        rule['action_id'] for rule in source['rules']
+    )
+    assert tuple(rule.phase for rule in policy.rules) == tuple(
+        rule['phase'] for rule in source['rules']
+    )
+    assert tuple(
+        tuple(condition.kind for condition in rule.conditions)
+        for rule in policy.rules
+    ) == tuple(
+        tuple(condition['kind'] for condition in rule['conditions'])
+        for rule in source['rules']
+    )
+    assert tuple(rule.provenance for rule in policy.rules) == tuple(
+        rule['provenance'] for rule in source['rules']
+    )
+    assert policy.provenance == source['provenance']
 
 
 def test_stratified_independent_sample_never_seeds_heldout_and_covers_trees():
@@ -33,7 +57,7 @@ def test_heldout_exact_gear_talents_policy_three_pulls_and_no_implicit_optimizat
     gears = _gear_envelope('druid', 20, max_gear_candidates=256,
                            required_level_policy='observed', include_melee_gear=True, ir_slice=ir)
     gear = next(g for g in gears if g['id'] == FIXTURE['gear_id'])
-    policy = frozen_policy(FIXTURE['policy'])
+    policy = policy_from_record(FIXTURE['policy'])
     old = joint.replay_exact_challenger(
         class_key='druid', level=20, gear=gear,
         allocation=FIXTURE['talent_allocation'], policy=policy,
@@ -50,7 +74,7 @@ def test_heldout_illegal_action_and_talent_fail_closed():
     ir = build_game_ir_slice(class_key='druid', level=20)
     gear = _gear_envelope('druid', 20, max_gear_candidates=256,
                           required_level_policy='observed', include_melee_gear=True, ir_slice=ir)[0]
-    policy = frozen_policy(FIXTURE['policy'])
+    policy = policy_from_record(FIXTURE['policy'])
     illegal = replace(policy, rules=(PolicyRuleDefinition(id='bad', action_id='invented:spell'),))
     with pytest.raises(ValueError, match='unavailable source action'):
         joint.replay_exact_challenger(class_key='druid', level=20, gear=gear,

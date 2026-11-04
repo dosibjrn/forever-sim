@@ -64,10 +64,28 @@ class MaintenanceTestLayout(unittest.TestCase):
         new = ROOT / "tests" / "fixtures" / "wf243_heldout_feral_l20.json"
         self.assertFalse(old.exists(), f"stale root-level fixture: {old}")
         self.assertTrue(new.is_file(), f"missing immutable test fixture: {new}")
-        for consumer in (
-            ROOT / "tools" / "wf243_joint_multi_pull_replay.py",
+        self.assertFalse((ROOT / "tools" / "wf243_joint_multi_pull_replay.py").exists())
+        source_module = (ROOT / "src" / "v2" / "source_multi_pull_joint.py").read_text()
+        self.assertIn("def policy_from_record(", source_module)
+        policy_consumers = (
+            ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
+            ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
+            ROOT / "tools" / "wf299_100_mob_continuity_probe.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
-        ):
+            ROOT / "tests" / "test_wf245_policy_frontier.py",
+        )
+        for consumer in policy_consumers:
+            source = consumer.read_text()
+            self.assertIn("from src.v2.source_multi_pull_joint import policy_from_record", source)
+        fixture_consumers = (
+            ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
+            ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
+            ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
+            ROOT / "tests" / "test_wf245_policy_frontier.py",
+            ROOT / "tests" / "test_wf283_online_source_corridors.py",
+            ROOT / "tests" / "test_wf300_continuous_mob.py",
+        )
+        for consumer in fixture_consumers:
             source = consumer.read_text()
             self.assertIn("tests/fixtures/wf243_heldout_feral_l20.json", source)
             self.assertNotIn(

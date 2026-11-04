@@ -24,6 +24,19 @@ from src.v2.source_policy_search import synthesize_source_policies
 from src.v2.source_staged_joint_search import _diverse_gear_indices
 
 
+def policy_from_record(data):
+    """Rehydrate a typed source policy record for exact candidate replay."""
+    from src.game.model import PolicyCondition, PolicyDefinition, PolicyRuleDefinition
+
+    return PolicyDefinition(
+        id=data['id'], label=data['label'],
+        rules=tuple(PolicyRuleDefinition(
+            id=r['id'], action_id=r['action_id'], phase=r['phase'],
+            conditions=tuple(PolicyCondition(**c) for c in r['conditions']),
+            provenance=r['provenance']) for r in data['rules']),
+        provenance=data['provenance'])
+
+
 def independent_allocation_sample(allocations, *, budget: int, excluded_ids=(), family_tree=None):
     """Deterministic family coverage then hash selection; never use scores or guides."""
     if budget < 1:

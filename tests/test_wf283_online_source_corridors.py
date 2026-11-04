@@ -28,7 +28,7 @@ def test_tree_diverse_source_corridors_are_real_paid_l2_and_beat_heldout():
             assert s['gear_policy_result']['policy_search_backend']=='stateful'
     assert covered=={'balance','feral','restoration'}
     assert r['winner']['score_s_per_mob']==pytest.approx(16.838119142532577)
-    heldout=json.loads((Path(__file__).resolve().parents[1]/'fixtures/wf243_heldout_feral_l20.json').read_text())
+    heldout=json.loads((Path(__file__).resolve().parents[1]/'tests/fixtures/wf243_heldout_feral_l20.json').read_text())
     assert heldout['talent_allocation'] not in r['source_corridors_reserved']
     assert r['winner']['score_s_per_mob']<17.887004619287094
     assert not r['complete_search']

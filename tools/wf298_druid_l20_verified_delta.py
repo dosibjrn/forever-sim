@@ -17,14 +17,14 @@ from src.v2.source_budgeted_joint_talents import run_source_budgeted_joint_talen
 from src.v2.source_stateful_budgeted import _make_policy, _condition_from_record
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_prefix import ordered_prefix_executed
-from tools.wf243_joint_multi_pull_replay import frozen_policy
+from src.v2.source_multi_pull_joint import policy_from_record
 from tools.wf282_source_role_heldout_benchmark import frozen_heldout
 from tools.wf297_druid_l20_checkpoint import JOINT_ARGS
 
 ARGS={**JOINT_ARGS,'max_evaluations':205,'max_event_transitions':22000,
       'post_talent_refinement_budget':70}
 ROOT=Path(__file__).resolve().parents[1]
-FIXTURE=ROOT/'fixtures/wf243_heldout_feral_l20.json'
+FIXTURE=ROOT/'tests/fixtures/wf243_heldout_feral_l20.json'
 
 def _trace(execution):
     return [{'time_s':e.time_s,'kind':e.kind,'actor_id':e.actor_id,
@@ -40,7 +40,7 @@ def _cell(ir, gear, talent, policy_kind, *, policy_record, old_policy):
     if application.unsupported_stats:
         raise ValueError('UNSUPPORTED_NAMED_GEAR_STATS')
     if policy_kind=='old':
-        policy=frozen_policy(old_policy)
+        policy=policy_from_record(old_policy)
         prefix=()
     else:
         policy=_make_policy(geared,policy_record['fallback'],

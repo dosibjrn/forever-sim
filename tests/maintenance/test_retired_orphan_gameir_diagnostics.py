@@ -99,6 +99,8 @@ RETIRED_TOOLS = (
     "tools/wf252_companion_replay.py",
     # One-off .242 test aggregator has no callers; its constituent tests remain available.
     "tools/wf242_validate.py",
+    # WF243's one-off replay CLI is retired; policy record decoding lives with the optimizer.
+    "tools/wf243_joint_multi_pull_replay.py",
     # Retired .251–.256 Python GameIR/SQLite Paladin/Hunter replay chain.
     "tools/wf251_native_replay.py",
     "tools/wf253_paladin_seal_replay.py",
@@ -202,6 +204,7 @@ RETIRED_IMPORT_NAMES = (
     "accepted_checkpoint_status",
     "wf252_companion_replay",
     "wf242_validate",
+    ".wf243_joint_multi_pull_replay",
     "src.game.level_legality",
     "level_evaluation_trace",
     "legal_candidate_enumeration",
@@ -237,6 +240,7 @@ RETIRED_OUTPUTS = (
     "WF244_INDEPENDENT_JOINT_REPEATED_PULL.json",
     "WF245_INDEPENDENT_JOINT_REPLAY.json",
     "WF246_PRIMARY_STATS_JOINT_REPLAY.json",
+    "WF243_INDEPENDENT_JOINT_REPEATED_PULL.json",
     "evidence/wf357/WF357_RECOVERY_100MOB.json",
     "evidence/wf424/WF424_DRUID_L30_INSECT_SWARM_100MOB.json",
     "evidence/wf429/WF429_L30_26PT_PUSHBACK_100MOB.json",

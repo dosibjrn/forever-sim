@@ -12,7 +12,7 @@ from tools.wf299_100_mob_continuity_probe import run
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / 'WF299_DRUID_L20_30S_BLIND_EVIDENCE.json'
-FROZEN = ROOT / 'fixtures/wf243_heldout_feral_l20.json'
+FROZEN = ROOT / 'tests/fixtures/wf243_heldout_feral_l20.json'
 
 
 def _scenario():

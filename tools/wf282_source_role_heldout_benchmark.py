@@ -17,10 +17,10 @@ from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.source_budgeted_gear import run_source_budgeted_gear
 from src.v2.source_budgeted_joint_talents import run_source_budgeted_joint_talents
-from tools.wf243_joint_multi_pull_replay import frozen_policy
+from src.v2.source_multi_pull_joint import policy_from_record
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = ROOT / 'fixtures/wf243_heldout_feral_l20.json'
+FIXTURE = ROOT / 'tests/fixtures/wf243_heldout_feral_l20.json'
 
 
 def frozen_heldout(fixture=None):
@@ -49,7 +49,7 @@ def frozen_heldout(fixture=None):
         selected_items=tuple(gear['selection'].slots.values()),
         source='canonical_sqlite_forever_catalogue')
     ir, talents = apply_talent_selection(geared, f['talent_allocation'], level=level)
-    policy = frozen_policy(f['policy'])
+    policy = policy_from_record(f['policy'])
     legal_actions = {a.id for a in ir.actions}
     if any(r.action_id not in legal_actions for r in policy.rules):
         raise ValueError('frozen challenger has unavailable policy action')

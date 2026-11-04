@@ -13,7 +13,7 @@ from src.v2.source_multi_pull_joint import (
     search_joint_repeated_pulls, replay_exact_challenger,
 )
 from src.v2.source_joint_discovery import _gear_envelope
-from tools.wf243_joint_multi_pull_replay import frozen_policy
+from src.v2.source_multi_pull_joint import policy_from_record
 
 
 def test_caster_frontier_does_not_vanish_at_24_policies():
@@ -74,7 +74,7 @@ def test_legal_local_frontier_excludes_frozen_and_illegal_moves():
 
 def test_real_joint_e2e_and_exact_heldout_challenger():
     root = Path(__file__).resolve().parents[1]
-    fixture = json.loads((root/'fixtures/wf243_heldout_feral_l20.json').read_text())
+    fixture = json.loads((root/'tests/fixtures/wf243_heldout_feral_l20.json').read_text())
     search = search_joint_repeated_pulls(class_key='druid', level=20,
         max_allocations=4, screening_gear_count=1, finalists=1, policy_cap=12,
         held_out_allocation=fixture['talent_allocation'], refinement_budget=2,
@@ -89,7 +89,7 @@ def test_real_joint_e2e_and_exact_heldout_challenger():
         required_level_policy='observed', include_melee_gear=True, ir_slice=ir)
     gear = next(g for g in gears if g['id'] == fixture['gear_id'])
     old = replay_exact_challenger(class_key='druid', level=20, gear=gear,
-        allocation=fixture['talent_allocation'], policy=frozen_policy(fixture['policy']),
+        allocation=fixture['talent_allocation'], policy=policy_from_record(fixture['policy']),
         pulls=3, post_combat_action_ids=(fixture['policy']['provenance']['exit_action_id'],))
     assert old['seconds_per_mob'] == pytest.approx(13.15138592750533)
     assert old['talent_allocation'] == fixture['talent_allocation']
