@@ -418,10 +418,18 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "production_component": "src.game.native_p3_player_context",
             }
     max_p3_evaluations = 44
+    # Reserve a real baseline+equipped Rust pair when a native source request
+    # is supplied. Otherwise the earlier 44-budget Python source search can
+    # consume both slots and the selected-native pair never executes.
+    native_pair_reserved = (
+        2 if native_binary and str(class_key).lower() == "rogue"
+        and int(level) == 20 and str(spec).lower() == "unrestricted"
+        and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
+    source_search_budget = max_p3_evaluations - native_pair_reserved
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
         class_key=class_key, level=level, ir_slice=ir,
-        max_evaluations=max_p3_evaluations, initial_search=12, search_per_gear=3,
+        max_evaluations=source_search_budget, initial_search=12, search_per_gear=3,
         max_gear_states=1, probe_deltas=(5., 20.),
         probe_stats=("armor", "stamina", "strength", "agility", "intellect",
                      "spirit", "spell_power", "attack_power", "mp5",
@@ -600,7 +608,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         else:
             probe_deltas = (5., 20.)
             probe_delta_sources = []
-        remaining = max(0, max_p3_evaluations - int(result.get("attempted", 0)) - extra_evaluations)
+        remaining = max(0, source_search_budget - int(result.get("attempted", 0)) - extra_evaluations)
         cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
         has_reusable_baseline = any(
             key[:3] == cache_prefix
@@ -676,6 +684,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "native_equipped_paid_attempts": (
             native_equipped_receipt.get("paid_attempts", 0)
             if native_equipped_receipt else 0),
+        "p3_shared_paid_attempts": (
+            int(result.get("attempted", 0)) + extra_evaluations
+            + (native_equipped_receipt.get("paid_attempts", 0)
+               if native_equipped_receipt else 0)),
+        "p3_native_pair_reserved_attempts": native_pair_reserved,
         # This is the resolver used by the paid source search, not a second
         # P3 applicability rule or an invented zero for absent primary stats.
         "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),
