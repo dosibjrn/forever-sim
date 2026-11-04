@@ -350,3 +350,45 @@ def test_mode_bound_equipped_auto_cannot_force_caster_policy_weapon_weight():
     )
     assert policy_uses_equipped_weapon_damage(ir, _policy("bolt")) is False
     assert policy_uses_equipped_weapon_mean_hit(ir, _policy("bolt")) is False
+
+
+def test_priest_p3_opt_in_runs_source_naked_sensitivity_without_named_role(monkeypatch):
+    import pytest
+    import src.v2.source_budgeted_gear as budgeted
+
+    ir = build_priest_source_slice(20)
+    assert ir is not None
+    monkeypatch.setattr(budgeted, 'available_gear_roles', lambda _class_key: ())
+    kwargs = dict(
+        class_key='priest', level=20, ir_slice=ir,
+        max_evaluations=3, initial_search=1, search_per_gear=1,
+        max_gear_states=1, probe_stats=('intellect',),
+        probe_deltas=(5.0,))
+    with pytest.raises(ValueError, match='no canonical named gear role'):
+        budgeted.run_source_budgeted_gear(**kwargs)
+
+    action_id = ir.actions[0].id
+    monkeypatch.setattr(
+        budgeted, 'run_source_budgeted_prefix',
+        lambda **_kwargs: {
+            'attempted': 1, 'evaluated': 1, 'blocked': 0,
+            'winner': {
+                'score_s_per_mob': 98.0, 'fallback': [action_id],
+                'prefix': [action_id], 'guarded_action': None,
+                'guarded_conditions': [],
+            },
+            'runner_up': None, 'seed_count': 1,
+            'seed_skipped_by_budget': 0,
+            'best_vs_budget': [{'attempt': 1, 'best_s_per_mob': 98.0, 'status': 'evaluated'}],
+            'context_sha256': 'unit-test-source-context',
+        })
+    monkeypatch.setattr(
+        budgeted, '_fixed_opening_score',
+        lambda candidate_ir, *_args, **_kwargs:
+            100.0 - float(candidate_ir.actor.base_stats.get('intellect', 0.0)))
+    result = budgeted.run_source_budgeted_gear(
+        **kwargs, allow_source_only_without_gear_roles=True)
+    assert result['status'] == 'EVALUATED_BOUNDED'
+    assert result['sensitivity_history'][0]['values']['intellect'] == 1.0
+    assert result['named_gear_states_evaluated'] == 0
+    assert result['winner']['stage'] == 'source_naked'
