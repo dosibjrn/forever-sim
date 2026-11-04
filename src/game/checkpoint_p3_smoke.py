@@ -316,15 +316,21 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     # source-bound policy entry point derives actual equipped-weapon relevance.
     if equipped_weapon_dps_relevant is None:
         equipped_weapon_dps_relevant = bool(encountered_dps)
+    # Native-selected gear may genuinely make an item stat neutral or harmful
+    # for the paid build/policy. P3 requires a measured finite scorer sensitivity,
+    # not an invented strictly positive derivative. Preserve the legacy SQLite
+    # smoke's positivity diagnostic until that consumer is retired.
     if equipped_weapon_dps_relevant and encountered_dps and not any(
-        (parsed.get(axis) or 0) > 0 for axis in encountered_dps
+        parsed.get(axis) is not None
+        and (native_options_binary is not None or parsed[axis] > 0)
+        for axis in encountered_dps
     ):
         blockers.add('MISSING_APPLICABLE_DPS_WEIGHT')
     if weapon_damage_dependent:
         mean_weight = parsed.get('mean_weapon_hit_damage')
         if mean_weight is None:
             blockers.add('MISSING_WEIGHT:mean_weapon_hit_damage')
-        elif mean_weight <= 0:
+        elif mean_weight <= 0 and native_options_binary is None:
             blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:mean_weapon_hit_damage')
     return {'checkpoint': f'{class_key}:L{int(level)}',
             'source': source_name,
