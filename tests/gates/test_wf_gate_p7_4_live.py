@@ -118,7 +118,7 @@ def test_full_p74_freezes_best_60_fight_balanced_finalist_for_stochastic_holdout
             assert args[-1] is base
 
         def validate(self, ids, enchants=None):
-            assert ids == [11, 21]
+            assert ids in ([11, 21], [12, 21])
             if enchants is not None:
                 assert len(enchants) == 2
 
@@ -127,7 +127,7 @@ def test_full_p74_freezes_best_60_fight_balanced_finalist_for_stochastic_holdout
 
     def candidate_pool(validator, limit, **kwargs):
         pool_calls.append(limit)
-        return ({0: [11], 1: [21]}, {})
+        return ({0: [11, 12], 1: [21]}, {})
 
     def swap(request, ids):
         result = copy.deepcopy(request)
