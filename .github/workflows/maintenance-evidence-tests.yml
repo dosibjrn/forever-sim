@@ -202,65 +202,24 @@ jobs:
           tests/mechanics/mage/test_mage_extended_layout.py
           tests/mechanics/paladin/test_paladin_mechanics_layout.py
 
-      - name: Run no-record Paladin L20 P3 source-naked producer
+      - name: Verify Paladin L20 P3 refuses an absent selected native engine
         shell: bash
         run: |
           set -euo pipefail
-          report="$RUNNER_TEMP/paladin-l20-p3-no-record.json"
+          unset FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN
+          report="$RUNNER_TEMP/paladin-l20-p3-native-refusal.json"
           rc=0
           python tools/wf_gate.py --class paladin --level 20 --spec unrestricted \
             --gate P3 --out "$report" || rc=$?
           python - "$report" "$rc" <<'PY'
           import json, sys
           from pathlib import Path
-
           report = json.loads(Path(sys.argv[1]).read_text())
-          rc = int(sys.argv[2])
+          assert int(sys.argv[2]) == 1, report
           assert report["class"] == "paladin" and report["level"] == 20, report
-          assert report["spec"] == "unrestricted" and report["gate"] == "P3", report
-          assert report["status"] == "BLOCKED" and rc == 1, (report, rc)
-          assert len(report["results"]) == 1, report
-          row = report["results"][0]
-          assert row["real_source_search_evaluated"] == 0, row
-          stage = row["source_naked_stage"]
-          assert stage["search_backend"] == "prefix", stage
-          assert stage["search_status"] in (
-              "EVALUATED_BOUNDED",
-              "BLOCKED_NO_KILLING_PREFIX",
-          ), stage
-          assert 0 < stage["attempted"] <= 12, stage
-          assert stage["attempted"] <= row["real_source_search_attempts"] <= 44, row
-          diagnostics = row["source_naked_diagnostics"]
-          assert diagnostics["status"] == stage["search_status"], diagnostics
-          assert "holy_strike:1866" in diagnostics["fillers"], diagnostics
-          assert diagnostics["auto_fallback_ids"] == [], diagnostics
-          if stage["search_status"] == "EVALUATED_BOUNDED":
-              assert row["reasons"] == [
-                  "P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"
-              ], row
-          actor = row["source_actor_context"]
-          assert actor["base_stats_are_zero_proxy"] is True, actor
-          assert actor["actor_provenance"][0]["authority"] == (
-              "scenario_proxy_not_source_backed"
-          ), actor
-          assert actor["actor_provenance"][0]["capture_id"] == (
-              "wf251_two_classes_2026-10-11"
-          ), actor
-          auto = actor["auto_attacks"][0]
-          assert auto["provenance"][0]["capture_id"] == (
-              "wf251_two_classes_2026-10-11"
-          ), auto
-          assert auto["damage_source"]["flat_dps"] == 14.0, auto
-          assert any(source.get("caveat") ==
-                     "ordinary_melee_auto_and_weapon_speed_scenario_proxy"
-                     for source in auto["provenance"]), auto
-          print("NO_RECORD_P3_PALADIN_L20_EXACT_BLOCK",
-                "attempted", stage["attempted"],
-                "evaluated", row["real_source_search_evaluated"],
-                "source_actions", diagnostics["actions"],
-                "source_fillers", diagnostics["fillers"],
-                "auto_fallback_ids", diagnostics["auto_fallback_ids"],
-                "base_stats_proxy", actor["base_stats_are_zero_proxy"],
-                "weapon_dps_proxy", auto["damage_source"]["flat_dps"],
-                flush=True)
+          assert report["gate"] == "P3" and report["status"] == "BLOCKED", report
+          assert report["results"][0]["reasons"] == [
+              "P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"], report
+          assert "real_source_search_evaluated" not in report["results"][0], report
+          print("PALADIN_L20_P3_NATIVE_BINARY_REQUIRED", flush=True)
           PY
