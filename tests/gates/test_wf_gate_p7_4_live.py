@@ -640,3 +640,160 @@ def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
     assert gate._paid_step_has_budget(0.0, 0.10)
     clock.now = 299.95
     assert not gate._paid_step_has_budget(0.0, 0.10)
+
+
+def test_p74_balanced_finalist_uses_paid_native_and_2d_with_independent_seeds(
+        monkeypatch, tmp_path):
+    """The second screen is real balanced native+2D payment, not a holdout."""
+    import json
+
+    request = {"simOptions": {"randomSeed": "original"},
+               "raid": {"parties": [{"players": [{"equipment": {"items": []}}]}]}}
+    original = copy.deepcopy(request)
+    observed = []
+
+    def native(binary, path, iterations, *, rng_mode):
+        observed.append(("native", json.loads(path.read_text())["simOptions"]["randomSeed"],
+                         iterations, rng_mode))
+        return {"native_dps": 700}
+
+    def world(binary, path, distance, iterations, *, rng_mode):
+        seed = json.loads(path.read_text())["simOptions"]["randomSeed"]
+        observed.append(("world", seed, iterations, rng_mode))
+        return {"world_mean_dps": {"321": 700.0, "654": 740.0}[seed],
+                "iterations_done": 3, "native_damage_events": 1,
+                "native_world_ticks": 2}
+
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda native, world, n: None)
+    producer = SimpleNamespace(native_source_control=native, run=world)
+    score, live = gate._paid_p74_balanced_finalist(
+        producer, tmp_path / "binary", request, 15, seeds=("321", "654"))
+    assert score == 720.0
+    assert live["world_mean_dps"] == 740.0
+    assert observed == [
+        ("native", "321", 3, "balanced"), ("world", "321", 3, "balanced"),
+        ("native", "654", 3, "balanced"), ("world", "654", 3, "balanced")]
+    assert request == original
+
+
+def test_p74_freeze_prefers_independently_confirmed_balanced_winner():
+    """A single lucky three-fight result cannot override confirmed scores."""
+    noisy = {"gear": "three-fight-outlier"}
+    steady = {"gear": "paid-stable-winner"}
+    third = {"gear": "paid-third"}
+    best = (760.0, {"label": "noisy-screen"}, "noisy", noisy)
+    reranked = [
+        (690.0, {"label": "noisy-rerank"}, "noisy", noisy, 760.0),
+        (742.0, {"label": "steady-rerank"}, "steady", steady, 755.0),
+        (735.0, {"label": "third-rerank"}, "third", third, 740.0),
+    ]
+    assert gate._freeze_paid_p74_balanced_winner(best, [], set()) == (
+        760.0, {"label": "noisy-screen"}, "noisy", noisy,
+        760.0, "best_balanced_live_screen")
+    winner = gate._freeze_paid_p74_balanced_winner(best, reranked, set())
+    assert winner[2:5] == ("steady", steady, 755.0)
+    assert winner[5] == "paid_2x3_balanced_native_world_finalist"
+    # Select only on comparable confirmed measurements when available.
+    confirmed = gate._freeze_paid_p74_balanced_winner(
+        best, reranked, {"third"})
+    assert confirmed[2] == "third"
+    assert confirmed[5] == "paid_4x3_balanced_native_world_confirmed"
+
+
+def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
+        monkeypatch, tmp_path):
+    """Actual run_live scheduling changes the frozen winner; no M1 recording."""
+    import json
+
+    base = {"simOptions": {"randomSeed": "original"},
+            "raid": {"parties": [{"players": [{
+                "class": "ClassDruid", "distanceFromTarget": 15,
+                "equipment": {"items": [{"id": 10}]},
+                "talentsString": "fixed",
+                "rotation": {"priorityList": []},
+            }]}]}}
+    original = copy.deepcopy(base)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("fake, never executed")
+    (binary.parents[2] / "data").mkdir()
+    (binary.parents[2] / "data/items.jsonl").write_text("")
+    (binary.parents[2] / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("mock")
+
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    # Start, three paid screens, three independent re-screens, confirmation,
+    # end of the full 300s window and observed deadline.
+    times = iter([0.0, 0.0, 0.0, 0.0, 130.0, 150.0,
+                  170.0, 270.0, 300.0, 300.0])
+    monkeypatch.setattr(gate.time, "monotonic",
+                        lambda: next(times, 300.0))
+    monkeypatch.setattr(gate.time, "sleep", lambda s: None)
+    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *args: True)
+    monkeypatch.setattr(gate, "_pinned_source_runtime",
+                        lambda *args: (base, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *args, **kw: None)
+
+    class Validator:
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+
+        def __init__(self, *args):
+            pass
+
+        def close(self):
+            pass
+
+    gear = SimpleNamespace(
+        GearValidator=Validator, candidate_pool=lambda *a, **kw: ({0: [11, 12, 13]}, {}),
+        source_enchant_pools=lambda *a: {0: [None]},
+        RejectedGear=ValueError)
+    candidates = iter((11, 12, 13))
+    def cold(reference, *args, **kwargs):
+        req = copy.deepcopy(reference)
+        req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] = next(candidates)
+        return req
+    monkeypatch.setattr(gate, "_cold_gear", cold)
+
+    def item(request):
+        return request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
+
+    def native(binary, path, n, *, rng_mode):
+        return {"native_dps": 735.0}
+
+    def world(binary, path, distance, iterations, *, rng_mode):
+        req = json.loads(path.read_text())
+        score = {11: 760.0, 12: 755.0, 13: 740.0}[item(req)]
+        return {"world_mean_dps": 740.0 if rng_mode == "stochastic" else score,
+                "iterations_done": iterations, "native_damage_events": 2,
+                "native_world_ticks": 3}
+    production = SimpleNamespace(native_source_control=native, run=world)
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda path, name: gear if "p74_gear_search" in str(path) else production)
+
+    paid_reranks = []
+    def rerank(production, binary, request, distance, *, seeds=("1955004", "1955047")):
+        paid_reranks.append((item(request), seeds))
+        scores = {11: 690.0, 12: 742.0, 13: 735.0}
+        return (740.0 if seeds[0] == "1955113" else scores[item(request)]), {
+            "world_mean_dps": scores[item(request)],
+            "native_damage_events": 2, "native_world_ticks": 3}
+    monkeypatch.setattr(gate, "_paid_p74_balanced_finalist", rerank)
+
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert report["status"] == "PASS"  # mocked backend; not real gate evidence
+    assert report["winner_screen_dps"] == 755.0
+    assert report["winner_selection"] == "paid_4x3_balanced_native_world_confirmed"
+    assert report["cold_winner_gear"][0]["item_id"] == 12
+    assert report["paid_balanced_finalists"] == 3
+    assert report["paid_balanced_confirmed"] == 1
+    assert report["frozen_stochastic_iterations"] == 1000
+    assert len(paid_reranks) == 4
+    assert paid_reranks[-1] == (12, ("1955113", "1955139"))
+    assert base == original
