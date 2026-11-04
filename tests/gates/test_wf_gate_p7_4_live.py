@@ -837,7 +837,7 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
             "ranged_weapon_type": "RangedWeaponTypeIdol",
         })
         enchant_rows.append({
-            "id": 2000 + index,
+            "effect_id": 2000 + index,
             "type": item_type,
             "enchant_type": "EnchantTypeUnknown",
             "extra_types": [],
