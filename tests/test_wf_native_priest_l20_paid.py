@@ -1620,7 +1620,10 @@ def test_priest_native_item_frontier_pays_distinct_dense_builds_before_sparse_fa
     assert attempted == expected
     assert result["native_paid_whole_builds"] == 4
     assert result["native_candidate_requests_attempted"] == len(expected)
-    assert result["native_item_options_proposed"] == 15
-    assert result["native_item_option_alternative_builds_proposed"] == 3
+    # The bounded proposal frontier includes three distinct dense builds,
+    # but the companion producer caps the total proposed JSON requests.
+    assert result["native_item_options_proposed"] == 12
+    assert result["native_item_option_alternative_builds_proposed"] == 0
+    assert result["native_item_option_dense_builds_proposed"] == 3
     assert result["native_2d_screen_complete"] is False
     assert json.loads(source_file.read_text(encoding="utf-8")) == _request()
