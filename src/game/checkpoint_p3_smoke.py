@@ -157,7 +157,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   weight_evidence_kind: str, weapon_damage_dependent: bool,
                   equipped_weapon_dps_relevant: bool | None = None,
                   defensive_positive_required: bool = True,
-                  required_level_policy: str = 'catalogue') -> dict:
+                  required_level_policy: str = 'catalogue',
+                  native_options_binary: str | None = None) -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
     Failures are explicit, not silently clipped or filled with tiny positives.
@@ -172,10 +173,26 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     # zeros are meaningful measurements rather than artificial P3 blockers.
     strictly_positive_axes = (POSITIVE_WHEN_PRESENT if defensive_positive_required
                               else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
-    rows = available_items(class_key, level, required_level_policy=required_level_policy)
-    if not rows:
+    native_options_metadata = None
+    if native_options_binary is not None:
+        from src.game.native_p3_item_options import native_p3_item_records
+        rows, unmapped_by_item, native_options_metadata = native_p3_item_records(
+            native_options_binary, class_key, level)
+        source_name = 'MYTHICSIM_NATIVE_ITEM_OPTIONS'
+    else:
+        rows = available_items(class_key, level, required_level_policy=required_level_policy)
+        unmapped_by_item = {}
+        source_name = 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS'
+    if not rows and native_options_metadata is None:
         raise ValueError('P3_NO_LEGAL_ITEMS_IN_CURRENT_DB')
     blockers = set()
+    if native_options_metadata is not None:
+        if native_options_metadata['status'] == 'partial_level_unknown':
+            blockers.add(
+                'NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:'
+                + str(native_options_metadata['unverified_candidate_count']))
+        if not rows:
+            blockers.add('NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')
     if weight_evidence_kind not in SOURCE_CONTEXT_WEIGHT_KINDS:
         blockers.add('UNVERIFIED_CONTEXT_WEIGHTS')
     parsed = {str(axis): _weight_value(value) for axis, value in weights.items()}
@@ -198,6 +215,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         reports = []
         for item in selected:
             tested += 1
+            for native_axis in unmapped_by_item.get(item.item_id, ()):
+                blockers.add('NATIVE_UNMAPPED_STAT_AXIS:' + native_axis)
             stats = _ordinary_stats(item)
             if not weapon_damage_dependent:
                 stats.pop('mean_weapon_hit_damage', None)
@@ -275,7 +294,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         elif mean_weight <= 0:
             blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:mean_weapon_hit_damage')
     return {'checkpoint': f'{class_key}:L{int(level)}',
-            'source': 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS',
+            'source': source_name,
             'legal_item_count': len(rows), 'tested_item_count': tested,
             'slot_count': len(slots), 'slots': slots,
             'tested_stat_assertions': tested_stat_assertions,
@@ -284,6 +303,10 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             'defensive_positive_required': defensive_positive_required,
             'weapon_damage_dependent': bool(weapon_damage_dependent),
             'equipped_weapon_dps_relevant': bool(equipped_weapon_dps_relevant),
+            'native_item_options_status': (native_options_metadata or {}).get('status'),
+            'native_unverified_candidate_count': (native_options_metadata or {}).get(
+                'unverified_candidate_count', 0),
+            'native_item_options_source': (native_options_metadata or {}).get('source'),
             'blockers': sorted(blockers), 'p3_pass': not blockers,
             'scope': 'PROCESS_V2_FAST_P3_SMOKE_NOT_GLOBAL_BIS'}
 

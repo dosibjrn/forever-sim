@@ -94,10 +94,16 @@ jobs:
           printf 'targets=%s\n' "$(IFS=' '; echo "${unique[*]}")" >> "$GITHUB_OUTPUT"
           printf 'heavy=%s\n' "$heavy" >> "$GITHUB_OUTPUT"
           p7_needed=false
+          p3_native_needed=false
           for entry in "${unique[@]}"; do
             if [[ "$entry" == *:P7.* ]]; then p7_needed=true; fi
+            IFS=: read -r class level spec gate <<< "$entry"
+            if [[ "$gate" == P3 && "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]]; then
+              p3_native_needed=true
+            fi
           done
           printf 'p7_needed=%s\n' "$p7_needed" >> "$GITHUB_OUTPUT"
+          printf 'p3_native_needed=%s\n' "$p3_native_needed" >> "$GITHUB_OUTPUT"
           echo "Accepted ${#unique[@]} production targets"
 
       - name: Checkout current main, without saved write credentials
@@ -154,6 +160,26 @@ jobs:
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo build --release --locked
 
+      - name: Build exact Rust fork for native Priest/Mage P3 item options
+        if: steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          git submodule update --init --depth 1 "$engine"
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$actual" == "$recorded" ]] || {
+            echo "RUST_FORK_SUBMODULE_PIN_MISMATCH recorded=$recorded actual=$actual" >&2; exit 1;
+          }
+          [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]] || {
+            echo "WRONG_RUST_FORK_REMOTE" >&2; exit 1;
+          }
+          ln -s "$engine" upstream
+          cargo build --release --locked --manifest-path "$engine/Cargo.toml" --bin forever-engine
+          test -x upstream/target/release/forever-engine
+          echo "M1_NATIVE_P3_ENGINE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run real production gates and update one TSV
         shell: bash
         env:
@@ -161,6 +187,7 @@ jobs:
           TARGETS: ${{ steps.targets.outputs.targets }}
           ALLOW_HEAVY: ${{ steps.targets.outputs.heavy }}
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
         run: |
           set -euo pipefail
           # Freeze already-completed accepted priors before this batch records

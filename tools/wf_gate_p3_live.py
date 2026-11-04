@@ -11,6 +11,7 @@ from math import isfinite
 from pathlib import Path
 from hashlib import sha256
 from uuid import uuid4
+import os
 
 
 def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: str):
@@ -73,7 +74,23 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
     }
 
 
+def native_item_options_required(class_key: str, level: int) -> bool:
+    """Native P3 is currently enabled only for the two verified L20 targets."""
+    return str(class_key).lower() in ('priest', 'mage') and level == 20
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
+    # Priest/Mage L20 P3 is owned by the tested native item-options provider.
+    # Other levels retain their pre-existing path until their own no-record
+    # native-provider evidence is accepted.
+    native_required = native_item_options_required(class_key, level)
+    native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
+                     if native_required else None)
+    if native_required and not native_binary:
+        return {'status': 'BLOCKED',
+                'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
+                'production_component': 'src.game.native_p3_item_options'}
+
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
     from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
@@ -128,9 +145,19 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     weights = dict(sensitivity["values"])
     if not all(type(v) in (int, float) and isfinite(v) for v in weights.values()):
         return {"status": "FAIL", "reasons": ["P3_REAL_PRODUCTION_WEIGHTS_NONFINITE"]}
-    item_check = fast_p3_smoke_for_policy(
-        source_ir=ir, policy=policy, class_key=class_key, level=level,
-        weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT")
+    # Native Priest/Mage activation was required before paid search above;
+    # other classes continue through their existing P3 source path.
+    try:
+        item_check = fast_p3_smoke_for_policy(
+            source_ir=ir, policy=policy, class_key=class_key, level=level,
+            weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            native_options_binary=native_binary)
+    except ValueError as exc:
+        if native_binary is None:
+            raise
+        return {'status': 'BLOCKED', 'reasons': [str(exc)],
+                'production_component': 'src.game.native_p3_item_options',
+                'real_source_search_evaluated': result.get('evaluated', 0)}
     # One narrowly chosen 12-evaluation winner is not proof that an ordinary
     # stat has no causal value to this build. The same source-legal full-point
     # IR may carry alternative executable policies. When the first policy
@@ -172,7 +199,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
            for w in source_policy_stat_witnesses):
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
-            weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT")
+            weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            native_options_binary=native_binary)
     reasons = list(item_check["blockers"])
     # The same source-legal selected IR was used for actual CombatRuntime
     # sensitivity and the real item scorer. Never fake a positive stat weight.
@@ -209,7 +237,12 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
         "coverage_basis": "executed_behavior_assertions",
         "coverage_scope_complete": False,
-        "real_item_score_checked": item_check["source"] == "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
+        "real_item_score_checked": item_check["source"] in (
+            "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS", "MYTHICSIM_NATIVE_ITEM_OPTIONS"),
+        "item_options_source": item_check["source"],
+        "native_item_options_status": item_check.get("native_item_options_status"),
+        "native_unverified_candidate_count": item_check.get("native_unverified_candidate_count", 0),
+        "native_item_options_source": item_check.get("native_item_options_source"),
         "real_measured_stat_weight_axes": sorted(weights),
         "actual_search_result_status": result.get("status"),
         "source_context_sha256": result.get("source_context_sha256"),

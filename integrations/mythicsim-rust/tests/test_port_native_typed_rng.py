@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from port_native_typed_rng import (add_explicit_mode_to_test_calls, edit,
-                                   migrate_test_simulate_calls)
+                                   ensure_rng_mode_import, migrate_test_simulate_calls)
 
 
 class TypedRngTestCallMigrationTests(unittest.TestCase):
@@ -80,6 +80,37 @@ let second = forever_engine::simulate_prepared(
             self.assertIn("forever_engine::RngMode::Stochastic", migrated)
             self.assertEqual(migrate_test_simulate_calls(root), [])
             self.assertEqual(path.read_text(), migrated)
+
+
+class TypedRngMainImportTests(unittest.TestCase):
+    def test_adds_mode_to_legacy_import(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            path = root / "src/main.rs"
+            path.write_text(
+                "use forever_engine::{PreparedError, Refusal, Request, "
+                "Rules, SOURCE_REVISION,};\\n"
+            )
+            ensure_rng_mode_import(root, "src/main.rs")
+            self.assertIn("Request, RngMode, Rules", path.read_text())
+
+    def test_accepts_native_item_options_multiline_import_already_with_mode(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            path = root / "src/main.rs"
+            original = (
+                "use forever_engine::{\\n"
+                "    contracts::prepared_v2::PreparedV2, gear_options, native_item_options,\\n"
+                "    native_two_world_targets, prepare_json_with, prepared_refusals, simulate,\\n"
+                "    simulate_prepared_gated, validate_prepared, Gated, PrepareError, PreparedError, Refusal,\\n"
+                "    Request, RngMode, Rules, SOURCE_REVISION,\\n"
+                "};\\n"
+            )
+            path.write_text(original)
+            ensure_rng_mode_import(root, "src/main.rs")
+            self.assertEqual(path.read_text(), original)
 
 
 if __name__ == "__main__":
