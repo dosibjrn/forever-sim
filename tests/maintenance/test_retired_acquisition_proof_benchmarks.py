@@ -43,6 +43,8 @@ RETIRED_TOOLS = (
     "tools/wf_druid_p2_probe.py",
     "tests/test_wf_druid_p2_probe.py",
     "tools/wf360_l30_p4_worker.py",
+    "tools/wf300_nine_class_continuity_canary.py",
+    "tools/wf353_l30_current_context.py",
     "tools/wf360_l30_checkpoint_deadline.py",
     "tools/wf360_l30_p6_replay.py",
     "tests/test_wf360_druid_l30_p4_p5.py",
