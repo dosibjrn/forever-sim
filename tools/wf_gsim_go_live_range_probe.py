@@ -31,16 +31,19 @@ from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApp
 PINNED_GO_REVISION = 'a667dce8492bd9fb94269a9f864289cb74006775'
 
 
-def source_target_health_from_request(raw: bytes) -> float:
+def source_target_health_from_request(raw: bytes, *, expected_target_level: int = 63) -> float:
     """Read the target's Health stat from the actual pinned Go RaidSimRequest.
 
     The source Go stats.Stats enum maps Health to index 32. Do not replace
     this with the bridge's former arbitrary 10-million-HP diagnostic target.
+    A non-63 source target must be explicitly requested by the caller; P7's
+    established 63-level reference check stays unchanged.
     """
     try:
         targets = json.loads(raw)['encounter']['targets']
-        if len(targets) != 1 or targets[0]['level'] != 63:
-            raise ValueError('SOURCE_DPS_TARGET_NOT_SINGLE_LEVEL_63')
+        if (type(expected_target_level) is not int or expected_target_level <= 0
+                or len(targets) != 1 or targets[0]['level'] != expected_target_level):
+            raise ValueError('SOURCE_DPS_TARGET_LEVEL_MISMATCH')
         health = targets[0]['stats'][32]
     except (KeyError, IndexError, TypeError) as exc:
         raise ValueError('SOURCE_TARGET_HEALTH_MISSING') from exc
