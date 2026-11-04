@@ -273,7 +273,13 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                             'item_level': item.item_level,
                             'required_level': item.required_level,
                             'score': score if isfinite(score) else None,
-                            'contributions': parts, 'source_url': item.source_url})
+                            'contributions': parts,
+                            # Preserve native/source item units independently
+                            # of their weighted score contributions. Paid P3
+                            # sensitivity must use actual item-sized deltas.
+                            'stat_values': {str(axis): float(amount)
+                                            for axis, amount in sorted(stats.items())},
+                            'source_url': item.source_url})
         slots[slot] = {'legal_count': len(items),
                        'selected_ids': [int(x.item_id) for x in selected],
                        'items': reports, 'selection': 'HIGHEST_ITEM_LEVEL_NOT_SCORE'}
