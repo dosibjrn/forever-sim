@@ -117,7 +117,30 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         max_cpu_s=float(budget_s), per_candidate_wall_s=.75,
         screen_mobs=2, finalist_mobs=100, pack_size=2,
         search_only=True, screen_evaluator_backend="direct",
+        allow_unallocated_talent_baseline=(
+            class_key == "mage" and level == 30 and spec == "unrestricted"),
         refinement_rounds=0, **search_spec)
+    if search.get("status") == "BLOCKED":
+        return {
+            "status": "BLOCKED",
+            "reasons": list(search.get("reasons") or [
+                search.get("reason") or "SOURCE_JOINT_SEARCH_BLOCKED"]),
+            "production_component": "src.v2.source_bounded_joint_frontier.search_bounded_joint_frontier",
+            "production_engine": "gsim_CombatRuntime",
+            "talent_allocation_scope": search.get("talent_allocation_scope"),
+            "talent_frontier": search.get("talent_frontier"),
+            "diagnostic_unallocated_baseline": bool(
+                search.get("diagnostic_unallocated_baseline")),
+            "p4_talent_unlock_coverage_pass": False,
+            "p4_talent_unlock_coverage": search.get("p4_talent_unlock_coverage") or {},
+            "real_talent_unlocked_actions_cast": 0,
+            "coverage_scope_complete": False,
+            "real_paid_unique_full_builds": 0,
+            "real_paid_screen_complete": 0,
+            "diagnostic_wall_s": float(search.get("wall_s") or 0.0),
+            "required_full_search_s": (30 if gate == "P4" else 300),
+            "selected_backend_integration_pending": True,
+        }
     counts = paid_gear_slot_coverage(search)
     # Explored gear slots are search BREADTH, not correctly functioning
     # behavioral assertions. They must never be a gate success percentage.
@@ -134,8 +157,31 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     reasons = [
         gate + "_FULL_SEARCH_AND_INDEPENDENT_100MOB_NOT_EXECUTED",
         gate + "_SELECTED_NATIVE_2D_COMPATIBILITY_NOT_VERIFIED"]
-    if counts["executed"] == 0:
-        reasons.append("NO_COMPLETE_SOURCE_PAID_RUNTIME_SCREENS")
+    if actions["executed"] == 0 or actions["applicable"] == 0:
+        if actions["executed"] == 0:
+            reasons.append("NO_COMPLETE_SOURCE_PAID_RUNTIME_SCREENS")
+        if actions["applicable"] == 0:
+            reasons.append("NO_SOURCE_ACTIONS_IN_PRODUCTION_IR")
+        return {
+            "status": "BLOCKED",
+            "reasons": reasons,
+            "production_component": "src.v2.source_bounded_joint_frontier.search_bounded_joint_frontier",
+            "production_engine": "gsim_CombatRuntime",
+            "talent_allocation_scope": search.get("talent_allocation_scope"),
+            "talent_frontier": search.get("talent_frontier"),
+            "diagnostic_unallocated_baseline": bool(
+                search.get("diagnostic_unallocated_baseline")),
+            "p4_talent_unlock_coverage_pass": False,
+            "p4_talent_unlock_coverage": search.get("p4_talent_unlock_coverage") or {},
+            "real_talent_unlocked_actions_cast": 0,
+            "coverage_scope_complete": False,
+            "real_paid_unique_full_builds": int(search.get("unique_full_builds") or 0),
+            "real_paid_screen_complete": int(search.get("screen_complete_candidates") or 0),
+            "diagnostic_wall_s": float(search.get("wall_s") or 0.0),
+            "required_full_search_s": (30 if gate == "P4" else 300),
+            "source_role": role,
+            "selected_backend_integration_pending": True,
+        }
     return {
         "status": "FAIL",
         "reasons": reasons,
@@ -156,6 +202,12 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
             "coverage_basis": "executed_behavior_assertions",
         } if actions["applicable"] and actions["executed"] else {}),
         "real_talent_unlocked_actions_cast": verified_unlocks,
+        "p4_talent_unlock_coverage_pass": bool(
+            search.get("p4_talent_unlock_coverage_pass", False)),
+        "talent_allocation_scope": search.get("talent_allocation_scope"),
+        "talent_frontier": search.get("talent_frontier"),
+        "diagnostic_unallocated_baseline": bool(
+            search.get("diagnostic_unallocated_baseline")),
         "coverage_scope_complete": False,
         "paid_source_gear_slots": counts["paid_slots"],
         "source_eligible_gear_slots": counts["eligible_slots"],
