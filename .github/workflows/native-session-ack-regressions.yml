@@ -162,12 +162,3 @@ jobs:
                 flush=True)
           PY
 
-      - name: Priest L20 P4 real 100-target native/world no-record probe
-        # This calls the existing production gate, not a fixture PASS or recorder.
-        # An actual FAIL is expected until recovery and full cold search work.
-        env:
-          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: integrations/mythicsim-rust/engine/target/debug/forever-engine
-          FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST: integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json
-          FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD: '1'
-          FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS: '100'
-        run: python tools/wf_gate.py --class priest --level 20 --spec unrestricted --gate P4

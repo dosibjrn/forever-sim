@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired M47 Paladin L20 hybrid Python selection/adversarial report drivers;
+    # their required root-level baseline and report JSON files are not tracked.
+    "tools/m47_paladin_l20_selection.py",
+    "tools/m47_paladin_l20_adversarial.py",
     # Standalone legacy GameIR talent/gear/policy bounded search CLI; live gates use wf_gate.py.
     "scripts/run_staged_joint_search.py",
     # Retired WF442 P2 source-rank ingester (source captures remain historical).
@@ -222,6 +226,8 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "m47_paladin_l20_selection",
+    "m47_paladin_l20_adversarial",
     "wf442_ingest_source_rank_observations",
     "test_wf444_joint_critical_proc_tdd",
     "test_wf445_joint_incoming_dodge_resource_tdd",
@@ -431,6 +437,8 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Exclusive M47 L20 adversarial test read an absent generated root-level JSON.
+    "tests/test_m47_paladin_l20_adversarial_v011471.py",
     # Retired synthetic Python GameIR Warcraft mechanics, not Forever-owned contracts.
     "tests/test_wf442_generic_avoidance_resource_red.py",
     "tests/test_wf442_generic_direct_heal_crit_red.py",
