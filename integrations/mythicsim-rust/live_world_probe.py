@@ -52,8 +52,6 @@ def _iteration_limited_request(source: dict, iterations: int):
     control and live world must execute the same first N fights from an
     otherwise identical request so RNG streams and first-fight duration agree.
     """
-    if type(iterations) is not int or iterations < 1:
-        raise ValueError("RUST_ITERATION_BUDGET_INVALID")
     if not isinstance(source.get("simOptions"), dict):
         raise ValueError("RUST_SOURCE_SIM_OPTIONS_MISSING")
     reduced = json.loads(json.dumps(source))
@@ -448,6 +446,8 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_NATIVE_CONTROL_RNG_MODE_INVALID")
     source = json.loads(request.read_text())
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("RUST_NATIVE_CONTROL_ITERATIONS_INVALID")
     # Original report iteration count is provenance, not a cap on a new
     # accepted final. Use the shared request normalizer also used by run().
     request_dir, reduced = _iteration_limited_request(source, iterations)
