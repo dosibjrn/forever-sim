@@ -276,8 +276,200 @@ def _freeze_paid_p74_balanced_winner(screen_best, reranked, confirmed):
     return score, live, sha, request, score, "best_balanced_live_screen"
 
 
+
+
+def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> dict:
+    """Pay a genuinely changed gear/enchant candidate in selected native Rust.
+
+    P7.4 is a single-axis reachability gate, not the P7.5 joint 300-second
+    search or stochastic holdout. The pinned native item/enchants source
+    provides proposals, and native Rust alone accepts or rejects each build.
+    """
+    import math
+    from uuid import uuid4
+    from tools.wf_gate_p7_3_live import _native_refusal
+
+    prepared = _pinned_source_runtime(
+        root, class_key, level, spec, "P7.4", require_world=False)
+    if isinstance(prepared, dict):
+        return prepared
+    base, meta, binary = prepared
+    source_dir = root / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(source_dir))
+    try:
+        gear_search = _source_module(
+            source_dir / "p74_gear_search.py", "p74_pinned_native_options")
+    finally:
+        sys.path.remove(str(source_dir))
+    production = _source_module(
+        source_dir / "live_world_probe.py", "p74_selected_native_scorer")
+    upstream = binary.parents[2]
+    items = upstream / "data/items.jsonl"
+    enchants = upstream / "data/enchants.jsonl"
+    if not items.is_file() or not enchants.is_file():
+        return {"status": "BLOCKED",
+                "reasons": ["P7_4_PINNED_RUST_ITEM_OR_ENCHANT_DATA_MISSING"]}
+    try:
+        pool, enchant_pools, options_meta = gear_search.pinned_rust_candidate_pool(
+            items, enchants)
+    except (ValueError, RuntimeError, OSError, KeyError, TypeError,
+            AssertionError, subprocess.SubprocessError) as exc:
+        return {"status": "FAIL", "reasons": [
+            "P7_4_PINNED_RUST_ITEM_OPTIONS_FAILED:"
+            + type(exc).__name__ + ":" + str(exc)[:180]]}
+
+    reference_player = base["raid"]["parties"][0]["players"][0]
+    reference_items = reference_player["equipment"]["items"]
+    # Enumerate bounded source-admitted one-slot changes instead of replacing
+    # all slots at once (which usually makes an otherwise legal request invalid).
+    # Nothing here judges equipment restrictions: every change goes to Rust.
+    moves = []
+    per_slot = []
+    for slot, reference in enumerate(reference_items):
+        item_ids = []
+        for value in pool.get(slot, ()):
+            if (type(value) is int and value != reference["id"]
+                    and value not in item_ids):
+                item_ids.append(value)
+            if len(item_ids) >= 8:
+                break
+        enchant_ids = []
+        for value in enchant_pools.get(slot, ()):
+            if (value is None or type(value) is int) and (
+                    value != reference.get("enchant") and value not in enchant_ids):
+                enchant_ids.append(value)
+            if len(enchant_ids) >= 4:
+                break
+        per_slot.append([("item", slot, v) for v in item_ids]
+                        + [("enchant", slot, v) for v in enchant_ids])
+    # Round robin avoids spending the entire bounded budget on the first slot.
+    for index in range(max((len(choices) for choices in per_slot), default=0)):
+        for choices in per_slot:
+            if index < len(choices):
+                moves.append(choices[index])
+    seen = set()
+    paid = invalid = unsupported = errors = 0
+    refusals = []
+    failures = []
+    best = None
+    started = time.monotonic()
+    for kind, slot, value in moves[:96]:
+        candidate = copy.deepcopy(base)
+        player = candidate["raid"]["parties"][0]["players"][0]
+        equipped = player["equipment"]["items"][slot]
+        if kind == "item":
+            equipped["id"] = value
+            # A previous item's enchant need not be compatible with this one;
+            # a changed item alone is already a P7.4 candidate.
+            equipped.pop("enchant", None)
+        elif value is None:
+            equipped.pop("enchant", None)
+        else:
+            equipped["enchant"] = value
+        if (player.get("rotation") != reference_player.get("rotation")
+                or player.get("talentsString") != reference_player.get("talentsString")
+                or player["equipment"] == reference_player["equipment"]):
+            continue
+        candidate_sha = hashlib.sha256(
+            json.dumps(candidate, sort_keys=True).encode()).hexdigest()
+        if candidate_sha in seen:
+            continue
+        seen.add(candidate_sha)
+        try:
+            with tempfile.TemporaryDirectory(prefix="forever_p74_native_") as tmp:
+                request = Path(tmp) / "changed-equipment.json"
+                request.write_text(json.dumps(candidate))
+                try:
+                    native = production.native_source_control(
+                        binary, request, 3, rng_mode="balanced")
+                except Exception as exc:
+                    status, reason = _native_refusal(exc)
+                    if status == "INVALID":
+                        invalid += 1
+                        refusals.append(status + ":" + reason[:240])
+                    elif status == "UNSUPPORTED":
+                        unsupported += 1
+                        refusals.append(status + ":" + reason[:240])
+                    else:
+                        errors += 1
+                        failures.append(status + ":" + reason[:240])
+                    continue
+            if type(native.get("iterations")) is not int or native["iterations"] != 3:
+                raise ValueError("P7_4_NATIVE_PAID_ITERATIONS_INCOMPLETE")
+            score = native.get("native_dps")
+            if (type(score) not in (int, float)
+                    or not math.isfinite(score) or score < 0):
+                raise ValueError("P7_4_NATIVE_PAID_DPS_INVALID")
+            paid += 1
+            score = float(score)
+            if best is None or score > best[0]:
+                best = (score, candidate_sha, candidate)
+            break  # One genuinely accepted, changed native-paid axis is enough.
+        except (ValueError, RuntimeError, OSError, KeyError, TypeError,
+                AssertionError, subprocess.SubprocessError) as exc:
+            errors += 1
+            failures.append(type(exc).__name__ + ":" + str(exc)[:180])
+    elapsed = time.monotonic() - started
+    shared = {
+        "production_engine": "pinned_mythicsim_rust_native",
+        "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
+        "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
+        "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
+        "saved_reference_dps": float(meta["reference_dps"]),
+        "reference_profile": meta.get("selected_reference_profile", "balance"),
+        "checkpoint_spec": spec,
+        "source_fixed_rotation_and_talents": True,
+        "cold_unique_source_requests": len(seen),
+        "source_legal_cold_candidates_paid": paid,
+        "native_invalid_candidates": invalid,
+        "native_unsupported_candidates": unsupported,
+        "native_execution_errors": errors,
+        "native_refusal_samples": refusals[:4],
+        "source_candidate_failures": failures[:4],
+        "source_candidate_failure_count": len(failures) + len(refusals),
+        "pinned_rust_item_options_applied": True,
+        "item_candidate_admission": "pinned_rust_items_jsonl",
+        "pinned_rust_unique_item_options": options_meta["unique_item_options"],
+        "pinned_rust_unique_enchant_options": options_meta["unique_enchant_options"],
+        "search_wall_s": elapsed,
+        "independent_300s_search_requested": False,
+        "independent_300s_search_completed": False,
+        "search_rng_mode": "balanced",
+        "selected_validation": "3_native_balanced_fights_per_changed_gear_or_enchant",
+    }
+    if best is None:
+        return {"status": "FAIL",
+                "reasons": ["P7_4_NO_NATIVE_PAID_CHANGED_GEAR_CANDIDATE"],
+                **shared}
+    score, winner_sha, winner = best
+    return {
+        "status": "PASS",
+        "reasons": [],
+        "runtime_proof": {
+            "executed": True,
+            "engine_revision": meta.get("selected_engine_revision", PINNED_RUST),
+            "source_revision": winner_sha,
+            "run_id": "P7.4-native-" + str(uuid4()),
+        },
+        "winner_native_dps": score,
+        "cold_winner_request_sha256": winner_sha,
+        "cold_winner_gear": [
+            {"slot": slot, "item_id": int(item["id"]),
+             "enchant_id": item.get("enchant")}
+            for slot, item in enumerate(
+                winner["raid"]["parties"][0]["players"][0]["equipment"]["items"])
+        ],
+        **shared,
+    }
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
+    # Default P7.4 acceptance is the approved direct native single-axis test.
+    # FOREVER_P7_FULL_SOURCE_SEARCH=1 retains the old expensive exploration
+    # solely as an opt-in diagnostic, not an acceptance prerequisite.
+    if os.environ.get("FOREVER_P7_FULL_SOURCE_SEARCH", "0") == "0":
+        return _run_native_gear_axis(root, class_key, level, spec)
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.4")
     if isinstance(prepared, dict):
         return prepared
