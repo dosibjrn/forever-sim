@@ -300,11 +300,10 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, list):
                     record[key] = value[:4]
-        if gate in ("P7.2", "P7.3"):
-            # The approved P7.2/P7.3 producers pays a changed APL directly on
-            # selected native Rust. Keep its *actual* score and selected
-            # rotation visible; legacy world/1000-fight diagnostics cannot
-            # stand in for this source-native paid receipt.
+        if gate in ("P7.2", "P7.3", "P7.4"):
+            # The approved single-axis producers score changed APL, talent or
+            # gear directly on selected native Rust. Forward actual paid native
+            # scores; no legacy 2D or stochastic proxy can stand in for them.
             score = report.get("winner_native_dps")
             if (type(score) in (int, float) and math.isfinite(score)
                     and score >= 0):
@@ -315,7 +314,8 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 128:
                     record[key] = value
-            for flag in ("source_fixed_gear_and_talents", "fixed_rotation_and_gear"):
+            for flag in ("source_fixed_gear_and_talents", "fixed_rotation_and_gear",
+                         "source_fixed_rotation_and_talents"):
                 if type(report.get(flag)) is bool:
                     record[flag] = report[flag]
             apl = report.get("cold_winner_apl")
