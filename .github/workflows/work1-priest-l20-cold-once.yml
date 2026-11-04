@@ -168,7 +168,11 @@ jobs:
                   "native_source_action_events": world.get("native_2d_persistent_source_action_events"),
                   "native_paid_recovery": world.get("native_2d_persistent_paid_recovery"),
               }, sort_keys=True), flush=True)
-          assert gate["status"] != "PASS", "No-record producer must not silently certify"
+          # This job is NO-RECORD, not forced FAIL. A real approved PASS
+          # stays inspectable for Merge without writing the M1 ledger here.
+          assert gate["status"] in ("PASS", "FAIL"), gate["status"]
+          if gate["status"] == "PASS":
+              assert receipts["native_cold_gate_verdicts"]["P4"]["status"] == "PASS"
           assert receipts["native_cold_attempted_distinct_builds"] > 0, "No genuine candidate attempted"
           PY
       - name: Preserve exact real-run native receipts
