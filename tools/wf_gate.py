@@ -220,13 +220,17 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, str) and 0 < len(value) <= 256:
                     record[key] = value
-            context_stats = report.get("native_player_context_base_stats")
-            if isinstance(context_stats, dict):
-                record["native_player_context_base_stats"] = {
-                    str(key): float(value)
-                    for key, value in list(context_stats.items())[:16]
-                    if type(value) in (int, float) and math.isfinite(value)
-                }
+            for context_key in ("native_player_context_base_stats",
+                                "native_player_context_resources",
+                                "native_player_context_weapon"):
+                facts = report.get(context_key)
+                if isinstance(facts, dict):
+                    record[context_key] = {
+                        str(key): value
+                        for key, value in list(facts.items())[:24]
+                        if (type(value) in (int, float) and math.isfinite(value))
+                        or (isinstance(value, str) and len(value) <= 256)
+                    }
             profile = report.get("source_profile_production_build")
             if isinstance(profile, dict):
                 record["source_profile_production_build"] = profile
