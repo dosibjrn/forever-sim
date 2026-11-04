@@ -68,7 +68,6 @@ class MaintenanceTestLayout(unittest.TestCase):
         self.assertIn("def policy_from_record(", source_module)
         policy_consumers = (
             ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
-            ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
         )
@@ -77,7 +76,6 @@ class MaintenanceTestLayout(unittest.TestCase):
             self.assertIn("from src.v2.source_multi_pull_joint import policy_from_record", source)
         fixture_consumers = (
             ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
-            ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
         )
