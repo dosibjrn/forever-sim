@@ -6,6 +6,7 @@ on:
     paths:
       - 'tools/wf_native_priest_l20_cold.py'
       - 'tools/wf_gate_p6_live.py'
+      - 'tools/wf_gate.py'
       - 'tests/test_wf_native_priest_l20_cold.py'
       - 'tests/gates/test_wf_gate_p6_live.py'
       - '.github/workflows/work1-priest-l20-p6-focused.yml'

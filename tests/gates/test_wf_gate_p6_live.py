@@ -161,3 +161,23 @@ def test_priest_p6_uses_native_shared_cold_receipt_not_legacy_gameir(
     assert p6.run_live(ROOT, "priest", 20)["status"] == "FAIL"
 
 
+
+def test_p6_public_cli_forwards_source_nonregression_without_recomputing(
+        monkeypatch, capsys):
+    """CLI forwards the provider verdict; it never infers a gate PASS."""
+    import json
+    from tools.wf_gate import main
+    monkeypatch.setattr(p6, "run_live", lambda *args, **kwargs: {
+        "status": "PASS", "reasons": [],
+        "source_replay_T30_T300": 1.0,
+        "source_replay_300s_nonregression": True,
+        "runtime_proof": {
+            "executed": True, "engine_revision": "mock-engine",
+            "source_revision": "mock-source", "run_id": "mock-run"},
+    })
+    assert main(["--class", "priest", "--level", "20",
+                 "--spec", "unrestricted", "--gate", "P6"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["results"][0]["source_replay_300s_nonregression"] is True
+
+
