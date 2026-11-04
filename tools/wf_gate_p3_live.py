@@ -162,6 +162,181 @@ def _native_item_stat_probe_deltas(item_check: dict, axis: str):
             [source for _delta, source in ordered])
 
 
+def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
+    """Prove Intellect can affect this same combat objective before paying for it.
+
+    A prefix spell having a mana cost is not enough: it was already cast in the
+    paid baseline. Require a mana-costed, potentially repeatable policy action,
+    an exact executed-action trace, and evidence that the baseline pool could
+    not pay that action again while the target was still alive. Between-pull
+    recovery is deliberately outside this check.
+    """
+    def rejected(reason, **details):
+        return {"eligible": False, "reason": reason, **details}
+
+    resources = tuple(getattr(ir, "resources", ()) or ())
+    actor_id = str(getattr(getattr(ir, "actor", None), "id", ""))
+    mana = next((resource for resource in resources
+                 if str(getattr(resource, "id", "")) == "mana"
+                 and str(getattr(resource, "owner_actor_id", "")) == actor_id
+                 and str(getattr(resource, "scope", "actor")) == "actor"), None)
+    if mana is None or not bool(getattr(mana, "active_by_default", False)):
+        return rejected("ACTOR_MANA_RESOURCE_UNAVAILABLE")
+    initial_mana = getattr(mana, "initial_amount", None)
+    capacity = getattr(mana, "capacity", None)
+    if (type(initial_mana) not in (int, float)
+            or not isfinite(float(initial_mana))
+            or type(capacity) not in (int, float)
+            or not isfinite(float(capacity))):
+        return rejected("BASELINE_MANA_AMOUNT_UNAVAILABLE")
+    metadata = dict(getattr(mana, "metadata", {}) or {})
+    if metadata.get("base_mana") is None:
+        return rejected("INTELLECT_TO_MANA_CAPACITY_CONVERSION_UNAVAILABLE")
+    if tuple(getattr(mana, "event_gain_rules", ()) or ()):
+        return rejected("MANA_EVENT_GAIN_RULES_UNRESOLVED")
+    for trigger in tuple(getattr(ir, "triggers", ()) or ()):
+        if any(
+            str(getattr(effect, "resource_id", "")) == "mana"
+            and str(getattr(effect, "target", "")) in ("actor", "self")
+            for effect in tuple(getattr(trigger, "effects", ()) or ())
+        ):
+            return rejected("MANA_TRIGGER_EFFECT_UNRESOLVED")
+
+    selected = record.get("selected_actions")
+    if not isinstance(selected, (list, tuple)) or not selected:
+        return rejected("PAID_SELECTED_ACTION_TRACE_UNAVAILABLE")
+    action_map = {str(action.id): action for action in tuple(getattr(ir, "actions", ()) or ())}
+    selected_ids = []
+    selected_mana_cost = 0.0
+    mana_effect_net = 0.0
+    current_mana = float(initial_mana)
+    current_time = 0.0
+    regeneration_per_s = max(
+        0.0, float(getattr(mana, "regeneration_per_s", 0.0) or 0.0))
+    for row in selected:
+        if (not isinstance(row, dict)
+                or not isinstance(row.get("action_id"), str)
+                or type(row.get("start_time_s")) not in (int, float)
+                or type(row.get("end_time_s")) not in (int, float)):
+            return rejected("PAID_SELECTED_ACTION_TRACE_INVALID")
+        action_id = row["action_id"]
+        action = action_map.get(action_id)
+        if action is None:
+            return rejected("SELECTED_ACTION_MISSING_FROM_SOURCE_IR",
+                            selected_action_id=action_id)
+        start_s, end_s = float(row["start_time_s"]), float(row["end_time_s"])
+        if (not isfinite(start_s) or not isfinite(end_s)
+                or start_s < current_time - 1e-9 or end_s < start_s - 1e-9):
+            return rejected("PAID_SELECTED_ACTION_TIMING_INVALID",
+                            selected_action_id=action_id)
+        current_mana = min(
+            float(capacity),
+            current_mana + regeneration_per_s * max(0.0, start_s - current_time))
+        selected_ids.append(action_id)
+        for cost in tuple(getattr(action, "costs", ()) or ()):
+            if str(getattr(cost, "resource_id", "")) != "mana":
+                continue
+            amount = float(getattr(cost, "amount", 0.0))
+            if not isfinite(amount) or amount < 0.0:
+                return rejected("SELECTED_MANA_COST_INVALID",
+                                selected_action_id=action_id)
+            selected_mana_cost += amount
+            current_mana -= amount
+            if current_mana < -1e-9:
+                return rejected("MANA_TRACE_INCONSISTENT_WITH_EXECUTED_ACTIONS",
+                                selected_action_id=action_id,
+                                selected_mana_cost=selected_mana_cost)
+        current_mana = min(
+            float(capacity),
+            current_mana + regeneration_per_s * max(0.0, end_s - start_s))
+        for effect in tuple(getattr(action, "effects", ()) or ()):
+            if (str(getattr(effect, "resource_id", "")) != "mana"
+                    or str(getattr(effect, "target", "")) not in ("actor", "self")):
+                continue
+            operation = str(getattr(effect, "operation", ""))
+            if operation not in ("add", "remove") or not hasattr(effect, "amount"):
+                return rejected("SELECTED_MANA_EFFECT_UNRESOLVED",
+                                selected_action_id=action_id)
+            amount = float(effect.amount)
+            if not isfinite(amount) or amount < 0.0:
+                return rejected("SELECTED_MANA_EFFECT_INVALID",
+                                selected_action_id=action_id)
+            signed_amount = amount if operation == "add" else -amount
+            mana_effect_net += signed_amount
+            current_mana = min(
+                float(capacity), max(0.0, current_mana + signed_amount))
+        current_time = end_s
+
+    policy_mana_action_costs = []
+    for rule in tuple(getattr(policy, "rules", ()) or ()):
+        action_id = str(getattr(rule, "action_id", ""))
+        action = action_map.get(action_id)
+        if action is None:
+            return rejected("POLICY_ACTION_MISSING_FROM_SOURCE_IR",
+                            policy_action_id=action_id)
+        conditions = tuple(getattr(rule, "conditions", ()) or ())
+        # A non-mana guard may simply be false at the end of this encounter.
+        # Do not treat that action as an available next cast. Unconditional
+        # rules and rules explicitly gated on actor mana are auditable here.
+        if any(
+            str(getattr(condition, "kind", "")) != "resource_threshold"
+            or str(getattr(condition, "resource_id", "")) != "mana"
+            for condition in conditions
+        ):
+            continue
+        amount = sum(
+            float(cost.amount) for cost in tuple(getattr(action, "costs", ()) or ())
+            if str(getattr(cost, "resource_id", "")) == "mana")
+        if amount > 0.0:
+            policy_mana_action_costs.append({
+                "action_id": action_id, "mana_cost": amount,
+                "mana_guarded": bool(conditions),
+            })
+    if not policy_mana_action_costs:
+        return rejected(
+            "NO_MANA_COSTED_POLICY_CONTINUATION",
+            selected_action_ids=selected_ids,
+            selected_mana_cost=selected_mana_cost,
+            policy_mana_action_costs=[],
+            initial_mana=float(initial_mana),
+        )
+    if selected_mana_cost <= 0.0:
+        return rejected(
+            "NO_SELECTED_IN_COMBAT_MANA_SPEND",
+            selected_action_ids=selected_ids,
+            policy_mana_action_costs=policy_mana_action_costs,
+            initial_mana=float(initial_mana),
+        )
+
+    kill_s = record.get("kill_s")
+    if type(kill_s) not in (int, float) or not isfinite(float(kill_s)) or float(kill_s) <= 0.0:
+        return rejected("PAID_COMBAT_KILL_TIME_UNAVAILABLE")
+    if float(kill_s) < current_time - 1e-9:
+        return rejected("PAID_SELECTED_ACTION_TRACE_EXCEEDS_KILL_TIME")
+    current_mana = min(
+        float(capacity),
+        current_mana + regeneration_per_s * max(0.0, float(kill_s) - current_time))
+    next_cost = min(row["mana_cost"] for row in policy_mana_action_costs)
+    common = {
+        "selected_action_ids": selected_ids,
+        "selected_mana_cost": selected_mana_cost,
+        "mana_effect_net": mana_effect_net,
+        "estimated_mana_at_kill": max(0.0, current_mana),
+        "next_policy_mana_cost": next_cost,
+        "policy_mana_action_costs": policy_mana_action_costs,
+        "last_selected_action_end_s": current_time,
+        "kill_s": float(kill_s),
+        "initial_mana": float(initial_mana),
+        "mana_capacity": float(capacity),
+    }
+    if current_mana >= next_cost - 1e-9:
+        return rejected("BASELINE_MANA_REMAINS_ABOVE_NEXT_POLICY_COST", **common)
+    if float(kill_s) <= current_time + 1e-9:
+        return rejected("TARGET_DIED_BEFORE_NEXT_MANA_COSTED_ACTION", **common)
+    return {"eligible": True, "reason": "BASELINE_MANA_LIMITED_BEFORE_TARGET_DEATH",
+            **common}
+
+
 def _source_actor_context_summary(ir) -> dict:
     """Expose source actor/weapon provenance when the paid naked search blocks."""
     actor = getattr(ir, "actor", None)
@@ -228,7 +403,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
     from src.v2.source_budgeted_gear import (
         run_source_budgeted_gear, paid_search_winner_baseline,
-        paid_source_policy_stat_witness)
+        paid_search_winner_baseline_validation, paid_source_policy_stat_witness)
     from src.v2.source_stateful_budgeted import _make_policy
     from src.game.model import PolicyCondition
 
@@ -436,7 +611,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         shaman_l20_spellbook
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
-    native_item_sized_probe = mage_l30_native or shaman_l20_native
+    paladin_l20_native = (
+        str(class_key).lower() == "paladin" and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
+    native_item_sized_probe = (
+        mage_l30_native or shaman_l20_native or paladin_l20_native)
     if shaman_l20_native:
         # This issue is only the Spell Power witness. Other zero axes are
         # separate P3 defects. If the exact native coefficient/action was not
@@ -461,11 +642,65 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         # positive, removing the NONPOSITIVE blocker. Still require the explicit
         # paid source-policy witness for the exact native fallback action.
         witness_axes.insert(0, "spell_power")
+
+    paladin_paid_winner_validation = None
+    paladin_paid_winner_eligible = False
+    paladin_mana_constraint = None
+    paladin_paid_winner_policy = None
+    if paladin_l20_native:
+        paid_prefix = tuple(record.get("prefix") or ())
+        # Keep the existing strict paid_search_winner_baseline predicate. The
+        # detailed result below only explains a rejection; it does not relax it.
+        paid_score = paid_search_winner_baseline(policy, record, paid_prefix)
+        paladin_paid_winner_validation = paid_search_winner_baseline_validation(
+            policy, record, paid_prefix)
+        paladin_paid_winner_eligible = paid_score is not None
+        if paladin_paid_winner_eligible != paladin_paid_winner_validation["accepted"]:
+            raise AssertionError("PAID_SEARCH_WINNER_VALIDATOR_RESULT_MISMATCH")
+        if paladin_paid_winner_eligible:
+            paladin_paid_winner_policy = {
+                "policy_id": str(policy.id),
+                "opening_action_ids": list(paid_prefix),
+                "selected_action_ids": [
+                    row.get("action_id") for row in record.get("selected_actions", ())
+                    if isinstance(row, dict)
+                ],
+                "fallback": record.get("fallback"),
+                "guarded_action": record.get("guarded_action"),
+                "guarded_conditions": list(record.get("guarded_conditions") or ()),
+                "score_s_per_mob": paid_score,
+            }
+            paladin_mana_constraint = _paladin_policy_mana_constraint(
+                ir, policy, record)
+            # Agility is always first. Intellect is paid only when the exact
+            # selected continuation is demonstrably mana-limited before kill;
+            # prefix mana costs alone and between-pull recovery do not qualify.
+            paladin_axes = [
+                axis for axis in ("agility", "intellect")
+                if f"NONPOSITIVE_RELEVANT_WEIGHT:{axis}" in witness_blockers
+            ]
+            witness_axes = (["agility"] if "agility" in paladin_axes else [])
+            if (paladin_mana_constraint["eligible"]
+                    and "intellect" in paladin_axes):
+                witness_axes.append("intellect")
+        else:
+            # A rejected winner is not replaced with a generic delta or a
+            # weaker source-IR baseline. Report the precise failed invariant.
+            witness_axes = []
+            source_policy_stat_witnesses.append({
+                "stat": "agility",
+                "status": "PAID_SEARCH_WINNER_BASELINE_REJECTED",
+                "validation_reason": paladin_paid_winner_validation["reason"],
+                "paid_evaluations": 0,
+                "opening_action_ids": list(paid_prefix),
+            })
+
     paid_winner_baseline_available = (
-        native_spell_winner
-        and paid_search_winner_baseline(
-            policy, record, tuple(record.get("prefix") or ())) is not None
+        (native_spell_winner and paid_search_winner_baseline(
+            policy, record, tuple(record.get("prefix") or ())) is not None)
+        or paladin_paid_winner_eligible
     )
+    preferred_paid_winner = native_spell_winner or paladin_paid_winner_eligible
     for axis in witness_axes:
         if (weights.get(axis) != 0.0
                 and not (force_native_shaman_spell_power_witness
@@ -501,10 +736,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
             opening_action_ids=tuple(record.get("prefix", ())),
-            preferred_policy=(policy if native_spell_winner else None),
-            baseline_record=(record if native_spell_winner else None),
+            preferred_policy=(policy if preferred_paid_winner else None),
+            baseline_record=(record if preferred_paid_winner else None),
             allow_paid_winner_after_nonpositive=(
-                native_fallback_action and (mage_l30_native or shaman_l20_native)))
+                native_fallback_action and (mage_l30_native or shaman_l20_native)),
+            prefer_paid_search_winner=paladin_paid_winner_eligible)
         if native_item_sized_probe:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
@@ -539,6 +775,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        "paid_search_winner_baseline_validation": paladin_paid_winner_validation,
+        "paid_search_winner_policy": paladin_paid_winner_policy,
+        "paladin_in_combat_mana_constraint": paladin_mana_constraint,
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
