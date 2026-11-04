@@ -18,6 +18,9 @@ RETIRED_TOOLS = (
     "tools/wf299_30s_acceptance.py",
     "tools/wf299_30s_worker.py",
     # Historical Warrior L30 Python GameIR paid-gear runners; frozen reports remain.
+    # Retired provisional Python source-membership and heuristic role Top5 probes.
+    "tools/wf363_warrior_l30_p3_probe.py",
+    "tools/wf365_warrior_l30_p3_role_probe.py",
     "tools/wf368_warrior_l30_p3_paid_swaps.py",
     "tools/wf370_warrior_l30_paid_bis_challenge.py",
     "tools/wf370_warrior_l30_paid_aware_top5.py",
@@ -171,6 +174,8 @@ RETIRED_SOURCE_MODULES = (
 RETIRED_IMPORT_NAMES = (
     "wf358_l30_p3_empirical_report",
     "wf358_l30_p3_top5_replay",
+    "wf363_warrior_l30_p3_probe",
+    "wf365_warrior_l30_p3_role_probe",
     "source_checkpoint_p3_empirical_weights",
     "source_checkpoint_p3_causal_summary",
     "wf261_stateful_benchmark",
@@ -404,6 +409,8 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf358/WF358_L30_CAUSAL_STAT_100MOB.json",
     "evidence/wf358/WF358_L30_CAUSAL_STAT_WEIGHT_TABLE.json",
     "evidence/wf365/WF365_DRUID_L30_REVOCATION.json",
+    "evidence/wf363/WF363_WARRIOR_L30_P3_PROBE.json",
+    "evidence/wf365/WF365_WARRIOR_L30_P3_ROLE_PROBE.json",
     "evidence/wf343/WF343_SOURCE_DISPLAY_PERCENT_TOP5.json",
     "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_DIAGONAL.json",
