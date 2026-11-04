@@ -113,7 +113,7 @@ def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run):
 def compare_equipped_native(binary, reference: dict, selection: dict, *,
                             iterations: int = 5, seed: int = 914,
                             evaluator=run, seconds: float = 90.0,
-                            preparer=prepared_native_actor):
+                            preparer=prepared_native_actor, max_paid_attempts: int = 2):
     """Pay for both original and equipped build, with identical non-gear inputs.
 
     Any native INVALID/UNSUPPORTED/UNSCORED/ERROR is reported verbatim and
@@ -121,7 +121,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     The same selected binary's prepared actor must match the actual Rogue L20
     checkpoint before a paid comparison can become gate evidence.
     """
-    if type(iterations) is not int or iterations < 1 or seconds <= 0:
+    if (type(iterations) is not int or iterations < 1 or seconds <= 0
+            or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
     candidate, swap = first_equipped_proposal(reference, selection)
     if candidate is None:
@@ -168,9 +169,10 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         }
     original = copy.deepcopy(reference)
     deadline = time.monotonic() + seconds
-    rows = []
-    for label, request in (("baseline", reference), ("equipped", candidate)):
+    def score_request(label, request, item_swap=None):
         row = {"kind": label, "status": "ERROR", "score": None}
+        if item_swap is not None:
+            row["swap"] = item_swap
         try:
             score, _output, elapsed, payload_sha = evaluator(
                 binary, copy.deepcopy(request), iterations, seed,
@@ -188,11 +190,36 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         except (NativeExecutionError, OSError, ValueError, TimeoutError) as exc:
             row.update(status="ERROR", reason=str(exc)[-500:],
                        request_sha256=getattr(exc, "request_sha256", None))
-        rows.append(row)
+        return row
+
+    # Pay one common baseline, then source-native single-slot alternatives
+    # under the *same* seed, scenario and shared 44-attempt ceiling. The first
+    # pair remains the legacy P3 witness; extra rows are measurements, not
+    # independently invented stat weights or automatic gate credit.
+    rows = [score_request("baseline", reference),
+            score_request("equipped", candidate, swap)]
+    if max_paid_attempts > 2:
+        for slot, _index in NATIVE_SLOT_POSITIONS:
+            if len(rows) >= max_paid_attempts:
+                break
+            if slot == swap["slot"]:
+                continue
+            alternative, alternative_swap = first_equipped_proposal(
+                reference, {slot: selection.get(slot)})
+            if alternative is not None:
+                rows.append(score_request("equipped", alternative, alternative_swap))
     if reference != original:
         raise AssertionError("Native evaluation modified source reference")
-    paired = all(row["status"] == "VALID" for row in rows)
+    paired = all(row["status"] == "VALID" for row in rows[:2])
     delta = rows[1]["score"] - rows[0]["score"] if paired else None
+    native_slot_evaluations = [
+        {"swap": row["swap"], "status": row["status"],
+         "score": row["score"],
+         "delta_dps": (row["score"] - rows[0]["score"]
+                       if row["status"] == "VALID"
+                       and rows[0]["status"] == "VALID" else None)}
+        for row in rows[1:]
+    ]
     return {
         "status": ("PAID_NATIVE_DIFFERENCE" if paired and delta != 0
                    else "PAID_NATIVE_EQUAL" if paired else "PAID_NATIVE_REFUSAL"),
@@ -200,6 +227,10 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         "comparison": ({"delta_dps": delta, "baseline_dps": rows[0]["score"],
                         "equipped_dps": rows[1]["score"]} if paired else None),
         "iterations": iterations, "seed": seed,
+        "native_slot_evaluations": native_slot_evaluations,
+        "native_slots_paid": len(native_slot_evaluations),
+        "native_slots_valid": sum(row["status"] == "VALID" for row in rows[1:]),
+        "native_slot_attempt_cap": max_paid_attempts,
         "actor_requested_level": requested_level,
         # Both actual selected-native evaluations must have returned finite
         # scores for this exact L20 request and its one-item mutation.
@@ -220,10 +251,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", required=True)
     parser.add_argument("--request", type=Path, required=True)
+    parser.add_argument("--max-paid-attempts", type=int, default=2)
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
-    result = compare_equipped_native(args.binary, reference, selection)
+    result = compare_equipped_native(
+        args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts)
     print(json.dumps(result, sort_keys=True))
 
 
