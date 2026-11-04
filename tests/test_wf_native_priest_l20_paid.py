@@ -670,6 +670,63 @@ def test_nonlethal_world_ack_tries_next_paid_build_for_a_real_kill(tmp_path):
     assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json", "b.json"]
 
 
+def test_nonlethal_single_fight_ack_still_runs_retained_native_actor(tmp_path):
+    """Only the retained native world decides whether two sourced mobs die.
+
+    The separate one-fight smoke can be nonlethal without pre-vetoing a
+    genuinely paid candidate's continuous native/2D execution.
+    """
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    source = _request()
+    (tmp_path / "source.json").write_text(json.dumps(source))
+    retained = []
+
+    def scorer(binary, request, **kwargs):
+        effective = copy.deepcopy(request)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        key = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return {
+            "effective_request_sha256": key, "score": 8.75,
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 3},
+            ],
+        }, {}
+
+    def one_fight(binary, request_path):
+        return {
+            "native_2d_fight_ack_complete": True,
+            "native_2d_world_target_killed": False,
+            "native_2d_screen_complete": False,
+        }
+
+    def continuous(binary, request_path):
+        retained.append(json.loads(request_path.read_text()))
+        return {
+            "native_2d_persistent_actor_verified": True,
+            "native_2d_persistent_world_ack_verified": True,
+            "native_2d_persistent_world_targets_killed": 2,
+            "native_2d_screen_complete": False,
+        }
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer,
+        world_screen=one_fight, persistent_world=continuous)
+    assert len(retained) == 1
+    assert retained[0]["raid"]["parties"][0]["players"][0]["class"] == "ClassPriest"
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_2d_live_world_kills"] == 0
+    assert result["native_2d_persistent_attempted"] == 1
+    assert result["native_2d_persistent_verified"] == 1
+    assert result["native_2d_persistent_targets_killed"] == 2
+    assert result["native_2d_persistent_request_sha256"] == (
+        result["native_candidate_receipts"][0]["native_request_sha256"])
+    assert result["native_2d_screen_complete"] is False
+
+
 def test_selected_priest_l20_target_uses_declared_classic_proxy_hp():
     """Keep the paid source scenario on a real L20 proxy, not a 10k smoke boss."""
     from tools.wf_gsim_go_live_range_probe import source_target_health_from_request
@@ -728,6 +785,10 @@ def test_world_frontier_reaches_third_paid_build_and_returns_lethal_source_ident
         name = json.loads(source_path.read_text())["raid"]["parties"][0][
             "players"][0]["name"]
         retained_calls.append(name)
+        if name != "c":
+            # The continuous native actor can fail even after a valid one-fight
+            # ACK. This must not discard the next already-paid candidate.
+            raise RuntimeError("NATIVE_RETAINED_ACTOR_DID_NOT_KILL")
         return {
             "native_2d_persistent_actor_verified": True,
             "native_2d_persistent_world_ack_verified": True,
@@ -739,8 +800,8 @@ def test_world_frontier_reaches_third_paid_build_and_returns_lethal_source_ident
         "/native", tmp_path, score_request=scorer, world_screen=world_screen,
         persistent_world=persistent_world, max_paid_builds=3)
     assert result["native_paid_whole_builds"] == 3
-    assert retained_calls == ["c"]
-    assert result["native_2d_persistent_attempted"] == 1
+    assert retained_calls == ["a", "b", "c"]
+    assert result["native_2d_persistent_attempted"] == 3
     assert result["native_2d_persistent_verified"] == 1
     assert result["native_2d_persistent_targets_killed"] == 2
     assert seen_world == ["a", "b", "c"]
