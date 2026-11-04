@@ -34,7 +34,8 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
             first_world_native_failure=False, cast_receipts=1,
             options=None, refuse_dense_at=None, full_route_delay=5.0,
-            source_request=None, refuse_changed_world_route=False):
+            source_request=None, refuse_changed_world_route=False,
+            reverse_full_route=False):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -95,7 +96,9 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             "native_2d_persistent_source_action_counts_by_target":
                 [{"spell:585": 1} for _ in range(target_count)],
             "native_2d_persistent_elapsed_seconds": (
-                1100.0 - (paid_builds.index(build) + 1) * 100.0
+                (500.0 + paid_builds.index(build) * 100.0
+                 if reverse_full_route else
+                 1100.0 - (paid_builds.index(build) + 1) * 100.0)
                 if target_count == 100 else
                 60.0 - (paid_builds.index(build) + 1) * 2.0),
         }
@@ -305,6 +308,33 @@ def test_300s_paid_world_snapshot_survives_deferred_100mob_validation(tmp_path):
     assert receipt["native_cold_completed_100mob_finalists"] == 2
     assert receipt["native_cold_300s_reached"] is False
     assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_300s_best_of_uses_paid_100mob_not_two_target_proxy(tmp_path):
+    # Search probes favor the late candidate (23 < 27 seconds/mob), but
+    # its truly executed 100-mob world route is slower (9 > 7 s/mob).
+    # The longer 300s frontier includes the genuine early source build.
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0, reverse_full_route=True)
+    assert len(paid) == 5
+    assert len(world) == 2  # Both distinct frozen finalists really ran.
+    assert receipt["native_cold_30s_paid_selection"][
+        "source_build"] == paid[2]
+    assert receipt["native_cold_30s_paid_selection"][
+        "route_probe_s_per_mob"] == 27.0
+    assert receipt["native_cold_300s_paid_selection"][
+        "source_build"] == paid[2]  # Better actual full-route build retained.
+    assert receipt["native_cold_snapshot_30"]["route_s_per_mob"] == 7.0
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 7.0
+    assert receipt["native_cold_300s_post_search_route"][
+        "reused_30s_receipt"] is True
+    assert receipt["native_cold_completed_100mob_finalists"] == 2
+    p6 = receipt["native_cold_p6_verdict"]
+    assert p6["T30_s_per_mob"] == p6["T300_s_per_mob"] == 7.0
+    assert "P6_300S_REGRESSION_EXCEEDS_1_PERCENT" not in p6["reasons"]
+    # A 40-second discovery run is not a 300-second gate PASS.
+    assert receipt["native_cold_300s_reached"] is False
+    assert p6["status"] == "FAIL"
 
 
 def test_slow_100mob_finalist_does_not_retime_paid_30s_route(tmp_path):
