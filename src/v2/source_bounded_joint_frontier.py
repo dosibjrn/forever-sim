@@ -2741,6 +2741,43 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
         'talent_probes':talent_probes,'paid_evaluations':evaluated,
         'events':events,'worker_cpu_s':cpu,'rows':rows}
 
+def _prepare_source_talent_frontier(ir, talents, frontier, *, level,
+                                     bonus_talent_points, search_only,
+                                     spec_tree, allow_unallocated_talent_baseline):
+    """Keep an unallocated baseline explicit, validated and diagnostic-only.
+
+    The bounded P4/P5 partial measures real source actions in paid screens; it
+    does not claim full-point talent search or talent-unlock coverage. Reuse
+    the canonical source allocation validator rather than assuming that an
+    empty selection is legal. Full searches and named-spec searches never get
+    this fallback.
+    """
+    talents = list(talents)
+    frontier = dict(frontier or {})
+    if talents:
+        return talents, frontier, None
+    if not allow_unallocated_talent_baseline:
+        return None, frontier, 'SOURCE_FULL_POINT_TALENT_FRONTIER_EMPTY'
+    if not search_only or spec_tree is not None:
+        return None, frontier, 'UNALLOCATED_TALENT_BASELINE_SCOPE_INVALID'
+    try:
+        validate_talent_selection(ir, {}, level=level,
+                                  bonus_talent_points=bonus_talent_points)
+    except (ValueError, TypeError, KeyError) as exc:
+        return None, frontier, f'{type(exc).__name__}:{exc}'
+    unresolved = list(frontier.get('source_unlock_allocation_unresolved') or ())
+    marker = 'NO_EXECUTABLE_FULL_POINT_SOURCE_TALENT_FRONTIER'
+    if marker not in unresolved:
+        unresolved.append(marker)
+    frontier.update({
+        'full_point_source_talent_frontier_available': False,
+        'unallocated_baseline_only': True,
+        'unallocated_baseline_validation': 'CANONICAL_SOURCE_TALENT_VALIDATOR_ACCEPTED',
+        'source_unlock_allocation_unresolved': unresolved,
+    })
+    return [{}], frontier, None
+
+
 def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   bonus_talent_points=0,max_talents=4,
                                   max_gear_moves=2,max_policies=2,gear_slot_offset=0,
@@ -2762,7 +2799,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   refinement_talent_neighbors=2,
                                   screen_evaluator_backend="isolated",
                                   spec_tree=None, min_spec_points=21,
-                                  required_combat_mode=None):
+                                  required_combat_mode=None,
+                                  allow_unallocated_talent_baseline=False):
     """Budgeted combination search using *one* real paid L2 evaluator.
 
     4-mob screens are pruning proxies only; only 100-mob completions rank.
@@ -2784,6 +2822,16 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         raise ValueError('INVALID_REFINEMENT_BUDGET')
     if search_only and resume_progress:
         raise ValueError('REFINEMENT_SEARCH_ONLY_RESUME_NOT_YET_SUPPORTED')
+    if type(allow_unallocated_talent_baseline) is not bool:
+        raise ValueError('INVALID_UNALLOCATED_TALENT_BASELINE_FLAG')
+    if allow_unallocated_talent_baseline and (
+            str(class_key).lower() != 'mage' or int(level) != 30
+            or not search_only or spec_tree is not None
+            or not 0 < max_cpu_s <= 6.0 or max_paid_builds > 32
+            or not 0 < per_candidate_wall_s <= .75 or screen_mobs != 2
+            or finalist_mobs != 100 or pack_size != 2
+            or screen_evaluator_backend != 'direct'):
+        raise ValueError('UNALLOCATED_TALENT_BASELINE_SCOPE_INVALID')
     screen_fraction=joint_screen_budget_fraction(qualification_mobs=qualification_mobs,
         override=screen_budget_fraction)
     if (max_paid_builds<1 or max_cpu_s<=0 or not 0<per_candidate_wall_s<=120
@@ -2821,7 +2869,9 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             max_finalists=max_finalists,pack_size=pack_size,
             qualification_mobs=qualification_mobs,max_qualifiers=max_qualifiers,
             proposal_strategy=proposal_strategy,screen_budget_fraction=screen_budget_fraction,
-            search_only=search_only,refinement_top_n=refinement_top_n,
+            search_only=search_only,
+            allow_unallocated_talent_baseline=allow_unallocated_talent_baseline,
+            refinement_top_n=refinement_top_n,
             refinement_rounds=refinement_rounds,
             refinement_stat_axes=tuple(refinement_stat_axes),
             refinement_probe_delta=refinement_probe_delta,
@@ -2862,6 +2912,33 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             level=level,bonus_talent_points=bonus_talent_points,
             max_frontier=max_talents)
         frontier={**frontier,**spec_ledger}
+    talents,frontier,baseline_error=_prepare_source_talent_frontier(
+        compiled,talents,frontier,level=level,
+        bonus_talent_points=bonus_talent_points,search_only=search_only,
+        spec_tree=spec_tree,
+        allow_unallocated_talent_baseline=allow_unallocated_talent_baseline)
+    if baseline_error is not None:
+        reason=(('UNALLOCATED_BASELINE_REJECTED:'+baseline_error)
+                if allow_unallocated_talent_baseline else baseline_error)
+        return {
+            'status':'BLOCKED',
+            'reasons':['BLOCKED_NO_EXECUTABLE_FULL_POINT_SOURCE_TALENT_FRONTIER',reason],
+            'class_key':class_key,'level':level,
+            'talent_frontier':frontier,
+            'talent_frontier_mode':'BLOCKED_NO_EXECUTABLE_FULL_POINT_SOURCE_TALENT_FRONTIER',
+            'p4_talent_unlock_coverage':{},
+            'p4_talent_unlock_coverage_pass':False,
+            'p4_talent_unlock_coverage_complete':False,
+            'p4_talent_unlock_preparation_blockers':[{'allocation':{},'reason':reason}],
+            'talent_allocations_proposed':0,'gear_variants':0,
+            'policy_variants':0,'recovery_variants':0,
+            'paid_candidates':0,'unique_full_builds':0,
+            'screen_complete_candidates':0,'rows':[],
+            'wall_s':monotonic()-t0,'search_only':bool(search_only),
+            'eligible_for_checkpoint_acceptance':False,
+        }
+    talent_frontier_mode=('UNALLOCATED_BASELINE_ONLY'
+        if frontier.get('unallocated_baseline_only') else 'FULL_POINT_SOURCE')
     source_allocation=seed_stage.get('allocation')
     if spec_tree is not None:
         definition_tree={t.id:t.tree_key for t in compiled.talents}
@@ -2903,11 +2980,49 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                 level=level,swaps=swaps)
             gear_stages.append(('package:'+repr(sorted(swaps.items())),variant))
         except (ValueError,KeyError):continue
+    def blocked_policy_frontier_result(reason, expected_unlocks=None,
+                                       preparation_blockers=None):
+        blockers = list(preparation_blockers or [])
+        blockers.append({"allocation": {}, "reason": reason})
+        coverage, _ = _summarize_paid_unlock_coverage(
+            [], expected_unlocks or {}, blockers, frontier)
+        return {
+            "status": "BLOCKED",
+            "reasons": [reason],
+            "class_key": class_key,
+            "level": level,
+            "talent_frontier": frontier,
+            "talent_frontier_mode": talent_frontier_mode,
+            "p4_talent_unlock_coverage": coverage,
+            "p4_talent_unlock_coverage_pass": False,
+            "p4_talent_unlock_coverage_complete": False,
+            "p4_talent_unlock_preparation_blockers": blockers,
+            "talent_allocations_proposed": len(talents),
+            "gear_variants": len(gear_stages),
+            "policy_variants": 0,
+            "recovery_variants": 0,
+            "paid_candidates": 0,
+            "unique_full_builds": 0,
+            "screen_complete_candidates": 0,
+            "rows": [],
+            "wall_s": monotonic() - t0,
+            "search_only": bool(search_only),
+            "eligible_for_checkpoint_acceptance": False,
+        }
+
     policies=source_joint_policy_frontier(compiled,seed_stage,max_policies=max_policies,
         include_mode_cycles=True)
+    if not policies:
+        return blocked_policy_frontier_result(
+            "BLOCKED_NO_EXECUTABLE_SOURCE_POLICY_FRONTIER")
     policies_by_talent, expected_unlocks, unlock_preparation_blockers = (
         _source_talent_policy_variants(compiled, talents, seed_stage, policies,
             level=level, bonus_talent_points=bonus_talent_points))
+    if (not policies_by_talent or len(policies_by_talent) != len(talents)
+            or any(not variants for variants in policies_by_talent)):
+        return blocked_policy_frontier_result(
+            "BLOCKED_NO_EXECUTABLE_SOURCE_POLICY_FRONTIER",
+            expected_unlocks, unlock_preparation_blockers)
     recoveries=_recovery_variants(compiled,seed_stage,max_recovery_policies)
     attempted=deepcopy(recovered['rows']) if recovered else []
     completed=[r for r in attempted if r.get('status')=='COMPLETE'
@@ -3206,12 +3321,16 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'bonus_talent_points':bonus_talent_points,
         'talent_point_budget':available_talent_points(level,bonus_talent_points=bonus_talent_points),
         'spatial_mode':('simultaneous_2d_pack' if pack_size>1 else '2d_sequential_not_simultaneous_pack'),
-        'talent_frontier':frontier,'reference_origin':reference_origin,
+        'talent_frontier':frontier,'talent_frontier_mode':talent_frontier_mode,
+        'reference_origin':reference_origin,
         'spec_constraint':{'tree_key':spec_tree,
             'minimum_points':min_spec_points if spec_tree else None,
             'required_combat_mode':required_combat_mode},
         'p4_talent_unlock_coverage':unlock_coverage,
-        'p4_talent_unlock_coverage_pass':unlock_coverage_complete,
+        'p4_talent_unlock_coverage_pass':bool(unlock_coverage_complete and
+            talent_frontier_mode!='UNALLOCATED_BASELINE_ONLY'),
+        'p4_talent_unlock_coverage_complete':bool(unlock_coverage_complete and
+            talent_frontier_mode!='UNALLOCATED_BASELINE_ONLY'),
         'p4_talent_unlock_preparation_blockers':unlock_preparation_blockers,
         'proposal_strategy':proposal_strategy,
         'talent_ranks_missing_executor':coverage['rank_missing_executor'],
