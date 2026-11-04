@@ -858,11 +858,18 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
          "hand_type": "HandTypeOneHand", "weapon_type": "WeaponTypeShield"},
     ])
     relic_type = search.RUST_TYPES["relic"]
-    item_rows.append({
-        "id": 9003, "type": relic_type,
-        "scaling_options": {"0": {"stats": {"5": 100.0}}},
-        "ranged_weapon_type": "RangedWeaponTypeBow",
-    })
+    item_rows.extend([
+        {
+            "id": 9003, "type": relic_type,
+            "scaling_options": {"0": {"stats": {"5": 100.0}}},
+            "ranged_weapon_type": "RangedWeaponTypeBow",
+        },
+        {
+            # Protobuf JSON omits enum-zero RangedWeaponTypeUnknown.
+            "id": 9004, "type": relic_type,
+            "scaling_options": {"0": {"stats": {"5": 100.0}}},
+        },
+    ])
 
     items_path = tmp_path / "items.jsonl"
     enchants_path = tmp_path / "enchants.jsonl"
@@ -874,10 +881,12 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
 
     assert pool[0][:2] == [9999, 1000 + item_types.index(head_type)]
     assert pool[14] == [1000 + item_types.index(weapon_type)]
-    assert pool[15] == [1000 + item_types.index(relic_type)]
+    assert pool[15][0] == 9004
+    assert 9003 not in pool[15]
+    assert 1000 + item_types.index(relic_type) in pool[15]
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
     assert metadata == {
-        "unique_item_options": len(item_types) + 1,
+        "unique_item_options": len(item_types) + 2,
         "unique_enchant_options": len(item_types),
     }
 
