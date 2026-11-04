@@ -48,6 +48,62 @@ jobs:
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
+      - name: Run no-record Rogue L20 P3 native capability and gate receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/native-p3-no-record"
+          native="$RUNNER_TEMP/native-p3-no-record/rogue-l20-item-options.json"
+          report="$RUNNER_TEMP/native-p3-no-record/rogue-l20-p3.json"
+          "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" item-options \
+            --class rogue --level 20 --spec unrestricted --slot all > "$native"
+          rc=0
+          timeout 600s python tools/wf_gate.py --class rogue --level 20 \
+            --spec unrestricted --gate P3 --out "$report" || rc=$?
+          python - "$native" "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          native = json.loads(Path(sys.argv[1]).read_text())
+          gate = json.loads(Path(sys.argv[2]).read_text())
+          rc = int(sys.argv[3])
+          assert native["class"] == "rogue" and native["level"] == 20, native
+          assert native["spec"] == "unrestricted" and native["slot"] == "all", native
+          assert gate["class"] == "rogue" and gate["level"] == 20, gate
+          assert gate["gate"] == "P3" and gate["spec"] == "unrestricted", gate
+          assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
+          assert rc == (0 if gate["status"] == "PASS" else 1), (gate, rc)
+          row = gate["results"][0]
+          status = native["status"]
+          if status == "refused":
+              refusal = native["refusal"]["code"]
+              assert refusal == "NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS", native
+              assert gate["status"] == "BLOCKED", gate
+              assert "P3_NATIVE_ITEM_OPTIONS_REFUSED:" + refusal in row["reasons"], gate
+              assert row["real_source_search_evaluated"] == 0, gate
+          elif status in ("ok", "partial_level_unknown", "empty"):
+              if not native["items"]:
+                  assert gate["status"] == "BLOCKED", gate
+                  assert row["real_source_search_evaluated"] == 0, gate
+              elif "item_options_source" in row:
+                  assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS", gate
+                  assert row["native_item_options_status"] == status, gate
+                  assert 0 < row["real_source_search_evaluated"] <= 44, gate
+                  assert row["reachability_count"] >= row["pass_count"] >= 0, gate
+              else:
+                  assert gate["status"] != "PASS", gate
+                  assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", []), gate
+          else:
+              raise AssertionError(("unknown native status", native))
+          print("ROGUE_L20_P3_NO_RECORD", "native_status", status,
+                "gate_status", gate["status"], "reasons", row.get("reasons"),
+                "verified", row.get("pass_count"),
+                "applicable", row.get("reachability_count"),
+                "paid", row.get("real_source_search_evaluated"), flush=True)
+          PY
+
       - name: Run no-record Priest and Mage L20 P3 with native item options
         env:
           GH_TOKEN: ${{ github.token }}
