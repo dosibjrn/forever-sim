@@ -1,4 +1,4 @@
-"""Keep unreferenced one-off GameIR diagnostics out of the live CLI surface.
+"""Keep retired one-off GameIR and checkpoint diagnostics out of the live CLI surface.
 
 The retired tool modules had no direct production, test, workflow, or
 documentation callers. Separate source/runtime regression tests remain.
@@ -28,6 +28,10 @@ RETIRED_TOOLS = (
     "tools/wf269_rake_l27_real_replay.py",
     "tools/wf259_run_budgeted_gear.py",
     "tools/wf262_run_stateful_joint.py",
+    "tools/wf_checkpoint_druid_balance_l60.py",
+    "tools/wf_native_session_capability.py",
+    "tools/wf369_druid_l30_apl_probe.py",
+    "tools/wf353_l30_p3_context_replay.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf261_stateful_benchmark",
@@ -50,13 +54,28 @@ RETIRED_IMPORT_NAMES = (
     "wf269_rake_l27_real_replay",
     "wf259_run_budgeted_gear",
     "wf262_run_stateful_joint",
+    "wf_checkpoint_druid_balance_l60",
+    "wf_native_session_capability",
+    "wf369_druid_l30_apl_probe",
+    "wf353_l30_p3_context_replay",
 )
 
 
-RETIRED_OUTPUTS = ("evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",)
+RETIRED_OUTPUTS = (
+    "evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",
+    "evidence/wf369/WF369_DRUID_L30_APL_PROBE.json",
+)
 
 
-RETIRED_TESTS = ("tests/test_wf378_recovery_channel_tdd.py",)
+RETIRED_TESTS = (
+    "tests/test_wf378_recovery_channel_tdd.py",
+    "tests/gates/test_wf_first_checkpoint_vertical.py",
+)
+
+RETIRED_COMMANDS = (
+    "python tools/wf_checkpoint_druid_balance_l60.py",
+    "python tools/wf_native_session_capability.py",
+)
 
 
 RETAINED_BEHAVIOR_TESTS = (
@@ -85,6 +104,12 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     for relative in RETIRED_TESTS:
         assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, relative
+    first_checkpoint_doc = (ROOT / "docs/evidence/druid-l60-balance/first-checkpoint/README.md").read_text(
+        encoding="utf-8"
+    )
+    for command in RETIRED_COMMANDS:
+        assert command not in first_checkpoint_doc, command
+    assert "python tools/wf_gate.py" in first_checkpoint_doc
     for relative in RETAINED_BEHAVIOR_TESTS:
         assert relative in workflow, f"retained recovery regression is not run: {relative}"
     for relative in RETAINED_SEARCH_TESTS:

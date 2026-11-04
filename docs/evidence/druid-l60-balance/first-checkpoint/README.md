@@ -29,19 +29,17 @@ not a historical six-gate release or a native-only diagnostic.
   actual winning item/ability effect gaps (issue #30). Don't invent a new
   source-attestation gate.
 
-## Executable vertical audit
+## Retired diagnostic wrappers (2026-11-04)
+
+The one-off `tools/wf_checkpoint_druid_balance_l60.py` and `tools/wf_native_session_capability.py` scripts have been retired. The checkpoint wrapper still expected the former P1/P2 gates (11 results total), while the canonical `tools/wf_gate.py` now exposes only the nine active P3–P6 and P7.1–P7.5 gates. The session script performed only a JSONL handshake; it did not execute a live gsim 2D action/ACK trace or certify a gate. Neither wrapper is part of current acceptance.
+
+Use the stable gate CLI directly for an individual active gate, for example:
 
 ```bash
-python tools/wf_checkpoint_druid_balance_l60.py --out first-checkpoint-evidence/live-gates.json
-python tools/wf_native_session_capability.py --binary engine-bin/forever-engine --out first-checkpoint-evidence/native-session.json
+python tools/wf_gate.py --class druid --level 60 --spec balance --gate P3
 ```
 
-The first command invokes `tools/wf_gate.py --class druid --level 60 --spec
-balance --gate all` **fresh**, enumerating P3–P6 + all five P7 gates. It rejects
-missing, malformed, or inconsistent reports, records real blockers, and never
-promotes its own output to a certified checkpoint. The second uses a real
-selected native executable; it fails closed if the session protocol is absent.
-CI runs both, uploads the audit and an engine capability result.
+Select P4–P6 or P7.1–P7.5 as appropriate. A CLI report does not certify a checkpoint by itself; only genuine gate results and Merge-owned M1 integration change acceptance records.
 
 ## New transport component (not yet a coupled simulator)
 
