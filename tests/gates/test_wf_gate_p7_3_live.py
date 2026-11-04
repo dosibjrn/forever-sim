@@ -313,3 +313,106 @@ def test_structured_native_talent_refusal_is_not_a_python_engine_error():
         "INVALID", "NATIVE_TALENTS:druid talent rank rejected by native")
     assert gate._native_refusal(RuntimeError("native process crashed")) == (
         "ERROR", "native process crashed")
+
+
+
+def test_one_point_transfers_keep_budget_without_python_legality():
+    source = "5532220115501351--505"
+    variants = native_talent_proposals.one_point_transfer_neighbors(
+        source, limit=16)
+    assert len(variants) == len(set(variants)) == 16
+    # Proposal order is a search heuristic, not a native legality contract.
+    # The bounded stream must reach both same-tree and cross-tree edits.
+    source_tree_points = [sum(int(c) for c in tree) for tree in source.split("-")]
+    proposed_tree_points = [
+        [sum(int(c) for c in tree) for tree in variant.split("-")]
+        for variant in variants
+    ]
+    assert any(points == source_tree_points for points in proposed_tree_points)
+    assert any(points != source_tree_points for points in proposed_tree_points)
+    assert all(len(v) == len(source) for v in variants)
+    for candidate in variants:
+        deltas = [int(after) - int(before)
+                  for before, after in zip(source, candidate)
+                  if before != "-" and after != "-" and before != after]
+        assert sorted(deltas) == [-1, 1]
+        assert candidate.count("-") == source.count("-")
+        assert sum(int(c) for c in candidate if c.isdigit()) == 51
+
+
+def test_p73_native_transfer_follows_rank_refusal(monkeypatch, tmp_path):
+    """After native refuses a simple rank removal, try a budget-fixed neighbor."""
+    import json
+
+    base = _reference()
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
+    monkeypatch.setattr(
+        gate, "_pinned_source_runtime",
+        lambda *args, **kw: (base, {"reference_dps": 728.19},
+                             tmp_path / "binary"))
+
+    class Proposals:
+        @staticmethod
+        def lower_one_rank_neighbors(parent):
+            return ["5532220115501351--504"]
+
+        @staticmethod
+        def one_point_transfer_neighbors(parent):
+            return ["5532220115501351--514"]
+
+        @staticmethod
+        def mutate_talent_string(*args):
+            pytest.fail("point-preserving source candidate should be paid first")
+
+        @staticmethod
+        def cold_talent_string(*args):
+            pytest.fail("point-preserving source candidate should be paid first")
+
+    monkeypatch.setattr(gate, "native_talent_proposals", Proposals)
+    native_requests = []
+
+    def native_score(binary, path, iterations, *, rng_mode):
+        candidate = json.loads(path.read_text())
+        native_requests.append(candidate["raid"]["parties"][0]["players"][0])
+        assert iterations == 3 and rng_mode == "balanced"
+        if len(native_requests) == 1:
+            raise RuntimeError(
+                'NATIVE_SOURCE_CONTROL_FAILED exit=5 request_sha256=abc '
+                'output={"prepared":false,"refusal":{"code":"talents",'
+                '"reason":"refused by selected native"}}')
+        return {"iterations": 3, "native_dps": 712.5}
+
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda *args: SimpleNamespace(native_source_control=native_score))
+    result = gate.run_live(tmp_path, "druid", 60)
+    assert result["status"] == "PASS"  # transport test, not real paid evidence
+    assert result["native_invalid_candidates"] == 1
+    assert result["native_execution_errors"] == 0
+    assert result["point_preserving_delta_proposals"] == 1
+    assert result["source_legal_cold_candidates_paid"] == 1
+    assert result["cold_winner_talents"] == "5532220115501351--514"
+    assert [p["talentsString"] for p in native_requests] == [
+        "5532220115501351--504", "5532220115501351--514"]
+    reference = base["raid"]["parties"][0]["players"][0]
+    assert all(p["equipment"] == reference["equipment"] and
+               p["rotation"] == reference["rotation"] for p in native_requests)
+
+
+def test_bounded_native_talent_transfers_explore_within_and_across_trees():
+    """Search diversity only: these are not Python legality decisions."""
+    original = "10-10-10"
+    proposals = native_talent_proposals.one_point_transfer_neighbors(
+        original, limit=4)
+    assert len(proposals) == 4
+    assert len(set(proposals)) == 4
+    original_tree_points = [sum(map(int, part)) for part in original.split("-")]
+    tree_points = [[sum(map(int, part)) for part in value.split("-")]
+                   for value in proposals]
+    assert any(points == original_tree_points for points in tree_points)
+    assert any(points != original_tree_points for points in tree_points)
+    assert all(sum(points) == sum(original_tree_points) for points in tree_points)
+    assert native_talent_proposals.one_point_transfer_neighbors(
+        original, limit=0) == []
+    with pytest.raises(ValueError, match="TALENT_PROPOSAL_LIMIT_NEGATIVE"):
+        native_talent_proposals.one_point_transfer_neighbors(original, limit=-1)
