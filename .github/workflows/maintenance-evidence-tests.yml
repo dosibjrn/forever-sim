@@ -246,7 +246,6 @@ jobs:
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/test_wf241_mixed_hot_recovery.py
           tests/test_actor_recovery_channel.py
-          tests/test_wf61_live_persistent_replay.py
           tests/test_wf61_companion_persistence.py
           tests/test_work2_persistent_pack_budget.py
           tests/test_wf252_companion_joint.py

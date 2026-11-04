@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired gsim-only 1/2/100-mob historical replay (no active native gate caller).
+    "tools/wf61_live_persistent_replay.py",
     # WF260 historical GameIR talent/gear/policy and frozen Mage challenger runner; active gates use native producers.
     "tools/wf260_run_budgeted_joint.py",
     # Orphan WF-COMBAT232/233 GameIR weapon and armor paid-report runners.
@@ -379,6 +381,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_wf61_live_persistent_replay.py",
     "tests/generic/search/test_wf260_budgeted_joint_talents.py",
     "tests/test_wf358_p3_contextual_top5.py",
     "tests/test_wf300_continuous_mob.py",
@@ -423,7 +426,6 @@ RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
-    "tests/test_wf61_live_persistent_replay.py",
     "tests/test_wf61_companion_persistence.py",
     "tests/test_work2_persistent_pack_budget.py",
     # Keep the real shared Hunter companion source/search path covered after runner retirement.
