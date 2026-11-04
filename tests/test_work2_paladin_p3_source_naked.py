@@ -5,6 +5,7 @@ and weapon values are explicitly scenario proxies. Never promote that result
 to P3 evidence until a source-backed actor/weapon context replaces them.
 """
 import json
+from tools.wf_gate_p3_live import _allow_cooldown_fallback_for_profile
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_gear import run_source_budgeted_gear
@@ -108,3 +109,11 @@ def test_paladin_l20_real_cooldown_action_is_a_paid_prefix_continuation():
     # Source cooldown exploration is a real production search change, but the
     # actor/weapon remain explicitly marked as proxies. It is not P3 credit.
     assert ir.actor.metadata["base_stats_are_zero_proxy"] is True
+
+
+def test_cooldown_fallback_is_scoped_to_paladin_l20_unrestricted_p3():
+    assert _allow_cooldown_fallback_for_profile("paladin", 20, "unrestricted")
+    assert _allow_cooldown_fallback_for_profile("PALADIN", 20, "UNRESTRICTED")
+    assert not _allow_cooldown_fallback_for_profile("hunter", 20, "unrestricted")
+    assert not _allow_cooldown_fallback_for_profile("paladin", 19, "unrestricted")
+    assert not _allow_cooldown_fallback_for_profile("paladin", 20, "feral")

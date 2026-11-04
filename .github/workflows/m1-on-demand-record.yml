@@ -127,6 +127,7 @@ jobs:
             IFS=: read -r class level spec gate <<< "$entry"
             if [[ "$gate" == P3 ]]; then
               if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||
+                 [[ "$level" == 20 && "$class" == shaman && "$spec" == unrestricted ]] ||
                  [[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then
                 native_options_needed=true
               fi

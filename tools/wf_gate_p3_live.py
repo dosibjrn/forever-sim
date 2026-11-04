@@ -76,11 +76,12 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
 
 def native_item_options_required(
         class_key: str, level: int, spec: str = "unrestricted") -> bool:
-    """Use native ItemSparse only for source-verified unrestricted P3 targets."""
+    """Use native ItemSparse only for targets with a source-backed native provider."""
     key = str(class_key).lower()
     profile = str(spec).lower()
     return (
         (key in ("priest", "mage") and level == 20)
+        or (key == "shaman" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
     )
 
@@ -202,9 +203,18 @@ def _source_actor_context_summary(ir) -> dict:
     }
 
 
+def _allow_cooldown_fallback_for_profile(class_key: str, level: int, spec: str) -> bool:
+    """Enable cooldown continuations only for the Paladin L20 unrestricted P3 lane."""
+    return (
+        str(class_key).lower() == "paladin"
+        and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+    )
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
-    # Priest/Mage L20 and unrestricted Mage L30 P3 use the native
-    # ItemSparse provider; all other profiles/levels retain their existing path.
+    # Priest/Mage L20, unrestricted Shaman L20, and unrestricted Mage L30
+    # P3 use native ItemSparse; other profiles/levels retain their existing path.
     native_required = native_item_options_required(class_key, level, spec)
     native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
                      if native_required else None)
@@ -265,7 +275,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
         schedule_incoming_attacks=schedule_incoming_attacks,
-        allow_cooldown_fallback=True)
+        allow_cooldown_fallback=_allow_cooldown_fallback_for_profile(class_key, level, spec))
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())

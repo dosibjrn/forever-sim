@@ -18,10 +18,18 @@ RETIRED_TOOLS = (
     "tools/wf279_paid_fixed_marginal_benchmark.py",
     "tools/wf280_real_mode_path_benchmark.py",
     "tools/wf319_druid_l20_index_l2_parity.py",
+    # One-off WF300 GameIR talent-neighbor diagnostic had no callers; active runtime regressions remain.
+    "tools/wf300_two_stage_adversarial_100mob.py",
     # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
     "tools/wf343_direct_percent_top5.py",
     # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
     "tools/wf431_modified_action_paid_search.py",
+    # WF359 one-off P3 rebase depended on the retired staged P2 SQLite database.
+    "tools/wf359_druid_l30_p3_rebase.py",
+    # Historical GameIR/SQLite continuity runner; no active callers.
+    "tools/wf300_continuous_source_policy_benchmark.py",
+    # One-off Python talent-source transcription; frozen stage retained.
+    "tools/wf350_build_source_evidence.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
@@ -63,6 +71,8 @@ RETIRED_TOOLS = (
     "tools/wf424_druid_l30_insect_probe.py",
     "tools/wf429_l30_pushback_100mob.py",
     "tools/wf430_l30_starfire_100mob.py",
+    # One-off WF357 staged-SQLite recovery frontier; keep its report as historical evidence.
+    "tools/wf357_l30_recovery_frontier.py",
     # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
     "evidence/wf438/run300.py",
 )
@@ -83,8 +93,12 @@ RETIRED_IMPORT_NAMES = (
     "wf279_paid_fixed_marginal_benchmark",
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
+    "wf300_two_stage_adversarial_100mob",
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
+    "wf359_druid_l30_p3_rebase",
+    "wf300_continuous_source_policy_benchmark",
+    "wf350_build_source_evidence",
     "wf399_qualification_probe",
     "wf399_replay_winner",
     "wf384_generic_checkpoint_screen",
@@ -126,6 +140,7 @@ RETIRED_IMPORT_NAMES = (
     "wf424_druid_l30_insect_probe",
     "wf429_l30_pushback_100mob",
     "wf430_l30_starfire_100mob",
+    "wf357_l30_recovery_frontier",
     "test_wf357_source_between_pull_recovery",
     "test_wf391_generic_joint_frontier",
     "test_wf424_insect_source_talent_100mob_tdd",
@@ -181,6 +196,7 @@ RETIRED_TESTS = (
     "tests/test_wf424_insect_source_talent_100mob_tdd.py",
     "tests/test_wf430_source_compound_stun_tdd.py",
     "tests/gates/test_wf367_six_port_acceptance.py",
+    "tests/test_wf359_druid_l30_p3_rebase.py",
 )
 
 RETIRED_COMMANDS = (
@@ -203,6 +219,13 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_DIAGONAL.json",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_MARGINAL_SCREEN.json",
+    # WF359 output is retained as historical diagnostic evidence, not re-run.
+    "evidence/wf359/WF359_L30_P3_REBASED_DIRECT_100MOB.json",
+    "evidence/wf359/WF359_L30_P3_REBASED_TOP5.json",
+    "evidence/wf359/WF359_RECONSTRUCTION.json",
+    # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
+    "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
+    "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
 )
 
 
