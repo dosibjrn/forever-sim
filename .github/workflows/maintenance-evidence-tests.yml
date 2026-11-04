@@ -202,9 +202,10 @@ jobs:
           assert diagnostics["status"] == stage["search_status"], diagnostics
           assert "holy_strike:1866" in diagnostics["fillers"], diagnostics
           assert diagnostics["auto_fallback_ids"] == [], diagnostics
-          assert row["reasons"] == [
-              "P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"
-          ] if stage["search_status"] == "EVALUATED_BOUNDED" else row["reasons"], row
+          if stage["search_status"] == "EVALUATED_BOUNDED":
+              assert row["reasons"] == [
+                  "P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"
+              ], row
           actor = row["source_actor_context"]
           assert actor["base_stats_are_zero_proxy"] is True, actor
           assert actor["actor_provenance"][0]["authority"] == (
