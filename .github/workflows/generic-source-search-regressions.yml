@@ -187,3 +187,43 @@ jobs:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
           python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.3
+
+  selected-native-p71:
+    # One selected-engine P7.1 native 1000-fight stochastic no-record probe.
+    # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
+    if: startsWith(github.head_ref, 'work/work2-p71-native-stochastic-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact P7.1 PR HEAD with selected Rust fork
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          lfs: true
+          fetch-depth: 0
+      - name: Verify native engine SHA matches selected gitlink
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$recorded" && test "$recorded" = "$actual"
+          echo "HEAD=$(git rev-parse HEAD) RUST_GITLINK=$actual"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build selected native scorer
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: cargo build --release --locked --bin forever-engine
+      - name: Measure P7.1 authenticated native stochastic sample without recording M1
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.1
