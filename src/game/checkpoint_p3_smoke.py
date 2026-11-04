@@ -157,7 +157,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   weight_evidence_kind: str, weapon_damage_dependent: bool,
                   equipped_weapon_dps_relevant: bool | None = None,
                   defensive_positive_required: bool = True,
-                  required_level_policy: str = 'catalogue') -> dict:
+                  required_level_policy: str = 'catalogue',
+                  native_options_binary: str | None = None) -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
     Failures are explicit, not silently clipped or filled with tiny positives.
@@ -172,7 +173,14 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     # zeros are meaningful measurements rather than artificial P3 blockers.
     strictly_positive_axes = (POSITIVE_WHEN_PRESENT if defensive_positive_required
                               else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
-    rows = available_items(class_key, level, required_level_policy=required_level_policy)
+    if native_options_binary is not None:
+        from src.game.native_p3_item_options import native_p3_item_records
+        rows, unmapped_by_item = native_p3_item_records(native_options_binary, class_key, level)
+        source_name = 'MYTHICSIM_NATIVE_ITEM_OPTIONS'
+    else:
+        rows = available_items(class_key, level, required_level_policy=required_level_policy)
+        unmapped_by_item = {}
+        source_name = 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS'
     if not rows:
         raise ValueError('P3_NO_LEGAL_ITEMS_IN_CURRENT_DB')
     blockers = set()
@@ -198,6 +206,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         reports = []
         for item in selected:
             tested += 1
+            for native_axis in unmapped_by_item.get(item.item_id, ()):
+                blockers.add('NATIVE_UNMAPPED_STAT_AXIS:' + native_axis)
             stats = _ordinary_stats(item)
             if not weapon_damage_dependent:
                 stats.pop('mean_weapon_hit_damage', None)
@@ -275,7 +285,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         elif mean_weight <= 0:
             blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:mean_weapon_hit_damage')
     return {'checkpoint': f'{class_key}:L{int(level)}',
-            'source': 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS',
+            'source': source_name,
             'legal_item_count': len(rows), 'tested_item_count': tested,
             'slot_count': len(slots), 'slots': slots,
             'tested_stat_assertions': tested_stat_assertions,
