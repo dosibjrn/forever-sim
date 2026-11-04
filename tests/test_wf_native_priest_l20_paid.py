@@ -656,6 +656,11 @@ def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_
             "continuous_native_actor": True, "actual_2d_ack": True,
             "world_targets_killed": 2, "native_windows": [{}, {}],
             "world_ticks": 42, "paid_recovery": False,
+            "native_actor_mana_after_world_kills": [180., 145.],
+            "minimum_native_actor_health": 320.,
+            "world_elapsed_seconds": 17.5,
+            "gsim_route_paid_movement_s": 2.5,
+            "native_health_damage": {"observed": True, "damage_taken": 8., "damage_events": 1},
         }
 
     receipt = couple_source_priest_l20_persistent_world(
@@ -667,6 +672,11 @@ def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_
     }, 484.0, 2, "balanced")]
     assert receipt["native_2d_persistent_world_targets_killed"] == 2
     assert receipt["native_2d_persistent_actor_verified"] is True
+    assert receipt["native_2d_persistent_mana_after_kills"] == [180., 145.]
+    assert receipt["native_2d_persistent_min_actor_health"] == 320.
+    assert receipt["native_2d_persistent_elapsed_seconds"] == 17.5
+    assert receipt["native_2d_persistent_paid_movement_seconds"] == 2.5
+    assert receipt["native_2d_persistent_native_health_damage"]["damage_taken"] == 8.
     assert receipt["native_2d_screen_complete"] is False
 
 
@@ -767,6 +777,52 @@ def test_paid_lethal_candidate_falls_back_when_retained_actor_cannot_finish(tmp_
     assert result["native_2d_live_kill_request_sha256"] == rows[0]["native_request_sha256"]
     assert result["native_2d_screen_complete"] is False
     assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json", "b.json"]
+
+
+def test_priest_paid_100_target_request_does_not_accept_two_kill_receipt(tmp_path):
+    """The selected source build must achieve ALL requested persistent kills."""
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(_request()), encoding="utf-8")
+
+    def scorer(binary, request, **kwargs):
+        effective = copy.deepcopy(request)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        key = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return {
+            "effective_request_sha256": key,
+            "score": 15.0, "rng_mode": "balanced",
+            "native_action_cast_receipts": [{"id": {"spellId": 585}, "casts": 4}],
+        }, {}
+
+    def persistent(binary, request_path, *, target_count):
+        assert target_count == 100
+        # A real two-mob success is not a verified 100-mob screen.
+        return {
+            "native_2d_persistent_actor_verified": True,
+            "native_2d_persistent_world_ack_verified": True,
+            "native_2d_persistent_world_targets_killed": 2,
+            "native_2d_screen_complete": False,
+        }
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer,
+        world_screen=lambda *a: {
+            "native_2d_fight_ack_complete": True,
+            "native_2d_world_target_killed": True,
+        }, persistent_world=persistent, persistent_target_count=100)
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_2d_live_world_kills"] == 1
+    assert result["native_2d_persistent_attempted"] == 1
+    assert result["native_2d_persistent_verified"] == 0
+    assert result["native_2d_persistent_targets_killed"] == 0
+    assert result["native_2d_persistent_target_goal"] == 100
+    assert result["native_2d_screen_complete"] is False
+    assert result["native_candidate_receipts"][0]["native_2d_persistent_error"] == (
+        "PRIEST_L20_PERSISTENT_WORLD_RECEIPT_INVALID")
 
 
 @pytest.mark.parametrize("target_count", [1, 101, True, 2.5])
