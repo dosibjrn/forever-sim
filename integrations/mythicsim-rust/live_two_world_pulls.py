@@ -213,17 +213,23 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
                 raise AssertionError("RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INVALID")
             regen_gains.append(float(gain))
             regen_events.append(events)
-    return {
+    receipt = {
         "native_actor_mana_after_world_kills": after_kill,
         "native_actor_mana_delta_between_world_kills": [
             current - previous for previous, current
             in zip(after_kill, after_kill[1:])
         ],
         "minimum_native_actor_mana": min(after_kill),
-        "native_combat_mana_regen_observed": regen_gains is not None,
-        "native_combat_mana_regen_actual_gain_by_target": regen_gains,
-        "native_combat_mana_regen_events_by_target": regen_events,
     }
+    # Preserve the established response shape for an older selected engine.
+    # Missing native regeneration is not a fabricated zero-gain observation.
+    if regen_gains is not None:
+        receipt.update({
+            "native_combat_mana_regen_observed": True,
+            "native_combat_mana_regen_actual_gain_by_target": regen_gains,
+            "native_combat_mana_regen_events_by_target": regen_events,
+        })
+    return receipt
 
 
 def _native_health_damage_summary(windows: list[dict], *,
