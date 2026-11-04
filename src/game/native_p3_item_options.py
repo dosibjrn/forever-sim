@@ -363,8 +363,14 @@ def apply_native_shaman_lightning_bolt_coefficient(ir, native_facts: dict):
             "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE")
     exact = dict(native_facts)
     exact["spell_power_coefficients"] = {915: coefficients[915]}
-    enriched, applied = apply_native_mage_spell_coefficients(
-        ir, exact, allowed_action_ids=frozenset({"lightning_bolt:915"}))
+    try:
+        enriched, applied = apply_native_mage_spell_coefficients(
+            ir, exact, allowed_action_ids=frozenset({"lightning_bolt:915"}))
+    except NativeItemOptionsError as exc:
+        if str(exc) == "P3_NATIVE_SPELLBOOK_NO_MATCHING_SOURCE_ACTION":
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_SOURCE_RANK_MISMATCH") from exc
+        raise
     if len(applied) != 1 or applied[0]["action_id"] != "lightning_bolt:915":
         raise NativeItemOptionsError(
             "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_SOURCE_RANK_MISMATCH")
