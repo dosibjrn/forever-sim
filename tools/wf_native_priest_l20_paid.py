@@ -258,6 +258,20 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
     }
 
 
+def _native_world_completed_kills(exc: BaseException) -> int:
+    """Forward only kills actually ACKed by the running gsim world.
+
+    An incomplete native session raises with its real world-kill list.
+    This is diagnostic partial progress, never a successful 100-mob receipt.
+    """
+    detail = exc.args[0] if len(exc.args) == 1 else None
+    if (isinstance(detail, tuple) and len(detail) >= 4
+            and detail[0] == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
+            and isinstance(detail[2], list)):
+        return len(detail[2])
+    return 0
+
+
 def _native_world_error(exc: BaseException) -> str:
     """Keep native failure code and completed-kill count, not a truncated tuple.
 
@@ -369,6 +383,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
     persistent_attempted = 0
     persistent_verified = 0
     persistent_targets_killed = 0
+    persistent_max_observed_kills = 0
     persistent_candidate = None
     persistent_request_sha256 = None
     if world_screen is not None or persistent_world is not None:
@@ -448,6 +463,9 @@ def score_source_priest_l20_candidates(binary: str | Path,
                                     or retained.get("native_2d_screen_complete") is not False):
                                 raise RuntimeError("PRIEST_L20_PERSISTENT_WORLD_RECEIPT_INVALID")
                             candidate["native_2d_persistent_world"] = retained
+                            candidate["native_2d_persistent_observed_kills"] = persistent_target_count
+                            persistent_max_observed_kills = max(
+                                persistent_max_observed_kills, persistent_target_count)
                             persistent_verified += 1
                             persistent_targets_killed = retained[
                                 "native_2d_persistent_world_targets_killed"]
@@ -457,6 +475,10 @@ def score_source_priest_l20_candidates(binary: str | Path,
                                 AssertionError, KeyError, TypeError,
                                 subprocess.SubprocessError) as exc:
                             candidate["native_2d_persistent_error"] = _native_world_error(exc)
+                            actual_kills = _native_world_completed_kills(exc)
+                            candidate["native_2d_persistent_observed_kills"] = actual_kills
+                            persistent_max_observed_kills = max(
+                                persistent_max_observed_kills, actual_kills)
                 if world_screen is not None:
                     if (not isinstance(live, dict)
                             or live.get("native_2d_fight_ack_complete") is not True):
@@ -502,6 +524,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_2d_persistent_attempted": persistent_attempted,
         "native_2d_persistent_verified": persistent_verified,
         "native_2d_persistent_targets_killed": persistent_targets_killed,
+        "native_2d_persistent_max_observed_kills": persistent_max_observed_kills,
         "native_2d_persistent_target_goal": persistent_target_count,
         "native_2d_persistent_candidate": persistent_candidate,
         "native_2d_persistent_request_sha256": persistent_request_sha256,
