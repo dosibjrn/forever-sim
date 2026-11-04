@@ -73,7 +73,7 @@ def test_live_provider_exceptions_fail_closed(monkeypatch, capsys):
 def test_p7_aggregate_requires_all_five_real_subgates(monkeypatch, capsys):
     called = []
 
-    def fake(root, cls, level, spec, gate, scenario):
+    def fake(root, cls, level, spec, gate, scenario=""):
         called.append(gate)
         return {"status": "BLOCKED", "reasons": ["NOT_EXECUTED"]}
 

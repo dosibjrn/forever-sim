@@ -20,7 +20,7 @@ def test_retired_gates_are_not_executable_through_acceptance_cli(gate):
 def test_all_reports_real_gate_names_and_missing_live_providers(monkeypatch, capsys):
     # Do not run expensive real source probes when testing only group dispatch.
     monkeypatch.setattr(mod, '_run_live_gate',
-        lambda root, cl, lv, sp, gate, scenario: {
+        lambda root, cl, lv, sp, gate, scenario="": {
             'status': 'BLOCKED', 'reasons': ['LIVE_GATE_RUNNER_MISSING:' + gate]})
     assert mod.main(['--class', 'warlock', '--level', '20', '--gate', 'all']) == 1
     data = json.loads(capsys.readouterr().out)
