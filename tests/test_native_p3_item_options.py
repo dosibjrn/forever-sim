@@ -9,7 +9,9 @@ from unittest.mock import patch
 import pytest
 
 from src.game.native_p3_item_options import (
-    NativeItemOptionsError, native_p3_item_records, query_native_p3_item_options,
+    NativeItemOptionsError, apply_native_mage_spell_coefficients,
+    native_p3_item_records, query_native_mage_spell_coefficients,
+    query_native_p3_item_options,
 )
 from src.game.checkpoint_p3_smoke import fast_p3_smoke
 from src.rulesets.forever.items.catalogue import ItemRecord
@@ -278,3 +280,112 @@ def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():
     assert 'row["native_unverified_candidate_count"]' in mage30
     assert 'row["real_catalogue_legal_items"]' in mage30
     assert "--record-pass" not in mage30
+
+def test_native_mage_spell_coefficients_are_read_from_prepared_v2(tmp_path):
+    import json
+    from types import SimpleNamespace
+
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-engine-test-revision"},
+        "player": {
+            "class": "Mage",
+            "spells": [
+                {"action_id": {"spell_id": 8401}, "bonus_coefficient": 0.857},
+                {"action_id": {"spell_id": 8406}, "bonus_coefficient": 0.714},
+            ],
+        },
+    }
+    observed = {}
+
+    def runner(command, **kwargs):
+        assert command[1:3] == ["prepare", "--request"]
+        request = json.loads(Path(command[-1]).read_text(encoding="utf-8"))
+        player = request["raid"]["parties"][0]["players"][0]
+        observed["class"] = player["class"]
+        observed["talents"] = player["talentsString"]
+        observed["mage_options"] = player["mage"]["options"]["classOptions"]
+        observed["fireball_action"] = player["rotation"]["priorityList"][0]["action"]
+        observed["equipment"] = player["equipment"]
+        return SimpleNamespace(
+            returncode=0, stdout=json.dumps(prepared), stderr="")
+
+    result = query_native_mage_spell_coefficients(
+        "native-engine", runner=runner)
+
+    assert observed["class"] == "ClassMage"
+    assert observed["talents"] == "0-0-0"
+    assert observed["mage_options"]["defaultMageArmor"] == "MageArmorMageArmor"
+    assert observed["fireball_action"]["castSpell"]["spellId"]["spellId"] == 8401
+    assert observed["equipment"] == {"items": []}
+    assert result["source"] == "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS"
+    assert result["engine_revision"] == "native-engine-test-revision"
+    assert result["spell_power_coefficients"] == {8401: 0.857, 8406: 0.714}
+
+
+def test_native_mage_spell_prepare_refusal_includes_native_reason():
+    refusal = {
+        "prepared": False,
+        "refusal": {
+            "code": "class_option",
+            "reason": "a mage without its class options",
+        },
+    }
+
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="P3_NATIVE_SPELLBOOK_PREPARE_FAILED:class_option:a mage without its class options",
+    ):
+        query_native_mage_spell_coefficients(
+            "native-engine",
+            runner=_runner(refusal, returncode=5),
+        )
+
+
+def test_native_mage_spell_coefficients_enrich_only_exact_source_rank_actions():
+    from dataclasses import replace
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.model.ir import DamageEffect
+
+    ir = build_game_ir_slice(class_key="mage", level=30)
+    fireball = next(action for action in ir.actions if action.id == "fireball:8401")
+    reset_effects = tuple(
+        replace(effect, spell_power_coefficient=0.0)
+        if isinstance(effect, DamageEffect) else effect
+        for effect in fireball.effects
+    )
+    reset_fireball = replace(fireball, effects=reset_effects)
+    ir = replace(
+        ir,
+        actions=tuple(reset_fireball if action.id == fireball.id else action
+                      for action in ir.actions),
+    )
+    native = {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": "native-engine-test-revision",
+        "spell_power_coefficients": {8401: 0.857},
+    }
+
+    enriched, applied = apply_native_mage_spell_coefficients(ir, native)
+    updated = next(action for action in enriched.actions if action.id == "fireball:8401")
+    direct = next(effect for effect in updated.effects if isinstance(effect, DamageEffect))
+
+    assert direct.spell_power_coefficient == 0.857
+    assert updated.metadata["native_spell_power_coefficient_verified"] is True
+    assert applied == [{
+        "action_id": "fireball:8401",
+        "spell_id": 8401,
+        "spell_power_coefficient": 0.857,
+    }]
+    assert any(
+        fact.get("authority") == "mythicsim_rust_prepared_v2"
+        and fact.get("spell_id") == 8401
+        for fact in enriched.source_facts
+    )
+    assert not any(
+        blocker.get("code") == "source_rank_spell_power_coefficient_unverified"
+        and blocker.get("spell_id") == 8401
+        for blocker in enriched.unsupported_semantics
+    )
+

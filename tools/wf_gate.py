@@ -193,6 +193,22 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if type(value) is int or isinstance(value, str):
                     record[key] = value
+            # Keep the exact native spell-rank source receipt in the public
+            # gate report; the context hash alone is not enough to reproduce
+            # which Rust spell coefficients were applied to the L30 actions.
+            for key in (
+                "native_spell_coefficients_source",
+                "native_spell_coefficients_engine_revision",
+            ):
+                value = report.get(key)
+                if isinstance(value, str):
+                    record[key] = value
+            applied = report.get("native_spell_coefficients_applied")
+            if isinstance(applied, list):
+                record["native_spell_coefficients_applied"] = applied[:8]
+            paid_winner_probe = report.get("native_paid_winner_spell_probe_enabled")
+            if type(paid_winner_probe) is bool:
+                record["native_paid_winner_spell_probe_enabled"] = paid_winner_probe
             profile = report.get("source_profile_production_build")
             if isinstance(profile, dict):
                 record["source_profile_production_build"] = profile
