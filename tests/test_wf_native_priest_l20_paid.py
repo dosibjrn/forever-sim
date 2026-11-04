@@ -152,6 +152,45 @@ def test_bounded_source_candidate_frontier_scores_distinct_native_builds(tmp_pat
     assert result["native_2d_screen_complete"] is False
 
 
+
+def test_refused_native_builds_do_not_exhaust_paid_whole_build_budget(tmp_path):
+    """Only successful native executions spend the bounded paid-build slots."""
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    source = _request()
+    for index in range(5):
+        candidate = copy.deepcopy(source)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
+            {"id": 1000 + index}]
+        (tmp_path / f"{index:03d}.json").write_text(json.dumps(candidate))
+    attempted = []
+
+    def scorer(binary, candidate, **kwargs):
+        item = candidate["raid"]["parties"][0]["players"][0][
+            "equipment"]["items"][0]["id"]
+        attempted.append(item)
+        if item < 1002:
+            raise RuntimeError("NATIVE_INVALID_EQUIPMENT")
+        return {
+            "effective_request_sha256": f"native-paid-{item}",
+            "score": float(item), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 1}],
+        }, {}
+
+    receipt = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer,
+        max_paid_builds=2, budget_s=6.0)
+    assert attempted == [1000, 1001, 1002, 1003]
+    assert [row["status"] for row in receipt["native_candidate_receipts"]] == [
+        "NATIVE_REFUSED", "NATIVE_REFUSED", "NATIVE_PAID", "NATIVE_PAID"]
+    assert receipt["native_candidate_requests_attempted"] == 4
+    assert receipt["native_paid_whole_builds"] == 2
+    assert receipt["native_source_action_casts"] == 2
+    assert receipt["native_2d_screen_complete"] is False
+
+
+
 def test_refused_first_native_build_does_not_poison_comparable_world(tmp_path):
     """The first *paid* build anchors the scenario, not an invalid JSON candidate."""
     from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
