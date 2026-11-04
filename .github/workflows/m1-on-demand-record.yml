@@ -215,6 +215,7 @@ jobs:
           ALLOW_HEAVY: ${{ steps.targets.outputs.heavy }}
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
+          FOREVER_P3_NATIVE_ROGUE_REQUEST: integrations/mythicsim-rust/fixtures/rogue-l20-p3-native.request.json
           FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
         run: |
           set -euo pipefail

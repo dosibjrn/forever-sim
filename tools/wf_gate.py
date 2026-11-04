@@ -215,13 +215,36 @@ def main(argv=None) -> int:
             # paid attempts and actor identity silently disappear from Actions.
             native_pair = report.get("native_equipped_paid_receipt")
             if isinstance(native_pair, dict):
-                record["native_equipped_paid_receipt"] = {
+                public_pair = {
                     key: native_pair[key]
                     for key in ("status", "paid_attempts", "swap",
                                 "comparison", "evaluations",
                                 "actor_checkpoint_verified", "promotion")
                     if key in native_pair
                 }
+                # A real native prepare refusal is the next source-owned repair
+                # input. Earlier CLI shaping discarded its reason and actual
+                # prepared actor, leaving only an unhelpful generic FAIL.
+                # This is diagnostic forwarding, not an additional P3 gate.
+                reason = native_pair.get("reason")
+                if isinstance(reason, str):
+                    public_pair["reason"] = reason[:500]
+                actor = native_pair.get("native_prepared_actor")
+                if isinstance(actor, dict):
+                    public_pair["native_prepared_actor"] = {
+                        key: actor[key]
+                        for key in ("status", "reason", "actor_class",
+                                    "actor_level", "engine_revision",
+                                    "prepared_request_sha256")
+                        if key in actor and (
+                            type(actor[key]) is int
+                            or (isinstance(actor[key], str)
+                                and len(actor[key]) <= 500))
+                    }
+                requested_level = native_pair.get("actor_requested_level")
+                if type(requested_level) is int:
+                    public_pair["actor_requested_level"] = requested_level
+                record["native_equipped_paid_receipt"] = public_pair
             for key in ("native_equipped_paid_attempts",
                         "p3_shared_budget_attempts",
                         "p3_native_pair_reserved_attempts"):
