@@ -166,7 +166,7 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
     """Prove Intellect can affect this same combat objective before paying for it.
 
     A prefix spell having a mana cost is not enough: it was already cast in the
-    paid baseline. Require a mana-costed action in the selected continuation,
+    paid baseline. Require a mana-costed, potentially repeatable policy action,
     an exact executed-action trace, and evidence that the baseline pool could
     not pay that action again while the target was still alive. Between-pull
     recovery is deliberately outside this check.
@@ -175,19 +175,32 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
         return {"eligible": False, "reason": reason, **details}
 
     resources = tuple(getattr(ir, "resources", ()) or ())
+    actor_id = str(getattr(getattr(ir, "actor", None), "id", ""))
     mana = next((resource for resource in resources
                  if str(getattr(resource, "id", "")) == "mana"
-                 and str(getattr(resource, "owner_actor_id", "")) ==
-                 str(getattr(getattr(ir, "actor", None), "id", ""))), None)
+                 and str(getattr(resource, "owner_actor_id", "")) == actor_id
+                 and str(getattr(resource, "scope", "actor")) == "actor"), None)
     if mana is None or not bool(getattr(mana, "active_by_default", False)):
         return rejected("ACTOR_MANA_RESOURCE_UNAVAILABLE")
     initial_mana = getattr(mana, "initial_amount", None)
-    if type(initial_mana) not in (int, float) or not isfinite(float(initial_mana)):
+    capacity = getattr(mana, "capacity", None)
+    if (type(initial_mana) not in (int, float)
+            or not isfinite(float(initial_mana))
+            or type(capacity) not in (int, float)
+            or not isfinite(float(capacity))):
         return rejected("BASELINE_MANA_AMOUNT_UNAVAILABLE")
-    if getattr(mana, "metadata", {}).get("base_mana") is None:
+    metadata = dict(getattr(mana, "metadata", {}) or {})
+    if metadata.get("base_mana") is None:
         return rejected("INTELLECT_TO_MANA_CAPACITY_CONVERSION_UNAVAILABLE")
     if tuple(getattr(mana, "event_gain_rules", ()) or ()):
         return rejected("MANA_EVENT_GAIN_RULES_UNRESOLVED")
+    for trigger in tuple(getattr(ir, "triggers", ()) or ()):
+        if any(
+            str(getattr(effect, "resource_id", "")) == "mana"
+            and str(getattr(effect, "target", "")) in ("actor", "self")
+            for effect in tuple(getattr(trigger, "effects", ()) or ())
+        ):
+            return rejected("MANA_TRIGGER_EFFECT_UNRESOLVED")
 
     selected = record.get("selected_actions")
     if not isinstance(selected, (list, tuple)) or not selected:
@@ -195,15 +208,30 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
     action_map = {str(action.id): action for action in tuple(getattr(ir, "actions", ()) or ())}
     selected_ids = []
     selected_mana_cost = 0.0
-    mana_gained = 0.0
+    mana_effect_net = 0.0
+    current_mana = float(initial_mana)
+    current_time = 0.0
+    regeneration_per_s = max(
+        0.0, float(getattr(mana, "regeneration_per_s", 0.0) or 0.0))
     for row in selected:
-        if not isinstance(row, dict) or not isinstance(row.get("action_id"), str):
+        if (not isinstance(row, dict)
+                or not isinstance(row.get("action_id"), str)
+                or type(row.get("start_time_s")) not in (int, float)
+                or type(row.get("end_time_s")) not in (int, float)):
             return rejected("PAID_SELECTED_ACTION_TRACE_INVALID")
         action_id = row["action_id"]
         action = action_map.get(action_id)
         if action is None:
             return rejected("SELECTED_ACTION_MISSING_FROM_SOURCE_IR",
                             selected_action_id=action_id)
+        start_s, end_s = float(row["start_time_s"]), float(row["end_time_s"])
+        if (not isfinite(start_s) or not isfinite(end_s)
+                or start_s < current_time - 1e-9 or end_s < start_s - 1e-9):
+            return rejected("PAID_SELECTED_ACTION_TIMING_INVALID",
+                            selected_action_id=action_id)
+        current_mana = min(
+            float(capacity),
+            current_mana + regeneration_per_s * max(0.0, start_s - current_time))
         selected_ids.append(action_id)
         for cost in tuple(getattr(action, "costs", ()) or ()):
             if str(getattr(cost, "resource_id", "")) != "mana":
@@ -213,19 +241,31 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
                 return rejected("SELECTED_MANA_COST_INVALID",
                                 selected_action_id=action_id)
             selected_mana_cost += amount
+            current_mana -= amount
+            if current_mana < -1e-9:
+                return rejected("MANA_TRACE_INCONSISTENT_WITH_EXECUTED_ACTIONS",
+                                selected_action_id=action_id,
+                                selected_mana_cost=selected_mana_cost)
+        current_mana = min(
+            float(capacity),
+            current_mana + regeneration_per_s * max(0.0, end_s - start_s))
         for effect in tuple(getattr(action, "effects", ()) or ()):
             if (str(getattr(effect, "resource_id", "")) != "mana"
                     or str(getattr(effect, "target", "")) not in ("actor", "self")):
                 continue
-            if (str(getattr(effect, "operation", "")) != "add"
-                    or not hasattr(effect, "amount")):
-                return rejected("SELECTED_MANA_GAIN_EFFECT_UNRESOLVED",
+            operation = str(getattr(effect, "operation", ""))
+            if operation not in ("add", "remove") or not hasattr(effect, "amount"):
+                return rejected("SELECTED_MANA_EFFECT_UNRESOLVED",
                                 selected_action_id=action_id)
             amount = float(effect.amount)
-            if not isfinite(amount):
-                return rejected("SELECTED_MANA_GAIN_EFFECT_INVALID",
+            if not isfinite(amount) or amount < 0.0:
+                return rejected("SELECTED_MANA_EFFECT_INVALID",
                                 selected_action_id=action_id)
-            mana_gained += amount
+            signed_amount = amount if operation == "add" else -amount
+            mana_effect_net += signed_amount
+            current_mana = min(
+                float(capacity), max(0.0, current_mana + signed_amount))
+        current_time = end_s
 
     policy_mana_action_costs = []
     for rule in tuple(getattr(policy, "rules", ()) or ()):
@@ -271,37 +311,27 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
     kill_s = record.get("kill_s")
     if type(kill_s) not in (int, float) or not isfinite(float(kill_s)) or float(kill_s) <= 0.0:
         return rejected("PAID_COMBAT_KILL_TIME_UNAVAILABLE")
-    last_end = selected[-1].get("end_time_s")
-    if type(last_end) not in (int, float) or not isfinite(float(last_end)):
-        return rejected("PAID_SELECTED_ACTION_TIMING_UNAVAILABLE")
-
-    mana_regenerated = max(
-        0.0, float(getattr(mana, "regeneration_per_s", 0.0) or 0.0)
-    ) * float(kill_s)
-    mana_at_kill = (
-        float(initial_mana) + mana_regenerated + mana_gained - selected_mana_cost)
-    if not isfinite(mana_at_kill) or mana_at_kill < -1e-9:
-        return rejected(
-            "RECONSTRUCTED_MANA_TRACE_INCONSISTENT",
-            selected_action_ids=selected_ids,
-            selected_mana_cost=selected_mana_cost,
-        )
+    if float(kill_s) < current_time - 1e-9:
+        return rejected("PAID_SELECTED_ACTION_TRACE_EXCEEDS_KILL_TIME")
+    current_mana = min(
+        float(capacity),
+        current_mana + regeneration_per_s * max(0.0, float(kill_s) - current_time))
     next_cost = min(row["mana_cost"] for row in policy_mana_action_costs)
     common = {
         "selected_action_ids": selected_ids,
         "selected_mana_cost": selected_mana_cost,
-        "mana_gained_during_combat": mana_gained,
-        "mana_regenerated_during_combat": mana_regenerated,
-        "estimated_mana_at_kill": max(0.0, mana_at_kill),
+        "mana_effect_net": mana_effect_net,
+        "estimated_mana_at_kill": max(0.0, current_mana),
         "next_policy_mana_cost": next_cost,
         "policy_mana_action_costs": policy_mana_action_costs,
-        "last_selected_action_end_s": float(last_end),
+        "last_selected_action_end_s": current_time,
         "kill_s": float(kill_s),
         "initial_mana": float(initial_mana),
+        "mana_capacity": float(capacity),
     }
-    if mana_at_kill >= next_cost - 1e-9:
+    if current_mana >= next_cost - 1e-9:
         return rejected("BASELINE_MANA_REMAINS_ABOVE_NEXT_POLICY_COST", **common)
-    if float(kill_s) <= float(last_end) + 1e-9:
+    if float(kill_s) <= current_time + 1e-9:
         return rejected("TARGET_DIED_BEFORE_NEXT_MANA_COSTED_ACTION", **common)
     return {"eligible": True, "reason": "BASELINE_MANA_LIMITED_BEFORE_TARGET_DEATH",
             **common}
