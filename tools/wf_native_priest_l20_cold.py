@@ -200,6 +200,68 @@ def native_cold_gate_verdicts(cold: dict) -> dict:
     return verdicts
 
 
+
+def native_cold_p6_verdict(cold: dict) -> dict:
+    """Compare the actual frozen native/world 100-mob winners of ONE search.
+
+    This only consumes the paid receipts already produced by P4/P5. It does
+    not rerun a build, invent a route, or inherit P4's unlock-only predicate.
+    """
+    early = cold.get("native_cold_snapshot_30")
+    late = cold.get("native_cold_final_300")
+    valid30 = _native_cold_winner_receipt_valid(cold, "P4")
+    valid300 = _native_cold_winner_receipt_valid(cold, "P5")
+    reasons = []
+    if cold.get("native_cold_300s_reached") is not True:
+        reasons.append("P6_NATIVE_COLD_300S_NOT_REACHED")
+    if type(cold.get("native_cold_native_paid_after_30")) is not int or (
+            cold["native_cold_native_paid_after_30"] < 1):
+        reasons.append("P6_NATIVE_COLD_NO_PAID_CONTINUATION")
+    if type(cold.get("native_cold_paid_world_route_builds")) is not int or (
+            cold["native_cold_paid_world_route_builds"] < 2):
+        reasons.append("P6_NATIVE_COLD_NO_DISTINCT_PAID_BUILDS")
+    if not valid30:
+        reasons.append("P6_NATIVE_COLD_30S_100MOB_RECEIPT_INCOMPLETE")
+    if not valid300:
+        reasons.append("P6_NATIVE_COLD_300S_100MOB_RECEIPT_INCOMPLETE")
+
+    t30 = _verified_route(early.get("real_100mob_receipt")) if valid30 else None
+    t300 = _verified_route(late.get("real_100mob_receipt")) if valid300 else None
+    if valid30 and valid300:
+        # Gear/talents/APL/name may differ: they are the optimized build.
+        # Encounter, native RNG protocol and starting actor/scenario must not.
+        source30 = early.get("source_build")
+        source300 = late.get("source_build")
+        try:
+            actor30 = source30["raid"]["parties"][0]["players"][0]
+            actor300 = source300["raid"]["parties"][0]["players"][0]
+            same_scenario = (
+                source30["encounter"] == source300["encounter"]
+                and source30["simOptions"] == source300["simOptions"]
+                and all(actor30.get(k) == actor300.get(k) for k in (
+                    "class", "level", "race", "distanceFromTarget",
+                    "reactionTimeMs", "channelClipDelayMs")))
+        except (TypeError, KeyError, IndexError):
+            same_scenario = False
+        if not same_scenario:
+            reasons.append("P6_NATIVE_COLD_INCOMPARABLE_SOURCE_SCENARIO")
+        if t30 > 1.01 * t300:
+            reasons.append("P6_NATIVE_COLD_NUMERIC_SATURATION_FAIL")
+
+    ratio = t30 / t300 if t30 is not None and t300 is not None else None
+    return {
+        "status": "FAIL" if reasons else "PASS",
+        "reasons": reasons,
+        "T30_s_per_mob": t30,
+        "T300_s_per_mob": t300,
+        "ratio_T30_T300": ratio,
+        "identical_winner_build": bool(
+            valid30 and valid300
+            and early["source_request_sha256"] == late["source_request_sha256"]
+            and early["source_build"] == late["source_build"]),
+    }
+
+
 def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                                item_options: list[dict], *, score_request=None,
                                world_screen=None, clock=None,
@@ -503,6 +565,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_rows": rows,
     }
     result["native_cold_gate_verdicts"] = native_cold_gate_verdicts(result)
+    result["native_cold_p6_verdict"] = native_cold_p6_verdict(result)
     result["native_cold_gate_accepted"] = all(
         v["status"] == "PASS" for v in result["native_cold_gate_verdicts"].values())
     return result

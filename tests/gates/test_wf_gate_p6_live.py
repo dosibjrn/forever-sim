@@ -102,3 +102,61 @@ def test_p6_bounded_ratio_requires_a_finite_paid_100mob_replay():
     for invalid in ({"count": 99}, {"mob_completed": 99},
                     {"status": "BLOCKED_ACTOR_DIED"}, {"count": True}):
         assert not p6._complete_finite_paid_replay({**valid, **invalid})
+
+
+def test_priest_p6_uses_native_shared_cold_receipt_not_legacy_gameir(
+        monkeypatch, tmp_path):
+    from tools import wf_gate_p4_p5_partial as native
+    import hashlib
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"selected-executed-native-binary")
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", str(binary))
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH", "1")
+    monkeypatch.setenv("GITHUB_RUN_ID", "987654")
+    request = {"encounter": {"targets": [{"level": 20}]},
+               "simOptions": {"iterations": 1, "randomSeed": "42"},
+               "raid": {"parties": [{"players": [{
+                   "class": "ClassPriest", "level": 20, "race": "RaceHuman"}]}]}}
+    import json
+    digest = hashlib.sha256(json.dumps(
+        request, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    selection = lambda elapsed: {"source_request_sha256": digest,
+                                 "source_build": request,
+                                 "paid_completed_elapsed_s": elapsed}
+    world = {"native_2d_persistent_actor_verified": True,
+             "native_2d_persistent_world_ack_verified": True,
+             "native_2d_persistent_paid_recovery": True,
+             "native_2d_persistent_world_targets_killed": 100,
+             "native_2d_persistent_source_action_events": 100,
+             "native_2d_persistent_source_action_counts_by_target":
+                 [{"native:585": 1} for _ in range(100)],
+             "native_2d_persistent_elapsed_seconds": 4201.0}
+    winner = {**selection(5.), "route_s_per_mob": 42.01,
+              "real_100mob_receipt": world}
+    cold = {"native_cold_300s_reached": True,
+            "native_cold_native_paid_after_30": 1,
+            "native_cold_paid_world_route_builds": 2,
+            "native_cold_30s_paid_selection": selection(5.),
+            "native_cold_300s_paid_selection": selection(40.),
+            "native_cold_snapshot_30": winner,
+            "native_cold_final_300": winner}
+    calls = []
+    def native_producer(*args, **kwargs):
+        calls.append((args, kwargs))
+        return cold
+    monkeypatch.setattr(native, "_native_cold_options_without_paid_executor",
+                        native_producer)
+    report = p6.run_live(ROOT, "priest", 20, spec="unrestricted")
+    assert report["status"] == "PASS"
+    assert report["source_replay_T30_T300"] == 1.0
+    assert report["runtime_proof"]["run_id"] == "987654"
+    assert report["runtime_proof"]["engine_revision"].endswith(
+        hashlib.sha256(binary.read_bytes()).hexdigest())
+    assert len(calls) == 1
+    assert calls[0][1]["gate"] == "P4"
+
+    # A native receipt refusal remains a genuine P6 FAIL, not a fake PASS.
+    cold["native_cold_final_300"]["route_s_per_mob"] = 39.0
+    assert p6.run_live(ROOT, "priest", 20)["status"] == "FAIL"
+
+

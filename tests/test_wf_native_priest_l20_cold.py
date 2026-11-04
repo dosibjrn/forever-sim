@@ -6,7 +6,8 @@ import json
 import pytest
 
 from tools.wf_native_priest_l20_cold import (
-    _source_native_builds, native_cold_gate_verdicts, run_native_priest_l20_cold,
+    _source_native_builds, native_cold_gate_verdicts, native_cold_p6_verdict,
+    run_native_priest_l20_cold,
 )
 
 
@@ -565,6 +566,64 @@ def test_native_cold_accepts_genuine_window_receipts_not_hardcoded_fail():
     changed["native_cold_300s_reached"] = False
     assert all(v["status"] == "FAIL"
                for v in native_cold_gate_verdicts(changed).values())
+
+
+
+def test_priest_native_p6_reuses_real_frozen_100mob_receipts_without_replay():
+    # These are mocked Forever-owned receipt mappings, not a gameplay test.
+    build = _source()
+    digest = hashlib.sha256(json.dumps(
+        build, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    selection = lambda elapsed: {
+        "source_request_sha256": digest, "source_build": build,
+        "paid_completed_elapsed_s": elapsed}
+    world = {
+        "native_2d_persistent_actor_verified": True,
+        "native_2d_persistent_world_ack_verified": True,
+        "native_2d_persistent_paid_recovery": True,
+        "native_2d_persistent_world_targets_killed": 100,
+        "native_2d_persistent_source_action_events": 100,
+        "native_2d_persistent_source_action_counts_by_target":
+            [{"native:585": 1} for _ in range(100)],
+        "native_2d_persistent_elapsed_seconds": 4201.0,
+    }
+    winner = {**selection(5.0), "route_s_per_mob": 42.01,
+              "real_100mob_receipt": world}
+    cold = {
+        "native_cold_300s_reached": True,
+        "native_cold_native_paid_after_30": 1,
+        "native_cold_paid_world_route_builds": 2,
+        "native_cold_30s_paid_selection": selection(5.0),
+        "native_cold_300s_paid_selection": selection(35.0),
+        "native_cold_snapshot_30": copy.deepcopy(winner),
+        "native_cold_final_300": copy.deepcopy(winner),
+    }
+    result = native_cold_p6_verdict(cold)
+    assert result == {
+        "status": "PASS", "reasons": [], "T30_s_per_mob": 42.01,
+        "T300_s_per_mob": 42.01, "ratio_T30_T300": 1.0,
+        "identical_winner_build": True,
+    }
+    # Numeric saturation alone never accepts an incomplete or incomparable run.
+    changed = copy.deepcopy(cold)
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_world_targets_killed"] = 99
+    assert native_cold_p6_verdict(changed)["status"] == "FAIL"
+    changed = copy.deepcopy(cold)
+    changed["native_cold_final_300"]["source_build"]["encounter"]["duration"] = 60
+    changed["native_cold_300s_paid_selection"]["source_build"]["encounter"]["duration"] = 60
+    assert "P6_NATIVE_COLD_INCOMPARABLE_SOURCE_SCENARIO" in (
+        native_cold_p6_verdict(changed)["reasons"])
+    changed = copy.deepcopy(cold)
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_elapsed_seconds"] = 4000.0
+    changed["native_cold_final_300"]["route_s_per_mob"] = 40.0
+    assert "P6_NATIVE_COLD_NUMERIC_SATURATION_FAIL" in (
+        native_cold_p6_verdict(changed)["reasons"])
+    changed = copy.deepcopy(cold)
+    changed["native_cold_native_paid_after_30"] = 0
+    assert "P6_NATIVE_COLD_NO_PAID_CONTINUATION" in (
+        native_cold_p6_verdict(changed)["reasons"])
 
 
 def test_native_cold_records_only_executed_changed_talent_apl_witness(tmp_path):
