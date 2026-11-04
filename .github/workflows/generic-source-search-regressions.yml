@@ -40,6 +40,7 @@ on:
       - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'tests/test_work1_p7_1_live_entry.py'
       - 'tools/wf_gate_p7_1_live.py'
+      - 'tests/test_work2_p71_feral_native.py'
       - 'integrations/mythicsim-rust/live_world_probe.py'
       - 'integrations/mythicsim-rust/verify_upstream_candidate.py'
       - 'tools/wf_gate_p7_3_live.py'
@@ -155,6 +156,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
           tests/test_work1_p7_1_live_entry.py
+          tests/test_work2_p71_feral_native.py
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_native_ledger_retains_replayable_request_and_rng_provenance
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_screen_survives_failed_balanced_probe
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_rerank_ledger_replays_all_finalist_evaluations
@@ -270,7 +272,7 @@ jobs:
         env:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.1
+          python tools/wf_gate.py --class druid --level 60 --spec "${{ startsWith(github.head_ref, 'work/work2-p71-native-stochastic-feral-') && 'feral' || 'unrestricted' }}" --gate P7.1
 
   selected-native-p75:
     # Pay exactly one changed-HEAD unrestricted P7.5 300s native cold search

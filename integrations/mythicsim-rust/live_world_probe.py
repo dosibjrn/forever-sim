@@ -44,6 +44,18 @@ def _set_stationary_target_distance_for_probe(world, distance_yards: float) -> N
     world._pack_positions[target_id] = position
 
 
+class NativeSourceRefusal(RuntimeError):
+    """A structured refusal returned by the selected Rust engine, not a runtime crash."""
+
+    def __init__(self, code: str, reason: str, exit_code: int, request_sha256: str):
+        self.code = code
+        self.reason = reason
+        self.exit_code = exit_code
+        self.request_sha256 = request_sha256
+        super().__init__(f"NATIVE_SOURCE_REFUSED code={code} exit={exit_code} "
+                         f"request_sha256={request_sha256}: {reason}")
+
+
 def _iteration_limited_request(source: dict, iterations: int):
     """Write the exact same iteration-bounded native request for both controls.
 
@@ -486,11 +498,23 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
                  if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS", "WOWSIM_RNG_MODE")},
         )
         if completed.returncode != 0:
-            # A real P7.5 source-paid candidate returned nonzero with empty
-            # stderr (M1 #41592501859); the old assertion hid the exit code,
-            # any stdout diagnostic and which source request actually failed.
-            # Preserve the failed candidate's identity for reproducible
-            # debugging; do not relabel it legal, retry, or award a gate PASS.
+            # The selected native engine owns game legality. Preserve its actual
+            # structured refusal instead of hiding it as a generic Python crash.
+            # No Forever-side talent, item or spell validation is performed.
+            request_sha = hashlib.sha256(reduced.read_bytes()).hexdigest()
+            for stream in (completed.stdout, completed.stderr):
+                try:
+                    response = json.loads(stream or "")
+                except (TypeError, ValueError):
+                    continue
+                refusal = response.get("refusal") if isinstance(response, dict) else None
+                if not isinstance(refusal, dict):
+                    continue
+                code, reason = refusal.get("code"), refusal.get("reason")
+                if isinstance(code, str) and code and isinstance(reason, str) and reason:
+                    raise NativeSourceRefusal(code, reason, completed.returncode, request_sha)
+            # Non-refusal failures still retain exit code, stderr/stdout and
+            # request identity. Never relabel them as native build refusals.
             diagnostic = (completed.stderr or completed.stdout or "").strip()
             raise RuntimeError(
                 "NATIVE_SOURCE_CONTROL_FAILED "

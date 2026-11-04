@@ -22,6 +22,10 @@ from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
 # Historical WF633 engine identity: preserve its provenance after fork updates.
 PINNED_RUST = "666fe17a42682068a3c8497d88d5fa3732cbdfb9"
 SAVED_BALANCE_RAW_SHA = "e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac48c6c646a"
+# Exact original 10,000-fight Feral Cat saved request (811.023726 DPS).
+SAVED_FERAL_RAW_SHA = "dc8b0e7f5c3315e7f5c1b5dd85946c25b3137bafdd0730f93adb1b6c2e44745f"
+FERAL_REFERENCE_DPS = 811.0237260012982
+FERAL_REPORT_URL = "https://api.mythicsim.com/api/forever/ranking-sims/f2176db2-8217-47d2-8d3c-c9260d8ccb73/report"
 
 
 def _selected_rust_submodule(root: Path, upstream: Path) -> str | None:
@@ -221,26 +225,32 @@ def _source_native_world_parity(
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     if ((class_key, level) != ("druid", 60)
-            or spec not in ("balance", "unrestricted")):
+            or spec not in ("balance", "unrestricted", "feral")):
         return _blocked("P7_1_SAVED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
 
-    request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
+    feral = spec == "feral"
+    request = root / (
+        "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json" if feral
+        else "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json")
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
-    if not request.is_file() or not witness.is_file():
+    if not request.is_file() or (not feral and not witness.is_file()):
         return _blocked("P7_1_PINNED_SOURCE_REQUEST_OR_REFERENCE_MISSING")
     raw = request.read_bytes()
     raw_sha = hashlib.sha256(raw).hexdigest()
-    if raw_sha != SAVED_BALANCE_RAW_SHA:
+    if raw_sha != (SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA):
         return _blocked("P7_1_SAVED_REQUEST_CHANGED", actual_sha256=raw_sha)
     source = json.loads(raw)
-    meta = json.loads(witness.read_text())
+    # The authentic Feral request and report are saved directly, without a
+    # WF633 validation sidecar. Do not borrow Balance's score or engine claim.
+    meta = ({"reference_dps": FERAL_REFERENCE_DPS} if feral
+            else json.loads(witness.read_text()))
     player = source["raid"]["parties"][0]["players"][0]
     target = source["encounter"]["targets"]
     source_iterations = source["simOptions"]["iterations"]
-    if (meta["engine_revision"] != PINNED_RUST
+    if ((not feral and meta["engine_revision"] != PINNED_RUST)
             or player.get("class") != "ClassDruid"
-            or "balanceDruid" not in player or len(target) != 1
-            or target[0]["level"] != 63):
+            or ("feralCatDruid" if feral else "balanceDruid") not in player
+            or len(target) != 1 or target[0]["level"] != 63):
         return _blocked("P7_1_SAVED_REFERENCE_SCENARIO_MISMATCH")
     # Preserve the original report's 10k iteration field as pinned provenance;
     # the user-approved final validation itself uses only 1000 stochastic
@@ -272,10 +282,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     selected_rust = _selected_rust_submodule(root, upstream)
     if selected_rust is None:
         return _blocked("P7_1_RUST_SOURCE_REVISION_NOT_PINNED")
-    # P7 is a stationary native benchmark. The saved report stays an
-    # authenticated Balance reference even for the unrestricted checkpoint;
-    # no 2D world handshake, range perturbation, or duplicate replay is
-    # required by the approved P7.1 contract.
+    # P7 is a stationary native benchmark. Run the original Feral reference
+    # for Feral, or the existing Balance reference for Balance/unrestricted;
+    # no 2D world handshake or duplicate replay is required.
     path = root / "integrations/mythicsim-rust/live_world_probe.py"
     module_spec = importlib.util.spec_from_file_location("forever_p71_native", path)
     if module_spec is None or module_spec.loader is None:
@@ -287,6 +296,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             binary, request, run_iterations, rng_mode="stochastic")
     except (AssertionError, KeyError, TypeError, ValueError, OSError,
             RuntimeError, subprocess.SubprocessError) as exc:
+        if isinstance(exc, getattr(module, "NativeSourceRefusal", ())):
+            # A real Rust INVALID/UNSUPPORTED refusal is authoritative. No
+            # stochastic fight ran, so this is not a DPS-floor failure.
+            return {"status": "BLOCKED",
+                    "reasons": ["P7_1_NATIVE_SOURCE_REFUSED"],
+                    "native_refusal_code": exc.code,
+                    "native_refusal_reason": exc.reason,
+                    "native_source_revision": selected_rust,
+                    "source_request_raw_sha256": raw_sha}
         return {"status": "FAIL",
                 "reasons": ["P7_1_NATIVE_STOCHASTIC_EXECUTION_FAILED"],
                 "native_execution_error": type(exc).__name__ + ":" + str(exc)[:240],
@@ -311,9 +329,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "source_request_raw_sha256": raw_sha,
         "saved_reference_dps": reference,
         "required_dps": p7_required_dps("P7.1", reference),
-        "source_report_url": "https://api.mythicsim.com/api/forever/ranking-sims/d9d85974-a1f7-4700-ab22-2335d767a944/report",
-        "reference_configuration_source": "WF648_original_saved_report_request",
-        "reference_profile": "balance",
+        "source_report_url": (FERAL_REPORT_URL if feral else
+                              "https://api.mythicsim.com/api/forever/ranking-sims/d9d85974-a1f7-4700-ab22-2335d767a944/report"),
+        "reference_configuration_source": ("original_saved_feral_report_request" if feral
+                                           else "WF648_original_saved_report_request"),
+        "reference_profile": "feral" if feral else "balance",
         "checkpoint_spec": spec,
         "iterations": run_iterations,
         "sampled_source_fights": run_iterations,
