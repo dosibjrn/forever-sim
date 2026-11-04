@@ -123,11 +123,43 @@ jobs:
           assert row["real_catalogue_slots_scored"] > 0
           assert row["real_catalogue_top5_items_scored"] > 0
           assert 0 < row["real_source_search_evaluated"] <= 44
-          assert row["reachability_count"] > 0
+          assert row["reachability_count"] == 204
+          import math
+          witnesses = row.get("source_policy_stat_witnesses") or []
+          spell_power = next((w for w in witnesses if w.get("stat") == "spell_power"), None)
+          intellect = next((w for w in witnesses if w.get("stat") == "intellect"), None)
+          assert spell_power and spell_power["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", row
+          assert intellect and intellect["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", row
+          assert witnesses.index(spell_power) < witnesses.index(intellect), row
+          assert row["native_paid_winner_spell_probe_enabled"] is True, row
+          assert any(x.get("action_id") == "lightning_bolt:915"
+                     and x.get("spell_power_coefficient", 0) > 0
+                     for x in row["native_spell_coefficients_applied"]), row
+          assert row["real_measured_stat_weights"]["intellect"] > 0, row
+          assert row["pass_count"] > 93, row
+          assert intellect.get("policy_id") in intellect.get("attempted_policies", []), intellect
+          assert "lightning_bolt:915" in intellect.get("opening_action_ids", []), intellect
+          baseline = intellect["baseline_seconds_per_mob"]
+          perturbed = intellect["perturbed_seconds_per_mob"]
+          delta = intellect["delta"]
+          assert baseline > perturbed > 0 and delta > 0, intellect
+          assert math.isclose(intellect["weight_s_saved_per_mob_per_unit"],
+                              (baseline - perturbed) / delta,
+                              rel_tol=1e-9, abs_tol=1e-12), intellect
+          assert intellect["paid_evaluations"] > 0, intellect
+          sources = intellect.get("probe_delta_sources") or []
+          assert sources and any(
+              item.get("item_id") and item.get("amount", 0) > 0
+              for source in sources for item in source.get("items", [])), intellect
+          assert row["real_source_search_evaluated"] <= 44, row
           print("NO_RECORD_NATIVE_P3_MEASURED shaman:20",
                 "known_items", row["real_catalogue_legal_items"],
                 "top5_scored", row["real_catalogue_top5_items_scored"],
                 "reachability", row["reachability_count"],
+                "pass_count", row["pass_count"],
+                "intellect_weight", row["real_measured_stat_weights"]["intellect"],
+                "intellect_policy", intellect["policy_id"],
+                "intellect_delta", delta,
                 "paid_evaluations", row["real_source_search_evaluated"],
                 "native_status", row["native_item_options_status"],
                 "excluded_non_client", row["native_excluded_non_client_item_count"], flush=True)
