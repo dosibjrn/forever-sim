@@ -169,6 +169,11 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                 ("P4_P5_NATIVE_2D_100MOB_FAILED:" + str(native_error)[-400:])
                 if native_error and persistent_targets == 100
                 else "P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
+            if native_error and persistent_targets == 100:
+                # A real invoked native/world producer failed. Report FAIL,
+                # not the old BLOCKED/"not connected" classification; only
+                # an unrun or unavailable producer is BLOCKED.
+                report["status"] = "FAIL"
     return report
 
 
