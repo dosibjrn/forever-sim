@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired WF442 P2 source-rank ingester (source captures remain historical).
+    "tools/wf442_ingest_source_rank_observations.py",
     # Retired P2-only Warrior/Mage talent snapshot builders (historical staged files retained).
     "tools/wf362_stage_warrior30_talents.py",
     "tools/wf381_stage_mage_talent_positions.py",
@@ -215,6 +217,11 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf442_ingest_source_rank_observations",
+    "test_wf444_joint_critical_proc_tdd",
+    "test_wf445_joint_incoming_dodge_resource_tdd",
+    "test_wf442_generic_avoidance_resource_red",
+    "test_wf442_generic_direct_heal_crit_red",
     "wf254_ingest_paladin_talents",
     "wf257_ingest_flash_recovery",
     "wf257_ingest_paladin_corridor",
@@ -417,6 +424,11 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Retired synthetic Python GameIR Warcraft mechanics, not Forever-owned contracts.
+    "tests/test_wf442_generic_avoidance_resource_red.py",
+    "tests/test_wf442_generic_direct_heal_crit_red.py",
+    "tests/test_wf444_joint_critical_proc_tdd.py",
+    "tests/test_wf445_joint_incoming_dodge_resource_tdd.py",
     "tests/test_wf254_paladin_rank_batch.py",
     "tests/test_v2_parallel_path.py",
     "tests/generic/search/test_v2_path_score.py",
