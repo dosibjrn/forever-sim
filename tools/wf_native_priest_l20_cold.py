@@ -2,7 +2,8 @@
 
 This is a production producer, not an alternate gate or a source of M1 credit.
 The same invocation freezes its <=30s best and continues up to 300s, paying
-a continuous native actor/2D 100-mob objective for every accepted candidate.
+a real two-mob native/2D route for each viable candidate; the selected
+30s and 300s finalists alone execute full persistent 100-mob routes.
 """
 from __future__ import annotations
 
@@ -82,24 +83,35 @@ def _source_native_builds(source: dict, item_options: list[dict]):
         yield copy.deepcopy(source)
 
 
-def _verified_route(receipt: dict) -> float | None:
+def _paid_route_seconds_per_mob(receipt: dict, target_count: int) -> float | None:
+    """Score an actually executed, paid native/2D route, never native DPS.
+
+    Two consecutive targets provide a cheap comparable discovery objective,
+    including retained actor, travel and between-pull recovery. This is only
+    candidate ranking: P4/P5 still need the *same winner's* full 100-mob route.
+    """
     if (not isinstance(receipt, dict)
             or receipt.get("native_2d_persistent_actor_verified") is not True
             or receipt.get("native_2d_persistent_world_ack_verified") is not True
             or receipt.get("native_2d_persistent_paid_recovery") is not True
             or type(receipt.get("native_2d_persistent_world_targets_killed")) is not int
-            or receipt["native_2d_persistent_world_targets_killed"] != 100
+            or receipt["native_2d_persistent_world_targets_killed"] != target_count
             or type(receipt.get("native_2d_persistent_source_action_events")) is not int
             or receipt["native_2d_persistent_source_action_events"] <= 0
             or not isinstance(receipt.get(
                 "native_2d_persistent_source_action_counts_by_target"), list)
-            or len(receipt["native_2d_persistent_source_action_counts_by_target"]) != 100):
+            or len(receipt["native_2d_persistent_source_action_counts_by_target"]) != target_count):
         return None
     elapsed = receipt.get("native_2d_persistent_elapsed_seconds")
     if (type(elapsed) not in (float, int) or not math.isfinite(elapsed)
             or elapsed <= 0):
         return None
-    return elapsed / 100.0
+    return elapsed / target_count
+
+
+def _verified_route(receipt: dict) -> float | None:
+    """The independent complete 100-mob receipt, not a discovery shortcut."""
+    return _paid_route_seconds_per_mob(receipt, 100)
 
 
 def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
@@ -108,12 +120,12 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                                budget_s: float = 300.0,
                                snapshot_s: float = 30.0,
                                max_attempts: int = 4096) -> dict:
-    """Pay one native 100-mob route per accepted candidate, not DPS proxies.
+    """Score genuine native/2D retained-world routes during one cold search.
 
-    Only a build whose full native/world receipt completes *before* the
-    snapshot cutoff can become the frozen P4 winner. No late or failed build
-    can be smuggled into P4, nor can a saved 100-mob receipt be synthesized.
-    Returns diagnostic receipts; final P4/P5 gate predicates stay separate.
+    For a 30/300s search use a paid two-consecutive-target route objective
+    (including movement/recovery) during discovery. Freeze that best-so-far
+    source build at 30s, then validate its *identical* build over 100 targets
+    after the shared search. Native single-fight DPS remains diagnostic only.
     """
     if not (0 < snapshot_s < budget_s and 1 <= max_attempts <= 100000):
         raise ValueError("PRIEST_L20_COLD_BUDGET_INVALID")
@@ -143,6 +155,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
     # Native DPS is a screening score, NOT a verified world objective or PASS.
     deferred_snapshot = budget_s == 300 and snapshot_s == 30
     early_paid = None
+    final_paid = None
     rows = []
     seen = set()
     scored_before = 0
@@ -181,26 +194,21 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 # whole-build continuation or a 30s winner.
                 row["status"] = ("NATIVE_PAID" if paid["native_source_action_casts"] > 0
                                  else "NATIVE_NO_SOURCE_CAST")
-                if (paid["native_source_action_casts"] > 0
-                        and deferred_snapshot and clock() - start <= snapshot_s):
-                    # 100 native-world pulls can exceed 30s of *wall* time.
-                    # Do not let that validation consume the immutable cold
-                    # discovery window. Freeze the genuine scored native
-                    # whole-build request; separately execute its 100-mob
-                    # route after the continuous search has finished.
-                    score = paid.get("native_score")
-                    if type(score) in (int, float) and math.isfinite(score):
-                        row["status"] = "NATIVE_PAID_SNAPSHOT_SCREEN"
-                        if early_paid is None or score > early_paid["native_score"]:
-                            early_paid = {
-                                "source_build": copy.deepcopy(build),
-                                "source_request_sha256": identity,
-                                "native_request_sha256": paid["native_request_sha256"],
-                                "native_score": score,
-                                "paid_completed_elapsed_s": clock() - start,
-                            }
+                if paid["native_source_action_casts"] > 0 and deferred_snapshot:
+                    # Both search windows rank *actual* continuous native/2D
+                    # routes, with the same target sequence and retained
+                    # actor/recovery. Never select a winner on native DPS.
+                    # The potentially slow 100-target receipt is reserved for
+                    # each frozen finalist, after discovery stops.
+                    probe = world_screen(binary, path, target_count=2)
+                    probe_s = _paid_route_seconds_per_mob(probe, 2)
+                    if probe_s is None:
+                        row["status"] = "WORLD_INCOMPLETE"
                     else:
-                        row["status"] = "NATIVE_UNSCORABLE"
+                        row["status"] = "NATIVE_ROUTE_PAID"
+                        row["route_probe_target_count"] = 2
+                        row["route_probe_s_per_mob"] = probe_s
+                        row["real_2mob_receipt"] = probe
                 elif paid["native_source_action_casts"] > 0:
                     world = world_screen(binary, path, target_count=100)
                     route_s = _verified_route(world)
@@ -224,16 +232,35 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
             # Finishing an in-flight real native/world screen after 300s
             # cannot retroactively invalidate winners completed before the
             # deadline; its late receipt remains diagnostic only.
-            if frozen is None and elapsed > snapshot_s:
+            if not deferred_snapshot and frozen is None and elapsed > snapshot_s:
                 frozen = copy.deepcopy(best_early)
             in_budget = elapsed <= budget_s
             if in_budget and row["status"] in (
-                    "NATIVE_PAID", "NATIVE_PAID_SNAPSHOT_SCREEN",
+                    "NATIVE_PAID", "NATIVE_ROUTE_PAID",
                     "WORLD_INCOMPLETE", "COMPLETE"):
                 if elapsed <= snapshot_s:
                     scored_before += 1
                 else:
                     scored_after += 1
+            if deferred_snapshot and in_budget and row["status"] == "NATIVE_ROUTE_PAID":
+                candidate = {
+                    "source_build": copy.deepcopy(build),
+                    "source_request_sha256": identity,
+                    "native_request_sha256": row["native_request_sha256"],
+                    "route_probe_target_count": 2,
+                    "route_probe_s_per_mob": row["route_probe_s_per_mob"],
+                    "real_2mob_receipt": copy.deepcopy(row["real_2mob_receipt"]),
+                    "paid_completed_elapsed_s": elapsed,
+                    "snapshot_selection_objective":
+                        "NATIVE_2MOB_PAID_WORLD_SECONDS_PER_MOB",
+                }
+                if (final_paid is None or candidate["route_probe_s_per_mob"]
+                        < final_paid["route_probe_s_per_mob"]):
+                    final_paid = candidate
+                if (elapsed <= snapshot_s and
+                        (early_paid is None or candidate["route_probe_s_per_mob"]
+                         < early_paid["route_probe_s_per_mob"])):
+                    early_paid = copy.deepcopy(candidate)
             if in_budget and row["status"] == "COMPLETE":
                 winner = {k: copy.deepcopy(row[k]) for k in (
                     "source_request_sha256", "native_request_sha256",
@@ -249,40 +276,55 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 else:
                     completed_after += 1
             rows.append({k: v for k, v in row.items()
-                         if k != "real_100mob_receipt"})
+                         if k not in ("real_100mob_receipt", "real_2mob_receipt")})
     # Measure the cold search BEFORE the independent real 100-mob replay.
     # The route can finish after the 300s cutoff without rewriting the
     # actual candidate-selection clock or introducing a second cold search.
     wall_s = clock() - start
     snapshot_validation = None
-    if deferred_snapshot and early_paid is not None:
-        with TemporaryDirectory(prefix="priest-l20-frozen-route-") as directory:
-            frozen_path = Path(directory) / "frozen-30s.json"
-            frozen_path.write_text(json.dumps(
-                early_paid["source_build"], sort_keys=True), encoding="utf-8")
-            try:
-                receipt = world_screen(binary, frozen_path, target_count=100)
-                route_s = _verified_route(receipt)
-                if route_s is None:
-                    snapshot_validation = {"status": "WORLD_INCOMPLETE"}
-                else:
-                    frozen = {
-                        **copy.deepcopy(early_paid),
+    final_validation = None
+    if deferred_snapshot:
+        def qualify_finalist(candidate):
+            if candidate is None:
+                return None, None
+            with TemporaryDirectory(prefix="priest-l20-frozen-route-") as directory:
+                frozen_path = Path(directory) / "frozen-finalist.json"
+                frozen_path.write_text(json.dumps(
+                    candidate["source_build"], sort_keys=True), encoding="utf-8")
+                try:
+                    receipt = world_screen(binary, frozen_path, target_count=100)
+                    route_s = _verified_route(receipt)
+                    if route_s is None:
+                        return None, {"status": "WORLD_INCOMPLETE"}
+                    winner = {
+                        **copy.deepcopy(candidate),
                         "route_s_per_mob": route_s,
                         "real_100mob_receipt": receipt,
-                        "snapshot_selection_objective": "NATIVE_DPS_SCREEN_ONLY",
                     }
-                    snapshot_validation = {"status": "COMPLETE",
-                                           "route_s_per_mob": route_s}
-            except (OSError, ValueError, RuntimeError, AssertionError,
-                    TimeoutError, subprocess.SubprocessError) as exc:
-                snapshot_validation = {
-                    "status": "WORLD_INCOMPLETE",
-                    "reason": _native_world_error(exc),
-                    "native_2d_persistent_observed_kills":
-                        _native_world_completed_kills(exc),
-                }
-    if frozen is None and wall_s >= snapshot_s:
+                    return winner, {"status": "COMPLETE",
+                                    "route_s_per_mob": route_s}
+                except (OSError, ValueError, RuntimeError, AssertionError,
+                        TimeoutError, subprocess.SubprocessError) as exc:
+                    return None, {
+                        "status": "WORLD_INCOMPLETE",
+                        "reason": _native_world_error(exc),
+                        "native_2d_persistent_observed_kills":
+                            _native_world_completed_kills(exc),
+                    }
+
+        frozen, snapshot_validation = qualify_finalist(early_paid)
+        if (final_paid is not None and early_paid is not None
+                and final_paid["source_request_sha256"]
+                == early_paid["source_request_sha256"]):
+            # Same immutable build/scenario/engine/seed: one actual native
+            # 100-mob receipt is reusable, never rerun for a second gate.
+            best_final = copy.deepcopy(frozen)
+            final_validation = copy.deepcopy(snapshot_validation)
+            if final_validation is not None:
+                final_validation["reused_30s_receipt"] = True
+        else:
+            best_final, final_validation = qualify_finalist(final_paid)
+    if not deferred_snapshot and frozen is None and wall_s >= snapshot_s:
         frozen = copy.deepcopy(best_early)
     # Exhausted candidate spaces and late native calls are reported honestly.
     # The caller may not infer a completed 300s search from a successful exit.
@@ -293,6 +335,13 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_snapshot_30": frozen,
         "native_cold_30s_paid_selection": copy.deepcopy(early_paid),
         "native_cold_30s_post_search_route": snapshot_validation,
+        "native_cold_300s_post_search_route": final_validation,
+        "native_cold_300s_paid_selection": copy.deepcopy(final_paid),
+        "native_cold_completed_100mob_finalists": (int(frozen is not None)
+                                                  + int(best_final is not None and
+                                                        (frozen is None or best_final["source_request_sha256"]
+                                                         != frozen["source_request_sha256"]))
+                                                  if deferred_snapshot else 0),
         "native_cold_final_300": copy.deepcopy(best_final),
         "native_cold_native_paid_before_30": scored_before,
         "native_cold_native_paid_after_30": scored_after,
