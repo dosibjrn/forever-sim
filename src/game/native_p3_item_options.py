@@ -62,7 +62,10 @@ def query_native_p3_item_options(
     unverified_count = response.get("unverified_candidate_count")
     if type(unverified_count) is not int or unverified_count < 0:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_UNVERIFIED_COUNT")
-    if str(class_key).lower() in {"shaman", "paladin"} and "excluded_non_client_item_count" not in response:
+    # The pinned client ItemSparse universe is authoritative for Mage as well;
+    # a missing native exclusion tally must not silently become zero and make
+    # the selected source appear complete without an explicit Rust receipt.
+    if str(class_key).lower() in {"shaman", "paladin", "mage"} and "excluded_non_client_item_count" not in response:
         raise NativeItemOptionsError(
             "P3_NATIVE_ITEM_OPTIONS_EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE")
     excluded_count = response.get("excluded_non_client_item_count", 0)
