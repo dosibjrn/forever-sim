@@ -24,7 +24,7 @@ jobs:
           python-version: '3.11'
       - name: Install existing Forever bridge and focused test dependencies
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
-      - name: Focus-test native 30s freeze and real deferred 100-mob before expensive cold run
+      - name: Focus-test real 2-mob paid route ranking and frozen 100-mob finalists before cold run
         run: >-
           python -m pytest -q
           tests/test_wf_native_priest_l20_cold.py
@@ -66,6 +66,7 @@ jobs:
               "native_paid_after_30": receipts["native_cold_native_paid_after_30"],
               "completed_routes_before_30": receipts["native_cold_completed_routes_before_30"],
               "completed_routes_after_30": receipts["native_cold_completed_routes_after_30"],
+              "real_100mob_finalists": receipts["native_cold_completed_100mob_finalists"],
               "elapsed_wall_s": receipts["native_cold_search_wall_s"],
               "reached_300": receipts["native_cold_300s_reached"],
               "overrun": receipts["native_cold_300s_overrun"],
@@ -87,11 +88,13 @@ jobs:
           print("PRIEST_NATIVE_COLD_30S_SELECTION", json.dumps({
               "real_paid_selection_before_cutoff": bool(early),
               "paid_completed_elapsed_s": early.get("paid_completed_elapsed_s"),
-              "native_screen_dps_only": early.get("native_score"),
+              "paid_2mob_route_s_per_mob": early.get("route_probe_s_per_mob"),
+              "selection_objective": early.get("snapshot_selection_objective"),
               "source_request_sha256": early.get("source_request_sha256"),
               "post_search_native_100mob_status": deferred.get("status"),
               "post_search_real_route_s_per_mob": deferred.get("route_s_per_mob"),
               "post_search_native_failure": deferred.get("reason"),
+              "final_300_100mob_status": (receipts.get("native_cold_300s_post_search_route") or {}).get("status"),
           }, sort_keys=True), flush=True)
           # Expose only genuine executed finalist receipts in the job log.
           # A missing snapshot or winner is an observed result, not a stub
