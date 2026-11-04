@@ -260,15 +260,6 @@ def _source_actor_context_summary(ir) -> dict:
     }
 
 
-def _allow_cooldown_fallback_for_profile(class_key: str, level: int, spec: str) -> bool:
-    """Enable cooldown continuations only for the Paladin L20 unrestricted P3 lane."""
-    return (
-        str(class_key).lower() == "paladin"
-        and int(level) == 20
-        and str(spec).lower() == "unrestricted"
-    )
-
-
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Selected P3 class/level paths require authoritative native ItemSparse.
     # Unsupported native queries refuse; never fall back to Python/SQLite gear.
@@ -397,7 +388,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
         schedule_incoming_attacks=schedule_incoming_attacks,
-        allow_cooldown_fallback=_allow_cooldown_fallback_for_profile(class_key, level, spec))
+        # Neither cooldown pacing nor existing melee auto-attacks are P3
+        # legality gates; try them through the real paid executor for any class.
+        allow_cooldown_fallback=True,
+        source_search_auto_fallback=True)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())
@@ -418,10 +412,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         for attack in getattr(ir, 'auto_attacks', ())
         for source in getattr(attack, 'provenance', ())
         if isinstance(source, dict))
-    if cooldown_fallback and (actor_proxy or weapon_proxy):
+    auto_fallback = fallback_id == "__source_verified_auto_attack_only__"
+    if (cooldown_fallback or auto_fallback) and (actor_proxy or weapon_proxy):
         return {
             "status": "BLOCKED",
-            "reasons": ["P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"],
+            "reasons": ["P3_SOURCE_CONTINUATION_HAS_PROXY_ACTOR_OR_WEAPON"],
             "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
             "real_source_search_attempts": result.get("attempted", 0),
             "real_source_search_evaluated": 0,
