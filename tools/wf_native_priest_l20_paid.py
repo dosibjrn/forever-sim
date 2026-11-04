@@ -520,6 +520,12 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
     # remaining evaluations for alternative native items in those SAME slots.
     # Each alternate replaces the selected item, never equips two items in a
     # single slot. Rust still owns every equip/legality and scoring decision.
+    # Native refusals do not spend a paid slot. Keep a bounded source-native
+    # backup frontier when the provider offers more items than the paid cap;
+    # only the first max_paid_builds successfully scored builds are paid.
+    proposal_limit = max_paid_builds - 1
+    if len(native_item_options) > max_paid_builds:
+        proposal_limit = min(len(native_item_options), max_paid_builds * 4 - 1)
     selected = []
     selected_slots = set()
     alternates = []
@@ -535,7 +541,7 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
         seen_item_ids.add(item_id)
         if slot in selected_slots:
             alternates.append((item_id, slot))
-        elif len(selected) < max_paid_builds - 1:
+        elif len(selected) < proposal_limit:
             selected.append((item_id, slot))
             selected_slots.add(slot)
 
@@ -544,7 +550,7 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
         for index, (item_id, slot) in enumerate(selected, start=1)
     ]
     for item_id, slot in alternates:
-        if len(requests) >= max_paid_builds - 1:
+        if len(requests) >= proposal_limit:
             break
         if slot not in selected_slots:
             continue
