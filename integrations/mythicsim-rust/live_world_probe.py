@@ -457,7 +457,9 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
         assert measured["iterationsDone"] == iterations
         return {"native_dps": measured["raidMetrics"]["dps"].get("avg", 0.),
                 "first_duration_s": measured["firstIterationDuration"],
-                "iterations": iterations}
+                "iterations": iterations,
+                "source_request_proto_sha256": result["request_sha256"],
+                "source_request_raw_sha256": hashlib.sha256(reduced.read_bytes()).hexdigest()}
 
 
 def main() -> None:
