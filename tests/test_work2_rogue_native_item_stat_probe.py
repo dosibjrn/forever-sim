@@ -145,3 +145,57 @@ def test_native_rogue_item_records_reuse_validated_snapshot_without_second_query
     assert records[0].agility == 5.0
     assert unmapped == {}
     assert metadata["excluded_non_client_item_count"] == 2775
+
+
+def test_p3_forwards_selected_native_items_to_paid_equipped_executable(monkeypatch):
+    import json
+    import subprocess
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/rogue-l20-source.json")
+    invocations = []
+
+    def native_script(command, **kwargs):
+        invocations.append((command, kwargs))
+        return SimpleNamespace(returncode=0, stderr="", stdout=json.dumps({
+            "status": "PAID_NATIVE_DIFFERENCE", "paid_attempts": 2,
+            "comparison": {"baseline_dps": 10.0,
+                           "equipped_dps": 11.0, "delta_dps": 1.0},
+            "actor_checkpoint_verified": False,
+        }))
+
+    monkeypatch.setattr(subprocess, "run", native_script)
+    slots = {"chest": {"selected_ids": [101, 102]}}
+    result = p3._paid_native_equipped_probe(
+        Path("."), "selected-native", {"slots": slots}, remaining=2)
+    assert result["paid_attempts"] == 2
+    assert result["comparison"]["delta_dps"] == 1.0
+    assert len(invocations) == 1
+    command, kwargs = invocations[0]
+    assert command[-4:] == [
+        "--binary", "selected-native", "--request", "/tmp/rogue-l20-source.json"]
+    assert json.loads(kwargs["input"]) == slots
+    assert kwargs["timeout"] == 150
+
+
+def test_p3_native_equipped_pair_does_not_overrun_shared_paid_budget(monkeypatch):
+    import subprocess
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/native.json")
+    monkeypatch.setattr(subprocess, "run",
+                        lambda *args, **kwargs: (_ for _ in ()).throw(
+                            AssertionError("Do not spend beyond 44 evaluations")))
+    result = p3._paid_native_equipped_probe(
+        Path("."), "selected-native", {"slots": {}}, remaining=1)
+    assert result == {
+        "status": "NOT_RUN_PAID_BUDGET_EXHAUSTED", "paid_attempts": 0}
+
+
+def test_p3_source_search_reserves_two_native_paid_attempts_when_requested(monkeypatch):
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", raising=False)
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 0
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/native-rogue-source.json")
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 2
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", None) == 0
+    assert p3._native_equipped_p3_reservation("rogue", 60, "unrestricted", "pinned-native") == 0
+    assert p3._native_equipped_p3_reservation("mage", 20, "unrestricted", "pinned-native") == 0
+    assert p3._native_equipped_p3_reservation("rogue", 20, "combat", "pinned-native") == 0
