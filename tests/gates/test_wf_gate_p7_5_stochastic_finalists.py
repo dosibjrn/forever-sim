@@ -877,7 +877,7 @@ def test_p74_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
         monkeypatch, tmp_path):
     _run_sibling_gate_policy_regression(
         "test_wf_gate_p7_4_live.py",
-        "test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout",
+        "test_full_p74_ranks_paid_balanced_finalists_before_stochastic_holdout",
         monkeypatch, tmp_path)
 
 
