@@ -81,6 +81,10 @@ def run_live(root: Path, class_key: str, level: int, *,
         root / "integrations/mythicsim-rust/live_world_probe.py",
         "p73_selected_native_scorer")
     original = base["raid"]["parties"][0]["players"][0]["talentsString"]
+    # Probe native with minimal source-reference deltas before spending time on
+    # large mutations. This changes serialized ranks only; no Python game
+    # legality or source-specific tree ordering is inferred.
+    minimal = native_talent_proposals.lower_one_rank_neighbors(original)
     rng = random.Random(647003)
     seen = set()
     failures = []
@@ -89,12 +93,17 @@ def run_live(root: Path, class_key: str, level: int, *,
     best = None
     start = time.monotonic()
     deadline = start + 300.0
-    while (time.monotonic() < deadline if full_search else proposals < 8):
+    while (time.monotonic() < deadline if full_search else proposals < len(minimal) + 8):
         proposals += 1
         try:
-            candidate = _cold_talents(
-                base, rng, native_talent_proposals,
-                reference_parent=(not full_search and proposals <= 4))
+            if not full_search and proposals <= len(minimal):
+                candidate = copy.deepcopy(base)
+                candidate["raid"]["parties"][0]["players"][0][
+                    "talentsString"] = minimal[proposals - 1]
+            else:
+                candidate = _cold_talents(
+                    base, rng, native_talent_proposals,
+                    reference_parent=(not full_search and proposals <= len(minimal) + 4))
             player = candidate["raid"]["parties"][0]["players"][0]
             # A no-op is not an independently changed talent candidate.
             if player["talentsString"] == original:
@@ -156,6 +165,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_original_talents": original,
         "fixed_rotation_and_gear": True,
         "source_legal_cold_candidates_paid": executed,
+        "minimal_reference_delta_proposals": len(minimal),
         "cold_unique_source_requests": len(seen),
         "native_invalid_candidates": invalid,
         "native_unsupported_candidates": unsupported,
