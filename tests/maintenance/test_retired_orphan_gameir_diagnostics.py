@@ -33,6 +33,11 @@ RETIRED_TOOLS = (
     "tools/wf369_druid_l30_apl_probe.py",
     "tools/wf353_l30_p3_context_replay.py",
 )
+RETIRED_SOURCE_MODULES = (
+    "src/v2/source_sqlite_spell_facts.py",
+    "src/v2/source_sqlite_spell_semantics.py",
+)
+
 RETIRED_IMPORT_NAMES = (
     "wf261_stateful_benchmark",
     "wf263_l1_value_benchmark",
@@ -58,6 +63,8 @@ RETIRED_IMPORT_NAMES = (
     "wf_native_session_capability",
     "wf369_druid_l30_apl_probe",
     "wf353_l30_p3_context_replay",
+    "source_sqlite_spell_facts",
+    "source_sqlite_spell_semantics",
 )
 
 
@@ -70,6 +77,9 @@ RETIRED_OUTPUTS = (
 RETIRED_TESTS = (
     "tests/test_wf378_recovery_channel_tdd.py",
     "tests/gates/test_wf_first_checkpoint_vertical.py",
+    "tests/test_wf_gen03a4c2_sqlite_materialization.py",
+    "tests/test_wf_gen03a4c2b2_semantic.py",
+    "tests/test_wf_gen03a4c2b2_coverage.py",
 )
 
 RETIRED_COMMANDS = (
@@ -92,6 +102,8 @@ RETAINED_SEARCH_TESTS = (
 
 def test_orphan_gameir_diagnostic_clis_stay_retired():
     for relative in RETIRED_TOOLS:
+        assert not (ROOT / relative).exists(), relative
+    for relative in RETIRED_SOURCE_MODULES:
         assert not (ROOT / relative).exists(), relative
     for relative in RETIRED_OUTPUTS:
         assert not (ROOT / relative).exists(), relative
