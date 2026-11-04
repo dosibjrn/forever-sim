@@ -82,7 +82,6 @@ class MaintenanceTestLayout(unittest.TestCase):
             ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
-            ROOT / "tests" / "test_wf283_online_source_corridors.py",
             ROOT / "tests" / "test_wf300_continuous_mob.py",
         )
         for consumer in fixture_consumers:
