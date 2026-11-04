@@ -117,3 +117,363 @@ def test_cooldown_fallback_is_scoped_to_paladin_l20_unrestricted_p3():
     assert not _allow_cooldown_fallback_for_profile("hunter", 20, "unrestricted")
     assert not _allow_cooldown_fallback_for_profile("paladin", 19, "unrestricted")
     assert not _allow_cooldown_fallback_for_profile("paladin", 20, "feral")
+
+
+def _paladin_paid_winner_identity_fixture():
+    from types import SimpleNamespace
+
+    prefix = ("seal_of_fury:1311656", "judgement:20271")
+    guarded_conditions = ({"kind": "target_health_below", "value": 0.2},)
+    policy = SimpleNamespace(
+        id="paladin-paid-search-winner",
+        provenance={
+            "authority": "source_stateful_budgeted",
+            "search_performed": True,
+        },
+        rules=(
+            SimpleNamespace(
+                id="fallback:0", action_id="judgement:20271", conditions=()),
+            SimpleNamespace(
+                id="continuation:guarded",
+                action_id="holy_strike:1866",
+                conditions=guarded_conditions,
+            ),
+        ),
+    )
+    record = {
+        "status": "evaluated",
+        "score_s_per_mob": 12.0,
+        "prefix": list(prefix),
+        "selected_actions": [{"action_id": action_id} for action_id in prefix],
+        "fallback": "judgement:20271",
+        "guarded_action": "holy_strike:1866",
+        "guarded_conditions": [dict(condition) for condition in guarded_conditions],
+    }
+    return policy, record, prefix
+
+
+def test_paladin_paid_winner_validator_reports_exact_identity_mismatches():
+    from types import SimpleNamespace
+    from src.v2.source_budgeted_gear import (
+        paid_search_winner_baseline,
+        paid_search_winner_baseline_validation,
+    )
+
+    policy, record, prefix = _paladin_paid_winner_identity_fixture()
+    accepted = paid_search_winner_baseline_validation(policy, record, prefix)
+    assert accepted == {"accepted": True, "score": 12.0, "reason": None}
+    assert paid_search_winner_baseline(policy, record, prefix) == 12.0
+
+    bad_provenance = SimpleNamespace(
+        id=policy.id,
+        provenance={"authority": "forever_python", "search_performed": True},
+        rules=policy.rules,
+    )
+    assert paid_search_winner_baseline_validation(
+        bad_provenance, record, prefix
+    )["reason"] == "POLICY_AUTHORITY_MISMATCH"
+
+    assert paid_search_winner_baseline_validation(
+        policy, record, (prefix[0],)
+    )["reason"] == "OPENING_ACTION_PREFIX_MISMATCH"
+
+    bad_selected = dict(record)
+    bad_selected["selected_actions"] = [
+        {"action_id": "wrong:action"}, *record["selected_actions"][1:]
+    ]
+    assert paid_search_winner_baseline_validation(
+        policy, bad_selected, prefix
+    )["reason"] == "SELECTED_ACTION_PREFIX_MISMATCH"
+
+    bad_fallback = SimpleNamespace(
+        id=policy.id,
+        provenance=policy.provenance,
+        rules=(
+            SimpleNamespace(
+                id="fallback:0", action_id="wrong:fallback", conditions=()),
+            policy.rules[1],
+        ),
+    )
+    assert paid_search_winner_baseline_validation(
+        bad_fallback, record, prefix
+    )["reason"] == "POLICY_FALLBACK_ACTION_MISMATCH"
+
+    bad_guarded_action = SimpleNamespace(
+        id=policy.id,
+        provenance=policy.provenance,
+        rules=(
+            policy.rules[0],
+            SimpleNamespace(
+                id="continuation:guarded",
+                action_id="wrong:guarded",
+                conditions=policy.rules[1].conditions,
+            ),
+        ),
+    )
+    assert paid_search_winner_baseline_validation(
+        bad_guarded_action, record, prefix
+    )["reason"] == "POLICY_GUARDED_ACTION_MISMATCH"
+
+    bad_guarded_conditions = SimpleNamespace(
+        id=policy.id,
+        provenance=policy.provenance,
+        rules=(
+            policy.rules[0],
+            SimpleNamespace(
+                id="continuation:guarded",
+                action_id="holy_strike:1866",
+                conditions=({"kind": "target_health_below", "value": 0.9},),
+            ),
+        ),
+    )
+    assert paid_search_winner_baseline_validation(
+        bad_guarded_conditions, record, prefix
+    )["reason"] == "POLICY_GUARDED_CONDITIONS_MISMATCH"
+
+
+def test_paladin_paid_winner_is_attempted_before_unexecutable_source_seed(monkeypatch):
+    from types import SimpleNamespace
+    import src.game.gear as gear_module
+    import src.v2.source_budgeted_gear as budgeted
+
+    policy, record, prefix = _paladin_paid_winner_identity_fixture()
+    source_seed = SimpleNamespace(
+        id="paladin:source_seed",
+        provenance={"source": "source_ir"},
+        rules=(),
+    )
+    ir = SimpleNamespace(id="paladin-l20", policies=(source_seed,))
+    calls = []
+
+    def apply_delta(candidate_ir, stat, delta):
+        return SimpleNamespace(
+            id=candidate_ir.id,
+            policies=candidate_ir.policies,
+            delta=(stat, float(delta)),
+        )
+
+    def evaluate(candidate_ir, *, level, policy_override,
+                 opening_action_ids=(), schedule_incoming_attacks=False):
+        calls.append((
+            policy_override.id,
+            tuple(opening_action_ids),
+            getattr(candidate_ir, "delta", None),
+        ))
+        return (
+            SimpleNamespace(seconds_per_mob=11.0),
+            SimpleNamespace(
+                timeline=SimpleNamespace(target_defeated=True),
+                selected_actions=[
+                    {"action_id": action_id} for action_id in opening_action_ids
+                ],
+            ),
+            {},
+        )
+
+    monkeypatch.setattr(gear_module, "apply_stat_delta", apply_delta)
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    result = budgeted.paid_source_policy_stat_witness(
+        ir,
+        stat="agility",
+        level=20,
+        probe_deltas=(17.0, 10.0),
+        max_evaluations=3,
+        opening_action_ids=prefix,
+        preferred_policy=policy,
+        baseline_record=record,
+        prefer_paid_search_winner=True,
+    )
+
+    assert result["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
+    assert result["policy_id"] == policy.id
+    assert result["policy_source"] == "paid_search_winner"
+    assert result["baseline_source"] == "paid_search_winner_record"
+    assert result["baseline_seconds_per_mob"] == 12.0
+    assert result["perturbed_seconds_per_mob"] == 11.0
+    assert result["baseline_reused"] is True
+    assert result["paid_evaluations"] == 1
+    assert result["attempted_policies"] == [policy.id]
+    assert result["attempted_policy_sources"] == ["paid_search_winner"]
+    assert result["baseline_failures"] == []
+    assert calls == [(policy.id, prefix, ("agility", 17.0))]
+
+
+def _run_paladin_p3_live_with_stubs(monkeypatch, policy, record, witness):
+    from pathlib import Path
+    from types import SimpleNamespace
+    import src.game.checkpoint_p3_smoke as smoke_module
+    import src.game.data.forever.registry as registry
+    import src.game.native_p3_player_context as player_context
+    import src.v2.source_budgeted_gear as budgeted
+    import src.v2.source_stateful_budgeted as stateful
+    import tools.wf_gate_p3_live as p3
+
+    source_seed = SimpleNamespace(
+        id="paladin:source_seed", provenance={"source": "source_ir"}, rules=())
+    ir = SimpleNamespace(
+        id="paladin-l20-fixture",
+        actor=SimpleNamespace(metadata={"class_key": "paladin", "level": 20}),
+        policies=(source_seed,),
+        actions=(),
+        auto_attacks=(),
+    )
+    native_context = {
+        "source_context_id": "paladin-native-context-fixture",
+        "source_scope": "test-source-context",
+        "context_kind": "source_backed_baseline_context_not_full_native_sim_actor",
+        "race": "dwarf",
+        "base_stats": {"agility": 28.0, "intellect": 32.0},
+        "resources": {"max_health": 471.0, "max_mana": 612.0},
+        "weapon": {"item_id": 36, "weapon_damage_min": 1.0, "weapon_damage_max": 3.0},
+        "unsupported_fields": [],
+    }
+    item_check = {
+        "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "blockers": [
+            "NONPOSITIVE_RELEVANT_WEIGHT:agility",
+            "NONPOSITIVE_RELEVANT_WEIGHT:intellect",
+        ],
+        "legal_item_count": 2303,
+        "tested_item_count": 85,
+        "slot_count": 17,
+        "tested_stat_assertions": 210,
+        "verified_stat_assertions": 154,
+        "native_item_options_status": "ok",
+        "native_unverified_candidate_count": 0,
+        "native_excluded_non_client_item_count": 3820,
+        "native_item_options_source": (
+            "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel+"
+            "SkillLine+SkillRaceClassInfo"
+        ),
+        "slots": {
+            "head": {"items": [{
+                "item_id": 100, "name": "Native Agility Hood",
+                "stat_values": {"agility": 10.0, "intellect": 4.0},
+            }]},
+            "chest": {"items": [{
+                "item_id": 101, "name": "Native Agility Chest",
+                "stat_values": {"agility": 7.0, "intellect": 8.0},
+            }]},
+            "ring": {"items": [{
+                "item_id": 102, "name": "Native Intellect Ring",
+                "stat_values": {"intellect": 12.0},
+            }]},
+        },
+    }
+    search_result = {
+        "stages": [{"stage": "source_naked", "winner": record}],
+        "sensitivity_history": [{
+            "stage": "source_naked",
+            "values": {
+                "agility": 0.0,
+                "intellect": 0.0,
+                "strength": 0.2,
+                "attack_power": 0.1,
+            },
+        }],
+        "attempted": 41,
+        "evaluated": 40,
+        "status": "EVALUATED_BOUNDED",
+        "source_context_sha256": "paladin-p3-fixture",
+    }
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "selected-native")
+    monkeypatch.setattr(registry, "build_game_ir_slice", lambda **_kwargs: ir)
+    monkeypatch.setattr(
+        p3, "_source_profile_build_ir",
+        lambda _root, source_ir, _class, _level, spec:
+            (source_ir, {"profile": spec, "full_point_source_allocation": None}),
+    )
+    monkeypatch.setattr(
+        player_context, "query_native_player_context",
+        lambda *_args: native_context,
+    )
+    monkeypatch.setattr(
+        player_context, "apply_native_player_context",
+        lambda source_ir, _facts: source_ir,
+    )
+    monkeypatch.setattr(
+        budgeted, "run_source_budgeted_gear",
+        lambda **_kwargs: search_result,
+    )
+    monkeypatch.setattr(stateful, "_make_policy", lambda *_args, **_kwargs: policy)
+    monkeypatch.setattr(smoke_module, "policy_uses_weapon_damage", lambda *_args: True)
+    monkeypatch.setattr(
+        smoke_module, "fast_p3_smoke_for_policy",
+        lambda **_kwargs: item_check,
+    )
+    monkeypatch.setattr(budgeted, "paid_source_policy_stat_witness", witness)
+    return p3.run_live(Path("."), "paladin", 20, spec="unrestricted")
+
+
+def test_paladin_l20_p3_uses_native_item_deltas_and_paid_winner_first(monkeypatch):
+    policy, record, prefix = _paladin_paid_winner_identity_fixture()
+    calls = []
+
+    def witness(_ir, **kwargs):
+        calls.append(kwargs)
+        paid = 2 if kwargs["stat"] == "agility" else 1
+        return {
+            "stat": kwargs["stat"],
+            "status": "NO_POSITIVE_SOURCE_POLICY_WITNESS",
+            "paid_evaluations": paid,
+            "baseline_reused": True,
+            "baseline_seconds_per_mob": 12.0,
+            "perturbed_seconds_per_mob": 12.0,
+            "opening_action_ids": list(kwargs["opening_action_ids"]),
+        }
+
+    report = _run_paladin_p3_live_with_stubs(monkeypatch, policy, record, witness)
+
+    assert report["status"] == "FAIL"
+    assert report["paid_search_winner_baseline_validation"] == {
+        "accepted": True, "score": 12.0, "reason": None,
+    }
+    assert [call["stat"] for call in calls] == ["agility", "intellect"]
+    assert [call["max_evaluations"] for call in calls] == [3, 1]
+    assert calls[0]["probe_deltas"] == (17.0, 10.0)
+    assert calls[1]["probe_deltas"] == (20.0, 12.0)
+    assert all(call["preferred_policy"] is policy for call in calls)
+    assert all(call["baseline_record"] is record for call in calls)
+    assert all(call["prefer_paid_search_winner"] is True for call in calls)
+    assert all(call["allow_paid_winner_after_nonpositive"] is False for call in calls)
+    assert calls[0]["opening_action_ids"] == prefix
+    assert report["real_source_search_evaluated"] == 43
+    assert report["behavior_probes_executed"] == 43
+    assert report["source_policy_stat_witnesses"][0]["probe_delta_sources"][0] == {
+        "kind": "two_distinct_native_item_slots",
+        "delta": 17.0,
+        "items": [
+            {"slot": "head", "item_id": 100, "name": "Native Agility Hood", "amount": 10.0},
+            {"slot": "chest", "item_id": 101, "name": "Native Agility Chest", "amount": 7.0},
+        ],
+    }
+    assert report["source_policy_stat_witnesses"][1]["probe_delta_sources"][0]["delta"] == 20.0
+
+
+def test_paladin_l20_p3_rejects_mismatched_paid_winner_without_generic_probe(monkeypatch):
+    from types import SimpleNamespace
+
+    policy, record, _prefix = _paladin_paid_winner_identity_fixture()
+    policy.provenance = {"authority": "forever_python", "search_performed": True}
+    calls = []
+
+    def forbidden_witness(*_args, **_kwargs):
+        calls.append(True)
+        raise AssertionError("rejected paid winner must not fall back to generic probes")
+
+    report = _run_paladin_p3_live_with_stubs(
+        monkeypatch, policy, record, forbidden_witness)
+
+    assert calls == []
+    assert report["paid_search_winner_baseline_validation"] == {
+        "accepted": False, "score": None, "reason": "POLICY_AUTHORITY_MISMATCH",
+    }
+    assert report["source_policy_stat_witnesses"] == [{
+        "stat": "agility",
+        "status": "PAID_SEARCH_WINNER_BASELINE_REJECTED",
+        "validation_reason": "POLICY_AUTHORITY_MISMATCH",
+        "paid_evaluations": 0,
+        "opening_action_ids": record["prefix"],
+    }]
+    assert report["real_source_search_evaluated"] == 40
