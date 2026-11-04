@@ -191,6 +191,46 @@ def test_refused_native_builds_do_not_exhaust_paid_whole_build_budget(tmp_path):
 
 
 
+
+def test_native_item_backups_fill_paid_slots_after_source_refusals(tmp_path):
+    """Rust-sourced same-slot alternatives remain reachable after refusals."""
+    from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
+
+    source_file = tmp_path / "source.json"
+    source = _request()
+    source_file.write_text(json.dumps(source))
+    options = [{"item_id": 2000 + index, "slot": "trinket"}
+               for index in range(5)]
+    attempted = []
+
+    def scorer(binary, candidate, **kwargs):
+        items = candidate["raid"]["parties"][0]["players"][0][
+            "equipment"]["items"]
+        item = items[0]["id"] if items else None
+        attempted.append(item)
+        if item is None or item == 2000:
+            raise RuntimeError("NATIVE_INVALID_BUILD")
+        return {
+            "effective_request_sha256": f"native-paid-{item}",
+            "score": float(item), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 1}],
+        }, {}
+
+    receipt = score_native_priest_l20_item_candidates(
+        "/native", source_file, options, score_request=scorer,
+        max_paid_builds=2, budget_s=6.0)
+    assert attempted == [None, 2000, 2001, 2002]
+    assert receipt["native_paid_whole_builds"] == 2
+    assert receipt["native_candidate_requests_attempted"] == 4
+    assert receipt["native_item_options_proposed"] == 5
+    assert receipt["native_item_option_alternative_builds_proposed"] == 4
+    assert receipt["native_source_action_casts"] == 2
+    assert receipt["native_2d_screen_complete"] is False
+    assert json.loads(source_file.read_text()) == source
+
+
+
 def test_refused_first_native_build_does_not_poison_comparable_world(tmp_path):
     """The first *paid* build anchors the scenario, not an invalid JSON candidate."""
     from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
