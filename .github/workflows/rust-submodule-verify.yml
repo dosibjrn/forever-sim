@@ -1,28 +1,23 @@
-name: Selected Rust native P2 adapter boundary (not M1 gate)
+name: Selected MythicSim Rust submodule verification
 
 on:
   pull_request:
     paths:
       - .gitmodules
       - integrations/mythicsim-rust/engine
-      - src/engine_client/native_p2_rank_probe.py
-      - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
 
 permissions:
   contents: read
 
 jobs:
-  native-p2-boundary:
+  verify-selected-engine:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Require the exact selected engine pin
+      - name: Require exact selected engine pin
         shell: bash
         run: |
           set -euo pipefail
@@ -32,10 +27,6 @@ jobs:
           test -n "$expected" && test "$expected" = "$actual"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
-      - name: Build the pinned engine for the P2 adapter integration
+      - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
-      - name: Exercise only the changed native P2 request/response adapter
-        env:
-          FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
-        run: python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py

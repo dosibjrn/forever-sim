@@ -80,197 +80,6 @@ def _require_true(e: dict, errors: list[str], field: str) -> None:
         errors.append(f"FALSE_OR_MISSING:{field}")
 
 
-def _validate_p1(e: dict, _: dict) -> list[str]:
-    errors: list[str] = []
-    _count_at_least(e, errors, "executed_ability_behavior_tests", "legal_abilities")
-    _require_zero(e, errors, "missing_executors")
-    _require_zero(e, errors, "failed_behavior_tests")
-    _require_true(e, errors, "source_legal_abilities_checked")
-    return errors
-
-
-def _validate_native_p2_diagnostics(e: dict) -> list[str]:
-    """Validate optional native probes without granting any P2 acceptance credit.
-
-    These paired probes are useful diagnostics while the complete selected
-    backend is unfinished. They never populate the accepted per-rank ledger,
-    change production_engine, or contribute to M1 coverage.
-    """
-    fields = ("native_rank_probe_scope", "native_rank_probe_results",
-              "native_rank_probe_summary")
-    if not any(field in e for field in fields):
-        return []
-
-    errors: list[str] = []
-    expected_scope = "DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE"
-    if e.get("native_rank_probe_scope") != expected_scope:
-        errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_SCOPE")
-
-    results = e.get("native_rank_probe_results", [])
-    if not isinstance(results, list):
-        errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_RESULTS")
-        results = []
-
-    summary = e.get("native_rank_probe_summary")
-    if not results and summary is None:
-        return errors
-    if not isinstance(summary, dict):
-        errors.append("MISSING_NATIVE_P2_DIAGNOSTIC_SUMMARY")
-        return errors
-
-    counts = {
-        "PROBE_PASS": 0, "PROBE_FAIL": 0, "BLOCKED": 0,
-        "INVALID": 0, "UNSUPPORTED": 0, "ERROR": 0,
-    }
-    seen: set[str] = set()
-    for row in results:
-        if not isinstance(row, dict):
-            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_ROW")
-            continue
-        talent = row.get("target_talent_id")
-        rank = row.get("target_rank")
-        key = row.get("rank_key")
-        valid_rank = type(rank) is int and rank > 0
-        expected_key = f"{talent}:{rank}" if isinstance(talent, str) else ""
-        if (not isinstance(talent, str) or not talent
-                or not valid_rank or key != expected_key
-                or key in seen):
-            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_RANK_KEY:" + str(key))
-        elif isinstance(key, str):
-            seen.add(key)
-
-        status = row.get("status")
-        if not isinstance(status, str) or status not in counts:
-            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_STATUS:" + str(status))
-            continue
-        counts[status] += 1
-        if row.get("accepted_for_p2") is not False:
-            errors.append("NATIVE_P2_DIAGNOSTIC_ACCEPTANCE_CLAIMED:" + str(key))
-        if row.get("executor") != "selected_mythicsim_rust":
-            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_EXECUTOR:" + str(key))
-
-        if status in {"BLOCKED", "INVALID", "UNSUPPORTED", "ERROR"}:
-            if not isinstance(row.get("reason"), str) or not row["reason"]:
-                errors.append("NATIVE_P2_DIAGNOSTIC_BLOCK_REASON_MISSING:" + str(key))
-            # Native terminal refusals must retain both side receipts. A
-            # pre-native BLOCKED diagnostic may legitimately have no receipts.
-            if status in {"INVALID", "UNSUPPORTED", "ERROR"}:
-                receipt_statuses = {
-                    "PREPARED", "INVALID", "UNSUPPORTED", "ERROR", "BLOCKED",
-                    "EXECUTED",
-                }
-                for side in ("before", "after"):
-                    receipt = row.get(side)
-                    if (not isinstance(receipt, dict)
-                            or receipt.get("status") not in receipt_statuses):
-                        errors.append(
-                            "INCOMPLETE_NATIVE_P2_REFUSAL_RECEIPT:" + str(key) + ":" + side
-                        )
-            continue
-
-        if (row.get("rng_mode") != "balanced"
-                or type(row.get("iterations")) is not int or row["iterations"] < 1
-                or not isinstance(row.get("engine_identity"), str)
-                or not row["engine_identity"].strip()
-                or not isinstance(row.get("scenario"), str) or not row["scenario"]
-                or not isinstance(row.get("source_layout_sha256"), str)
-                or not re.fullmatch(r"[0-9a-f]{64}", row["source_layout_sha256"])):
-            errors.append("INCOMPLETE_NATIVE_P2_EXECUTION_RECEIPT:" + str(key))
-        delta = row.get("delta_dps")
-        if type(delta) not in (int, float) or not math.isfinite(delta):
-            errors.append("INVALID_NATIVE_P2_DELTA:" + str(key))
-        elif status == "PROBE_PASS" and delta <= 0:
-            errors.append("NATIVE_P2_PASS_WITHOUT_POSITIVE_EFFECT:" + str(key))
-
-        for side in ("before", "after"):
-            receipt = row.get(side)
-            prepared = receipt.get("prepared") if isinstance(receipt, dict) else None
-            simulation = receipt.get("simulation") if isinstance(receipt, dict) else None
-            if (not isinstance(prepared, dict)
-                    or prepared.get("status") != "PREPARED"
-                    or not prepared.get("prepared_sha256")
-                    or not isinstance(simulation, dict)
-                    or simulation.get("status") != "EXECUTED"
-                    or type(simulation.get("dps")) not in (int, float)
-                    or not math.isfinite(simulation["dps"])):
-                errors.append("INCOMPLETE_NATIVE_P2_PAIRED_RECEIPT:" + str(key) + ":" + side)
-
-    if summary.get("attempted") != len(results):
-        errors.append("NATIVE_P2_DIAGNOSTIC_ATTEMPT_COUNT_MISMATCH")
-    for status, field in (
-        ("PROBE_PASS", "pass_count"),
-        ("PROBE_FAIL", "fail_count"),
-        ("BLOCKED", "blocked_count"),
-        ("INVALID", "invalid_count"),
-        ("UNSUPPORTED", "unsupported_count"),
-        ("ERROR", "error_count"),
-    ):
-        if summary.get(field) != counts[status]:
-            errors.append("NATIVE_P2_DIAGNOSTIC_SUMMARY_MISMATCH:" + field)
-    if (summary.get("rng_mode") != "balanced"
-            or summary.get("counted_in_p2_acceptance") is not False):
-        errors.append("NATIVE_P2_DIAGNOSTIC_SUMMARY_NOT_FAIL_CLOSED")
-    return errors
-
-
-def _validate_p2(e: dict, _: dict) -> list[str]:
-    errors: list[str] = []
-    errors.extend(_validate_native_p2_diagnostics(e))
-    production_engine = e.get("production_engine")
-    if production_engine not in {"gsim", "msim", "msim+gsim-world"}:
-        errors.append("UNAPPROVED_P2_PRODUCTION_ENGINE:" + str(production_engine or "missing"))
-    _count_at_least(e, errors, "ranks_with_executed_behavior_tests", "structurally_reachable_ranks")
-    _count_at_least(e, errors, "ranks_with_executor_paths", "structurally_reachable_ranks")
-    _require_zero(e, errors, "missing_executor_ranks")
-    _require_zero(e, errors, "failed_behavior_ranks")
-    _require_true(e, errors, "talent_paths_legal")
-    _count_at_least(e, errors, "ranks_represented_in_search", "structurally_reachable_ranks")
-    _require_true(e, errors, "unlocked_actions_available_to_generated_search")
-    # A per-rank *executed test ledger* prevents a single "129 tests passed"
-    # summary from posing as 129 verified behaviors.  Test ids must identify
-    # actual executed test nodes, not merely a modifier-compilation receipt.
-    rank_keys = e.get("reachable_rank_keys")
-    behavior = e.get("rank_behavior_results")
-    if rank_keys is not None or behavior is not None:
-        if not isinstance(rank_keys, list) or not rank_keys or len(rank_keys) != len(set(rank_keys)):
-            errors.append("INVALID_REACHABLE_RANK_KEYS")
-        if not isinstance(behavior, list):
-            errors.append("MISSING_PER_RANK_EXECUTED_TEST_LEDGER")
-        else:
-            covered: set[str] = set()
-            for row in behavior:
-                if not isinstance(row, dict):
-                    errors.append("INVALID_RANK_BEHAVIOR_TEST_ENTRY")
-                    continue
-                k = row.get("rank_key")
-                if (not isinstance(k, str) or not k or k in covered
-                        or not isinstance(row.get("test_id"), str) or not row["test_id"]
-                        or row.get("passed") is not True or row.get("actually_executed") is not True):
-                    errors.append("INVALID_OR_FAILED_RANK_TEST:" + str(k))
-                else:
-                    covered.add(k)
-            if isinstance(rank_keys, list):
-                missing = sorted(set(rank_keys) - covered)
-                unexpected = sorted(covered - set(rank_keys))
-                if missing:
-                    errors.append(f"UNTESTED_REACHABLE_RANKS:{len(missing)}:first={','.join(missing[:5])}")
-                if unexpected:
-                    errors.append(f"NONREACHABLE_RANK_TEST_IDS:{len(unexpected)}")
-                if _require_count(e, errors, 'ranks_with_executed_behavior_tests') != len(covered):
-                    errors.append("BEHAVIOR_COUNT_MISMATCH_WITH_LEDGER")
-    if e.get("source_specific_behavior_tests_executed") is False:
-        errors.append("NO_CURRENT_REAL_RUNTIME_BEHAVIOR_TESTS")
-    if e.get('provenance_scope','').startswith('HISTORICAL_WF443'):
-        errors.append('HISTORICAL_IR_SNAPSHOT_NOT_CURRENT_RUNTIME_P2_EVIDENCE')
-    unverified=e.get("missing_current_level_runtime_executor_verification", 0)
-    if type(unverified) is int and unverified > 0:
-        errors.append(f"LEVEL_SPECIFIC_EXECUTOR_TESTS_MISSING:{unverified}")
-    unresolved=e.get("source_unresolved_ranks",0)
-    if type(unresolved) is int and unresolved > 0:
-        errors.append(f"SOURCE_RANK_REACHABILITY_UNRESOLVED:{unresolved}")
-    # Deliberately no old semantic_verification_label criterion.
-    return errors
-
 
 def _validate_p3(e: dict, _: dict) -> list[str]:
     """Approved P3 v2.1: fast ilvl-top5 legal items and contextual scoring.
@@ -426,9 +235,8 @@ def _validate_p7(e: dict, _: dict) -> list[str]:
     return errors
 
 
-# P1/P2 validators remain available only to the legacy JSON diagnostic helper.
-# They are not in GATES, the live CLI, or the M1 acceptance register.
-VALIDATORS = {"P1": _validate_p1, "P2": _validate_p2, "P3": _validate_p3,
+# P1 and P2 are retired; historical evidence is not a live validator.
+VALIDATORS = {"P3": _validate_p3,
               "P4": _validate_p4, "P5": _validate_p5, "P6": _validate_p6,
               "P7": _validate_p7}
 
@@ -440,6 +248,9 @@ def evaluate(evidence_dir: Path, class_key: str, level: int, spec: str, gate: st
     filename = evidence_dir / class_key / f"L{level}" / spec / f"{gate}.json"
     result = {"class": class_key, "level": level, "spec": spec, "gate": gate,
               "status": "FAIL", "reasons": [], "evidence_file": str(filename)}
+    if gate not in VALIDATORS:
+        result["reasons"] = ["RETIRED_OR_UNKNOWN_GATE:" + gate]
+        return result
     if not filename.is_file():
         result["reasons"] = ["EVIDENCE_NOT_FOUND"]
         return result

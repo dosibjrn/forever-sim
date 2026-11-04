@@ -56,13 +56,13 @@ on:
       - 'src/optimization/**'
       - 'config/validation/source_spec_profiles.json'
       - 'tools/wf_source_profile.py'
-      - 'tools/wf_gate_p2_live.py'
       - 'tools/wf_gate_p3_live.py'
       - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gate_p6_live.py'
       - 'tools/wf437_direct_budgeted_run.py'
       - 'tests/gates/test_wf35_product_spec_profile_contract.py'
-      - 'tests/test_wf35_source_spec_p2_adapter.py'
+      - 'tests/test_source_spec_profile.py'
+      - 'tests/test_source_rank_fullpoint_frontier.py'
       - 'tests/test_wf_prio_p4_p5_paid_partials.py'
       - '.github/workflows/generic-source-search-regressions.yml'
 
@@ -92,13 +92,12 @@ jobs:
         run: >-
           python -m pytest -vv
           tests/generic/publication/test_generic_registry_g47b.py
-          tests/generic/search/test_wf_p2_cross_tree_source_witness.py
           tests/generic/search/test_work2_refinement_mode_slot.py
-          tests/generic/search/test_wf_p2_source_witness_priority.py
           tests/generic/search/test_source_wand_paid_slot_proposals.py
           tests/generic/search/test_source_paid_gear_witness_priority.py
           tests/gates/test_wf35_product_spec_profile_contract.py
-          tests/test_wf35_source_spec_p2_adapter.py
+          tests/test_source_spec_profile.py
+          tests/test_source_rank_fullpoint_frontier.py
           tests/test_wf_prio_p4_p5_paid_partials.py
           tests/generic/search/test_per_level_fixed_point_v0114846.py
           tests/generic/search/test_stat_weight_model.py
@@ -107,7 +106,6 @@ jobs:
           tests/generic/search/test_v2_analytic_frontier_extra.py
           tests/generic/search/test_generic_search_layout.py
           tests/generic/search/test_leveling_score.py
-          tests/generic/search/test_wf390_generic_talent_subset_search.py
           tests/generic/search/test_bounded_policy_search_g16.py
           tests/generic/search/test_policy_search_efficiency_g18.py::test_g18_cache_normalizes_action_cost_and_numeric_equivalent_policy
           tests/generic/runtime/test_source_maintenance_rank_reader.py

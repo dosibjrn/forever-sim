@@ -18,8 +18,6 @@ from time import process_time_ns
 from src.game.data.forever.registry import build_game_ir_slice
 from src.optimization.talent_frontier import allocation_key
 from src.game.talent_frontier import source_legal_talent_neighbors
-from src.game.data.forever.source_checkpoint_p2_optimizer import (rank_opportunity_frontier,
-    proposal_l0_opportunity)
 from src.game.talents import apply_talent_selection, validate_talent_selection
 from src.game.gear import apply_gear_selection
 from src.game.runtime.simulator import EventTransitionBudgetExceeded, ComputeDeadlineExceeded
@@ -34,7 +32,6 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
                                       initial_search: int = 24, search_per_gear: int = 24,
                                       max_gear_states: int = 3, ir_slice=None,
                                       initial_allocation=None,
-                                      talent_l0_certificate: dict | None = None,
                                       schedule_incoming_attacks: bool = True,
                                       policy_search_backend: str = 'prefix',
                                       max_event_transitions: int | None = None,
@@ -79,16 +76,6 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
             or int(ir.actor.metadata.get('level',-1)) != level):
         raise ValueError('source IR class/level mismatch')
     ir = remove_combat_policy_seeds_preserve_maintenance(ir)
-    # L0 rank audit is optional for older checkpoints. When provided it must
-    # match the same checkpoint and contains every sourced talent rank delta.
-    # It is used for candidate ordering only; never substitutes for paid L2.
-    l0_talent_frontier = (rank_opportunity_frontier(talent_l0_certificate,
-                         class_key=class_key,level=level)
-                         if talent_l0_certificate is not None else None)
-    l0_priority_queries = 0
-    l0_talent_rank_order = (sorted(l0_talent_frontier['ranks'],
-        key=lambda r: (-r['relative_opportunity'],r['conditional'],r['talent_id'],r['rank']))
-        if l0_talent_frontier is not None else [])
     initial = dict(initial_allocation or {})
     validate_talent_selection(ir,initial,level=level)
     context = sha256(dumps({'ir':ir.as_dict(), 'version':SOFTWARE_VERSION,
@@ -100,8 +87,7 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
                            'talent_corridor_reserve':talent_corridor_reserve,
                            'talent_screening_attempts':talent_screening_attempts,
                            'post_talent_refinement_budget':post_talent_refinement_budget,
-                           'probe_stats':probe_stats, 'probe_deltas':probe_deltas,
-                           'talent_l0_rank_count':0 if l0_talent_frontier is None else l0_talent_frontier['rank_count']},sort_keys=True,default=str).encode()).hexdigest()
+                           'probe_stats':probe_stats, 'probe_deltas':probe_deltas},sort_keys=True,default=str).encode()).hexdigest()
     pending = {allocation_key(initial): {'parent':None, 'parent_score':None,
                  'operation':'initial', 'changed_ids':()}}
     # REUSE the existing source-tier corridor generator. The original beam's
@@ -153,14 +139,6 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
     marginal_by_family = {}
     talent_map = {t.id:t for t in ir.talents}
     action_map = {a.id:a for a in ir.actions}
-
-    def source_l0_relevance(key,row):
-        nonlocal l0_priority_queries
-        if l0_talent_frontier is None:
-            return 0.0
-        l0_priority_queries += 1
-        parent = dict(row['parent']) if row['parent'] is not None else {}
-        return proposal_l0_opportunity(l0_talent_frontier,parent,dict(key))['l0_opportunity']
 
     def action_relevance(row):
         # Cheap structural proposal prior from source modifiers and actions
@@ -225,7 +203,7 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
                 if row['parent']==root and row['operation']=='rank_sweep'
                 and any(f not in root_families_tried for f in row['changed_ids'])]
             if root_sweeps:
-                return min(root_sweeps,key=lambda pair:(-source_l0_relevance(*pair),-action_relevance(pair[1]),pair[0]))
+                return min(root_sweeps,key=lambda pair:(-action_relevance(pair[1]),pair[0]))
         # Parent predictions are recomputed after each actual simulator result;
         # rank sweep and family novelty are exploration bonuses, not scores.
         options = []
@@ -245,9 +223,9 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
             novelty = new_families + (0.3 if row['operation']=='rank_sweep' else 0.0)
             # 1 in 4 selections explicitly explores an untried family.
             if stages and len(stages)%4==3:
-                priority = (-novelty, -source_l0_relevance(key,row), -action_relevance(row), estimate, key)
+                priority = (-novelty, -action_relevance(row), estimate, key)
             else:
-                priority = (estimate-0.5*novelty-0.35*action_relevance(row)-0.15*source_l0_relevance(key,row), -novelty, key)
+                priority = (estimate-0.5*novelty-0.35*action_relevance(row), -novelty, key)
             options.append((priority,key,row))
         _, key, row = min(options, key=lambda x:x[0])
         return key,row
@@ -658,14 +636,6 @@ def run_source_budgeted_joint_talents(*, class_key: str, level: int,
             'legal_talent_states_discovered':len(legal_seen),
             'pending_legal_talent_states':len(pending),
             'rejected_talent_proposals':dict(rejection_counts),
-            'talent_l0_rank_frontier':[{'talent_id':r['talent_id'],'rank':r['rank'],
-                'relative_opportunity':r['relative_opportunity'],
-                'conditional':r['conditional'],'l2_supported':r['l2_supported']}
-                for r in l0_talent_rank_order],
-            'talent_l0_source_ranks_scored':0 if l0_talent_frontier is None else l0_talent_frontier['rank_count'],
-            'talent_l0_source_only_ranks_scored':0 if l0_talent_frontier is None else l0_talent_frontier['source_only_count'],
-            'talent_l0_priority_queries':l0_priority_queries,
-            'talent_l0_influenced_candidate_order':l0_priority_queries > 0,
             'source_talent_families':roster['source_talent_families'],
             'executable_talent_families':roster['executable_talent_families'],
             'unsupported_talent_ids':list(roster['unsupported_talent_ids']),
