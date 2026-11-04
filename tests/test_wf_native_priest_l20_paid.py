@@ -733,30 +733,32 @@ def test_paid_lethal_candidate_falls_back_when_retained_actor_cannot_finish(tmp_
             "native_2d_screen_complete": False,
         }
 
-    def persistent_world(binary, request_path):
+    def persistent_world(binary, request_path, *, target_count):
         name = json.loads(request_path.read_text())["raid"]["parties"][0][
             "players"][0]["name"]
-        retained_calls.append(name)
+        retained_calls.append((name, target_count))
         if name == "a":
             raise RuntimeError("RUST_TWO_WORLD_KILLS_NOT_COMPLETED")
         return {
             "native_2d_persistent_actor_verified": True,
             "native_2d_persistent_world_ack_verified": True,
-            "native_2d_persistent_world_targets_killed": 2,
+            "native_2d_persistent_world_targets_killed": target_count,
             "native_2d_screen_complete": False,
         }
 
     result = score_source_priest_l20_candidates(
         "/native", tmp_path, score_request=scorer, world_screen=world_screen,
-        persistent_world=persistent_world, max_paid_builds=2)
+        persistent_world=persistent_world, max_paid_builds=2,
+        persistent_target_count=100)
     assert live_calls == ["a", "b"]
-    assert retained_calls == ["a", "b"]
+    assert retained_calls == [("a", 100), ("b", 100)]
     assert result["native_paid_whole_builds"] == 2
     assert result["native_2d_live_world_kills"] == 2
     assert result["native_2d_live_kill_candidate"] == "a.json"
     assert result["native_2d_persistent_attempted"] == 2
     assert result["native_2d_persistent_verified"] == 1
-    assert result["native_2d_persistent_targets_killed"] == 2
+    assert result["native_2d_persistent_targets_killed"] == 100
+    assert result["native_2d_persistent_target_goal"] == 100
     assert result["native_2d_persistent_candidate"] == "b.json"
     rows = result["native_candidate_receipts"]
     assert rows[0]["native_2d_persistent_error"] == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
@@ -765,3 +767,13 @@ def test_paid_lethal_candidate_falls_back_when_retained_actor_cannot_finish(tmp_
     assert result["native_2d_live_kill_request_sha256"] == rows[0]["native_request_sha256"]
     assert result["native_2d_screen_complete"] is False
     assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json", "b.json"]
+
+
+@pytest.mark.parametrize("target_count", [1, 101, True, 2.5])
+def test_priest_native_persistent_target_count_is_bounded(tmp_path, target_count):
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    (tmp_path / "source.json").write_text(json.dumps(_request()))
+    with pytest.raises(ValueError, match="P4_P5_NATIVE_PERSISTENT_TARGET_COUNT_INVALID"):
+        score_source_priest_l20_candidates(
+            "/native", tmp_path, persistent_target_count=target_count)
