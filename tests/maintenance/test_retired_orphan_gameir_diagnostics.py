@@ -24,6 +24,8 @@ RETIRED_TOOLS = (
     "tools/wf294_l1_partial_nine_class.py",
     "tools/wf241_recovery_e2e.py",
     "tools/wf378_evocation_recovery.py",
+    "tools/wf240_source_joint_replay.py",
+    "tools/wf241_source_joint_replay.py",
     "tools/wf242_multi_pull_replay.py",
     "tools/wf244_effect_batch_replay.py",
     "tools/wf257_l30_full_gear.py",
@@ -66,6 +68,8 @@ RETIRED_IMPORT_NAMES = (
     "wf294_l1_partial_nine_class",
     "wf241_recovery_e2e",
     "wf378_evocation_recovery",
+    "wf240_source_joint_replay",
+    "wf241_source_joint_replay",
     "wf242_multi_pull_replay",
     "wf244_effect_batch_replay",
     "wf257_l30_full_gear",
@@ -98,6 +102,8 @@ RETIRED_OUTPUTS = (
     "evidence/wf369/WF369_DRUID_L30_APL_PROBE.json",
     "evidence/wf365/WF365_BEAR_PRIMAL_DIAGNOSTIC.json",
     "evidence/wf365/WF365_SPACED_PULL_SMOKE.json",
+    "WF240_DRUID_L20_JOINT_REPLAY.json",
+    "WF241_DRUID_L20_JOINT_REPLAY.json",
 )
 
 RETIRED_SOURCE_EVIDENCE = (
@@ -106,6 +112,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/maintenance/test_historical_joint_replay_compat.py",
     "tests/test_wf378_recovery_channel_tdd.py",
     "tests/test_wf365_druid_l30_holdout.py",
     "tests/test_wf365_primal_bite_talent_unlock.py",
