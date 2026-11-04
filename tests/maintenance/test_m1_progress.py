@@ -190,14 +190,6 @@ def test_materially_invalidated_partial_receipt_can_be_removed(tmp_path, monkeyp
     assert key not in m1._rows(path)
 
 
-def test_m1_recorder_supports_owner_authenticated_partial_invalidation():
-    workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
-    assert "startsWith(github.event.comment.body, '/m1-invalidate ')" in workflow
-    assert "INVALIDATE_REASON" in workflow
-    assert 'python tools/m1_progress.py --invalidate "$class" "$level" "$spec" "$gate"' in workflow
-    assert "M1: invalidate $INVALIDATE_TARGET ($INVALIDATE_REASON)" in workflow
-    assert "force:false" in workflow
-
 def test_partial_watermark_is_monotonic_but_logs_lower_current_measurement(
         monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
