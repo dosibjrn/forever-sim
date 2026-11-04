@@ -1,12 +1,13 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `a0950464f4b544e5c5248494a1a05c6a43efb0cc`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
+Refreshed against main `3c51d6012e18cdd27ad57b14f66b9af2046cb361`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
 
 ## Current M1 scoreboard
 
 - **M1 measured: 2.1148%** (`measured_fraction=0.0211477102`).
 - **28.169 / 1,332** measured gate-equivalents; **23 PASS / 9 PARTIAL** active-scope gate rows (retired P1/P2 partial rows excluded).
 - **0 / 148** certified checkpoints. The measured float is diagnostic coverage, not certification. Only Merge writes `M1_PASSES.tsv`.
+- **Prio recheck:** Work1's Shaman P3 repair is already in draft MythicSim PR #11; do not compete with #847. The best independent next action remains Paladin L20 P3 [#845](https://github.com/dosibjrn/forever-sim/issues/845): two official runs are blocked before paid scoring, 6,849 class-eligible items exist, and the tested stateful + source-auto-fallback path supports one bounded 44-evaluation producer. Full-PASS ceiling **+0.07508 pp**, not forecast. The Mage/Priest partials and saturated Druid P6 rows offer no narrower evidenced action; no unmeasured likely-PASS path is documented.
 
 ## Immediate dependency-ordered queue
 
