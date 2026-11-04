@@ -1098,3 +1098,88 @@ def test_shaman_positive_spell_power_requires_exact_native_fallback(monkeypatch)
     assert other["source_policy_stat_witnesses"] == []
     assert other["real_measured_stat_weights"]["spell_power"] == 0.1
     assert len(other_smoke_calls) == 1
+
+
+
+def test_mage_native_paid_winner_first_reuses_strictly_verified_baseline(monkeypatch):
+    """Spend the last paid evaluation on the exact selected Mage winner."""
+    from types import SimpleNamespace
+    import src.game.gear as gear
+    import src.v2.source_budgeted_gear as budgeted
+    from src.v2.source_stateful_budgeted import _make_policy
+
+    prefix = ("fire_blast:8412", "fire_blast:8412")
+    source = SimpleNamespace(id="unexecutable-mage-source",
+                             provenance={"source": "fixture"})
+    ir = SimpleNamespace(id="mage-l30", policies=(source,))
+    winner = _make_policy(ir, "frostbolt:8406")
+    record = {
+        "status": "evaluated", "score_s_per_mob": 10.0,
+        "fallback": "frostbolt:8406", "prefix": list(prefix),
+        "selected_actions": [{"action_id": x} for x in prefix],
+        "guarded_action": None, "guarded_conditions": [],
+    }
+    observed = []
+
+    def apply_delta(candidate, stat, delta):
+        assert candidate is ir
+        return SimpleNamespace(id=ir.id, policies=ir.policies,
+                               stat_delta=(stat, float(delta)))
+
+    def paid(candidate, *, level, policy_override, opening_action_ids=(),
+             schedule_incoming_attacks=False):
+        observed.append((policy_override.id, tuple(opening_action_ids),
+                         getattr(candidate, "stat_delta", None)))
+        assert policy_override.id == winner.id, "source seed must not be paid first"
+        return (
+            SimpleNamespace(seconds_per_mob=9.0),
+            SimpleNamespace(timeline=SimpleNamespace(target_defeated=True),
+                            selected_actions=[{"action_id": x} for x in prefix]),
+            {},
+        )
+
+    monkeypatch.setattr(gear, "apply_stat_delta", apply_delta)
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", paid)
+    result = paid_source_policy_stat_witness(
+        ir, stat="spirit", level=30, probe_deltas=(20., 5.),
+        max_evaluations=1, opening_action_ids=prefix,
+        preferred_policy=winner, baseline_record=record,
+        prefer_verified_paid_winner_first=True)
+
+    assert result["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
+    assert result["policy_source"] == "paid_search_winner"
+    assert result["baseline_reused"] is True
+    assert result["baseline_seconds_per_mob"] == 10.0
+    assert result["perturbed_seconds_per_mob"] == 9.0
+    assert result["paid_evaluations"] == 1
+    assert result["attempted_policy_sources"] == ["paid_search_winner"]
+    assert observed == [(winner.id, prefix, ("spirit", 20.0))]
+
+
+def test_mage_winner_first_rejects_mismatched_paid_record_without_probe(monkeypatch):
+    """An unrelated evaluated prefix never authorizes a free paid baseline."""
+    from types import SimpleNamespace
+    import src.v2.source_budgeted_gear as budgeted
+    from src.v2.source_stateful_budgeted import _make_policy
+
+    ir = SimpleNamespace(id="mage-l30", policies=())
+    winner = _make_policy(ir, "frostbolt:8406")
+    prefix = ("fire_blast:8412",)
+    record = {
+        "status": "evaluated", "score_s_per_mob": 10.0,
+        "fallback": "frostbolt:8406", "prefix": list(prefix),
+        "selected_actions": [{"action_id": "wrong-action"}],
+        "guarded_action": None, "guarded_conditions": [],
+    }
+    monkeypatch.setattr(
+        budgeted, "_policy_combat_evaluation",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("unverified winner must not be paid")))
+    result = paid_source_policy_stat_witness(
+        ir, stat="spirit", level=30, probe_deltas=(20.,),
+        max_evaluations=1, opening_action_ids=prefix,
+        preferred_policy=winner, baseline_record=record,
+        prefer_verified_paid_winner_first=True)
+    assert result["status"] == "NO_POSITIVE_SOURCE_POLICY_WITNESS"
+    assert result["paid_evaluations"] == 0
+    assert result["attempted_policies"] == []
