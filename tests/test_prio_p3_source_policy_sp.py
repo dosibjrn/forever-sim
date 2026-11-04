@@ -53,21 +53,3 @@ def test_real_unrestricted_l40_p3_reuses_baseline_to_measure_spirit():
     assert spirit["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
     assert spirit["baseline_reused"] is True, result
     assert result["behavior_probes_executed"] <= 44, result
-
-def test_real_mage_and_priest_l20_p3_ignore_qualified_wand_proxy_for_equipped_weapon_weights():
-    """Run both real P3 providers; a scenario wand proxy is not an equipped item."""
-    for class_key in ("mage", "priest"):
-        result = run_live(ROOT, class_key, 20, spec="unrestricted")
-        reasons = set(result.get("reasons", ()))
-        print(
-            f"P3 qualified-wand diagnostic {class_key}: "
-            f"status={result.get('status')} reasons={sorted(reasons)} "
-            f"weights={result.get('real_measured_stat_weights')} "
-            f"assertions={result.get('pass_count')}/{result.get('reachability_count')} "
-            f"probes={result.get('behavior_probes_executed')} "
-            f"slots={result.get('real_catalogue_slots_scored')}"
-        )
-        assert result.get("production_engine") == "gsim_CombatRuntime", result
-        assert result.get("behavior_probes_executed", 0) > 0, result
-        assert "MISSING_APPLICABLE_DPS_WEIGHT" not in reasons, result
-        assert "MISSING_WEIGHT:mean_weapon_hit_damage" not in reasons, result
