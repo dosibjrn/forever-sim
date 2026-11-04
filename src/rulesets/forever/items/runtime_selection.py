@@ -393,8 +393,8 @@ def item_scoring_vector(item: ItemRecord) -> dict[str, float]:
         value['ranged_attack_power'] = float(item.extra_stats['rgdatkpwr'])
     # Source mapping owns the meaning of healthrgn=HP5 (not plain health/sec).
     from .source_numeric_extras import modeled_source_numeric_extras
-    for key, amount in modeled_source_numeric_extras(item).items():
-        value[key] = value.get(key, 0.) + float(amount)
+    for axis, amount in modeled_source_numeric_extras(item).items():
+        value[axis] = value.get(axis, 0.) + float(amount)
     _ITEM_SCORING_VECTOR_CACHE[key] = value
     return value
 
