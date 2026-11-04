@@ -300,6 +300,27 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, list):
                     record[key] = value[:4]
+        if gate == "P7.2":
+            # The approved P7.2 producer pays a changed APL directly on
+            # selected native Rust. Keep its *actual* score and selected
+            # rotation visible; legacy world/1000-fight diagnostics cannot
+            # stand in for this source-native paid receipt.
+            score = report.get("winner_native_dps")
+            if (type(score) in (int, float) and math.isfinite(score)
+                    and score >= 0):
+                record["winner_native_dps"] = score
+            for key in ("original_apl_hash", "selected_validation",
+                        "reference_profile", "checkpoint_spec"):
+                value = report.get(key)
+                if isinstance(value, str) and len(value) <= 128:
+                    record[key] = value
+            if type(report.get("source_fixed_gear_and_talents")) is bool:
+                record["source_fixed_gear_and_talents"] = report[
+                    "source_fixed_gear_and_talents"]
+            apl = report.get("cold_winner_apl")
+            if (isinstance(apl, list) and 0 < len(apl) <= 50
+                    and len(json.dumps(apl, ensure_ascii=False).encode("utf-8")) <= 8192):
+                record["cold_winner_apl"] = apl
         if gate == "P7.5":
             # The live provider now returns the exact independently paid
             # frozen winner. Preserve it in the CLI/M1 Actions receipt so a
