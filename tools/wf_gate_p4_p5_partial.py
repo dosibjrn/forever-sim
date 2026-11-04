@@ -154,7 +154,8 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                 report["paid_candidates"] = (
                     cold["native_cold_native_paid_before_30"]
                     + cold["native_cold_native_paid_after_30"])
-                report["screen_complete_candidates"] = (
+                report["screen_complete_candidates"] = cold.get(
+                    "native_cold_completed_100mob_finalists",
                     cold["native_cold_completed_routes_before_30"]
                     + cold["native_cold_completed_routes_after_30"])
                 if not cold["native_cold_300s_reached"]:
