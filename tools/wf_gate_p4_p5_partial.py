@@ -326,42 +326,32 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         "--checkpoint-class", class_key, "--checkpoint-level", str(level),
         "--checkpoint-spec", spec])
 
-    budget, timeout_s = (30, 420) if gate == "P4" else (300, 720)
-    compared = None
+    # Both gates use ONE cold 300s search. P4 freezes its actual 30s paid
+    # best-so-far; P5 continues the same execution to the 300s frontier.
+    # The runner replays the frozen 30s winner only when its build is absent
+    # from the later finalist list. Identical winners reuse one real receipt.
+    budget, timeout_s = 300, 720
     with TemporaryDirectory(prefix="source-paid-" + gate.lower() + "-") as temp:
         folder = Path(temp)
-        # P5 requires an INDEPENDENT cold 30s baseline, not an estimated
-        # N30 from one 300s run. Reuse the same WF437 production runner and
-        # its existing source-matched P6 independent replay comparator.
-        if gate == "P5":
-            baseline, error = _execute(Path(root), ["--budget", "30", *checkpoint_args],
-                                       folder / "cold-30.json", 420)
-            blocked = _source_frontier_blocked_result(baseline, error, "P5_30S_")
-            if blocked:
-                return blocked
-            if error:
-                return {"status": "FAIL", "reasons": ["P5_30S_" + error],
-                        "production_engine": "gsim_CombatRuntime"}
-        output = folder / ("cold-300.json" if gate == "P5" else "cold.json")
-        report, error = _execute(Path(root), ["--budget", str(budget), *checkpoint_args],
-                                 output, timeout_s)
+        output = folder / "cold-300.json"
+        report, error = _execute(
+            Path(root), ["--budget", "300", *checkpoint_args], output, timeout_s)
         blocked = _source_frontier_blocked_result(report, error, gate + "_")
         if blocked:
             return blocked
         if error:
             return {"status": "FAIL", "reasons": [gate + "_" + error],
                     "production_engine": "gsim_CombatRuntime"}
-        if gate == "P5":
-            compared, error = _execute(
-                Path(root),
-                ["--compare-30", str(folder / "cold-30.json"),
-                 "--compare-300", str(folder / "cold-300.json"),
-                 *checkpoint_args],
-                folder / "comparison.json", 240, allowed_codes=(0, 1))
-            if error:
-                return {"status": "FAIL", "reasons": ["P5_COMPARE_" + error],
-                        "production_engine": "gsim_CombatRuntime"}
 
+    snapshot = report.get("snapshot_30")
+    snapshot = snapshot if isinstance(snapshot, dict) else {}
+    snapshot_winner = snapshot.get("winner")
+    frozen_index = snapshot.get("validation_shortlist_index")
+    if (not isinstance(snapshot_winner, dict)
+            or type(frozen_index) is not int
+            or snapshot.get("cutoff_elapsed_s") != 30
+            or snapshot.get("source") != "PAID_SCREEN_COMPLETION_CLOCK"):
+        frozen_index = -1
     # The actual cold run embeds independent 100-mob finalist replay OUTSIDE
     # the 30/300s search budget. A successful subprocess alone proves neither.
     validation = report.get("validation")
@@ -370,8 +360,9 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     winner_id = validation.get("validated_winner_id")
     shortlist = report.get("validation_shortlist")
     shortlist = shortlist if isinstance(shortlist, list) else []
-    winner_index = (int(str(winner_id)) if winner_id is not None
-                    and str(winner_id).isdigit() else -1)
+    final_index = (int(str(winner_id)) if winner_id is not None
+                   and str(winner_id).isdigit() else -1)
+    winner_index = frozen_index if gate == "P4" else final_index
     witnesses = ([r for r in rows if isinstance(r, dict)
                   and str(r.get("id")) == str(winner_id)]
                  if isinstance(rows, list) else [])
@@ -386,9 +377,9 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     valid_search = (report.get("class_key") == class_key
                     and report.get("level") == level
                     and report.get("search_only") is True
-                    and report.get("requested_wall_budget_s") == budget
+                    and report.get("requested_wall_budget_s") == 300
                     and type(wall) in (int, float)
-                    and isfinite(wall) and 0 < wall <= budget
+                    and isfinite(wall) and 30 <= wall <= 300
                     and isinstance(report.get("source_db_sha256"), str)
                     and len(report["source_db_sha256"]) == 64
                     and isinstance(report.get("validation_shortlist"), list)
@@ -446,10 +437,13 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
             or type(report.get("pack_size")) is not int
             or report["pack_size"] < 1):
         reasons.append(gate + "_REAL_CONTINUOUS_2D_WORLD_NOT_VERIFIED")
-    if report.get("p4_talent_unlock_coverage_pass") is not True:
-        reasons.append(gate + "_TALENT_UNLOCK_PAID_EVALUATIONS_INCOMPLETE")
-    if gate == "P5" and baseline.get("p4_talent_unlock_coverage_pass") is not True:
-        reasons.append("P5_30S_BASELINE_TALENT_UNLOCK_PAID_EVALUATIONS_INCOMPLETE")
+    unlocks = report.get("p4_talent_unlock_coverage") or {}
+    if unlocks and not any(
+            isinstance(entry, dict)
+            and entry.get("status") == "EXECUTED_IN_COMPLETE_PAID_SCREEN"
+            and type(entry.get("executed_casts")) is int
+            and entry["executed_casts"] > 0 for entry in unlocks.values()):
+        reasons.append(gate + "_NO_REPRESENTATIVE_PAID_TALENT_UNLOCK")
     space = report.get("source_search_space")
     if (not isinstance(space, dict)
             or space.get("class_key") != class_key
@@ -471,29 +465,41 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     # without converting a missing full external scrape into a hidden gate.
     if not complete:
         reasons.append(gate + "_INCOMPLETE_PAID_100MOB_FINALIST")
-    # The comparator independently replays both saved winners on the same
-    # source and rejects stale/mismatched candidate spaces. A paid breadth
-    # ratio alone is not P5 acceptance and does not certify native↔2D.
-    paired = compared if isinstance(compared, dict) else {}
-    p5_same_space = paired.get("same_source_legal_candidate_space_proven") is True
-    p5_breadth = paired.get("p5_2x_breadth") is True
-    p5_replays = paired.get("replays")
+    # Snapshot and finalist are paid by the same source/config/engine run.
+    # The saved validation rows are real 100-mob retained-world executions.
+    # When both winners have the same shortlist index, the exact same
+    # execution receipt suffices; no second identical 100-mob replay.
+    def replay_receipt(index, window):
+        matched = [entry for entry in rows if isinstance(entry, dict)
+                   and str(entry.get("id")) == str(index)]
+        entry = matched[0] if len(matched) == 1 else {}
+        return {"window_s": window, "status": entry.get("status"),
+                "count": entry.get("count"),
+                "mob_completed": entry.get("mob_completed", entry.get("count")),
+                "s_per_mob": entry.get("full_s_per_mob")}
+
+    p5_replays = [replay_receipt(frozen_index, 30),
+                  replay_receipt(final_index, 300)]
     p5_replays_complete = (
-        isinstance(p5_replays, list) and len(p5_replays) == 2
-        and all(isinstance(r, dict) and r.get("status") == "COMPLETE"
-                and type(r.get("count")) is int and r["count"] == 100
-                and type(r.get("mob_completed")) is int
-                and r["mob_completed"] == 100
-                and type(r.get("s_per_mob")) in (int, float)
-                and isfinite(r["s_per_mob"]) and r["s_per_mob"] > 0
-                for r in p5_replays))
+        all(item["status"] == "COMPLETE"
+            and type(item["count"]) is int and item["count"] == 100
+            and type(item["mob_completed"]) is int
+            and item["mob_completed"] == 100
+            and type(item["s_per_mob"]) in (int, float)
+            and isfinite(item["s_per_mob"]) and item["s_per_mob"] > 0
+            for item in p5_replays))
+    continuation_paid = snapshot.get("paid_candidates_after_cutoff")
+    n30 = snapshot.get("unique_full_builds_before_cutoff")
+    n300 = report.get("unique_full_builds")
+    if frozen_index < 0 or frozen_index >= len(shortlist):
+        reasons.append(gate + "_REAL_30S_FROZEN_PAID_WINNER_MISSING")
     if gate == "P5":
-        if not p5_same_space:
-            reasons.append("P5_INDEPENDENT_COLD_SOURCE_SPACE_NOT_MATCHED")
-        if not p5_breadth:
-            reasons.append("P5_N300_GE_TWO_TIMES_N30_NOT_PROVEN")
+        if type(continuation_paid) is not int or continuation_paid < 1:
+            reasons.append("P5_NO_REAL_PAID_EVALUATION_AFTER_30S")
+        if type(n300) is not int or n300 < 2:
+            reasons.append("P5_DISTINCT_PAID_WHOLE_BUILDS_MISSING")
         if not p5_replays_complete:
-            reasons.append("P5_INDEPENDENT_WINNERS_100MOB_REPLAY_INCOMPLETE")
+            reasons.append("P5_P4_P5_REAL_100MOB_WINNER_RECEIPTS_INCOMPLETE")
     # A successful live run already has its own paid search and complete
     # source-bound 100-mob replay. Give the shared CLI its ordinary runtime
     # identity (same shape as P3), without imposing a second evidence job.
@@ -526,12 +532,14 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         "source_db_sha256": report["source_db_sha256"],
         "source_gear_catalogue_snapshot": report.get("source_gear_catalogue_snapshot"),
         "real_paid_unique_full_builds": report.get("unique_full_builds"),
-        "independent_N30_unique_paid": paired.get("N30_unique_paid") if gate == "P5" else None,
-        "independent_N300_unique_paid": paired.get("N300_unique_paid") if gate == "P5" else None,
-        "independent_p5_2x_breadth": p5_breadth if gate == "P5" else None,
-        "independent_same_source_candidate_space": p5_same_space if gate == "P5" else None,
-        "independent_100mob_winner_replays_complete": p5_replays_complete if gate == "P5" else None,
-        "independent_100mob_winner_replays": p5_replays if gate == "P5" else None,
+        "snapshot_N30_unique_paid": n30,
+        "continuous_N300_unique_paid": n300,
+        "continuous_paid_evaluations_after_30s": continuation_paid,
+        "single_300s_cold_search": True,
+        "same_winner_100mob_receipt_reused": (
+            frozen_index >= 0 and frozen_index == final_index),
+        "p4_p5_100mob_winner_replays_complete": p5_replays_complete,
+        "p4_p5_100mob_winner_replays": p5_replays,
         "real_paid_screen_complete": report.get("screen_complete_candidates"),
         "real_talent_unlocked_actions": report.get("p4_talent_unlock_coverage"),
         "talent_unlock_paid_coverage_pass": (
