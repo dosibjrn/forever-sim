@@ -1197,21 +1197,11 @@ def execute(profile_id: str, inventory: list, *,
         "native_objective_witnesses": native_objective_witnesses,
         "objective": objective,
     }
-    try:
-        adapter, scope = source_bounded_adapter(
-            cls, reference, same_class, **adapter_kwargs
-        )
-    except Exception as initial_exc:
-        witness_block = (
-            "BLOCKED_NATIVE_" + objective + "_WITNESS:"
-        )
-        if objective not in {"HPS", "TPS"} or not str(initial_exc).startswith(witness_block):
-            row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
-            row["blocker"] = str(initial_exc)[:500]
-            row["native_paid_total"] = row["baseline_paid"]
-            row["native_failures"] = native_failures
-            return row
-
+    if objective in {"HPS", "TPS"}:
+        # Source-cast identity is not proof that a donor talent build is
+        # accepted by this pinned MythicSim engine or that the cast heals /
+        # generates threat under that build. Pay native probes first; only
+        # per-build native-positive source APLs may enter the candidate domain.
         source_request_records = [
             {
                 "request": req,
@@ -1258,16 +1248,19 @@ def execute(profile_id: str, inventory: list, *,
         row["native_donor_probe_positive_apl_builds"] = len(source_apls_by_talent)
         adapter_kwargs["native_objective_witnesses_by_talentsString"] = witnesses_by_talent
         adapter_kwargs["native_objective_source_apls_by_talentsString"] = source_apls_by_talent
-        try:
-            adapter, scope = source_bounded_adapter(
-                cls, reference, same_class, **adapter_kwargs
-            )
-        except Exception as exc:
-            row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
-            row["blocker"] = str(exc)[:500]
-            row["native_paid_total"] = row["baseline_paid"] + probe_paid
-            row["native_failures"] = native_failures
-            return row
+
+    try:
+        adapter, scope = source_bounded_adapter(
+            cls, reference, same_class, **adapter_kwargs
+        )
+    except Exception as exc:
+        row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
+        row["blocker"] = str(exc)[:500]
+        row["native_paid_total"] = (
+            row["baseline_paid"] + row["native_donor_probe_paid"]
+        )
+        row["native_failures"] = native_failures
+        return row
     row.update(scope)
     deadline = time.monotonic() + seconds
     # One evaluator; no home-made objective, Go scorer or fake score can enter report.
