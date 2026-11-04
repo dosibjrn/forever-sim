@@ -35,7 +35,7 @@ druid	60	unrestricted	P6	2026-11-04T02:50:15.632219+00:00	8cb23e25bce7454c805764
 mage	20	unrestricted	P3		9e5b4196ea5a1c19b399dea0d49f43f08470840c	https://github.com/dosibjrn/forever-sim/actions/runs/41769057124		PARTIAL	88	224	1	2026-11-04T03:51:22.135832+00:00
 mage	20	unrestricted	P4		5e5652c5a24f2387be70dd646ff6e94d49bc7886	https://github.com/dosibjrn/forever-sim/actions/runs/41775113953		PARTIAL	4	6	1	2026-11-04T04:51:31.967224+00:00
 mage	20	unrestricted	P5		5e5652c5a24f2387be70dd646ff6e94d49bc7886	https://github.com/dosibjrn/forever-sim/actions/runs/41775113953		PARTIAL	4	6	1	2026-11-04T04:51:35.825773+00:00
-mage	30	unrestricted	P3		5e5652c5a24f2387be70dd646ff6e94d49bc7886	https://github.com/dosibjrn/forever-sim/actions/runs/41775113953		PARTIAL	44	224	1	2026-11-04T04:51:27.978199+00:00
+mage	30	unrestricted	P3		ed0268b93569f61df28cf355c02ae94b5a5fa33b	https://github.com/dosibjrn/forever-sim/actions/runs/41782711990		PARTIAL	85	224	1	2026-11-04T06:05:59.626630+00:00
 mage	30	unrestricted	P4		c7a29f414e349809cf54970c27f40488472b5863	https://github.com/dosibjrn/forever-sim/actions/runs/41772840472		PARTIAL	2	6	1	2026-11-04T04:23:04.583742+00:00
 mage	30	unrestricted	P5		ae3bddda49c2ec3297f883b96f787074d38072d7	https://github.com/dosibjrn/forever-sim/actions/runs/41773832688		PARTIAL	2	6	1	2026-11-04T04:32:57.297884+00:00
 priest	20	unrestricted	P3		9e5b4196ea5a1c19b399dea0d49f43f08470840c	https://github.com/dosibjrn/forever-sim/actions/runs/41769057124		PARTIAL	44	220	1	2026-11-04T03:51:19.912069+00:00
