@@ -802,3 +802,85 @@ def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
     assert len(paid_reranks) == 4
     assert paid_reranks[-1] == (12, ("1955113", "1955139"))
     assert base == original
+
+
+def test_native_candidate_pool_uses_pinned_rust_item_and_enchant_options(
+        monkeypatch, tmp_path):
+    import json
+    import sys
+    from pathlib import Path
+
+    source_dir = Path(gate.__file__).resolve().parents[1] / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(source_dir))
+    try:
+        search = gate._source_module(
+            source_dir / "p74_gear_search.py", "p74_native_options_search_test")
+    finally:
+        sys.path.remove(str(source_dir))
+
+    item_types = sorted(set(search.RUST_TYPES[slot] for slot in search.SLOTS))
+    native_rows = {}
+    for index, item_type in enumerate(item_types):
+        stats = [0.0] * 52
+        stats[5] = 10.0 + index
+        native_rows[item_type] = {
+            "items": [{
+                "id": 1000 + index, "type": item_type, "stats": stats,
+                "hand_type": "HandTypeOneHand",
+                "weapon_type": "WeaponTypeSword",
+                "ranged_weapon_type": "RangedWeaponTypeIdol",
+            }],
+            "enchants": [{"id": 2000 + index, "type": item_type}],
+        }
+
+    head_type = search.RUST_TYPES["head"]
+    native_rows[head_type]["items"].append({
+        "id": 9999, "type": head_type, "stats": [0.0] * 5 + [50.0] + [0.0] * 46,
+    })
+    weapon_type = search.RUST_TYPES["weapon"]
+    native_rows[weapon_type]["items"].extend([
+        {"id": 9001, "type": weapon_type, "stats": [0.0] * 52,
+         "hand_type": "HandTypeOffHand", "weapon_type": "WeaponTypeDagger"},
+        {"id": 9002, "type": weapon_type, "stats": [0.0] * 52,
+         "hand_type": "HandTypeOneHand", "weapon_type": "WeaponTypeShield"},
+    ])
+    relic_type = search.RUST_TYPES["relic"]
+    native_rows[relic_type]["items"].append({
+        "id": 9003, "type": relic_type, "stats": [0.0] * 52,
+        "ranged_weapon_type": "RangedWeaponTypeBow",
+    })
+
+    report = {
+        "engine": "forever-engine",
+        "source_revision": "native-reference-revision",
+        "item_types": native_rows,
+    }
+    calls = []
+
+    class Completed:
+        returncode = 0
+        stdout = json.dumps(report)
+        stderr = ""
+
+    def run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return Completed()
+
+    monkeypatch.setattr(search.subprocess, "run", run)
+    binary = tmp_path / "pinned/forever-engine"
+    pool, enchant_pools, metadata = search.native_candidate_pool(binary)
+
+    assert len(calls) == 1
+    assert calls[0][0] == [
+        str(binary.resolve()), "gear-options", "--item-types", ",".join(item_types)]
+    assert calls[0][1]["capture_output"] is True
+    assert calls[0][1]["text"] is True
+    assert pool[0][:2] == [9999, 1000]
+    assert pool[14] == [1000 + item_types.index(weapon_type)]
+    assert pool[15] == [1000 + item_types.index(relic_type)]
+    assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
+    assert metadata == {
+        "source_revision": "native-reference-revision",
+        "unique_item_options": len(item_types) + 1,
+        "unique_enchant_options": len(item_types),
+    }
