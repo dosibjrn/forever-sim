@@ -73,6 +73,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                              stateful_search_auto_fallback: bool = False,
                              stateful_family_budget_mode: str = 'legacy',
                              gear_role_exploration: bool = False,
+                             allow_naked_source_without_named_gear_roles: bool = False,
                              exclude_unknown_item_effects: bool = False) -> dict:
     """Spend a hard shared simulation budget on evidence-led gear/policy changes.
 
@@ -86,6 +87,8 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     """
     if not isinstance(gear_role_exploration, bool):
         raise ValueError('gear_role_exploration must be bool')
+    if not isinstance(allow_naked_source_without_named_gear_roles, bool):
+        raise ValueError('allow_naked_source_without_named_gear_roles must be bool')
     if max_evaluations < 1 or initial_search < 1 or search_per_gear < 1 or max_gear_states < 1:
         raise ValueError('positive evaluation/search/state budgets required')
     if policy_search_backend not in ('prefix','stateful'):
@@ -101,16 +104,20 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     ir = ir_slice if ir_slice is not None else build_game_ir_slice(class_key=class_key, level=level)
     if ir is None or str(ir.actor.metadata.get('class_key','')).lower() != class_key.lower() or int(ir.actor.metadata.get('level',-1)) != level:
         raise ValueError('Game IR source class/level mismatch')
-    # The P3 provider can still use a real source-naked policy and measured
-    # stat sensitivities for classes without a named gear-role catalogue.
+    # P3 may explicitly request the source-naked policy and measured-stat
+    # sensitivity stages without a named gear-role catalogue. Other callers
+    # retain the named-role requirement and the full gear-search contract.
     # The later proposal loop naturally skips named gear selection when no
-    # roles exist; do not invent a role or reject the P3 item-scoring path.
+    # roles exist; no synthetic role or item is introduced.
     gear_roles = tuple(available_gear_roles(class_key))
+    if not gear_roles and not allow_naked_source_without_named_gear_roles:
+        raise ValueError('no canonical named gear role for requested class')
     ir = remove_combat_policy_seeds_preserve_maintenance(ir)  # never trust a historical priority winner
     context = sha256(dumps({'ir':ir.as_dict(),'software':SOFTWARE_VERSION,
                            'objective':'real_incoming_combat_recovery',
                            'required_level_policy':required_level_policy,
-                           'exclude_unknown_item_effects':exclude_unknown_item_effects},
+                           'exclude_unknown_item_effects':exclude_unknown_item_effects,
+                           'allow_naked_source_without_named_gear_roles':allow_naked_source_without_named_gear_roles},
                           sort_keys=True,default=str).encode()).hexdigest()
     tried = 0
     successes = 0
