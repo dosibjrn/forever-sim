@@ -96,8 +96,8 @@ jobs:
           p7_needed=false
           p3_native_needed=false
           for entry in "${unique[@]}"; do
+            if [[ "$entry" == *:P7.* ]]; then p7_needed=true; fi
             IFS=: read -r class level spec gate <<< "$entry"
-            if [[ "$gate" == P7.* ]]; then p7_needed=true; fi
             if [[ "$gate" == P3 && ( "$class" == priest || "$class" == mage ) ]]; then
               p3_native_needed=true
             fi
