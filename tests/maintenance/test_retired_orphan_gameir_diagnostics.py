@@ -16,6 +16,8 @@ RETIRED_TOOLS = (
     "tools/wf294_l1_partial_nine_class.py",
     "tools/wf241_recovery_e2e.py",
     "tools/wf378_evocation_recovery.py",
+    "tools/wf242_multi_pull_replay.py",
+    "tools/wf244_effect_batch_replay.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf303_source_wide_100mob",
@@ -27,6 +29,8 @@ RETIRED_IMPORT_NAMES = (
     "wf294_l1_partial_nine_class",
     "wf241_recovery_e2e",
     "wf378_evocation_recovery",
+    "wf242_multi_pull_replay",
+    "wf244_effect_batch_replay",
 )
 
 
