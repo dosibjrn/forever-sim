@@ -115,3 +115,25 @@ def test_native_player_context_preserves_native_refusal():
             stderr="")
     with pytest.raises(NativePlayerContextError, match="unsupported_player_context"):
         query_native_player_context("engine", "paladin", 20, runner=runner)
+
+
+def test_paladin_p3_queries_selected_native_engine_without_separate_context_env(
+        monkeypatch, tmp_path):
+    """Omitting the redundant context env must not silently use proxy stats."""
+    from tools.wf_gate_p3_live import run_live
+    import src.game.native_p3_player_context as native_context
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/forever-engine")
+    monkeypatch.delenv("FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN", raising=False)
+    calls = []
+
+    def native_refusal(binary, class_key, level):
+        calls.append((binary, class_key, level))
+        raise NativePlayerContextError("P3_NATIVE_PLAYER_CONTEXT_REFUSED:TEST")
+
+    monkeypatch.setattr(native_context, "query_native_player_context", native_refusal)
+    report = run_live(tmp_path, "paladin", 20, spec="unrestricted")
+    assert calls == [("/selected/forever-engine", "paladin", 20)]
+    assert report["status"] == "BLOCKED"
+    assert report["reasons"] == ["P3_NATIVE_PLAYER_CONTEXT_REFUSED:TEST"]
+    assert report["production_component"] == "src.game.native_p3_player_context"
