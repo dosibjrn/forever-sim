@@ -300,8 +300,8 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, list):
                     record[key] = value[:4]
-        if gate == "P7.2":
-            # The approved P7.2 producer pays a changed APL directly on
+        if gate in ("P7.2", "P7.3"):
+            # The approved P7.2/P7.3 producers pays a changed APL directly on
             # selected native Rust. Keep its *actual* score and selected
             # rotation visible; legacy world/1000-fight diagnostics cannot
             # stand in for this source-native paid receipt.
@@ -309,14 +309,15 @@ def main(argv=None) -> int:
             if (type(score) in (int, float) and math.isfinite(score)
                     and score >= 0):
                 record["winner_native_dps"] = score
-            for key in ("original_apl_hash", "selected_validation",
+            for key in ("original_apl_hash", "source_original_talents",
+                        "cold_winner_talents", "selected_validation",
                         "reference_profile", "checkpoint_spec"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 128:
                     record[key] = value
-            if type(report.get("source_fixed_gear_and_talents")) is bool:
-                record["source_fixed_gear_and_talents"] = report[
-                    "source_fixed_gear_and_talents"]
+            for flag in ("source_fixed_gear_and_talents", "fixed_rotation_and_gear"):
+                if type(report.get(flag)) is bool:
+                    record[flag] = report[flag]
             apl = report.get("cold_winner_apl")
             if (isinstance(apl, list) and 0 < len(apl) <= 50
                     and len(json.dumps(apl, ensure_ascii=False).encode("utf-8")) <= 8192):
