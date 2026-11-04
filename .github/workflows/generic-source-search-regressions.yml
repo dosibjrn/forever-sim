@@ -30,6 +30,8 @@ on:
       - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
       - 'integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py'
       - 'integrations/mythicsim-rust/tests/test_native_gear_adapter.py'
+      - 'integrations/mythicsim-rust/native_p3_equipped.py'
+      - 'integrations/mythicsim-rust/tests/test_native_p3_equipped.py'
       - 'integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py'
       - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'tests/test_work1_p7_1_live_entry.py'
@@ -135,6 +137,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
+          integrations/mythicsim-rust/tests/test_native_p3_equipped.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
           tests/test_work1_p7_1_live_entry.py
