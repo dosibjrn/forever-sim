@@ -324,7 +324,7 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
         "legal_item_count": 1, "tested_item_count": 1, "slot_count": 1,
         "tested_stat_assertions": 6, "verified_stat_assertions": 0,
         "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
-        "native_options_status": "partial_level_unknown",
+        "native_item_options_status": "partial_level_unknown",
         "native_unverified_candidate_count": 2239,
         "native_item_options_source": "mythicsim:test-ItemSparse.RequiredLevel",
     })
