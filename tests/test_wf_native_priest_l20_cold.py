@@ -438,3 +438,53 @@ def test_gate_cold_source_directory_forwards_real_source_requests(
     assert forwarded == [("/native", str(source_folder), _options())]
     assert report["status"] == "FAIL"
     assert report["reasons"] == ["P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED"]
+
+
+
+def test_cold_normalizes_source_seed_before_deduplicating_paid_builds(tmp_path):
+    # Two authored requests with only run-control differences become the
+    # same native paid request; do not spend the early cold budget twice.
+    folder = tmp_path / "source-policy-seeds"
+    folder.mkdir()
+    first = _source()
+    second = copy.deepcopy(first)
+    second["simOptions"]["iterations"] = 47
+    second["simOptions"]["randomSeed"] = "999"
+    (folder / "a.json").write_text(json.dumps(first))
+    (folder / "b.json").write_text(json.dumps(second))
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0,
+        options=[], max_attempts=2, source_request=folder)
+    assert len(paid) == 1
+    assert len(world) == 1
+    assert len(receipt["native_cold_rows"]) == 1
+    assert paid[0]["simOptions"]["iterations"] == 1
+    assert paid[0]["simOptions"]["randomSeed"] == "42"
+    assert receipt["native_cold_completed_100mob_finalists"] == 1
+
+
+def test_cold_preserves_distinct_actual_native_apl_cast_identities(tmp_path):
+    # A source policy may propose a new action; only native receipts can
+    # establish whether it was actually cast. The mocked scorer here tests
+    # transport and provenance, not spell availability or legality.
+    folder = tmp_path / "source-policy-casts"
+    folder.mkdir()
+    first = _source()
+    second = copy.deepcopy(first)
+    second["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"].insert(
+        0, {"action": {"castSpell": {"spellId": {"spellId": 970}}}})
+    (folder / "a.json").write_text(json.dumps(first))
+    (folder / "b.json").write_text(json.dumps(second))
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0,
+        options=[], max_attempts=2, source_request=folder)
+    assert len(paid) == 2
+    assert len(receipt["native_cold_rows"]) == 2
+    assert receipt["native_cold_rows"][0]["native_source_action_cast_counts"] == {
+        '{"spellId":585}': 1}
+    assert receipt["native_cold_rows"][1]["native_source_action_cast_counts"] == {
+        '{"spellId":585}': 1, '{"spellId":970}': 1}
+    assert receipt["native_cold_rows"][1]["native_source_action_ids_cast"] == 2
+    assert receipt["native_cold_30s_paid_selection"]["source_build"] == paid[1]
+    assert len(world) == 1
+    assert receipt["native_cold_gate_accepted"] is False
