@@ -504,7 +504,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             preferred_policy=(policy if native_spell_winner else None),
             baseline_record=(record if native_spell_winner else None),
             allow_paid_winner_after_nonpositive=(
-                native_fallback_action and (mage_l30_native or shaman_l20_native)))
+                native_fallback_action and (mage_l30_native or shaman_l20_native)),
+            # Only the already-strictly-verified paid Mage winner can bypass
+            # an unexecutable source seed. Do not relax record validation.
+            prefer_verified_paid_winner_first=mage_l30_native)
         if native_item_sized_probe:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
