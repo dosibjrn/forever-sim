@@ -46,6 +46,7 @@ on:
       - 'tests/generic/runtime/test_source_ir_assembly_order.py'
       - 'tests/test_wf332_runes_default_off.py'
       - 'src/v2/source_bounded_joint_frontier.py'
+      - 'src/v2/source_budgeted_gear.py'
       - 'src/v2/source_persistent_slot_search.py'
       - 'src/v2/source_persistent_joint_finalists.py'
       - 'src/game/data/forever/**'
