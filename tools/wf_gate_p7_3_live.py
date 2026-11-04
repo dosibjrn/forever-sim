@@ -77,6 +77,15 @@ def _native_refusal(exc: Exception) -> tuple[str, str]:
     reason = str(getattr(exc, "reason", exc))
     if status in ("INVALID", "UNSUPPORTED", "UNSCORED"):
         return status, reason
+    # The selected source adapter raises NativeSourceRefusal with .code and
+    # .reason, not a JSON string. Forward those Rust-owned refusals directly.
+    code = str(getattr(exc, "code", "")).lower()
+    if code in ("talents", "gear", "apl"):
+        return "INVALID", "NATIVE_" + code.upper() + ":" + reason
+    if code == "unsupported":
+        return "UNSUPPORTED", "NATIVE_UNSUPPORTED:" + reason
+    if code == "unscored":
+        return "UNSCORED", "NATIVE_UNSCORED:" + reason
     if " output=" in reason:
         try:
             decoded = json.loads(reason.rsplit(" output=", 1)[1])
