@@ -204,9 +204,32 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
             or len(proof.get("native_windows", ())) != target_count
             or proof.get("paid_recovery") is not False):
         raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_WORLD_RECEIPT_INCOMPLETE")
+    # Native Rust already reports each target's *actual* source-action
+    # damage events in the retained actor's windows. Preserve those receipts
+    # for the P4/P5 paid screen instead of hiding them behind an aggregate
+    # one-fight cast count. A 100-target result with no such evidence is not
+    # an executable source-action screen, even if the target ACKs are real.
+    action_windows = []
+    for index, window in enumerate(proof["native_windows"]):
+        counts = window.get("source_action_counts") if isinstance(window, dict) else None
+        if (not isinstance(counts, dict)
+                or any(not isinstance(action_id, str) or not action_id
+                       or type(events) is not int or events < 0
+                       for action_id, events in counts.items())):
+            if target_count == 100:
+                raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_SOURCE_ACTION_RECEIPT_INVALID")
+            counts = None  # Legacy two-target smoke is not a gate screen.
+        action_windows.append(counts)
+    action_events = sum(
+        events for counts in action_windows if counts is not None
+        for events in counts.values())
+    if target_count == 100 and action_events == 0:
+        raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_SOURCE_ACTIONS_MISSING")
     return {
         "native_2d_persistent_world_targets_killed": target_count,
         "native_2d_persistent_world_ticks": proof["world_ticks"],
+        "native_2d_persistent_source_action_events": action_events,
+        "native_2d_persistent_source_action_counts_by_target": action_windows,
         # Carry the native/ACKed world resource timeline forward to the
         # actual P4/P5 caller. This is observed state, not Python-computed
         # recovery, a reset actor or an independently completed paid screen.
