@@ -89,9 +89,68 @@ def score_source_priest_l20(binary: str | Path, request_file: str | Path, *,
     }
 
 
+
+def couple_source_priest_l20_world(binary: str | Path,
+                                  request_file: str | Path, *, world_run=None) -> dict:
+    """Execute an actual single native↔gsim-2D ACKed fight for a paid L20 build.
+
+    This reuses the existing live-world production integration. A successful
+    single fight is NOT a continuous kill/recovery/100-mob P4/P5 screen.
+    """
+    from hashlib import sha256
+    from math import isfinite
+
+    path = Path(request_file)
+    source = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        actor = source["raid"]["parties"][0]["players"][0]
+        target = source["encounter"]["targets"]
+        distance = actor["distanceFromTarget"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("PRIEST_L20_WORLD_SOURCE_REQUEST_INCOMPLETE") from exc
+    if (actor.get("class") != "ClassPriest" or type(actor.get("level")) is not int
+            or actor["level"] != 20 or not isinstance(target, list)
+            or len(target) != 1 or target[0].get("level") != 20
+            or type(distance) not in (int, float) or not isfinite(distance)
+            or distance <= 0):
+        raise ValueError("PRIEST_L20_WORLD_ACTOR_TARGET_OR_DISTANCE_INVALID")
+    if world_run is None:
+        integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+        if str(integration) not in sys.path:
+            sys.path.insert(0, str(integration))
+        from live_world_probe import run as world_run
+    proof = world_run(
+        Path(binary), path, distance=float(distance), iterations=1,
+        rng_mode="balanced", expected_target_level=20,
+    )
+    # The existing live-world runner checks native PID, protobuf identity,
+    # causal world ACKs, applied damage, and native↔world DPS parity.
+    if (proof.get("source_request_raw_sha256") != sha256(path.read_bytes()).hexdigest()
+            or proof.get("iterations_done") != 1
+            or type(proof.get("native_world_ticks")) is not int
+            or proof["native_world_ticks"] < 1
+            or type(proof.get("native_damage_events")) is not int
+            or proof["native_damage_events"] < 1):
+        raise RuntimeError("PRIEST_L20_LIVE_NATIVE_WORLD_RECEIPT_INCOMPLETE")
+    source_events = proof.get("source_action_events_before")
+    if not isinstance(source_events, dict) or not source_events:
+        raise RuntimeError("PRIEST_L20_LIVE_WORLD_SOURCE_ACTION_EVENTS_MISSING")
+    # Preserve the native bridge's event identifiers verbatim. These are NOT
+    # invented Python spell IDs or proof of all source APL ActionID casts.
+    return {
+        "native_2d_fight_ack_complete": True,
+        "native_2d_world_ticks": proof["native_world_ticks"],
+        "native_2d_world_damage_events": proof["native_damage_events"],
+        "native_2d_source_action_events": source_events,
+        "native_2d_source_request_proto_sha256": proof["source_request_proto_sha256"],
+        "native_2d_source_request_raw_sha256": proof["source_request_raw_sha256"],
+        "native_2d_world_target_killed": proof.get("world_target_lethal_fights") == 1,
+        "native_2d_screen_complete": False,
+    }
+
 def score_source_priest_l20_candidates(binary: str | Path,
                                       source_directory: str | Path, *,
-                                      score_request=None,
+                                      score_request=None, world_screen=None,
                                       budget_s: float = 6.0,
                                       max_paid_builds: int = 4) -> dict:
     """Pay a bounded cold frontier of explicit source/native build requests.
@@ -150,6 +209,20 @@ def score_source_priest_l20_candidates(binary: str | Path,
                          "reason": str(exc)[-400:]})
 
     paid = [row for row in rows if row["status"] == "NATIVE_PAID"]
+    # The selected paid candidate, not a synthetic world-only request, reaches
+    # the existing live Rust↔2D ACK loop once per bounded diagnostic.
+    live = None
+    if world_screen is not None and paid:
+        candidate = max(
+            paid, key=lambda row: (
+                row["native_source_action_casts"] > 0, row["native_score"]))
+        if candidate["native_source_action_casts"] > 0:
+            try:
+                live = world_screen(binary, folder / candidate["candidate"])
+                candidate["native_2d_fight"] = live
+            except (OSError, ValueError, RuntimeError, TimeoutError,
+                    AssertionError) as exc:
+                candidate["native_2d_fight_error"] = str(exc)[-500:]
     return {
         "native_candidate_requests_attempted": len(rows),
         "native_paid_whole_builds": len(paid),
@@ -159,6 +232,9 @@ def score_source_priest_l20_candidates(binary: str | Path,
             (row["native_source_action_ids_cast"] for row in paid),
             default=0),
         "native_candidate_receipts": rows,
+        "native_2d_live_ack_attempted": int(world_screen is not None and bool(paid)),
+        "native_2d_live_ack_verified": int(bool(live and live.get(
+            "native_2d_fight_ack_complete") is True)),
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
@@ -167,7 +243,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
 def score_native_priest_l20_item_candidates(binary: str | Path,
                                           request_file: str | Path,
                                           native_item_options: list[dict], *,
-                                          score_request=None,
+                                          score_request=None, world_screen=None,
                                           budget_s: float = 6.0,
                                           max_paid_builds: int = 4) -> dict:
     """Score native item-options proposals as actual whole-build requests.
@@ -224,7 +300,8 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
             (folder / f"{index:03d}-native-item-{item_id}.json").write_text(
                 json.dumps(candidate), encoding="utf-8")
         receipt = score_source_priest_l20_candidates(
-            binary, folder, score_request=score_request, budget_s=budget_s,
+            binary, folder, score_request=score_request,
+            world_screen=world_screen, budget_s=budget_s,
             max_paid_builds=max_paid_builds)
     return {
         **receipt,
