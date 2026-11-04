@@ -1,0 +1,106 @@
+name: Work2 — P3 equipped-weapon source-fact regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/work2-p3-qualified-wand-source-fact.yml
+      - src/game/checkpoint_p3_smoke.py
+      - src/game/gear.py
+      - src/game/data/forever/mage.py
+      - src/game/data/forever/priest.py
+      - tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work2-p3-source-fact-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  read-only-p3-provider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out exact PR head and hydrated source catalogue
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install provider and test dependencies
+        run: python -m pip install --disable-pip-version-check "beautifulsoup4==4.13.4" "pytest==8.4.2"
+
+      - name: Run equipped-weapon source-fact regressions
+        run: python -m pytest -q tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
+
+      - name: Run real Mage and Priest L20 unrestricted P3 providers (read-only)
+        shell: bash
+        run: |
+          set +e
+          python tools/wf_gate.py --class mage --level 20 --spec unrestricted --gate P3 --out "$RUNNER_TEMP/mage-p3.json" > "$RUNNER_TEMP/mage-p3.stdout"
+          mage_exit=$?
+          python tools/wf_gate.py --class priest --level 20 --spec unrestricted --gate P3 --out "$RUNNER_TEMP/priest-p3.json" > "$RUNNER_TEMP/priest-p3.stdout"
+          priest_exit=$?
+          set -e
+          echo "Mage provider exit: $mage_exit; Priest provider exit: $priest_exit"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          temp = Path(os.environ["RUNNER_TEMP"])
+          summaries = []
+          for class_key in ("mage", "priest"):
+              path = temp / f"{class_key}-p3.json"
+              assert path.is_file(), f"{class_key} P3 provider did not write its report"
+              report = json.loads(path.read_text())
+              assert report["class"] == class_key, report
+              assert report["level"] == 20, report
+              assert report["spec"] == "unrestricted", report
+              assert report["gate"] == "P3", report
+              assert report["status"] in {"PASS", "FAIL"}, report
+              assert len(report["results"]) == 1, report
+              result = report["results"][0]
+              assert result["status"] in {"PASS", "FAIL"}, result
+              assert "fast_p3_smoke_for_policy" in result.get("production_component", ""), result
+              assert result.get("real_source_search_attempts", 0) > 0, result
+              assert result.get("real_source_search_evaluated", 0) > 0, result
+              reasons = [str(reason) for reason in result.get("reasons", [])]
+              false_proxy_blockers = [
+                  reason for reason in reasons
+                  if "MISSING_APPLICABLE_DPS_WEIGHT" in reason
+                  or reason == "MISSING_WEIGHT:mean_weapon_hit_damage"
+              ]
+              assert not false_proxy_blockers, {
+                  "class": class_key,
+                  "false_proxy_blockers": false_proxy_blockers,
+                  "remaining_reasons": reasons,
+              }
+              summaries.append(
+                  f"{class_key}: {result['status']} "
+                  f"{result.get('pass_count', 0)}/{result.get('reachability_count', 0)}; "
+                  f"native source probes={result.get('real_source_search_evaluated', 0)}; "
+                  f"remaining={', '.join(reasons) or 'none'}"
+              )
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a") as stream:
+              stream.write("## Read-only real P3 provider results\n\n")
+              for line in summaries:
+                  stream.write(f"- {line}\n")
+          print("\n".join(summaries))
+          PY
+
+      - name: Upload read-only P3 provider reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-p3-mage-priest-provider-reports
+          path: ${{ runner.temp }}/*-p3.json
+          if-no-files-found: warn
