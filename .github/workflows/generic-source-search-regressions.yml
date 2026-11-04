@@ -29,6 +29,7 @@ on:
       - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
+      - 'integrations/mythicsim-rust/tests/test_apl_mutation_source_only.py'
       - 'integrations/mythicsim-rust/rotation_search.py'
       - 'integrations/mythicsim-rust/tests/test_p73_native_search_ci.py'
       - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
@@ -151,6 +152,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py
+          integrations/mythicsim-rust/tests/test_apl_mutation_source_only.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           integrations/mythicsim-rust/tests/test_native_p3_equipped.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
@@ -195,9 +197,9 @@ jobs:
             --gate P6 --out "${{ runner.temp }}/work2-p6-L${P6_LEVEL}-no-record.json"
 
   selected-native-p72:
-    # One selected-engine read-only acceptance probe on Work2's P7.3 lane.
-    # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
-    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-')
+    # One selected-engine read-only changed-axis probe (Feral P7.2 or
+    # existing unrestricted P7.3); never the Merge-owned M1 recorder.
+    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || startsWith(github.head_ref, 'work/work2-p72-feral-')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -228,11 +230,15 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: 'off'
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
         run: cargo build --release --locked --bin forever-engine
-      - name: Pay real P7.3 changed-talents candidate without recording M1
+      - name: Pay real changed-axis native candidate without recording M1
         env:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.3
+          if [[ "${{ github.head_ref }}" == work/work2-p72-feral-* ]]; then
+            python tools/wf_gate.py --class druid --level 60 --spec feral --gate P7.2
+          else
+            python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.3
+          fi
 
   selected-native-p71:
     # One selected-engine P7.1 native 1000-fight stochastic no-record probe.

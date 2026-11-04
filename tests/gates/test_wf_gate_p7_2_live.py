@@ -207,3 +207,134 @@ def test_unrestricted_p72_reuses_actual_balance_reference_and_pays_native(
     assert candidate["rotation"]["priorityList"] == changed
     assert candidate["talentsString"] == source_player["talentsString"]
     assert candidate["equipment"] == source_player["equipment"]
+
+
+def test_feral_p72_preserves_authentic_build_and_forwards_native_go_rules(
+        monkeypatch, tmp_path):
+    """Only the selected native scorer decides changed-APL legality and DPS."""
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"selected-native-test-placeholder")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.delenv("FOREVER_P7_FULL_SOURCE_SEARCH", raising=False)
+    monkeypatch.setattr(gate, "_selected_rust_submodule",
+                        lambda *_: "selected-feral-rust-sha")
+
+    prepared = gate._pinned_source_runtime(
+        root, "druid", 60, "feral", "P7.2", require_world=False)
+    assert isinstance(prepared, tuple)
+    original, meta, _ = prepared
+    assert meta["selected_reference_profile"] == "feral"
+    assert meta["reference_dps"] == gate.FERAL_REFERENCE_DPS
+    assert meta["source_request_raw_sha256"] == gate.SAVED_FERAL_RAW_SHA
+    player = original["raid"]["parties"][0]["players"][0]
+    assert "feralCatDruid" in player
+    assert player["talentsString"] == "050022-55000032021032212051-053"
+
+    seen = []
+    def mutate(actions, source_actions, rng, *, cold,
+               preserve_source_conditions=False):
+        assert preserve_source_conditions is True
+        # Reorder complete source entries; do not synthesize Warcraft facts.
+        return copy.deepcopy(list(reversed(source_actions)))
+
+    def native(_binary, path, iterations, *, rng_mode, go_rules=False):
+        assert (_binary, iterations, rng_mode, go_rules) == (
+            binary.resolve(), 3, "balanced", True)
+        request = json.loads(path.read_text())
+        changed = request["raid"]["parties"][0]["players"][0]
+        assert changed["equipment"] == player["equipment"]
+        assert changed["talentsString"] == player["talentsString"]
+        assert changed["rotation"]["prepullActions"] == player["rotation"]["prepullActions"]
+        assert changed["rotation"]["priorityList"] != player["rotation"]["priorityList"]
+        seen.append(request)
+        return {"iterations": 3, "native_dps": 801.25}
+
+    mutation = SimpleNamespace(mutate_apl=mutate)
+    producer = SimpleNamespace(native_source_control=native)
+    monkeypatch.setattr(gate, "_source_module",
+                        lambda path, name:
+                        mutation if "mutator" in name else producer)
+    report = gate.run_live(root, "druid", 60, spec="feral")
+    assert report["status"] == "PASS"  # mocked transport, not native gate proof
+    assert report["source_request_raw_sha256"] == gate.SAVED_FERAL_RAW_SHA
+    assert report["native_rules"] == "go_reference"
+    assert report["reference_profile"] == "feral"
+    assert report["native_source_revision"] == "selected-feral-rust-sha"
+    assert report["source_legal_cold_candidates_paid"] == len(seen) == 1
+    assert report["winner_native_dps"] == 801.25
+    assert report["cold_winner_request"] == seen[0]
+
+
+def test_feral_p72_native_refusals_remain_blocked_not_paid(monkeypatch, tmp_path):
+    """An authoritative Rust refusal cannot become a successful paid score."""
+    class NativeSourceRefusal(RuntimeError):
+        def __init__(self):
+            self.code = "apl"
+            self.reason = "selected native refused changed rotation"
+            super().__init__(self.reason)
+
+    base = _request()
+    monkeypatch.setattr(
+        gate, "_pinned_source_runtime",
+        lambda *args, **kwargs: (
+            base, {"reference_dps": 811.02,
+                   "selected_engine_revision": "pinned-feral"},
+            tmp_path / "binary"))
+    monkeypatch.delenv("FOREVER_P7_FULL_SOURCE_SEARCH", raising=False)
+    def mutate(actions, source_actions, rng, *, cold,
+               preserve_source_conditions=False):
+        assert preserve_source_conditions
+        return list(reversed(source_actions))
+
+    def native(*args, **kwargs):
+        assert kwargs["go_rules"] is True
+        raise NativeSourceRefusal()
+
+    mutation = SimpleNamespace(mutate_apl=mutate)
+    producer = SimpleNamespace(native_source_control=native,
+                               NativeSourceRefusal=NativeSourceRefusal)
+    monkeypatch.setattr(gate, "_source_module",
+                        lambda path, name:
+                        mutation if "mutator" in name else producer)
+    result = gate.run_live(tmp_path, "druid", 60, spec="feral")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == [
+        "P7_2_NATIVE_REFUSED_ALL_DISTINCT_APL_CANDIDATES"]
+    assert result["source_legal_cold_candidates_paid"] == 0
+    assert result["native_refusals"][0]["code"] == "apl"
+
+
+def test_p72_cli_keeps_actual_native_mode_refusals_and_paid_build(
+        monkeypatch, capsys):
+    """The public no-record receipt must retain Feral's native evidence."""
+    import json
+    from tools import wf_gate as cli
+
+    winner = _request()
+    report = {
+        "status": "PASS", "reasons": [],
+        "production_engine": "pinned_mythicsim_rust_native",
+        "native_rules": "go_reference",
+        "source_request_raw_sha256": gate.SAVED_FERAL_RAW_SHA,
+        "native_source_revision": "selected-rust",
+        "source_legal_cold_candidates_paid": 1,
+        "winner_native_dps": 800.0,
+        "cold_winner_request": winner,
+        "cold_winner_apl": winner["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"],
+        "native_refusals": [{"code": "apl", "reason": "first candidate refused"}],
+    }
+    monkeypatch.setattr(cli, "_run_live_gate",
+                        lambda *args, **kwargs: report)
+    assert cli.main(["--class", "druid", "--level", "60", "--spec", "feral",
+                     "--gate", "P7.2"]) == 0
+    result = json.loads(capsys.readouterr().out)["results"][0]
+    assert result["native_rules"] == "go_reference"
+    assert result["native_refusals"] == report["native_refusals"]
+    assert result["cold_winner_request"] == winner
+    assert result["winner_native_dps"] == 800.0

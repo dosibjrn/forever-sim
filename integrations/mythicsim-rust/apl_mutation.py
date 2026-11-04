@@ -454,6 +454,13 @@ def mutate_apl(actions, source_actions, rng, *, cold=False,
             casts = [a for a in result if isinstance(a.get("action", {}).get("condition"), dict)]
             if casts:
                 _tune_literal(rng.choice(casts)["action"]["condition"], rng)
+    if preserve_source_conditions:
+        # This lane only swaps, inserts, or drops complete entries copied from
+        # the original native source request. Do not silently reorder its
+        # unconditional casts, insert a Python-mandated fallback, or apply a
+        # second Warcraft action-identity veto: the paid native scorer owns
+        # whether this distinct APL can execute.
+        return result
     _ensure_fallback(result, source_actions)
     # Non-cast native actions (strictSequence, channelSpell, multidot, etc.)
     # are opaque source-backed actions. They may be reordered, never invented

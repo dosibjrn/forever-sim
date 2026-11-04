@@ -21,7 +21,8 @@ from uuid import uuid4
 
 from tools.wf_gate_coverage import p7_search_window_completed
 
-from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+from tools.wf_gate_p7_1_live import (FERAL_REFERENCE_DPS, PINNED_RUST,
+                                     SAVED_BALANCE_RAW_SHA, SAVED_FERAL_RAW_SHA,
                                      _selected_rust_submodule)
 
 
@@ -39,7 +40,8 @@ def _blocked(reason: str):
 
 
 def _cold_apl(base: dict, rng: random.Random, mutation, *,
-              elite=None, reference_parent=False):
+              elite=None, reference_parent=False,
+              preserve_source_conditions=False):
     """Generate an APL-only proposal while freezing the source build.
 
     P7.2 does not require a cold restart: a local mutation of the runnable
@@ -51,13 +53,20 @@ def _cold_apl(base: dict, rng: random.Random, mutation, *,
     p = result["raid"]["parties"][0]["players"][0]
     original = base["raid"]["parties"][0]["players"][0]
     grammar = original["rotation"]["priorityList"]
+    # The authenticated Feral APL has opaque item-swap/cooldown actions and
+    # nested native predicates. Mutate complete source entries without
+    # independently interpreting Warcraft conditions in Forever.
+    mutation_options = ({"preserve_source_conditions": True}
+                        if preserve_source_conditions else {})
     if elite is None and reference_parent:
         # The authenticated reference is a legal starting *policy* for this
         # single-axis reachability gate, not an already-paid changed result.
         # Native alone decides legality of the proposed changed rotation.
-        candidate = mutation.mutate_apl(grammar, grammar, rng, cold=False)
+        candidate = mutation.mutate_apl(
+            grammar, grammar, rng, cold=False, **mutation_options)
     elif elite is None:
-        candidate = mutation.mutate_apl(None, grammar, rng, cold=True)
+        candidate = mutation.mutate_apl(
+            None, grammar, rng, cold=True, **mutation_options)
     else:
         winner = elite["raid"]["parties"][0]["players"][0]
         if (winner["equipment"] != original["equipment"]
@@ -66,7 +75,8 @@ def _cold_apl(base: dict, rng: random.Random, mutation, *,
         # Reuse only an actually paid P7.2 winner, never the reference policy
         # or an independently accepted P7.1/P7.3-P7.5 result as a seed.
         candidate = mutation.mutate_apl(
-            winner["rotation"]["priorityList"], grammar, rng, cold=False)
+            winner["rotation"]["priorityList"], grammar, rng, cold=False,
+            **mutation_options)
     p["rotation"]["priorityList"] = candidate
     original = base["raid"]["parties"][0]["players"][0]
     if p["equipment"] != original["equipment"] or (
@@ -93,24 +103,33 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     # An unrestricted checkpoint may optimize any native-legal Druid build.
     # Reuse the authentic Balance reference encounter without claiming it is
     # an independently measured unrestricted reference; P7.5 is eligible too.
+    feral = spec == "feral" and gate == "P7.2"
     if ((class_key, level) != ("druid", 60)
-            or not (spec == "balance"
+            or not (spec == "balance" or feral
                     or (gate in ("P7.2", "P7.3", "P7.4", "P7.5")
                         and spec == "unrestricted"))):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
-    request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
+    request = root / (
+        "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json" if feral
+        else "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json")
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
-    if not request.is_file() or not witness.is_file():
+    if not request.is_file() or (not feral and not witness.is_file()):
         return _blocked(gate.replace(".", "_") + "_PINNED_SOURCE_REQUEST_OR_REFERENCE_MISSING")
     raw = request.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != SAVED_BALANCE_RAW_SHA:
+    source_sha = SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA
+    if hashlib.sha256(raw).hexdigest() != source_sha:
         return _blocked(gate.replace(".", "_") + "_PINNED_SOURCE_REQUEST_CHANGED")
     base = json.loads(raw)
-    meta = json.loads(witness.read_text())
-    if (meta.get("engine_revision") != PINNED_RUST
+    # Feral has its own original saved report and source identity; never
+    # attribute the unrelated Balance WF633 sidecar to the Feral request.
+    meta = ({"reference_dps": FERAL_REFERENCE_DPS} if feral
+            else json.loads(witness.read_text()))
+    player = base["raid"]["parties"][0]["players"][0]
+    if ((not feral and meta.get("engine_revision") != PINNED_RUST)
             or not isinstance(meta.get("reference_dps"), (float, int))
             or meta["reference_dps"] <= 0
-            or base["raid"]["parties"][0]["players"][0]["class"] != "ClassDruid"
+            or player["class"] != "ClassDruid"
+            or (feral and "feralCatDruid" not in player)
             or len(base["encounter"]["targets"]) != 1
             or base["encounter"]["targets"][0]["level"] != 63):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_SCENARIO_MISMATCH")
@@ -128,7 +147,8 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     meta["selected_engine_revision"] = selected_rust
     # Preserve the actual source profile instead of relabeling the saved
     # Balance report as an independently measured unrestricted reference.
-    meta["selected_reference_profile"] = "balance"
+    meta["selected_reference_profile"] = "feral" if feral else "balance"
+    meta["source_request_raw_sha256"] = source_sha
     return (base, meta, binary)
 
 
@@ -139,6 +159,10 @@ def run_live(root: Path, class_key: str, level: int, *,
     if isinstance(prepared, dict):
         return prepared
     base, meta, binary = prepared
+    feral = spec == "feral"
+    source_sha = meta.get("source_request_raw_sha256",
+                          SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA)
+    native_rules = "go_reference" if feral else "forever"
     search_mode = os.environ.get("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
     if search_mode not in ("0", "1"):
         return _blocked("P7_2_INVALID_FULL_SOURCE_SEARCH_MODE")
@@ -159,6 +183,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     elites = []
     executed = 0
     failures = []
+    native_refusals = []
     paid_or_rejected = set()
     proposals = 0
     search_start = time.monotonic()
@@ -171,7 +196,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                      if full_search else None)
             candidate = _cold_apl(
                 base, rng, mutation, elite=elite,
-                reference_parent=(not full_search and proposals <= 2))
+                reference_parent=(not full_search and proposals <= 2),
+                preserve_source_conditions=feral)
             changed_apl = candidate["raid"]["parties"][0]["players"][0][
                 "rotation"]["priorityList"]
             if changed_apl == original_apl:
@@ -184,8 +210,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             with tempfile.TemporaryDirectory(prefix="forever_p72_native_") as tmp:
                 path = Path(tmp) / "changed-apl.json"
                 path.write_text(json.dumps(candidate))
+                native_options = {"go_rules": True} if feral else {}
                 native = production.native_source_control(
-                    binary, path, 3, rng_mode="balanced")
+                    binary, path, 3, rng_mode="balanced", **native_options)
             if (type(native.get("iterations")) is not int
                     or native["iterations"] != 3):
                 raise ValueError("P7_2_NATIVE_PAID_ITERATIONS_INCOMPLETE")
@@ -202,16 +229,28 @@ def run_live(root: Path, class_key: str, level: int, *,
                 best = (score, candidate_sha, candidate)
         except (ValueError, RuntimeError, OSError, subprocess.SubprocessError,
                 KeyError, TypeError, AssertionError) as exc:
+            if isinstance(exc, getattr(production, "NativeSourceRefusal", ())):
+                native_refusals.append({
+                    "code": exc.code, "reason": exc.reason[:240]})
             failures.append(type(exc).__name__ + ":" + str(exc)[:180])
 
     search_wall_s = time.monotonic() - search_start
     search_window_met = p7_search_window_completed(
         full_search=full_search, elapsed_seconds=search_wall_s)
     if best is None:
+        all_refused = bool(failures) and len(native_refusals) == len(failures)
         return {
-            "status": "FAIL",
-            "reasons": ["P7_2_NO_NATIVE_PAID_DISTINCT_APL_CANDIDATE"],
+            "status": "BLOCKED" if all_refused else "FAIL",
+            "reasons": ["P7_2_NATIVE_REFUSED_ALL_DISTINCT_APL_CANDIDATES"
+                        if all_refused else
+                        "P7_2_NO_NATIVE_PAID_DISTINCT_APL_CANDIDATE"],
             "production_engine": "pinned_mythicsim_rust_native",
+            "native_source_revision": meta.get("selected_engine_revision"),
+            "source_request_raw_sha256": source_sha,
+            "reference_profile": meta.get("selected_reference_profile"),
+            "checkpoint_spec": spec,
+            "native_rules": native_rules,
+            "native_refusals": native_refusals[:4],
             "search_wall_s": search_wall_s,
             "independent_300s_search_requested": full_search,
             "independent_300s_search_completed": search_window_met,
@@ -233,7 +272,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "production_engine": "pinned_mythicsim_rust_native",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
-        "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
+        "source_request_raw_sha256": source_sha,
+        "native_rules": native_rules,
         "saved_reference_dps": float(meta["reference_dps"]),
         "reference_profile": meta.get("selected_reference_profile", "balance"),
         "checkpoint_spec": spec,
@@ -241,6 +281,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "cold_winner_request_sha256": selected_sha,
         "cold_winner_apl": winner["raid"]["parties"][0]["players"][0][
             "rotation"]["priorityList"],
+        "cold_winner_request": winner,
         "winner_native_dps": score,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
