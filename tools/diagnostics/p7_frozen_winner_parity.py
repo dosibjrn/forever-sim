@@ -90,6 +90,10 @@ def run_pair(probe, binary: Path, request: dict, *, iterations: int,
         mismatch = _source_native_world_parity(
             native, world, iterations, expected_raw_sha=raw_sha
         )
+        lethal_aware_mismatch = _source_native_world_parity(
+            native, world, iterations, expected_raw_sha=raw_sha,
+            allow_world_lethal=True,
+        )
         samples = world.get("per_iteration", [])
         return {
             "label": label,
@@ -129,6 +133,12 @@ def run_pair(probe, binary: Path, request: dict, *, iterations: int,
                 (row["world_dps"] for row in samples), default=None
             ),
             "parity_failure": mismatch,
+            "parity_failure_allowing_world_lethal": lethal_aware_mismatch,
+            "world_target_lethal_fights": world.get("world_target_lethal_fights", 0),
+            "world_target_survived_fights": world.get("world_target_survived_fights", 0),
+            "world_target_health_remaining_by_fight": [
+                row.get("world_target_health_remaining") for row in samples
+            ],
         }
 
 
