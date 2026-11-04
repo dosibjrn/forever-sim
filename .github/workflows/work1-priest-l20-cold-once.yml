@@ -95,6 +95,7 @@ jobs:
               "post_search_real_route_s_per_mob": deferred.get("route_s_per_mob"),
               "post_search_native_failure": deferred.get("reason"),
               "final_300_100mob_status": (receipts.get("native_cold_300s_post_search_route") or {}).get("status"),
+              "final_300_paid_route_s_per_mob": (receipts.get("native_cold_300s_paid_selection") or {}).get("route_probe_s_per_mob"),
           }, sort_keys=True), flush=True)
           # Expose only genuine executed finalist receipts in the job log.
           # A missing snapshot or winner is an observed result, not a stub
