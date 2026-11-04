@@ -553,3 +553,54 @@ def test_selected_priest_l20_target_uses_declared_classic_proxy_hp():
     # Forever-server creature HP (see src/scenarios/leveling_targets.py).
     assert source_target_health_from_request(
         request, expected_target_level=20) == 484.
+
+
+def test_world_frontier_reaches_third_paid_build_and_returns_lethal_source_identity(tmp_path):
+    """Two genuine nonlethal 2D ACKs must not hide a third paid source kill."""
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    for name in ("a", "b", "c"):
+        candidate = _request()
+        candidate["raid"]["parties"][0]["players"][0]["name"] = name
+        (tmp_path / f"{name}.json").write_text(json.dumps(candidate))
+    seen_world = []
+
+    def scorer(binary, request, **kwargs):
+        effective = copy.deepcopy(request)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        key = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        name = request["raid"]["parties"][0]["players"][0]["name"]
+        return {
+            "effective_request_sha256": key,
+            "score": {"a": 30., "b": 20., "c": 10.}[name],
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2}],
+        }, {}
+
+    def world_screen(binary, source_path):
+        name = json.loads(source_path.read_text())["raid"]["parties"][0][
+            "players"][0]["name"]
+        seen_world.append(name)
+        return {
+            "native_2d_fight_ack_complete": True,
+            "native_2d_world_target_killed": name == "c",
+            "native_2d_screen_complete": False,
+        }
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer, world_screen=world_screen,
+        max_paid_builds=3)
+    assert result["native_paid_whole_builds"] == 3
+    assert seen_world == ["a", "b", "c"]
+    assert result["native_2d_live_ack_attempted"] == 3
+    assert result["native_2d_live_ack_verified"] == 3
+    assert result["native_2d_live_world_kills"] == 1
+    assert result["native_2d_live_kill_candidate"] == "c.json"
+    assert result["native_2d_live_kill_request_sha256"] == (
+        result["native_candidate_receipts"][2]["native_request_sha256"])
+    assert result["native_2d_screen_complete"] is False
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "a.json", "b.json", "c.json"]
