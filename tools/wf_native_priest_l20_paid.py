@@ -149,9 +149,73 @@ def couple_source_priest_l20_world(binary: str | Path,
         "native_2d_screen_complete": False,
     }
 
+
+def couple_source_priest_l20_persistent_world(binary: str | Path,
+                                             request_file: str | Path, *,
+                                             target_count: int = 2,
+                                             world_run=None) -> dict:
+    """Execute consecutive sourced targets on ONE native actor/2D ACK timeline.
+
+    This is a real native-world-pulls integration, not independent reset
+    fights. It deliberately does not claim paid recovery or P4/P5 completion.
+    """
+    from tempfile import TemporaryDirectory
+    from tools.wf_gsim_go_live_range_probe import source_target_health_from_request
+
+    if type(target_count) is not int or not 2 <= target_count <= 100:
+        raise ValueError("PRIEST_L20_PERSISTENT_TARGET_COUNT_INVALID")
+    path = Path(request_file)
+    source = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        player = source["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("PRIEST_L20_PERSISTENT_SOURCE_REQUEST_INCOMPLETE") from exc
+    if (not isinstance(player, dict) or player.get("class") != "ClassPriest"
+            or type(player.get("level")) is not int or player["level"] != 20):
+        raise ValueError("PRIEST_L20_PERSISTENT_SOURCE_ACTOR_INVALID")
+    health = source_target_health_from_request(
+        path.read_bytes(), expected_target_level=20)
+    if world_run is None:
+        integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+        if str(integration) not in sys.path:
+            sys.path.insert(0, str(integration))
+        from live_two_world_pulls import run as world_run
+    with TemporaryDirectory(prefix="priest-l20-persistent-native-") as folder:
+        prepared = Path(folder) / "prepared.json"
+        subprocess.run(
+            [str(Path(binary).resolve()), "prepare", "--request",
+             str(path.resolve()), "--outfile", str(prepared)],
+            check=True, capture_output=True, text=True, timeout=25)
+        native = json.loads(prepared.read_text(encoding="utf-8"))
+        actor = native.get("player", {})
+        if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
+                or type(actor.get("level")) is not int or actor["level"] != 20
+                or not isinstance(native.get("request_sha256"), str)
+                or len(native["request_sha256"]) != 64):
+            raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_PREPARED_ACTOR_INVALID")
+        proof = world_run(
+            Path(binary), prepared, mob_health=health, target_count=target_count)
+    if (not isinstance(proof, dict)
+            or proof.get("continuous_native_actor") is not True
+            or proof.get("actual_2d_ack") is not True
+            or proof.get("world_targets_killed") != target_count
+            or len(proof.get("native_windows", ())) != target_count
+            or proof.get("paid_recovery") is not False):
+        raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_WORLD_RECEIPT_INCOMPLETE")
+    return {
+        "native_2d_persistent_world_targets_killed": target_count,
+        "native_2d_persistent_world_ticks": proof["world_ticks"],
+        "native_2d_persistent_actor_verified": True,
+        "native_2d_persistent_world_ack_verified": True,
+        "native_2d_persistent_paid_recovery": False,
+        "native_2d_screen_complete": False,
+    }
+
+
 def score_source_priest_l20_candidates(binary: str | Path,
                                       source_directory: str | Path, *,
                                       score_request=None, world_screen=None,
+                                      persistent_world=None,
                                       budget_s: float = 6.0,
                                       max_paid_builds: int = 4) -> dict:
     """Pay a bounded cold frontier of explicit source/native build requests.
@@ -221,6 +285,9 @@ def score_source_priest_l20_candidates(binary: str | Path,
     live_killed = 0
     live_kill_candidate = None
     live_kill_request_sha256 = None
+    persistent_attempted = 0
+    persistent_verified = 0
+    persistent_targets_killed = 0
     if world_screen is not None:
         from tempfile import TemporaryDirectory
         ranked = sorted(
@@ -252,6 +319,28 @@ def score_source_priest_l20_candidates(binary: str | Path,
                     execution_request.write_text(
                         json.dumps(effective, sort_keys=True), encoding="utf-8")
                     live = world_screen(binary, execution_request)
+                    if (isinstance(live, dict)
+                            and live.get("native_2d_fight_ack_complete") is True
+                            and live.get("native_2d_world_target_killed") is True
+                            and persistent_world is not None):
+                        persistent_attempted += 1
+                        try:
+                            retained = persistent_world(binary, execution_request)
+                            if (not isinstance(retained, dict)
+                                    or retained.get("native_2d_persistent_actor_verified") is not True
+                                    or retained.get("native_2d_persistent_world_ack_verified") is not True
+                                    or type(retained.get("native_2d_persistent_world_targets_killed")) is not int
+                                    or retained["native_2d_persistent_world_targets_killed"] < 2
+                                    or retained.get("native_2d_screen_complete") is not False):
+                                raise RuntimeError("PRIEST_L20_PERSISTENT_WORLD_RECEIPT_INVALID")
+                            candidate["native_2d_persistent_world"] = retained
+                            persistent_verified += 1
+                            persistent_targets_killed = retained[
+                                "native_2d_persistent_world_targets_killed"]
+                        except (OSError, ValueError, RuntimeError, TimeoutError,
+                                AssertionError, KeyError, TypeError,
+                                subprocess.SubprocessError) as exc:
+                            candidate["native_2d_persistent_error"] = str(exc)[-500:]
                 if (not isinstance(live, dict)
                         or live.get("native_2d_fight_ack_complete") is not True):
                     raise RuntimeError("PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED")
@@ -283,6 +372,9 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_2d_live_world_kills": live_killed,
         "native_2d_live_kill_candidate": live_kill_candidate,
         "native_2d_live_kill_request_sha256": live_kill_request_sha256,
+        "native_2d_persistent_attempted": persistent_attempted,
+        "native_2d_persistent_verified": persistent_verified,
+        "native_2d_persistent_targets_killed": persistent_targets_killed,
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
@@ -292,6 +384,7 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
                                           request_file: str | Path,
                                           native_item_options: list[dict], *,
                                           score_request=None, world_screen=None,
+                                          persistent_world=None,
                                           budget_s: float = 6.0,
                                           max_paid_builds: int = 4) -> dict:
     """Score progressive source-native multi-slot whole-build requests.
@@ -351,8 +444,8 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
                 json.dumps(candidate), encoding="utf-8")
         receipt = score_source_priest_l20_candidates(
             binary, folder, score_request=score_request,
-            world_screen=world_screen, budget_s=budget_s,
-            max_paid_builds=max_paid_builds)
+            world_screen=world_screen, persistent_world=persistent_world,
+            budget_s=budget_s, max_paid_builds=max_paid_builds)
     return {
         **receipt,
         "native_item_options_proposed": len(proposals),
