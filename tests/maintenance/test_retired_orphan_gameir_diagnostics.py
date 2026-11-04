@@ -99,6 +99,13 @@ RETIRED_TOOLS = (
     "tools/wf252_companion_replay.py",
     # One-off .242 test aggregator has no callers; its constituent tests remain available.
     "tools/wf242_validate.py",
+    # Retired .251–.256 Python GameIR/SQLite Paladin/Hunter replay chain.
+    "tools/wf251_native_replay.py",
+    "tools/wf253_paladin_seal_replay.py",
+    "tools/wf254_paladin_talent_replay.py",
+    "tools/wf255_paladin_command_replay.py",
+    "tools/wf256_paladin_seals_replay.py",
+    "tools/wf256_run_full_search.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
@@ -188,6 +195,12 @@ RETIRED_IMPORT_NAMES = (
     "accepted_checkpoint_status",
     "wf252_companion_replay",
     "wf242_validate",
+    "wf251_native_replay",
+    "wf253_paladin_seal_replay",
+    "wf254_paladin_talent_replay",
+    "wf255_paladin_command_replay",
+    "wf256_paladin_seals_replay",
+    "wf256_run_full_search",
 )
 
 
