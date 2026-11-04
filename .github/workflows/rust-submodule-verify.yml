@@ -52,6 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+          FOREVER_P3_NATIVE_ROGUE_REQUEST: integrations/mythicsim-rust/fixtures/rogue-l20-p3-native.request.json
         shell: bash
         run: |
           set -euo pipefail
@@ -92,6 +93,8 @@ jobs:
                   assert row["native_item_options_status"] == status, gate
                   assert row["real_source_search_evaluated"] > 0, gate
                   assert row["reachability_count"] >= row["pass_count"] >= 0, gate
+                  assert row.get("p3_native_pair_reserved_attempts") == 2, gate
+                  assert row.get("p3_shared_budget_attempts", 45) <= 44, gate
               else:
                   assert gate["status"] != "PASS", gate
                   assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", []), gate
@@ -101,7 +104,10 @@ jobs:
                 "gate_status", gate["status"], "reasons", row.get("reasons"),
                 "verified", row.get("pass_count"),
                 "applicable", row.get("reachability_count"),
-                "paid", row.get("real_source_search_evaluated"), flush=True)
+                "paid", row.get("real_source_search_evaluated"),
+                "native_paid", row.get("native_equipped_paid_attempts"),
+                "native_result", (row.get("native_equipped_paid_receipt") or {}).get("status"),
+                flush=True)
           PY
 
       - name: Run no-record Priest and Mage L20 P3 with native item options
