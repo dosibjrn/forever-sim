@@ -99,6 +99,7 @@ def test_native_p3_forwards_paladin_request_and_preserves_source_candidates():
     item = {
         "item_id": 36, "name": "Worn Mace", "item_level": 2,
         "required_level": 1, "slot": "weapon", "weapon_type": "WeaponTypeMace",
+        "hand_type": "HandTypeOneHand", "ranged_weapon_type": "RangedWeaponTypeUnknown",
         "weapon_damage_min": 2.0, "weapon_damage_max": 4.0, "weapon_speed": 2.4,
         "stats": {},
     }
@@ -124,7 +125,8 @@ def test_native_p3_forwards_paladin_request_and_preserves_source_candidates():
     ]]
     assert len(records) == 1
     assert records[0].item_id == 36
-    assert records[0].weapon_type == "one_hand_mace"
+    assert records[0].weapon_type == "mace"
+    assert records[0].weapon_hands == 1
     assert records[0].weapon_dps == 1.25
     assert unmapped == {}
     assert metadata["status"] == "ok"
