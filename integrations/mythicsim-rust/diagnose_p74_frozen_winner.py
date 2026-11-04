@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Replay the exact failed P7.4 frozen gear winner for a cheap parity diagnostic.
 
-This is a five-fight no-record diagnostic, never a P7.4 gate or M1 receipt.
+This is a 25-fight no-record diagnostic, never a P7.4 gate or M1 receipt.
 The winner is reconstructed from the trusted #41778065670 production report
 and its canonical sorted-request hash is checked before either engine runs.
 """
@@ -39,7 +39,7 @@ WINNER_GEAR = (
     (14, 19884, 7662),
     (15, 208414, 33),
 )
-ITERATIONS = 5
+ITERATIONS = 25
 
 
 def _load_module(path: Path, name: str):
@@ -110,7 +110,7 @@ def main() -> None:
             native, live, ITERATIONS, expected_raw_sha=raw_sha
         )
         evidence = {
-            "diagnostic": "P7.4_EXACT_FROZEN_WINNER_FIVE_FIGHT_NO_RECORD",
+            "diagnostic": "P7.4_EXACT_FROZEN_WINNER_25_FIGHT_NO_RECORD",
             "gate_pass": False,
             "m1_recorded": False,
             "winner_sorted_sha256": sorted_sha,
@@ -123,6 +123,13 @@ def main() -> None:
             "live_sampled_duration_s": live["sampled_duration_s"],
             "live_first_iteration_duration_s": live["per_iteration"][0]["duration_s"],
             "live_damage_events": live["native_damage_events"],
+            "live_world_target_lethal_fights": live["world_target_lethal_fights"],
+            "live_world_target_survived_fights": live["world_target_survived_fights"],
+            "live_world_target_health_remaining_by_fight": [
+                row["world_target_health_remaining"] for row in live["per_iteration"]
+            ],
+            "coupled_native_world_abs_delta": abs(
+                live["native_dps"] - live["world_mean_dps"]),
             "live_world_boundaries": live["native_world_ticks"],
             "parity_failure": mismatch,
         }
