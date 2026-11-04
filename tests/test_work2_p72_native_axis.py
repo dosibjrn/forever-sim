@@ -107,14 +107,18 @@ def test_public_gate_receipt_keeps_real_native_score_and_changed_apl(
         "original_apl_hash": "original-hash",
         "cold_winner_apl": changed,
         "source_fixed_gear_and_talents": True,
+        "reference_profile": "balance",
+        "checkpoint_spec": "unrestricted",
         "selected_validation": "3_native_balanced_fights_per_distinct_apl",
     }
     monkeypatch.setattr(wf_gate, "_run_live_gate", lambda *args: report)
     assert wf_gate.main(["--class", "druid", "--level", "60",
-                         "--spec", "balance", "--gate", "P7.2"]) == 0
+                         "--spec", "unrestricted", "--gate", "P7.2"]) == 0
     result = json.loads(capsys.readouterr().out)
     row = result["results"][0]
     assert row["winner_native_dps"] == 22.0
     assert row["cold_winner_apl"] == changed
     assert row["source_fixed_gear_and_talents"] is True
     assert row["cold_winner_request_sha256"] == "paid-candidate"
+    assert row["reference_profile"] == "balance"
+    assert row["checkpoint_spec"] == "unrestricted"
