@@ -275,7 +275,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # executor even when no zero-cooldown filler exists. Its observed score
     # is NOT P3 evidence when the selected actor or weapon is still a
     # scenario proxy. Do not turn a successful proxy search into an M1 row.
-    fallback_id = str((naked or {}).get("winner", {}).get("fallback") or "")
+    fallback_id = str(((naked or {}).get("winner") or {}).get("fallback") or "")
     cooldown_fallback = any(
         action.id == fallback_id and action.cooldown_s > 0
         for action in ir.actions)
