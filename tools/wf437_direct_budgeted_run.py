@@ -185,6 +185,16 @@ replay_source = {**r, 'validation_shortlist': validation_shortlist}
 rv=replay_joint_shortlist_100mob(replay_source,source_ir=ir,seed_stage=stage,
     class_key=class_key,level=level,bonus_talent_points=bonus,pack_size=2,
     max_per_candidate_wall_s=60.) if validation_shortlist else {'status':'NO_VALIDATION_SHORTLIST'}
+# The same 30s incumbent is a paid member of the 300s cold frontier.
+# Select the P5/P6 final best-of from the actual completed 100-mob routes,
+# never the two-mob screening proxy. Both candidate identities were frozen
+# before the 300s clock ended; validation pays only their real routes.
+if args.p6_shared_finalists:
+    from tools.wf_gate_p6_full_source import _measured_best_frozen_winner
+    measured_winner = _measured_best_frozen_winner(r, validation_shortlist, rv)
+    if measured_winner is not None:
+        r['search_winner'] = measured_winner
+        r['final_300_selection_basis'] = 'paid_100mob_best_of_frozen_finalists'
 print('VALIDATION',args.budget,'status',rv['status'],'wall',rv.get('wall_s_outside_search_budget'),
       'replayed',rv.get('100mob_replays'),'completed',rv.get('complete_100mob_replays'),
       'ranking_reversal',rv.get('ranking_reversal'),'result',[(x['screen_s_per_mob'],x['full_s_per_mob']) for x in rv.get('rows',[])],flush=True)
