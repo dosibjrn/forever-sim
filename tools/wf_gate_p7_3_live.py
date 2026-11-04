@@ -21,7 +21,8 @@ from uuid import uuid4
 
 from src.engine_client import native_talent_proposals
 
-from tools.wf_gate_p7_1_live import PINNED_RUST, SAVED_BALANCE_RAW_SHA
+from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+                                     SAVED_FERAL_RAW_SHA)
 from tools.wf_gate_p7_2_live import (_source_module, _pinned_source_runtime)
 
 
@@ -76,6 +77,15 @@ def _native_refusal(exc: Exception) -> tuple[str, str]:
     reason = str(getattr(exc, "reason", exc))
     if status in ("INVALID", "UNSUPPORTED", "UNSCORED"):
         return status, reason
+    # The selected source adapter raises NativeSourceRefusal with .code and
+    # .reason, not a JSON string. Forward those Rust-owned refusals directly.
+    code = str(getattr(exc, "code", "")).lower()
+    if code in ("talents", "gear", "apl"):
+        return "INVALID", "NATIVE_" + code.upper() + ":" + reason
+    if code == "unsupported":
+        return "UNSUPPORTED", "NATIVE_UNSUPPORTED:" + reason
+    if code == "unscored":
+        return "UNSCORED", "NATIVE_UNSCORED:" + reason
     if " output=" in reason:
         try:
             decoded = json.loads(reason.rsplit(" output=", 1)[1])
@@ -158,8 +168,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 path = Path(tmp) / "changed-talents.json"
                 path.write_text(json.dumps(candidate))
                 try:
+                    native_options = {"go_rules": True} if spec == "feral" else {}
                     native = production.native_source_control(
-                        binary, path, 3, rng_mode="balanced")
+                        binary, path, 3, rng_mode="balanced", **native_options)
                 except Exception as exc:
                     status, reason = _native_refusal(exc)
                     sample = status + ":" + reason[:400]
@@ -198,7 +209,10 @@ def run_live(root: Path, class_key: str, level: int, *,
         "production_engine": "pinned_mythicsim_rust_native",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
-        "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
+        "source_request_raw_sha256": meta.get(
+            "source_request_raw_sha256",
+            SAVED_FERAL_RAW_SHA if spec == "feral" else SAVED_BALANCE_RAW_SHA),
+        "native_rules": "go_reference" if spec == "feral" else "forever",
         "saved_reference_dps": float(meta["reference_dps"]),
         "reference_profile": meta.get("selected_reference_profile", "balance"),
         "checkpoint_spec": spec,
