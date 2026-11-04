@@ -161,6 +161,57 @@ def _native_item_stat_probe_deltas(item_check: dict, axis: str):
             [source for _delta, source in ordered])
 
 
+def _source_actor_context_summary(ir) -> dict:
+    """Expose source actor/weapon provenance when the paid naked search blocks."""
+    actor = getattr(ir, "actor", None)
+    if actor is None:
+        return {}
+    metadata = getattr(actor, "metadata", {}) or {}
+    try:
+        base_stats = dict(getattr(actor, "base_stats", {}) or {})
+    except (TypeError, ValueError):
+        base_stats = {}
+    actor_provenance = getattr(actor, "provenance", ()) or ()
+    if not isinstance(actor_provenance, (list, tuple)):
+        actor_provenance = (actor_provenance,)
+    auto_attacks = []
+    for attack in getattr(ir, "auto_attacks", ()) or ():
+        source = getattr(attack, "damage_source", None)
+        provenance = getattr(attack, "provenance", ()) or ()
+        if not isinstance(provenance, (list, tuple)):
+            provenance = (provenance,)
+        auto_attacks.append({
+            "id": getattr(attack, "id", None),
+            "attack_type": getattr(attack, "attack_type", None),
+            "required_mode_id": getattr(attack, "required_mode_id", None),
+            "swing_time_s": getattr(attack, "swing_time_s", None),
+            "damage_source": {
+                "kind": getattr(source, "kind", None),
+                "flat_dps": getattr(source, "flat_dps", None),
+                "dps_stat_id": getattr(source, "dps_stat_id", None),
+                "attack_power_stat_id": getattr(source, "attack_power_stat_id", None),
+            },
+            "provenance": list(provenance),
+        })
+    return {
+        "state_status": getattr(actor, "state_status", None),
+        "base_stats": base_stats,
+        "base_stats_are_zero_proxy": metadata.get("base_stats_are_zero_proxy"),
+        "race_key": metadata.get("race_key"),
+        "actor_provenance": list(actor_provenance),
+        "auto_attacks": auto_attacks,
+    }
+
+
+def _allow_cooldown_fallback_for_profile(class_key: str, level: int, spec: str) -> bool:
+    """Enable cooldown continuations only for the Paladin L20 unrestricted P3 lane."""
+    return (
+        str(class_key).lower() == "paladin"
+        and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+    )
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Priest/Mage L20, unrestricted Shaman L20, and unrestricted Mage L30
     # P3 use native ItemSparse; other profiles/levels retain their existing path.
@@ -223,19 +274,63 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                      "spirit", "spell_power", "attack_power", "mp5",
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
-        schedule_incoming_attacks=schedule_incoming_attacks)
+        schedule_incoming_attacks=schedule_incoming_attacks,
+        allow_cooldown_fallback=_allow_cooldown_fallback_for_profile(class_key, level, spec))
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())
                         if x.get("stage") == "source_naked"
                         and isinstance(x.get("values"), dict)), None)
+    # A cooldown-bound source action can now be explored by the real prefix
+    # executor even when no zero-cooldown filler exists. Its observed score
+    # is NOT P3 evidence when the selected actor or weapon is still a
+    # scenario proxy. Do not turn a successful proxy search into an M1 row.
+    fallback_id = str(((naked or {}).get("winner") or {}).get("fallback") or "")
+    cooldown_fallback = any(
+        getattr(action, 'id', None) == fallback_id
+        and float(getattr(action, 'cooldown_s', 0) or 0) > 0
+        for action in ir.actions)
+    actor_proxy = getattr(ir.actor, "metadata", {}).get("base_stats_are_zero_proxy") is True
+    weapon_proxy = any(
+        "proxy" in str(source.get("caveat") or "")
+        for attack in getattr(ir, 'auto_attacks', ())
+        for source in getattr(attack, 'provenance', ())
+        if isinstance(source, dict))
+    if cooldown_fallback and (actor_proxy or weapon_proxy):
+        return {
+            "status": "BLOCKED",
+            "reasons": ["P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"],
+            "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
+            "real_source_search_attempts": result.get("attempted", 0),
+            "real_source_search_evaluated": 0,
+            "diagnostic_proxy_search_evaluated": result.get("evaluated", 0),
+            "source_naked_stage": {
+                "search_backend": naked.get("search_backend"),
+                "search_status": naked.get("search_status"),
+                "attempted": naked.get("attempted", 0),
+                "evaluated": naked.get("evaluated", 0),
+                "blocked": naked.get("blocked", 0),
+            },
+            "source_naked_diagnostics": naked.get("source_search_diagnostics"),
+            "source_actor_context": _source_actor_context_summary(ir),
+        }
     if not naked or not naked.get("winner") or sensitivity is None:
         return {"status": "BLOCKED", "reasons": [
             "P3_PRODUCTION_SEARCH_OR_MEASURED_WEIGHT_CONTEXT_UNAVAILABLE:"
             + str(result.get("status"))],
             "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
             "real_source_search_attempts": result.get("attempted", 0),
-            "real_source_search_evaluated": result.get("evaluated", 0)}
+            "real_source_search_evaluated": result.get("evaluated", 0),
+            "source_naked_stage": ({
+                "search_backend": naked.get("search_backend"),
+                "search_status": naked.get("search_status"),
+                "attempted": naked.get("attempted", 0),
+                "evaluated": naked.get("evaluated", 0),
+                "blocked": naked.get("blocked", 0),
+            } if naked else None),
+            "source_naked_diagnostics": (
+                naked.get("source_search_diagnostics") if naked else None),
+            "source_actor_context": _source_actor_context_summary(ir)}
     record = naked["winner"]
     native_spell_action_ids = {
         str(row.get("action_id")) for row in native_spell_coefficients_applied

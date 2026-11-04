@@ -71,6 +71,7 @@ def _verified_auto_fallback(ir):
 
 
 def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = False,
+                           allow_cooldown_fallback: bool = False,
                            l0_action_priority: dict[str, int] | None = None) -> dict:
     """Find executable offensive source buttons, plus repeatable direct fillers."""
     discovered = discover_source_combat_buttons(
@@ -111,6 +112,21 @@ def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = Fals
                and not any(req.get('kind') == 'resource_min' and
                            req.get('resource_id') in target_resources
                            for req in action_map[aid].requirements)]
+    # A sourced damaging cooldown action can be a real priority continuation:
+    # the production runtime observes its cooldown rather than casting it
+    # repeatedly without delay. Only consider this when no ordinary filler
+    # exists, and only when the caller explicitly opts in. This is not an
+    # auto-attack fallback or a new action/mechanics definition.
+    if not fillers and allow_cooldown_fallback:
+        fillers = [
+            aid for aid in eligible
+            if action_map[aid].cooldown_s > 0
+            and (action_map[aid].cast_time_s > 0 or action_map[aid].gcd_s > 0)
+            and any(_direct(e) for e in action_map[aid].effects)
+            and not any(req.get('kind') == 'resource_min'
+                        and req.get('resource_id') in target_resources
+                        for req in action_map[aid].requirements)
+        ]
     auto_attacks = _verified_auto_fallback(ir) if include_auto_fallback else ()
     if auto_attacks:
         fillers.append(AUTO_ONLY_FALLBACK)
@@ -194,7 +210,8 @@ def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = Fals
 def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: int,
                                max_prefix_length: int = 4, beam_width: int = 2,
                                ir_slice=None, schedule_incoming_attacks: bool = True,
-                               l0_action_priority: dict[str, int] | None = None) -> dict:
+                               l0_action_priority: dict[str, int] | None = None,
+                               allow_cooldown_fallback: bool = False) -> dict:
     """Online search: each next depth>=3 trial is chosen using measured scores.
 
     At small action counts, all ordered length-one and length-two prefixes
@@ -209,7 +226,9 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
         raise ValueError('no canonical Game IR slice')
     if str(ir.actor.metadata.get('class_key','')).lower() != class_key.lower() or int(ir.actor.metadata.get('level',-1)) != level:
         raise ValueError('IR class/level mismatch')
-    envelope = source_prefix_envelope(ir, level=level, l0_action_priority=l0_action_priority)
+    envelope = source_prefix_envelope(
+        ir, level=level, l0_action_priority=l0_action_priority,
+        allow_cooldown_fallback=allow_cooldown_fallback)
     actions, fillers = envelope['actions'], envelope['fillers']
     # An executable destination mode can be the only combat branch. Do not
     # suppress it merely because the starting mode has no repeatable filler.

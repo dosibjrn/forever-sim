@@ -6,8 +6,40 @@ Uncaptured actions remain coverage gaps, never implied no-ops.
 """
 from __future__ import annotations
 import json, sqlite3
+from functools import lru_cache
+from pathlib import Path
 
 from .source_db_scope import DEFAULT_DB
+
+
+
+@lru_cache(maxsize=64)
+def _source_scenario_capture_id(
+    class_key: str, scenario_json: str, auto_json: str, fallback: str
+) -> str:
+    """Resolve the capture that owns the actor/auto scenario, not a later rank extension."""
+    root = Path(__file__).resolve().parents[4] / "data/forever/source_captures"
+    scenario = json.loads(scenario_json)
+    auto = json.loads(auto_json)
+    matches = []
+    for capture_path in sorted(root.glob("*.json")):
+        try:
+            payload = json.loads(capture_path.read_text())
+        except (OSError, ValueError):
+            continue
+        classes = payload.get("classes", ()) if isinstance(payload, dict) else ()
+        if not isinstance(classes, (list, tuple)):
+            continue
+        for candidate in classes:
+            if not isinstance(candidate, dict) or candidate.get("class_key") != class_key:
+                continue
+            if candidate.get("mana_scenario") != scenario or candidate.get("auto") != auto:
+                continue
+            matches.append((
+                str(payload.get("captured_at", "9999")),
+                str(payload.get("capture_id", fallback)),
+            ))
+    return min(matches)[1] if matches else fallback
 
 
 def build_source_slice(class_key: str, level: int):
@@ -28,6 +60,9 @@ def build_source_slice(class_key: str, level: int):
     from src.rulesets.forever.shared.defense import representative_player_hp
 
     scenario=json.loads(row['mana_scenario_json']); auto=json.loads(row['auto_json'])
+    scenario_capture_id = _source_scenario_capture_id(
+        key, json.dumps(scenario, sort_keys=True),
+        json.dumps(auto, sort_keys=True), str(row['capture_id']))
     if scenario['kind']=='pinned_class_level_fixture':
         from pathlib import Path
         p=Path(__file__).resolve().parents[4] / scenario['fixture']
@@ -47,8 +82,9 @@ def build_source_slice(class_key: str, level: int):
     weapon_dps=float(auto['dps_proxy_base'])+level*float(auto['dps_proxy_per_level'])
     actor=ActorDefinition(id='player',actor_type='player',base_stats=stats,
         state_status='qualified_native_class_actor_scenario_not_final',
-        provenance=({'authority':'scenario_proxy_not_source_backed','capture_id':row['capture_id']},),
+        provenance=({'authority':'scenario_proxy_not_source_backed','capture_id':scenario_capture_id},),
         metadata={'class_key':key,'level':level,'race_key':None,
+                  'scenario_capture_id':scenario_capture_id,
                   'weapon_speed_s':float(auto['swing_time_s']),
                   'base_stats_are_zero_proxy':True})
     resources=(ResourceDefinition(id='health',name='Health',owner_actor_id='player',
@@ -57,17 +93,18 @@ def build_source_slice(class_key: str, level: int):
                     initial_amount=mana,capacity=mana,
                     regeneration_per_s=float(scenario['regen_per_s']),
                     state_status='qualified_proxy_starting_state',
-                    provenance=({'authority':scenario['authority']},),
+                    provenance=({'authority':scenario['authority'],'capture_id':scenario_capture_id},),
                     metadata={'base_mana':mana,'mana_source_status':scenario['authority']}))
     mode=ModeDefinition(id='ordinary',label='Ordinary Weapon',initial=True,
-        provenance=({'authority':'qualified_ordinary_weapon_mode','source_url':auto['source_url']},))
+        provenance=({'authority':'qualified_ordinary_weapon_mode','source_url':auto['source_url'],
+                     'capture_id':scenario_capture_id},))
     source=AutoAttackDamageSource(kind='equipped_weapon_dps_plus_attack_power',
         flat_dps=weapon_dps,dps_stat_id=None,attack_power_stat_id='attack_power')
     attack=AutoAttackDefinition(id=f'{key}:auto:weapon',name='Qualified ordinary weapon auto',
         owner_actor_id='player',attack_type=auto['kind'],school='physical',
         required_mode_id='ordinary',swing_time_s=float(auto['swing_time_s']),
         damage_source=source,hit_chance=1.,exclusive_with_casts=bool(auto['exclusive_with_casts']),
-        provenance=({'source_url':auto['source_url'],'capture_id':row['capture_id'],
+        provenance=({'source_url':auto['source_url'],'capture_id':scenario_capture_id,
                      'caveat':auto['caveat']},))
     newest={}
     for a in actions:
@@ -119,6 +156,7 @@ def build_source_slice(class_key: str, level: int):
         actor=actor,resources=resources,modes=(mode,),auto_attacks=(attack,),
         actions=tuple(compiled),policies=policies,
         source_facts=({'family':'native_sqlite_verified_actions','capture_id':row['capture_id'],
+            'scenario_capture_id':scenario_capture_id,
             'executed_families':sorted(newest),'indexed_actions_at_level':indexed,
             'indexed_unexecuted_count_at_least':max(0,indexed-len(actions))},),
         unsupported_semantics=({'code':'indexed_source_actions_not_yet_executable',
@@ -127,7 +165,8 @@ def build_source_slice(class_key: str, level: int):
               'status':'not_source_complete'},
              {'code':'starting_stats_and_weapon_speed','status':'qualified_proxy'}),
         provenance={'provider':'generic_sqlite_native_class_adapter',
-            'capture_id':row['capture_id'],'source_coverage_complete':False,
+            'capture_id':row['capture_id'],'scenario_capture_id':scenario_capture_id,
+            'source_coverage_complete':False,
             'numeric_scope':'bounded_native_source_level_with_proxy_state_not_leveling_authority'})
 
     from .source_companions import source_enrich_companions

@@ -64,6 +64,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                              schedule_incoming_attacks: bool = True,
                              required_level_policy: str = 'catalogue', ir_slice=None,
                              policy_search_backend: str = 'prefix',
+                             allow_cooldown_fallback: bool = False,
                              max_event_transitions: int | None = None,
                              stateful_use_l1: bool = False,
                              stateful_l1_mode: str = 'value_gated',
@@ -138,7 +139,8 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         if policy_search_backend == 'prefix':
             return run_source_budgeted_prefix(class_key=class_key,level=level,
                 max_evaluations=search_budget,ir_slice=search_ir,
-                schedule_incoming_attacks=schedule_incoming_attacks)
+                schedule_incoming_attacks=schedule_incoming_attacks,
+                allow_cooldown_fallback=allow_cooldown_fallback)
         remaining=(15000 if max_event_transitions is None else max_event_transitions-event_total)
         if remaining<=0:
             return {'attempted':0,'evaluated':0,'blocked':0,'best_vs_budget':[],
@@ -167,12 +169,42 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         tried += result['attempted']
         successes += result['evaluated']
         blockers += result['blocked']
+        envelope = result.get('envelope') or {}
+        failures = result.get('failures') or ()
+        # Preserve the actual source-search explanation at the gear-stage
+        # boundary. P3 consumes this stage, so dropping the envelope here
+        # collapsed actionable failures (for example, no repeatable source
+        # filler) into the unhelpful BLOCKED_NO_NAKED_SUCCESS summary.
+        source_search_diagnostics = {
+            'status': result.get('status'),
+            'source_ir_id': result.get('source_ir_id'),
+            'actions': list(envelope.get('actions', ())),
+            'fillers': list(envelope.get('fillers', ())),
+            'blocked': list(envelope.get('blocked', ())),
+            'auto_fallback_ids': list(
+                envelope.get('auto_fallback_ids', result.get('auto_fallback_ids', ()))),
+            'mode_paths': [
+                {'entry': path.get('entry'), 'mode_id': path.get('mode_id'),
+                 'actions': list(path.get('actions', ())),
+                 'fillers': list(path.get('fillers', ()))}
+                for path in envelope.get('mode_paths', ()) if isinstance(path, dict)
+            ],
+            'candidate_failure_count': len(failures),
+            'candidate_failures': [
+                {key: failure[key] for key in ('prefix', 'fallback', 'reason', 'status')
+                 if key in failure}
+                for failure in failures if isinstance(failure, dict)
+            ],
+        }
         stage = {'stage':name, 'budget_before':start, 'budget_after':tried,
                  'attempted':result['attempted'], 'evaluated':result['evaluated'],
                  'blocked':result['blocked'], 'seed_total':result.get('seed_count'),
                  'seed_skipped':result.get('seed_skipped_by_budget'),
                  'winner':result.get('winner'), 'runner_up':result.get('runner_up'),
                  'context_sha256':result.get('context_sha256'),
+                 'search_backend':policy_search_backend,
+                 'search_status':result.get('status'),
+                 'source_search_diagnostics':source_search_diagnostics,
                  'selected_weights':weights or {},
                  'gear':None if selection is None else selection.as_dict(),
                  'search_is_fresh_from_source_singles_pairs':True,
