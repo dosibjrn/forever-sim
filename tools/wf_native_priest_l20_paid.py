@@ -194,7 +194,8 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
                 or len(native["request_sha256"]) != 64):
             raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_PREPARED_ACTOR_INVALID")
         proof = world_run(
-            Path(binary), prepared, mob_health=health, target_count=target_count)
+            Path(binary), prepared, mob_health=health, target_count=target_count,
+            rng_mode="balanced")
     if (not isinstance(proof, dict)
             or proof.get("continuous_native_actor") is not True
             or proof.get("actual_2d_ack") is not True
