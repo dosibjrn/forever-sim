@@ -167,7 +167,8 @@ def test_invalid_finished_naked_stat_probe_objective_is_not_measured(
         budgeted, "_policy_combat_evaluation",
         lambda *args, **kwargs: (
             SimpleNamespace(seconds_per_mob=invalid_objective),
-            SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {}))
+            SimpleNamespace(timeline=SimpleNamespace(target_defeated=True),
+                            selected_actions=()), {}))
     result = budgeted._fixed_opening_score(
         SimpleNamespace(), {"fallback": "source-spell", "prefix": ()},
         level=30, incoming=True)
