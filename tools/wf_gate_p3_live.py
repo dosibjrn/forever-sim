@@ -248,6 +248,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # Reuse a paid baseline for the same source policy across stat axes. Without
     # this, repeated baseline runs consume the fixed P3 budget before later
     # required axes (such as Spirit) receive their own paid perturbation.
+    mage_l30_native = (
+        str(class_key).lower() == "mage" and int(level) == 30
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
     source_policy_baseline_cache = {}
     # Reuse the exact paid Mage L30 source-naked winner as the stat-witness
     # baseline. Other profiles retain their established policy/cache behavior.
@@ -275,11 +280,6 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         key=lambda blocker: (
             witness_rank.get(blocker.split(":", 1)[1], len(witness_rank)),
             blocker.split(":", 1)[1]))
-    mage_l30_native = (
-        str(class_key).lower() == "mage" and int(level) == 30
-        and str(spec).lower() == "unrestricted"
-        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
-    )
     for blocker in witness_blockers:
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
