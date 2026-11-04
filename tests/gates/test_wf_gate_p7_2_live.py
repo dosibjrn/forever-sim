@@ -136,3 +136,62 @@ def test_invalid_full_p72_mode_is_blocked(monkeypatch, tmp_path):
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report["status"] == "BLOCKED"
     assert "P7_2_INVALID_FULL_SOURCE_SEARCH_MODE" in report["reasons"]
+
+
+def test_unrestricted_p72_reuses_actual_balance_reference_and_pays_native(
+        monkeypatch, tmp_path):
+    """Unrestricted Druid L60 can use the authentic Balance build, not a fake baseline."""
+    import json
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    root = Path(__file__).resolve().parents[2]
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"test-executable-placeholder")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.delenv("FOREVER_P7_FULL_SOURCE_SEARCH", raising=False)
+    # This stubs checkout identity, not mechanics; native forwarding is the
+    # unit under test. A real selected-engine gate run is still required.
+    monkeypatch.setattr(gate, "_selected_rust_submodule",
+                        lambda *_: "selected-fork-commit")
+    prepared = gate._pinned_source_runtime(
+        root, "druid", 60, "unrestricted", "P7.2", require_world=False)
+    assert isinstance(prepared, tuple)
+    original, meta, selected_binary = prepared
+    assert selected_binary == binary.resolve()
+    assert meta["selected_reference_profile"] == "balance"
+    assert original["raid"]["parties"][0]["players"][0]["balanceDruid"]
+    assert gate._pinned_source_runtime(
+        root, "druid", 60, "unrestricted", "P7.3",
+        require_world=False)["status"] == "BLOCKED"
+
+    source_player = original["raid"]["parties"][0]["players"][0]
+    changed = [{"action": {"castSpell": {"spellId": {"spellId": 8921}}}}]
+    paid = []
+
+    def native_score(_binary, path, iterations, *, rng_mode):
+        paid.append(json.loads(path.read_text()))
+        assert (_binary, iterations, rng_mode) == (
+            selected_binary, 3, "balanced")
+        return {"iterations": 3, "native_dps": 720.0}
+
+    mutation = SimpleNamespace(mutate_apl=lambda *a, **kw: changed)
+    native = SimpleNamespace(native_source_control=native_score)
+    monkeypatch.setattr(gate, "_source_module",
+                        lambda _path, name:
+                        mutation if "mutator" in name else native)
+
+    report = gate.run_live(root, "druid", 60, spec="unrestricted")
+    assert report["status"] == "PASS"  # mocked scorer, not acceptance evidence
+    assert report["checkpoint_spec"] == "unrestricted"
+    assert report["reference_profile"] == "balance"
+    assert report["saved_reference_dps"] == meta["reference_dps"]
+    assert report["source_request_raw_sha256"] == gate.SAVED_BALANCE_RAW_SHA
+    assert report["native_source_revision"] == "selected-fork-commit"
+    assert report["source_legal_cold_candidates_paid"] == 1
+    assert len(paid) == 1
+    candidate = paid[0]["raid"]["parties"][0]["players"][0]
+    assert candidate["rotation"]["priorityList"] == changed
+    assert candidate["talentsString"] == source_player["talentsString"]
+    assert candidate["equipment"] == source_player["equipment"]
