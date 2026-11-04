@@ -215,6 +215,12 @@ def main(argv=None) -> int:
                         "frozen_stochastic_world_dps",
                         "frozen_stochastic_world_damage_events",
                         "frozen_stochastic_world_boundaries"):
+                # P7.4 uses paid Balanced finalist screens. Its provider's
+                # stochastic finalist counters are hard-coded placeholders.
+                if gate == "P7.4" and key in (
+                        "paid_stochastic_finalists",
+                        "paid_stochastic_confirmed_finalists"):
+                    continue
                 value = report.get(key)
                 if type(value) in (int, float) and math.isfinite(value):
                     record[key] = value
@@ -284,6 +290,13 @@ def main(argv=None) -> int:
                         and math.isfinite(best_paid) and best_paid >= 0):
                     record["best_paid_balanced_world_dps"] = best_paid
         if gate == "P7.4":
+            # The P7.4 provider selects with paid Balanced screens, not
+            # stochastic finalists. Forward the actual bounded counts; the
+            # provider's stochastic counters are placeholders, not evidence.
+            for key in ("paid_balanced_finalists", "paid_balanced_confirmed"):
+                value = report.get(key)
+                if type(value) is int and 0 <= value <= 6:
+                    record[key] = value
             # Forward only bounded, source-executed winner identity. This is
             # diagnostic provenance, never an additional gate predicate.
             gear = report.get("cold_winner_gear")
@@ -298,7 +311,7 @@ def main(argv=None) -> int:
             # Actual rejected paid proposals and finalist reevaluations are
             # necessary to distinguish a quality regression from a failed
             # search invocation. Bound the receipt; it is not M1 evidence.
-            for key in ("source_candidate_failures", "paid_stochastic_finalist_failures"):
+            for key in ("source_candidate_failures", "balanced_finalist_failures"):
                 errors = report.get(key)
                 if isinstance(errors, list):
                     record[key] = [error[:180] for error in errors[:4]
