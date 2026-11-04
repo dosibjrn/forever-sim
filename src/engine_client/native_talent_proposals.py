@@ -94,3 +94,58 @@ def lower_one_rank_neighbors(parent: str) -> list[str]:
         changed[index] -= 1
         alternatives.append(_encode(parts, changed))
     return alternatives
+
+
+
+def one_point_transfer_neighbors(parent: str, *, limit: int = 48) -> list[str]:
+    """Sample both within-tree and cross-tree one-point transfers.
+
+    A bounded search must not exhaust its entire candidate budget in the
+    first tree. The two proposal streams are interleaved without inferring
+    Warcraft prerequisites or rank caps; selected native Rust alone decides
+    which changed allocation is legal.
+    """
+    parts, digits = _decode(parent)
+    if limit < 0:
+        raise ValueError("TALENT_PROPOSAL_LIMIT_NEGATIVE")
+    if limit == 0:
+        return []
+    boundaries = []
+    offset = 0
+    for part in parts:
+        boundaries.append(range(offset, offset + len(part)))
+        offset += len(part)
+
+    def collect(*, within_tree: bool) -> list[str]:
+        proposals = []
+        for donor_tree in reversed(boundaries):
+            for recipient_tree in reversed(boundaries):
+                if (donor_tree is recipient_tree) != within_tree:
+                    continue
+                for donor in reversed(donor_tree):
+                    if digits[donor] == 0:
+                        continue
+                    for recipient in recipient_tree:
+                        if donor == recipient or digits[recipient] >= 9:
+                            continue
+                        modified = digits.copy()
+                        modified[donor] -= 1
+                        modified[recipient] += 1
+                        proposals.append(_encode(parts, modified))
+                        if len(proposals) >= limit:
+                            return proposals
+        return proposals
+
+    within = collect(within_tree=True)
+    across = collect(within_tree=False)
+    result = []
+    for index in range(max(len(within), len(across))):
+        if index < len(within):
+            result.append(within[index])
+            if len(result) == limit:
+                break
+        if index < len(across):
+            result.append(across[index])
+            if len(result) == limit:
+                break
+    return result
