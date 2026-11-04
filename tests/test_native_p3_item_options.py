@@ -95,6 +95,54 @@ def test_native_p3_shaman_requires_client_exclusion_accounting():
         query_native_p3_item_options("native", "shaman", 20, runner=_runner(payload))
 
 
+def test_native_p3_forwards_paladin_request_and_preserves_source_candidates():
+    item = {
+        "item_id": 36, "name": "Worn Mace", "item_level": 2,
+        "required_level": 1, "slot": "weapon", "weapon_type": "WeaponTypeMace",
+        "weapon_damage_min": 2.0, "weapon_damage_max": 4.0, "weapon_speed": 2.4,
+        "stats": {},
+    }
+    source = "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel+SkillLine+SkillRaceClassInfo"
+    payload = _response(
+        items=[item], **{
+            "class": "paladin",
+            "source": source,
+            "excluded_non_client_item_count": 1240,
+        })
+    seen = []
+
+    def runner(command, **kwargs):
+        seen.append(command)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+
+    records, unmapped, metadata = native_p3_item_records(
+        "native", "paladin", 20, runner=runner)
+
+    assert seen == [[
+        "native", "item-options", "--class", "paladin", "--level", "20",
+        "--spec", "unrestricted", "--slot", "all",
+    ]]
+    assert len(records) == 1
+    assert records[0].item_id == 36
+    assert records[0].weapon_type == "one_hand_mace"
+    assert records[0].weapon_dps == 1.25
+    assert unmapped == {}
+    assert metadata["status"] == "ok"
+    assert metadata["unverified_candidate_count"] == 0
+    assert metadata["excluded_non_client_item_count"] == 1240
+    assert metadata["source"] == source
+
+
+def test_native_p3_paladin_requires_client_exclusion_accounting():
+    payload = _response(**{"class": "paladin"})
+    del payload["excluded_non_client_item_count"]
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
+    ):
+        query_native_p3_item_options("native", "paladin", 20, runner=_runner(payload))
+
+
 def test_native_p3_empty_is_distinct_from_refusal():
     assert query_native_p3_item_options("native", "priest", 20, runner=_runner(
         _response(status="empty", items=[])))["items"] == []
@@ -205,6 +253,7 @@ def test_native_p3_partial_unknown_is_measured_but_not_certified():
     ("mage", 20, "unrestricted"),
     ("mage", 30, "unrestricted"),
     ("shaman", 20, "unrestricted"),
+    ("paladin", 20, "unrestricted"),
 ])
 def test_native_p3_live_gate_fails_closed_without_binary(
         monkeypatch, class_key, level, spec):
@@ -226,6 +275,7 @@ def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     assert 'if [[ "$gate" == P3 ]]; then' in workflow
     assert 'if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||' in workflow
     assert '[[ "$level" == 20 && "$class" == shaman && "$spec" == unrestricted ]] ||' in workflow
+    assert '[[ "$level" == 20 && "$class" == paladin && "$spec" == unrestricted ]] ||' in workflow
     assert '[[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then' in workflow
     assert 'elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then' in workflow
     assert "native_options_needed=true" in workflow
@@ -235,6 +285,7 @@ def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     assert "RUST_FORK_SUBMODULE_PIN_MISMATCH" in workflow
     assert 'cargo build --release --locked --manifest-path "$engine/Cargo.toml" --bin forever-engine' in workflow
     assert "FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine" in workflow
+    assert "FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine" in workflow
 
 
 
@@ -275,6 +326,7 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
 @pytest.mark.parametrize(("class_key", "excluded_count"), [
     ("priest", 0),
     ("shaman", 3075),
+    ("paladin", 1240),
 ])
 def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
         class_key, excluded_count):
@@ -285,7 +337,7 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
         identity_origin="mythicsim_native", source_type="mythicsim_native")
         for index, item_level in enumerate(levels))
     source = "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel"
-    if class_key == "shaman":
+    if class_key in {"shaman", "paladin"}:
         source += "+SkillLine+SkillRaceClassInfo"
     metadata = {
         "status": "ok",
@@ -301,7 +353,7 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
         side_effect=AssertionError("native P3 must not call SQLite availability"),
     ):
         report = fast_p3_smoke(
-            class_key="priest", level=20, weights={"stamina": 1.0},
+            class_key=class_key, level=20, weights={"stamina": 1.0},
             weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
             defensive_positive_required=False, native_options_binary="native")
@@ -323,9 +375,12 @@ def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     assert native_item_options_required("mage", 20, "arcane")
     assert native_item_options_required("mage", 30, "unrestricted")
     assert native_item_options_required("shaman", 20, "unrestricted")
+    assert native_item_options_required("paladin", 20, "unrestricted")
     assert native_item_options_required("SHAMAN", 20, "UNRESTRICTED")
     assert not native_item_options_required("shaman", 20, "enhancement")
     assert not native_item_options_required("shaman", 30, "unrestricted")
+    assert not native_item_options_required("paladin", 20, "retribution")
+    assert not native_item_options_required("paladin", 30, "unrestricted")
     assert not native_item_options_required("mage", 30, "feral-cat")
     assert not native_item_options_required("priest", 30, "unrestricted")
     assert not native_item_options_required("mage", 40, "unrestricted")
@@ -343,6 +398,23 @@ def test_selected_engine_workflow_runs_shaman_l20_native_p3_without_record():
     assert 'row["real_source_search_evaluated"] <= 44' in shaman
     assert 'row["native_excluded_non_client_item_count"] > 0' in shaman
     assert "--record-pass" not in shaman
+
+def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    assert "Run no-record Paladin L20 P3 with native player context and item options" in workflow
+    paladin = workflow.split(
+        "Run no-record Paladin L20 P3 with native player context and item options", 1
+    )[1].split("Run no-record Mage L30 P3 with native item options", 1)[0]
+    assert "--class paladin --level 20" in paladin
+    assert '--spec unrestricted --gate P3 --out "$report"' in paladin
+    assert "FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN" in paladin
+    assert "FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" in paladin
+    assert 'row["native_item_options_status"] == "ok"' in paladin
+    assert 'row["native_unverified_candidate_count"] == 0' in paladin
+    assert 'row["native_excluded_non_client_item_count"] > 0' in paladin
+    assert 'row["real_source_search_evaluated"] > 0' in paladin
+    assert "--record-pass" not in paladin
+
 
 def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():
     workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
