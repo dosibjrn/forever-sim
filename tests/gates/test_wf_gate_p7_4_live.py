@@ -894,9 +894,14 @@ def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
     if not items_path.is_file() or not enchants_path.is_file():
         pytest.skip("pinned MythicSim source data is not checked out")
 
+    import sys
     source_dir = root / "integrations/mythicsim-rust"
-    search = gate._source_module(
-        source_dir / "p74_gear_search.py", "p74_actual_engine_jsonl_search_test")
+    sys.path.insert(0, str(source_dir))
+    try:
+        search = gate._source_module(
+            source_dir / "p74_gear_search.py", "p74_actual_engine_jsonl_search_test")
+    finally:
+        sys.path.remove(str(source_dir))
     pool, enchant_pools, metadata = search.pinned_rust_candidate_pool(
         items_path, enchants_path)
 
