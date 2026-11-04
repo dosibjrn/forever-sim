@@ -149,7 +149,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_cold_apl_can_generate_19_actions_from_10_action_source_grammar
 
   selected-native-p72:
-    # One selected-engine read-only acceptance probe on Work2's P7.2 lane.
+    # One selected-engine read-only acceptance probe on Work2's P7.3 lane.
     # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
     if: startsWith(github.head_ref, 'work/work2-p72-native-axis-')
     runs-on: ubuntu-24.04
@@ -182,8 +182,8 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: 'off'
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
         run: cargo build --release --locked --bin forever-engine
-      - name: Pay real P7.2 changed-APL candidate without recording M1
+      - name: Pay real P7.3 changed-talents candidate without recording M1
         env:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.2
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.3
