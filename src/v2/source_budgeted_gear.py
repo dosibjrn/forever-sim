@@ -75,6 +75,31 @@ def _source_probe_axis_selection(ir, requested: tuple[str, ...]) -> tuple[tuple[
     }
 
 
+def _paid_measured_stat_weights(measurement: dict) -> tuple[dict[str, float], list[str]]:
+    """Distinguish an executed zero marginal from an unexecuted stat probe.
+
+    The shared sensitivity algorithm returns 0.0 both when every paid delta
+    fails and when a paid delta completes without improving the objective.
+    P3 must not treat an all-blocked axis as a finite measured zero. Keep real
+    negative derivatives visible; never clamp them into passing weights.
+    """
+    measured = {}
+    unmeasured = []
+    for row in measurement["ranked"]:
+        axis = str(row["stat"])
+        successful = any(
+            type(probe.get("seconds_per_mob")) in (int, float)
+            and isfinite(probe["seconds_per_mob"])
+            and probe["seconds_per_mob"] > 0
+            for probe in row["probes"]
+        )
+        if successful:
+            measured[axis] = float(row["value"])
+        else:
+            unmeasured.append(axis)
+    return measured, unmeasured
+
+
 def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int,
                              search_per_gear: int = 24, initial_search: int = 24,
                              max_gear_states: int = 4, probe_stats: tuple[str, ...] = (
@@ -308,6 +333,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
             sensitivity_history.append({'stage':label,'reason':str(exc),'status':'blocked'})
             return None
         row = found.as_dict()
+        row['values'], row['unmeasured_axes'] = _paid_measured_stat_weights(row)
         row['stage']=label
         row['evaluation_budget_after']=tried
         sensitivity_history.append(row)
