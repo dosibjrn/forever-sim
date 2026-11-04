@@ -275,20 +275,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             NativePlayerContextError, apply_native_player_context,
             query_native_player_context,
         )
-        player_context_binary = os.environ.get("FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN")
-        if player_context_binary:
-            try:
-                native_player_context = query_native_player_context(
-                    player_context_binary, class_key, level)
-                ir = apply_native_player_context(ir, native_player_context)
-            except (NativePlayerContextError, ValueError, TypeError, KeyError) as exc:
-                return {
-                    "status": "BLOCKED",
-                    "reasons": [str(exc)],
-                    "production_component": "src.game.native_p3_player_context",
-                }
-        # Until the exact tested Rust revision is pinned, retain the existing
-        # proxy diagnostic. Its guard below still prevents any P3 gate credit.
+        # The selected item-options engine is also the Paladin actor authority.
+        # A second environment variable is optional; never silently fall back
+        # to the zero-stat proxy when it is omitted.
+        player_context_binary = (
+            os.environ.get("FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN") or native_binary)
+        try:
+            native_player_context = query_native_player_context(
+                player_context_binary, class_key, level)
+            ir = apply_native_player_context(ir, native_player_context)
+        except (NativePlayerContextError, ValueError, TypeError, KeyError) as exc:
+            return {
+                "status": "BLOCKED",
+                "reasons": [str(exc)],
+                "production_component": "src.game.native_p3_player_context",
+            }
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
