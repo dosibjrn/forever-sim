@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Historical WF324 Druid L20 bounded GameIR searches; no active gate/optimizer caller.
+    "tools/wf324_druid_l20_talent_screening.py",
+    "tools/wf324_persistent_blind_selection.py",
+    "tools/wf324_refine_persistent_discovered.py",
     # WF358 frozen GameIR/SQLite contextual Top5 replay and report; no active gate caller.
     "tools/wf358_l30_p3_empirical_report.py",
     "tools/wf358_l30_p3_top5_replay.py",
@@ -172,6 +176,9 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf324_druid_l20_talent_screening",
+    "wf324_persistent_blind_selection",
+    "wf324_refine_persistent_discovered",
     "wf358_l30_p3_empirical_report",
     "wf358_l30_p3_top5_replay",
     "wf363_warrior_l30_p3_probe",
