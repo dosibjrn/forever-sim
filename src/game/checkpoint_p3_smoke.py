@@ -158,7 +158,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   equipped_weapon_dps_relevant: bool | None = None,
                   defensive_positive_required: bool = True,
                   required_level_policy: str = 'catalogue',
-                  native_options_binary: str | None = None) -> dict:
+                  native_options_binary: str | None = None,
+                  native_options_response: dict | None = None) -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
     Failures are explicit, not silently clipped or filled with tiny positives.
@@ -167,6 +168,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     """
     if not class_key or not 1 <= int(level) <= 60:
         raise ValueError('P3_INVALID_CHECKPOINT')
+    if native_options_response is not None and native_options_binary is None:
+        raise ValueError('P3_NATIVE_OPTIONS_SNAPSHOT_REQUIRES_SELECTED_BINARY')
     if not isinstance(defensive_positive_required, bool):
         raise ValueError('P3_DEFENSIVE_APPLICABILITY_NOT_BOOLEAN')
     # All ordinary weights are nonnegative. Outside Warrior/Bear, defensive
@@ -177,7 +180,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     if native_options_binary is not None:
         from src.game.native_p3_item_options import native_p3_item_records
         rows, unmapped_by_item, native_options_metadata = native_p3_item_records(
-            native_options_binary, class_key, level)
+            native_options_binary, class_key, level,
+            native_response=native_options_response)
         source_name = 'MYTHICSIM_NATIVE_ITEM_OPTIONS'
     else:
         rows = available_items(class_key, level, required_level_policy=required_level_policy)
