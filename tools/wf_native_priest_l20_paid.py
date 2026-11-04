@@ -214,10 +214,11 @@ def score_source_priest_l20_candidates(binary: str | Path,
     # the existing live Rust↔2D ACK loop once per bounded diagnostic.
     # A strong native-only score cannot prove that the same build works in
     # the ACKed 2D world. Try the next genuinely paid source candidate if the
-    # first live request fails, with at most two costly world diagnostics.
+    # first live request fails or remains nonlethal, with at most two diagnostics.
     # Neither result may count as a persistent 100-mob paid screen.
     live_attempted = 0
     live_verified = 0
+    live_killed = 0
     if world_screen is not None:
         from tempfile import TemporaryDirectory
         ranked = sorted(
@@ -251,7 +252,12 @@ def score_source_priest_l20_candidates(binary: str | Path,
                     raise RuntimeError("PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED")
                 candidate["native_2d_fight"] = live
                 live_verified += 1
-                break
+                # ACK alone can leave the sourced target alive. Retain that
+                # honest receipt and try the next paid whole build for a real
+                # lethal world ACK, without treating either as a 100-mob screen.
+                if live.get("native_2d_world_target_killed") is True:
+                    live_killed += 1
+                    break
             except (OSError, ValueError, RuntimeError, TimeoutError,
                     AssertionError, KeyError, TypeError,
                     subprocess.SubprocessError) as exc:
@@ -267,6 +273,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_candidate_receipts": rows,
         "native_2d_live_ack_attempted": live_attempted,
         "native_2d_live_ack_verified": live_verified,
+        "native_2d_live_world_kills": live_killed,
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
