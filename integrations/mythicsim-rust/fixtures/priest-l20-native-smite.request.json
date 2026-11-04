@@ -1,6 +1,6 @@
 {
   "encounter": {
-    "duration": 30,
+    "duration": 90,
     "durationVariation": 0,
     "executeProportion20": 0.2,
     "executeProportion25": 0.25,
@@ -14,7 +14,7 @@
         "id": 213336,
         "level": 20,
         "minBaseDamage": 0,
-        "name": "Level 20",
+        "name": "CMaNGOS Classic-proxy level 20 ordinary melee",
         "parryHaste": true,
         "stats": [
           0,
@@ -49,7 +49,7 @@
           0,
           0,
           0,
-          10000,
+          484,
           0,
           0,
           0,
