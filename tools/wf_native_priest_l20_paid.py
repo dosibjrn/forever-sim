@@ -281,9 +281,13 @@ def score_source_priest_l20_candidates(binary: str | Path,
     deadline = time.monotonic() + budget_s
     seen = set()
     rows = []
+    paid_count = 0
     comparable_encounter = None
     for path in paths:
-        if len(rows) >= max_paid_builds or time.monotonic() >= deadline:
+        # The cap is on native-PAID whole builds, not malformed/refused
+        # requests. A rejected build must not consume a legal candidate's
+        # paid slot; the same wall-clock deadline still bounds all attempts.
+        if paid_count >= max_paid_builds or time.monotonic() >= deadline:
             break
         try:
             request = json.loads(path.read_text(encoding="utf-8"))
@@ -312,6 +316,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
             rows.append({"candidate": path.name, "source_request_sha256":
                          candidate_key, "status": "NATIVE_PAID",
                          **receipt})
+            paid_count += 1
         except (OSError, ValueError, RuntimeError, TimeoutError,
                 subprocess.SubprocessError) as exc:
             # A timed-out or failed native subprocess refuses ONLY this
