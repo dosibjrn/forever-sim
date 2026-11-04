@@ -379,9 +379,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 naked.get("source_search_diagnostics") if naked else None),
             "source_actor_context": _source_actor_context_summary(ir)}
     record = naked["winner"]
+    # Only an applied, finite positive native rank-915 coefficient on the
+    # exact source action may unlock the Shaman Intellect witness.
     native_spell_action_ids = {
         str(row.get("action_id")) for row in native_spell_coefficients_applied
-        if isinstance(row, dict) and row.get("action_id")
+        if isinstance(row, dict)
+        and row.get("action_id")
+        and row.get("spell_id") == 915
+        and type(row.get("spell_power_coefficient")) in (int, float)
+        and isfinite(float(row["spell_power_coefficient"]))
+        and float(row["spell_power_coefficient"]) > 0.0
     }
     native_fallback_action = str(record.get("fallback") or "") in native_spell_action_ids
     policy = _make_policy(

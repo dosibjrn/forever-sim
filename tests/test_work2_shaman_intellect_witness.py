@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _run(monkeypatch, *, fallback="lightning_bolt:915",
          spell_power_weight=0.03283717129264803, attempted=41,
-         query_error=None, intellect_positive=True):
+         query_error=None, intellect_positive=True, applied_rows=None):
     import src.game.checkpoint_p3_smoke as smoke
     import src.game.data.forever.registry as registry
     import src.game.native_p3_item_options as native
@@ -54,11 +54,12 @@ def _run(monkeypatch, *, fallback="lightning_bolt:915",
         return {"source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
                 "engine_revision": "native-test",
                 "spell_power_coefficients": {915: 0.714}}
-    applied = [{"action_id": "lightning_bolt:915", "spell_id": 915,
-                "spell_power_coefficient": 0.714}]
+    if applied_rows is None:
+        applied_rows = [{"action_id": "lightning_bolt:915", "spell_id": 915,
+                         "spell_power_coefficient": 0.714}]
     monkeypatch.setattr(native, "query_native_shaman_spell_coefficients", query)
     monkeypatch.setattr(native, "apply_native_shaman_lightning_bolt_coefficient",
-                        lambda src, facts: (src, [] if query_error else applied))
+                        lambda src, facts: (src, [] if query_error else applied_rows))
 
     smoke_calls = []
     def native_smoke(**kw):
@@ -166,6 +167,32 @@ def test_nonpositive_intellect_does_not_increase_weight_or_p3_assertions(monkeyp
     # The re-score is still required for the positive Spell Power witness,
     # but a nonpositive Intellect probe cannot add item assertions.
     assert len(smoke_calls) == 2
+
+
+def test_intellect_requires_exact_native_spell_id_915(monkeypatch):
+    wrong_rank = [{"action_id": "lightning_bolt:915", "spell_id": 916,
+                   "spell_power_coefficient": 0.714}]
+    result, _record, _winner, calls, _smokes = _run(
+        monkeypatch, applied_rows=wrong_rank)
+
+    assert calls == []
+    assert result["native_spell_coefficients_applied"] == wrong_rank
+    assert result["native_paid_winner_spell_probe_enabled"] is False
+    assert result["real_measured_stat_weights"]["intellect"] == 0.0
+    assert result["pass_count"] == 93
+
+
+def test_intellect_requires_positive_native_rank_915_coefficient(monkeypatch):
+    zero_coefficient = [{"action_id": "lightning_bolt:915", "spell_id": 915,
+                         "spell_power_coefficient": 0.0}]
+    result, _record, _winner, calls, _smokes = _run(
+        monkeypatch, applied_rows=zero_coefficient)
+
+    assert calls == []
+    assert result["native_spell_coefficients_applied"] == zero_coefficient
+    assert result["native_paid_winner_spell_probe_enabled"] is False
+    assert result["real_measured_stat_weights"]["intellect"] == 0.0
+    assert result["pass_count"] == 93
 
 
 def test_intellect_is_not_probed_for_non_rank_915_fallback(monkeypatch):
