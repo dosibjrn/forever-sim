@@ -19,6 +19,10 @@ class NativeItemOptionsError(ValueError):
     """Native item-options was unavailable or returned an unusable response."""
 
 
+# Paladin L20 uses the pinned class-wide SkillLine/SkillRaceClassInfo projection.
+# Race-restricted Sword rows remain excluded; non-client catalogue rows are counted
+# separately from unverified ItemSparse.RequiredLevel candidates.
+
 def query_native_p3_item_options(
     binary: str | Path, class_key: str, level: int, *,
     spec: str = "unrestricted", slot: str = "all",
