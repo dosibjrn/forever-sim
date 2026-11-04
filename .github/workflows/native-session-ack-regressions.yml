@@ -138,7 +138,7 @@ jobs:
           paid = score_native_priest_l20_item_candidates(
               binary, fixture, native_options["items"],
               world_screen=couple_source_priest_l20_world,
-              budget_s=25., max_paid_builds=2)
+              budget_s=25., max_paid_builds=4)
           print("PRIEST_L20_SELECTED_NATIVE_PAID_TO_REAL_2D",
                 json.dumps(paid, sort_keys=True), flush=True)
           assert paid["native_paid_whole_builds"] > 0, paid

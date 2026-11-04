@@ -235,19 +235,20 @@ def test_item_options_create_actual_native_paid_gear_requests_without_slot_rules
             {"item_id": 103, "slot": "chest"},  # Same slot: do not spend again.
             {"item_id": 104, "slot": "head"},
             {"item_id": 105, "slot": "neck"},
-        ], score_request=scorer, max_paid_builds=3)
-    assert len(evaluated) == 3
+        ], score_request=scorer, max_paid_builds=4)
+    assert len(evaluated) == 4
     assert [request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
             for request in evaluated] == [
-                [], [{"id": 102}], [{"id": 104}]]
+                [], [{"id": 102}], [{"id": 102}, {"id": 104}],
+                [{"id": 102}, {"id": 104}, {"id": 105}]]
     assert all(request["encounter"] == source["encounter"]
                for request in evaluated)
     assert all(request["raid"]["parties"][0]["players"][0]["level"] == 20
                for request in evaluated)
-    assert receipt["native_item_options_proposed"] == 2
-    assert receipt["native_item_option_source_slots_proposed"] == ["chest", "head"]
-    assert receipt["native_paid_whole_builds"] == 3
-    assert receipt["native_source_action_casts"] == 6
+    assert receipt["native_item_options_proposed"] == 3
+    assert receipt["native_item_option_source_slots_proposed"] == ["chest", "head", "neck"]
+    assert receipt["native_paid_whole_builds"] == 4
+    assert receipt["native_source_action_casts"] == 8
     assert receipt["native_2d_screen_complete"] is False
     assert json.loads(source_file.read_text()) == source
 

@@ -294,12 +294,13 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
                                           score_request=None, world_screen=None,
                                           budget_s: float = 6.0,
                                           max_paid_builds: int = 4) -> dict:
-    """Score native item-options proposals as actual whole-build requests.
+    """Score progressive source-native multi-slot whole-build requests.
 
-    The level-20 request supplies the unchanged actor, talent, APL and world.
-    MythicSim's item-options supplies each item ID, and the native prepare
-    endpoint alone determines which equipment slot / eligibility applies.
-    No Python item model, gear stats, or legality filter is involved.
+    The source retains its actor, talent, APL and world. Each candidate adds
+    one more item from a *different native-reported slot*, so the real paid
+    frontier can evaluate a useful equipped build rather than isolated
+    one-item builds. Only MythicSim decides whether that complete request is
+    legal/executable; Forever supplies no game stat or equipment rules.
     """
     import copy
     from tempfile import TemporaryDirectory
@@ -341,10 +342,11 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
             json.dumps(source), encoding="utf-8")
         for index, (item_id, _slot) in enumerate(proposals, start=1):
             candidate = copy.deepcopy(source)
-            # Item specs are a native request transport only. The selected
-            # engine resolves the item's real slot and accepts/refuses it.
+            # Progressive whole-build proposals retain every earlier
+            # native-sourced distinct-slot item. These are mere requests:
+            # Rust alone resolves equip slots, legality and actual effects.
             candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
-                {"id": item_id}]
+                {"id": selected_id} for selected_id, _ in proposals[:index]]
             (folder / f"{index:03d}-native-item-{item_id}.json").write_text(
                 json.dumps(candidate), encoding="utf-8")
         receipt = score_source_priest_l20_candidates(
