@@ -203,6 +203,9 @@ def main(argv=None) -> int:
                         "winner_live_dps", "winner_screen_dps",
                         "paid_balanced_finalists",
                         "paid_balanced_confirmed",
+                        "source_candidate_failure_count",
+                        "native_gear_options_unique_items",
+                        "native_gear_options_unique_enchants",
                         "paid_stochastic_finalists",
                         "paid_stochastic_confirmed_finalists",
                         "source_legal_cold_candidates_paid",
@@ -222,12 +225,15 @@ def main(argv=None) -> int:
                     record[key] = value
             for key in ("independent_300s_search_completed",
                         "frozen_stochastic_reference_floor_met",
-                        "frozen_stochastic_external_only_floor_met"):
+                        "frozen_stochastic_external_only_floor_met",
+                        "native_gear_options_applied"):
                 if type(report.get(key)) is bool:
                     record[key] = report[key]
             for key in ("winner_selection", "frozen_request_raw_sha256",
                         "frozen_stochastic_failure", "search_strategy",
-                        "source_original_talents", "cold_winner_talents"):
+                        "source_original_talents", "cold_winner_talents",
+                        "native_gear_options_reference_revision",
+                        "item_candidate_admission"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
@@ -300,10 +306,12 @@ def main(argv=None) -> int:
             # Actual rejected paid proposals and finalist reevaluations are
             # necessary to distinguish a quality regression from a failed
             # search invocation. Bound the receipt; it is not M1 evidence.
-            for key in ("source_candidate_failures", "paid_stochastic_finalist_failures"):
+            for key in ("source_candidate_failures", "balanced_finalist_failures",
+                        "paid_stochastic_finalist_failures"):
                 errors = report.get(key)
                 if isinstance(errors, list):
-                    record[key] = [error[:180] for error in errors[:4]
+                    limit = 800 if key == "source_candidate_failures" else 180
+                    record[key] = [error[:limit] for error in errors[:4]
                                    if isinstance(error, str)]
         if gate in ("P4", "P5"):
             # Real 30/300s search and 100-mob finalist measurements are already
