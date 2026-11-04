@@ -17,12 +17,17 @@ from pathlib import Path
 from native_executor import run, NativeExecutionError
 from native_matrix import NativeCandidateRefusal, NativeUnscoredCandidate
 
-# Structural positions in the native equipment request, shared by its
-# 16- and 17-entry forms. Do not guess weapon/hand compatibility here.
-ARMOR_SLOT_POSITIONS = (
+# Structural slots in MythicSim's native equipment request (items.rs).
+# Test weapon choices first: a genuine Rogue melee-DPS item difference is
+# more likely to be observable than a ring/armor stat with this two-call cap.
+# This is proposal ordering only; Rust alone decides equip legality/effects.
+NATIVE_SLOT_POSITIONS = (
+    ("weapon", 14), ("offhand", 15), ("ranged", 16),
     ("head", 0), ("neck", 1), ("shoulder", 2), ("back", 3),
     ("chest", 4), ("wrist", 5), ("hands", 6), ("waist", 7),
     ("legs", 8), ("feet", 9),
+    ("ring1", 10), ("ring2", 11),
+    ("trinket1", 12), ("trinket2", 13),
 )
 
 
@@ -42,7 +47,9 @@ def first_equipped_proposal(reference: dict, selection: dict):
     entries = equipment.get("items") if isinstance(equipment, dict) else None
     if not isinstance(entries, list) or len(entries) not in (16, 17):
         raise ValueError("P3_NATIVE_EQUIPPED_REQUEST_SHAPE_UNAVAILABLE")
-    for slot, index in ARMOR_SLOT_POSITIONS:
+    for slot, index in NATIVE_SLOT_POSITIONS:
+        if index >= len(entries):
+            continue
         source = selection.get(slot)
         if not isinstance(source, dict):
             continue
