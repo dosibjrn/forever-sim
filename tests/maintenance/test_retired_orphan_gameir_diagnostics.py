@@ -187,6 +187,8 @@ RETIRED_SOURCE_MODULES = (
     "src/v2/path_validation.py",
     "src/v2/stochastic_diagnostics.py",
     "src/v2/stochastic_race.py",
+    # WF380 orphan GameIR-only recovery-threshold optimizer (exclusive test retired).
+    "src/game/recovery_threshold_search.py",
     # Exclusive Python source/legal empirical P3 proxy and 100-mob causal reporter.
     "src/game/data/forever/source_checkpoint_p3_empirical_weights.py",
     "src/game/data/forever/source_checkpoint_p3_causal_summary.py",
@@ -209,6 +211,8 @@ RETIRED_IMPORT_NAMES = (
     "path_validation",
     "stochastic_diagnostics",
     "stochastic_race",
+    "recovery_threshold_search",
+    "search_recovery_thresholds",
     "wf260_run_budgeted_joint",
     "wf_combat232_weapon_evidence",
     "wf_combat233_source_armor_replay",
