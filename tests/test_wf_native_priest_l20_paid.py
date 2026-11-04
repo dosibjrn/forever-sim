@@ -696,3 +696,72 @@ def test_priest_l20_persistent_world_rejects_reset_fights_as_continuous(
                 "world_targets_killed": 2, "native_windows": [{}, {}],
                 "paid_recovery": False,
             })
+
+
+def test_paid_lethal_candidate_falls_back_when_retained_actor_cannot_finish(tmp_path):
+    """A one-target kill must not hide another paid build's persistent success."""
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    for name in ("a", "b"):
+        candidate = _request()
+        candidate["raid"]["parties"][0]["players"][0]["name"] = name
+        (tmp_path / f"{name}.json").write_text(json.dumps(candidate))
+    live_calls = []
+    retained_calls = []
+
+    def scorer(binary, request, **kwargs):
+        effective = copy.deepcopy(request)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        key = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        name = request["raid"]["parties"][0]["players"][0]["name"]
+        return {
+            "effective_request_sha256": key,
+            "score": 30. if name == "a" else 20.,
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [{"id": {"spellId": 585}, "casts": 3}],
+        }, {}
+
+    def world_screen(binary, request_path):
+        name = json.loads(request_path.read_text())["raid"]["parties"][0][
+            "players"][0]["name"]
+        live_calls.append(name)
+        return {
+            "native_2d_fight_ack_complete": True,
+            "native_2d_world_target_killed": True,
+            "native_2d_screen_complete": False,
+        }
+
+    def persistent_world(binary, request_path):
+        name = json.loads(request_path.read_text())["raid"]["parties"][0][
+            "players"][0]["name"]
+        retained_calls.append(name)
+        if name == "a":
+            raise RuntimeError("RUST_TWO_WORLD_KILLS_NOT_COMPLETED")
+        return {
+            "native_2d_persistent_actor_verified": True,
+            "native_2d_persistent_world_ack_verified": True,
+            "native_2d_persistent_world_targets_killed": 2,
+            "native_2d_screen_complete": False,
+        }
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer, world_screen=world_screen,
+        persistent_world=persistent_world, max_paid_builds=2)
+    assert live_calls == ["a", "b"]
+    assert retained_calls == ["a", "b"]
+    assert result["native_paid_whole_builds"] == 2
+    assert result["native_2d_live_world_kills"] == 2
+    assert result["native_2d_live_kill_candidate"] == "a.json"
+    assert result["native_2d_persistent_attempted"] == 2
+    assert result["native_2d_persistent_verified"] == 1
+    assert result["native_2d_persistent_targets_killed"] == 2
+    assert result["native_2d_persistent_candidate"] == "b.json"
+    rows = result["native_candidate_receipts"]
+    assert rows[0]["native_2d_persistent_error"] == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
+    assert rows[1]["native_2d_persistent_world"]["native_2d_persistent_actor_verified"]
+    assert result["native_2d_persistent_request_sha256"] == rows[1]["native_request_sha256"]
+    assert result["native_2d_live_kill_request_sha256"] == rows[0]["native_request_sha256"]
+    assert result["native_2d_screen_complete"] is False
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json", "b.json"]
