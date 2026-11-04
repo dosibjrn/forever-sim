@@ -71,6 +71,8 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                              stateful_search_guarded_continuations: bool = False,
                              stateful_search_mode_paths: bool = False,
                              stateful_search_auto_fallback: bool = False,
+                             prefix_search_auto_fallback: bool = False,
+                             prefix_require_source_verified_auto: bool = False,
                              stateful_family_budget_mode: str = 'legacy',
                              gear_role_exploration: bool = False,
                              exclude_unknown_item_effects: bool = False) -> dict:
@@ -90,6 +92,14 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         raise ValueError('positive evaluation/search/state budgets required')
     if policy_search_backend not in ('prefix','stateful'):
         raise ValueError('unknown policy search backend')
+    if not isinstance(prefix_search_auto_fallback, bool) or not isinstance(
+            prefix_require_source_verified_auto, bool):
+        raise ValueError('prefix auto-fallback controls must be bool')
+    if prefix_require_source_verified_auto and not prefix_search_auto_fallback:
+        raise ValueError('source-verified auto requirement needs prefix auto fallback')
+    if (prefix_search_auto_fallback or prefix_require_source_verified_auto) and (
+            policy_search_backend != 'prefix'):
+        raise ValueError('prefix auto-fallback controls require prefix backend')
     if stateful_search_guarded_continuations and policy_search_backend != 'stateful':
         raise ValueError('guarded continuation requires stateful policy backend')
     if max_event_transitions is not None and max_event_transitions < 1:
@@ -138,7 +148,9 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         if policy_search_backend == 'prefix':
             return run_source_budgeted_prefix(class_key=class_key,level=level,
                 max_evaluations=search_budget,ir_slice=search_ir,
-                schedule_incoming_attacks=schedule_incoming_attacks)
+                schedule_incoming_attacks=schedule_incoming_attacks,
+                include_auto_fallback=prefix_search_auto_fallback,
+                require_source_verified_auto=prefix_require_source_verified_auto)
         remaining=(15000 if max_event_transitions is None else max_event_transitions-event_total)
         if remaining<=0:
             return {'attempted':0,'evaluated':0,'blocked':0,'best_vs_budget':[],
@@ -171,6 +183,16 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                  'attempted':result['attempted'], 'evaluated':result['evaluated'],
                  'blocked':result['blocked'], 'seed_total':result.get('seed_count'),
                  'seed_skipped':result.get('seed_skipped_by_budget'),
+                 'search_status':result.get('status'),
+                 'source_envelope':(
+                     None if result.get('envelope') is None else {
+                         'actions':result['envelope'].get('actions',()),
+                         'fillers':result['envelope'].get('fillers',()),
+                         'blocked':result['envelope'].get('blocked',()),
+                         'auto_fallback_ids':result['envelope'].get('auto_fallback_ids',()),
+                         'auto_fallback_rejections':result['envelope'].get(
+                             'auto_fallback_rejections',()),
+                     }),
                  'winner':result.get('winner'), 'runner_up':result.get('runner_up'),
                  'context_sha256':result.get('context_sha256'),
                  'selected_weights':weights or {},
@@ -204,10 +226,15 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     naked = run_policy_search(ir,naked_budget)
     publish_stage('source_naked',naked)
     if not naked.get('winner'):
+        naked_stage = next((row for row in stages
+                            if row.get('stage') == 'source_naked'), None)
         return {'status':'BLOCKED_NO_NAKED_SUCCESS', 'budget':max_evaluations,
                 'attempted':tried,'evaluated':successes,'blocked':blockers,
                 'stages':stages,'source_context_sha256':context,
-                'event_transitions':event_total,'policy_search_backend':policy_search_backend}
+                'event_transitions':event_total,'policy_search_backend':policy_search_backend,
+                'source_naked_search_status':naked.get('status'),
+                'source_naked_diagnostic':(
+                    None if naked_stage is None else naked_stage.get('source_envelope'))}
 
     current_ir, current_record = ir, naked['winner']
     axis_set = set(executable_gear_stats(ir))
