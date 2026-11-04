@@ -577,7 +577,13 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
         attempted_policies.append(str(policy.id))
         attempted_policy_sources.append(policy_source)
         attempted_policy_opening_action_ids.append(list(active_prefix))
-        for delta in probe_deltas:
+        # The exact paid winner already has a validated baseline: spend one
+        # largest real item-sized delta on it, then retain the full native probe
+        # series for source-IR alternatives so established witnesses keep budget.
+        policy_probe_deltas = (
+            probe_deltas[-1:] if policy_source == 'paid_search_winner'
+            else probe_deltas)
+        for delta in policy_probe_deltas:
             if used >= max_evaluations:
                 break
             used += 1
