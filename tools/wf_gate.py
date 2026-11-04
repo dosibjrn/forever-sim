@@ -201,6 +201,7 @@ def main(argv=None) -> int:
             for key in (
                 "native_spell_coefficients_source",
                 "native_spell_coefficients_engine_revision",
+                "native_spell_coefficients_error",
             ):
                 value = report.get(key)
                 if isinstance(value, str):

@@ -130,17 +130,35 @@ def _native_mage_spellbook_request() -> dict:
     }
 
 
-def query_native_mage_spell_coefficients(
-    binary: str | Path, *, runner: Callable = subprocess.run,
-) -> dict:
-    """Read rank-specific coefficients from the selected Rust PreparedV2 spellbook.
-
-    The request only prepares a Mage spellbook. No character stats, legality,
-    rotation result or stat weight are taken from this level-60 preparation;
-    the returned coefficients are matched later to exact source-ranked action
-    IDs already selected by the existing L30 source context.
-    """
+def _native_shaman_spellbook_request() -> dict:
+    """Prepare only a Shaman spellbook; do not use the L60 actor's stats."""
     request = _native_mage_spellbook_request()
+    player = request["raid"]["parties"][0]["players"][0]
+    player.pop("mage")
+    player.update({
+        "class": "ClassShaman",
+        "name": "native-shaman-spellbook",
+        "race": "RaceOrc",
+        "elementalShaman": {"options": {"classOptions": {}}},
+        "rotation": {
+            "type": "TypeAPL",
+            "priorityList": [{
+                "action": {"castSpell": {"spellId": {"spellId": 915}}},
+            }],
+        },
+    })
+    return request
+
+
+def _query_native_spell_coefficients(
+    binary: str | Path, *, request: dict, class_key: str,
+    runner: Callable = subprocess.run,
+) -> dict:
+    """Transport native PreparedV2 spell facts, never L60 actor stats.
+
+    Rank IDs must be matched to already-sourced actions at the P3 caller;
+    preparation alone is not a character-level or stat-weight witness.
+    """
     try:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", encoding="utf-8", delete=True
@@ -181,17 +199,31 @@ def query_native_mage_spell_coefficients(
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_PREPARED_V2")
     player = prepared.get("player")
     if (not isinstance(player, dict)
-            or str(player.get("class") or "").lower().removeprefix("class") != "mage"):
+            or str(player.get("class") or "").lower().removeprefix("class") != class_key):
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_CLASS_MISMATCH")
     spells = player.get("spells")
     if not isinstance(spells, list):
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_SPELLS_UNAVAILABLE")
     coefficients = {}
+    coefficient_action_ids = {}
     for spell in spells:
         if not isinstance(spell, dict):
             continue
         action_id = spell.get("action_id")
         spell_id = action_id.get("spell_id") if isinstance(action_id, dict) else None
+        # Shaman registers both castable Lightning Bolt and a tagged
+        # Elemental Overload proc under spell ID 915. The source action
+        # lightning_bolt:915 is the untagged cast, not its native proc.
+        # Other ranks/procs must not conflict with this exact transport.
+        if class_key == "shaman" and (
+                spell_id != 915
+                or action_id.get("tag", 0) != 0
+                or action_id.get("item_id", 0) != 0
+                or action_id.get("other_id", "") != ""):
+            # The source action is ActionID(spell_id=915) with every other
+            # identity field at its default. Exclude tagged procs and any
+            # item/other-ID action sharing the same numeric spell ID.
+            continue
         coefficient = spell.get("bonus_coefficient")
         if type(spell_id) is not int or type(coefficient) not in (int, float):
             continue
@@ -200,9 +232,22 @@ def query_native_mage_spell_coefficients(
             raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_COEFFICIENT")
         previous = coefficients.get(spell_id)
         if previous is not None and abs(previous - coefficient) > 1e-9:
-            raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT")
+            detail = {
+                "spell_id": spell_id,
+                "previous_action_id": coefficient_action_ids.get(spell_id),
+                "action_id": action_id,
+                "previous_coefficient": previous,
+                "coefficient": coefficient,
+            }
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT:"
+                + json.dumps(detail, sort_keys=True)[:360])
         coefficients[spell_id] = coefficient
+        coefficient_action_ids[spell_id] = action_id
     if not coefficients:
+        if class_key == "shaman":
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE")
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_NO_DAMAGE_COEFFICIENTS")
     reference = prepared.get("reference")
     engine_revision = (
@@ -216,7 +261,31 @@ def query_native_mage_spell_coefficients(
     }
 
 
-def apply_native_mage_spell_coefficients(ir, native_facts: dict):
+def query_native_mage_spell_coefficients(
+    binary: str | Path, *, runner: Callable = subprocess.run,
+) -> dict:
+    """Read the selected native Mage spellbook without consuming L60 stats."""
+    return _query_native_spell_coefficients(
+        binary, request=_native_mage_spellbook_request(),
+        class_key="mage", runner=runner)
+
+
+def query_native_shaman_spell_coefficients(
+    binary: str | Path, *, runner: Callable = subprocess.run,
+) -> dict:
+    """Read the native Shaman rank-915 coefficient, or refuse explicitly."""
+    facts = _query_native_spell_coefficients(
+        binary, request=_native_shaman_spellbook_request(),
+        class_key="shaman", runner=runner)
+    if 915 not in facts["spell_power_coefficients"]:
+        raise NativeItemOptionsError(
+            "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE")
+    return facts
+
+
+def apply_native_mage_spell_coefficients(
+    ir, native_facts: dict, *, allowed_action_ids: frozenset[str] | None = None,
+):
     """Copy exact native coefficients onto matching existing source-ranked actions.
 
     This is a field-level native fact transport, not action generation or a
@@ -241,6 +310,10 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
         metadata = dict(getattr(action, "metadata", {}) or {})
         rank_source = metadata.get("rank_source")
         spell_id = rank_source.get("spell_id") if isinstance(rank_source, dict) else None
+        if (allowed_action_ids is not None
+                and str(getattr(action, "id", "")) not in allowed_action_ids):
+            updated_actions.append(action)
+            continue
         if type(spell_id) is not int or spell_id not in coefficients:
             updated_actions.append(action)
             continue
@@ -306,6 +379,28 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
         ir, actions=tuple(updated_actions), source_facts=tuple(new_source_facts),
         unsupported_semantics=unsupported,
     )
+    return enriched, applied
+
+
+def apply_native_shaman_lightning_bolt_coefficient(ir, native_facts: dict):
+    """Enrich only the already-sourced lightning_bolt:915 rank from native."""
+    coefficients = native_facts.get("spell_power_coefficients")
+    if not isinstance(coefficients, dict) or 915 not in coefficients:
+        raise NativeItemOptionsError(
+            "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE")
+    exact = dict(native_facts)
+    exact["spell_power_coefficients"] = {915: coefficients[915]}
+    try:
+        enriched, applied = apply_native_mage_spell_coefficients(
+            ir, exact, allowed_action_ids=frozenset({"lightning_bolt:915"}))
+    except NativeItemOptionsError as exc:
+        if str(exc) == "P3_NATIVE_SPELLBOOK_NO_MATCHING_SOURCE_ACTION":
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_SOURCE_RANK_MISMATCH") from exc
+        raise
+    if len(applied) != 1 or applied[0]["action_id"] != "lightning_bolt:915":
+        raise NativeItemOptionsError(
+            "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_SOURCE_RANK_MISMATCH")
     return enriched, applied
 
 

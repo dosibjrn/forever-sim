@@ -129,3 +129,30 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
     assert row["native_paid_winner_spell_probe_enabled"] is True
     assert row["real_catalogue_legal_items"] == 1314
     assert row["real_catalogue_top5_items_scored"] == 42
+
+
+
+def test_p3_cli_preserves_native_shaman_spell_coefficient_error(monkeypatch, capsys):
+    report = {
+        "status": "FAIL",
+        "reasons": ["NONPOSITIVE_RELEVANT_WEIGHT:spell_power"],
+        "item_options_source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "native_spell_coefficients_error": (
+            "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE"),
+        "native_spell_coefficients_applied": [],
+        "native_paid_winner_spell_probe_enabled": False,
+        "reachability_count": 204,
+        "pass_count": 66,
+    }
+    monkeypatch.setattr(mod, "_run_live_gate", lambda *args, **kwargs: report)
+    assert mod.main(["--class", "shaman", "--level", "20", "--spec", "unrestricted",
+                     "--gate", "P3"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    row = result["results"][0]
+    assert result["status"] == "FAIL"
+    assert row["native_spell_coefficients_error"] == (
+        "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE")
+    assert row["native_spell_coefficients_applied"] == []
+    assert row["native_paid_winner_spell_probe_enabled"] is False
+    assert row["reachability_count"] == 204
+    assert row["pass_count"] == 66
