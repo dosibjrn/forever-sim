@@ -507,6 +507,10 @@ def main(argv=None) -> int:
                         "paid_joint_balanced_finalists",
                         "paid_joint_balanced_confirmed",
                         "paid_joint_balanced_deep_confirmed",
+                        "paid_balanced_finalists",
+                        "paid_balanced_confirmed",
+                        "paid_balanced_deep_confirmed",
+                        "balanced_finalist_failure_count",
                         "balanced_parent_proposals"):
                 value = report.get(key)
                 if type(value) in (int, float) and math.isfinite(value):
