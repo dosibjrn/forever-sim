@@ -26,7 +26,8 @@ def _options():
 
 
 def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
-            paid_recovery=True, native_identity=True):
+            paid_recovery=True, native_identity=True,
+            first_world_native_failure=False):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -55,6 +56,10 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
         assert build == paid_builds[-1]
         world_builds.append(build)
         now[0] += 5.0
+        if first_world_native_failure and len(world_builds) == 1:
+            raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 1,
+                "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL",
+                1, 56))
         # Real world elapsed time is a measured return value, never inferred
         # from native DPS. Verify the exact field propagation, not mechanics.
         return {
@@ -100,6 +105,21 @@ def test_exhausted_or_short_cold_search_cannot_claim_300s(tmp_path):
     assert receipt["native_cold_300s_reached"] is False
     assert receipt["native_cold_snapshot_30"] is None
     assert receipt["native_cold_final_300"] is not None
+    assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_native_100mob_lethal_failure_is_isolated_and_next_build_is_paid(tmp_path):
+    receipt, paid, world = _runner(
+        tmp_path, first_world_native_failure=True)
+    assert len(paid) == len(world) == 5
+    assert receipt["native_cold_rows"][0]["status"] == "NATIVE_PAID"
+    assert receipt["native_cold_rows"][0][
+        "native_2d_persistent_observed_kills"] == 1
+    assert "RUST_TWO_WORLD_NATIVE_FAILED:exit=1:completed=1:native_damage_events=56" in (
+        receipt["native_cold_rows"][0]["reason"])
+    assert receipt["native_cold_snapshot_30"] is None
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 6.0
+    assert receipt["native_cold_completed_routes_after_30"] == 4
     assert receipt["native_cold_gate_accepted"] is False
 
 
