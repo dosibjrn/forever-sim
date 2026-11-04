@@ -8,6 +8,7 @@ on:
       - 'tests/gates/test_wf_gate_p7_5_live.py'
       - 'tools/wf_gate_p7_5_live.py'
       - 'tests/gates/test_wf_gate_p7_2_live.py'
+      - 'tests/test_work2_p72_native_axis.py'
       - 'tools/wf_gate_p7_2_live.py'
       - 'tests/gates/test_wf_gate_p7_3_live.py'
       - 'tests/gates/test_wf_gate_p7_4_live.py'
@@ -122,6 +123,7 @@ jobs:
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           tests/gates/test_wf_gate_p7_5_live.py
           tests/gates/test_wf_gate_p7_2_live.py
+          tests/test_work2_p72_native_axis.py
           tests/gates/test_wf_gate_p7_3_live.py
           tests/gates/test_p7_independent_cold_rediscovery.py
           tests/gates/test_wf_gate_p7_4_live.py
