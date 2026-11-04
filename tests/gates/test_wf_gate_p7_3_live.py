@@ -58,19 +58,18 @@ def test_native_talent_proposals_preserve_format_budget_without_rank_rules():
 def test_native_candidate_refusals_are_classified_without_world_fallback(
         monkeypatch, tmp_path):
     base = _reference()
-    base["raid"]["parties"][0]["players"][0].update({
-        "class": "ClassDruid", "distanceFromTarget": 15})
+    base["raid"]["parties"][0]["players"][0].update({"class": "ClassDruid"})
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
-        lambda *args: (base, {"reference_dps": 728.19}, tmp_path / "binary"))
+        lambda *args, **kwargs: (base, {"reference_dps": 728.19}, tmp_path / "binary"))
+    serial = iter(range(8))
     proposals = SimpleNamespace(
-        cold_talent_string=lambda template, rng: "proposal-" + str(next(counter)),
-        mutate_talent_string=lambda parent, rng: "mutated-proposal")
-    counter = iter(range(3))
+        cold_talent_string=lambda template, rng: "cold-" + str(next(serial)),
+        mutate_talent_string=lambda parent, rng: "mutated-" + str(next(serial)))
     monkeypatch.setattr(gate, "native_talent_proposals", proposals)
-
-    statuses = iter(("INVALID", "UNSUPPORTED", "ERROR"))
+    statuses = iter(("INVALID", "UNSUPPORTED", "ERROR", "INVALID",
+                     "UNSUPPORTED", "ERROR", "INVALID", "UNSUPPORTED"))
     calls = []
 
     class NativeOutcome(RuntimeError):
@@ -83,21 +82,20 @@ def test_native_candidate_refusals_are_classified_without_world_fallback(
         raise NativeOutcome(next(statuses))
 
     def world(*args, **kwargs):
-        pytest.fail("native refusal/error must not reach the 2D world runner")
+        pytest.fail("native P7.3 never calls the 2D world")
 
     monkeypatch.setattr(
         gate, "_source_module",
         lambda path, name: SimpleNamespace(native_source_control=native, run=world))
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert len(calls) == 3
-    assert report["native_invalid_candidates"] == 1
-    assert report["native_unsupported_candidates"] == 1
-    assert report["native_unscored_candidates"] == 0
-    assert report["native_execution_errors"] == 1
-    assert report["world_execution_errors"] == 0
-    assert report["native_world_scored_candidates_paid"] == 0
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert len(calls) == 8
+    assert all((n, mode) == (3, "balanced") for n, mode, _ in calls)
+    assert report["native_invalid_candidates"] == 3
+    assert report["native_unsupported_candidates"] == 3
+    assert report["native_execution_errors"] == 2
+    assert report["source_legal_cold_candidates_paid"] == 0
     assert report["status"] == "FAIL"
-
+    assert report["reasons"] == ["P7_3_NO_NATIVE_PAID_CHANGED_TALENT_CANDIDATE"]
 
 def test_saved_identity_mismatch_fails_closed(tmp_path):
     report = gate.run_live(tmp_path, "priest", 60, spec="holy")
@@ -105,73 +103,57 @@ def test_saved_identity_mismatch_fails_closed(tmp_path):
     assert "P7_3_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT" in report["reasons"]
 
 
-def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
+def test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates(
         monkeypatch, tmp_path):
-    """Tests real-producer call routing, NOT a 300s or 1000-fight acceptance."""
-    import json
-    import hashlib
-    from tools import wf_gate_p7_3_live as p73
-
     base = _reference()
-    base["raid"]["parties"][0]["players"][0].update({
-        "class": "ClassDruid", "distanceFromTarget": 15})
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Allow cold and paid-elite attempts before the simulated 300s boundary.
-    # Both may rediscover the same native-scored proposal; it is paid only once.
-    clock = iter([0.0] * 10 + [300.0] * 10)
-    monkeypatch.setattr(p73.time, "monotonic", lambda: next(clock))
+    base["raid"]["parties"][0]["players"][0].update({"class": "ClassDruid"})
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
     monkeypatch.setattr(
-        p73, "_pinned_source_runtime",
-        lambda *args: (base, {"reference_dps": 728.19}, tmp_path / "binary"))
-    monkeypatch.setattr(
-        p73, "_source_native_world_parity", lambda *a, **kw: None)
+        gate, "_pinned_source_runtime",
+        lambda *args, **kwargs: (base, {
+            "reference_dps": 728.19, "selected_engine_revision": "selected-rust",
+            "selected_reference_profile": "balance"}, tmp_path / "binary"))
     proposals = SimpleNamespace(
-        cold_talent_string=lambda template, rng: "cold-native-proposal",
-        mutate_talent_string=lambda parent, rng: "cold-native-proposal")
-    monkeypatch.setattr(p73, "native_talent_proposals", proposals)
+        cold_talent_string=lambda template, rng: "cold-proposal",
+        mutate_talent_string=lambda parent, rng: "mutated-proposal")
+    monkeypatch.setattr(gate, "native_talent_proposals", proposals)
     calls = []
+
     def native(binary, path, n, *, rng_mode):
-        calls.append(("native", n, rng_mode, path.read_text()))
-        return {"native_dps": 730.0}
-    def world(binary, path, distance, iterations, *, rng_mode):
-        calls.append(("world", iterations, rng_mode, path.read_text()))
-        return {"world_mean_dps": 729.0,
-                "native_damage_events": 10, "native_world_ticks": 15,
-                "iterations_done": iterations}
-    producer = SimpleNamespace(native_source_control=native, run=world)
+        calls.append((n, rng_mode, path.read_text()))
+        return {"iterations": 3, "native_dps": 729.0}
+
+    def world(*args, **kwargs):
+        pytest.fail("P7.3 has no P7-only 2D, stochastic, or 300s requirement")
+
     monkeypatch.setattr(
-        p73, "_source_module", lambda path, name: producer)
-
-    from tools.wf_gate import _run_live_gate
-    report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.3", "")
-    assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
-        ("native", 3, "balanced"), ("world", 3, "balanced"),
-        ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
-    assert json.loads(calls[0][3]) == json.loads(calls[3][3])
-    assert report["cold_unique_source_requests"] == 1
-    assert report["winner_selection"] == "best_balanced_live_screen"
-    assert report["search_rng_mode"] == "balanced"
-    assert report["paid_stochastic_finalists"] == 0
-    assert report["stochastic_parent_proposals"] == 0
-    # Real gate receipt exposes which talent build was frozen; a request
-    # hash alone cannot distinguish unchanged-effective-rank hypotheses.
-    assert report["source_original_talents"] == "5532220115501351--505"
-    assert report["cold_winner_talents"] == "cold-native-proposal"
-    assert report["native_world_scored_candidates_paid"] == 1
-    assert report["independent_300s_search_completed"] is True
-    assert report["frozen_stochastic_iterations"] == 1000
-    assert report["frozen_stochastic_reference_floor_met"] is True
-    assert report["status"] == "PASS"  # mocked routing, not real native/world evidence
-    assert report["runtime_proof"]["executed"] is True
-    assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
-    assert report["reasons"] == []
-
+        gate, "_source_module",
+        lambda path, name: SimpleNamespace(native_source_control=native, run=world))
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert len(calls) == 1
+    assert calls[0][:2] == (3, "balanced")
+    import json
+    paid = json.loads(calls[0][2])["raid"]["parties"][0]["players"][0]
+    original = base["raid"]["parties"][0]["players"][0]
+    assert paid["talentsString"] == "mutated-proposal"
+    assert paid["equipment"] == original["equipment"]
+    assert paid["rotation"] == original["rotation"]
+    assert report["status"] == "PASS"
+    assert report["winner_native_dps"] == 729.0
+    assert report["source_original_talents"] == original["talentsString"]
+    assert report["cold_winner_talents"] == "mutated-proposal"
+    assert report["checkpoint_spec"] == "unrestricted"
+    assert report["reference_profile"] == "balance"
+    assert report["native_source_revision"] == "selected-rust"
+    assert report["source_legal_cold_candidates_paid"] == 1
+    assert report["independent_300s_search_completed"] is False
+    assert "frozen_stochastic_iterations" not in report
 
 def test_p73_invalid_full_search_flag_blocks_without_running(monkeypatch, tmp_path):
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "maybe")
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
-        lambda *a: (_reference(), {"reference_dps": 728.19},
+        lambda *a, **kwargs: (_reference(), {"reference_dps": 728.19},
                      tmp_path / "binary"))
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report == {"status": "BLOCKED",
@@ -282,3 +264,23 @@ def test_p73_paid_elite_archive_caps_native_paid_pool_to_top_18():
 
     elites = [(float(100-i), {"rank": i}) for i in range(22)]
     assert _paid_elite_choice(elites, PickLast(), 1)["rank"] == 17
+
+
+def test_p73_unchanged_talents_never_credit_a_native_gate(monkeypatch, tmp_path):
+    base = _reference()
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
+    monkeypatch.setattr(
+        gate, "_pinned_source_runtime",
+        lambda *a, **kwargs: (base, {"reference_dps": 728.19}, tmp_path / "binary"))
+    reference = base["raid"]["parties"][0]["players"][0]["talentsString"]
+    monkeypatch.setattr(gate, "native_talent_proposals", SimpleNamespace(
+        cold_talent_string=lambda template, rng: reference,
+        mutate_talent_string=lambda parent, rng: reference))
+    def native(*args, **kwargs):
+        pytest.fail("unchanged talent string must never be paid or credited")
+    monkeypatch.setattr(gate, "_source_module", lambda *args: SimpleNamespace(
+        native_source_control=native))
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert report["status"] == "FAIL"
+    assert report["cold_unique_source_requests"] == 0
+    assert report["source_legal_cold_candidates_paid"] == 0
