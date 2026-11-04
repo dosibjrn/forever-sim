@@ -188,3 +188,14 @@ def test_p3_native_equipped_pair_does_not_overrun_shared_paid_budget(monkeypatch
         Path("."), "selected-native", {"slots": {}}, remaining=1)
     assert result == {
         "status": "NOT_RUN_PAID_BUDGET_EXHAUSTED", "paid_attempts": 0}
+
+
+def test_p3_source_search_reserves_two_native_paid_attempts_when_requested(monkeypatch):
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", raising=False)
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 0
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/native-rogue-source.json")
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 2
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", None) == 0
+    assert p3._native_equipped_p3_reservation("rogue", 60, "unrestricted", "pinned-native") == 0
+    assert p3._native_equipped_p3_reservation("mage", 20, "unrestricted", "pinned-native") == 0
+    assert p3._native_equipped_p3_reservation("rogue", 20, "combat", "pinned-native") == 0
