@@ -30,7 +30,6 @@ def _source_native_builds(source: dict, item_options: list[dict]):
     Slot grouping prevents contradictory *proposals*, not native legality
     validation. No local Warcraft stats, score weights or item whitelist.
     """
-    yield copy.deepcopy(source)
     slots = {}
     seen_ids = set()
     for option in item_options:
@@ -42,6 +41,8 @@ def _source_native_builds(source: dict, item_options: list[dict]):
             seen_ids.add(item_id)
             slots.setdefault(slot, []).append(item_id)
     if not slots:
+        # Still pay the real source build when native offers no equipment.
+        yield copy.deepcopy(source)
         return
     grouped = list(slots.values())
     # Full build first, then native-sourced single-slot replacements, then
@@ -62,6 +63,10 @@ def _source_native_builds(source: dict, item_options: list[dict]):
             {"id": item_id} for item_id in ids
         ]
         yield build
+    # Keep the naked source request as an ordinary fallback, not the first
+    # expensive 100-mob screen that consumes the real 30s window before the
+    # native-sourced complete gear proposals are even attempted.
+    yield copy.deepcopy(source)
 
 
 def _verified_route(receipt: dict) -> float | None:
@@ -151,7 +156,11 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 if paid["native_request_sha256"] != identity:
                     raise RuntimeError("PRIEST_L20_COLD_NATIVE_REQUEST_IDENTITY_MISMATCH")
                 row["native_source_action_casts"] = paid["native_source_action_casts"]
-                row["status"] = "NATIVE_PAID"
+                # A native fight with no source-action casts is an executed
+                # refusal for this leveling frontier, not a valid paid
+                # whole-build continuation or a 30s winner.
+                row["status"] = ("NATIVE_PAID" if paid["native_source_action_casts"] > 0
+                                 else "NATIVE_NO_SOURCE_CAST")
                 if paid["native_source_action_casts"] > 0:
                     world = world_screen(binary, path, target_count=100)
                     route_s = _verified_route(world)
@@ -172,10 +181,14 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
             elapsed = clock() - start
             row["paid_completed_elapsed_s"] = elapsed
             # Late completions are never paid 30s or 300s candidates.
+            # Finishing an in-flight real native/world screen after 300s
+            # cannot retroactively invalidate winners completed before the
+            # deadline; its late receipt remains diagnostic only.
             if frozen is None and elapsed > snapshot_s:
                 frozen = copy.deepcopy(best_early)
             in_budget = elapsed <= budget_s
-            if in_budget and row["status"] != "NATIVE_REFUSED":
+            if in_budget and row["status"] in (
+                    "NATIVE_PAID", "WORLD_INCOMPLETE", "COMPLETE"):
                 if elapsed <= snapshot_s:
                     scored_before += 1
                 else:
@@ -213,6 +226,9 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_completed_routes_after_30": completed_after,
         "native_cold_attempted_distinct_builds": len(rows),
         "native_cold_300s_reached": wall_s >= budget_s,
+        # Deadline overrun reports an in-flight evaluation finishing late.
+        # Only evaluations completed within the actual 300s window are
+        # eligible; the gate must not mistake this diagnostic for a FAIL.
         "native_cold_300s_overrun": wall_s > budget_s,
         "native_cold_source": "MYTHICSIM_SOURCE_OPTIONS_PAID_100MOB_NATIVE_2D",
         "native_cold_rows": rows,
