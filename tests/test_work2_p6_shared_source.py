@@ -87,6 +87,9 @@ def test_p6_paid_replay_recovers_faster_30s_incumbent_after_incomplete_validatio
     assert result['source_replay_300s_nonregression'] is True
     assert result['source_replay_results'][0]['reused'] is False
     assert result['source_replay_results'][1]['shared_with_30s'] is True
+    assert result['retained_paid_30s_incumbent_after_replay'] is True
+    assert result['unselected_late_paid_100mob_receipt']['s_per_mob'] == 10.
+    assert result['unselected_late_paid_100mob_receipt']['count'] == 100
     # The final 300s build is the genuine paid retained incumbent, not a
     # late two-mob proxy that took 10 s/mob on its paid 100-mob route.
     assert [x['policy_ir'] for x in result['selected_paid_winners']] == [
