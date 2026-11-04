@@ -162,15 +162,23 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
     raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
-def _paid_gear_elite_choice(elites, rng, proposal_index):
-    """Choose a parent only from this run's balanced-scored paid archive.
+def _paid_gear_elite_choice(elites, rng, proposal_index, balanced_finalists=()):
+    """Choose parents from this run's actually paid Balanced gear candidates.
 
-    Every fifth proposal is an independent cold source draw; the others
-    explore among the top 15 distinct, source-legal candidates already paid
-    with balanced RNG. The saved reference and stochastic holdout are never
-    used to choose a parent.
+    One in five proposals remains an independent cold draw. Once the search
+    has paid for multi-seed native+2D finalist screens, alternate exploitation
+    between their top four and the original top-15 single-screen archive.
+    Otherwise finalist reranking changes only the frozen winner, while all
+    remaining gear mutations still follow noisy three-fight parents.
+    Neither the saved reference nor the stochastic holdout seeds the search.
     """
-    if proposal_index % 5 == 0 or not elites:
+    if proposal_index % 5 == 0:
+        return None
+    if balanced_finalists and proposal_index % 2 == 0:
+        ranked = sorted(balanced_finalists, key=lambda row: row[0],
+                        reverse=True)
+        return rng.choice(ranked[:min(4, len(ranked))])[3]
+    if not elites:
         return None
     return rng.choice(elites[:min(15, len(elites))])[1]
 
@@ -433,8 +441,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 # cold run; every fifth draw is independently cold. The saved
                 # gear and other gates' winners are never injected as elites.
                 # Only the balanced-scored paid archive may guide local edits.
-                elite = (_paid_gear_elite_choice(elites, rng, proposals)
-                         if full_search else None)
+                elite = (_paid_gear_elite_choice(
+                    elites, rng, proposals, balanced_finalists)
+                    if full_search else None)
                 candidate = _cold_gear(
                     base, validator, gear_search, rng, pool=pool,
                     enchant_pools=enchant_pools, elite=elite,
