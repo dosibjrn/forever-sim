@@ -67,6 +67,8 @@ on:
       - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gate_p6_live.py'
       - 'tools/wf437_direct_budgeted_run.py'
+      - 'tools/wf_gate_p6_full_source.py'
+      - 'tests/test_work2_p6_shared_source.py'
       - 'tests/gates/test_wf35_product_spec_profile_contract.py'
       - 'tests/test_source_spec_profile.py'
       - 'tests/test_source_rank_fullpoint_frontier.py'
@@ -103,6 +105,7 @@ jobs:
           tests/generic/publication/test_generic_registry_g47b.py
           tests/generic/search/test_work2_refinement_mode_slot.py
           tests/generic/search/test_wf437_direct_budgeted_run_source.py
+          tests/test_work2_p6_shared_source.py
           tests/generic/search/test_source_wand_paid_slot_proposals.py
           tests/generic/search/test_source_paid_gear_witness_priority.py
           tests/test_work2_818_mage_paid_policy_breadth.py
