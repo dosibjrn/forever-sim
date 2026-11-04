@@ -83,6 +83,7 @@ on:
       - 'tests/test_selected_source_plumbing.py'
       - 'tests/test_prio_p3_live_sourced_chance_gear.py'
       - 'tests/test_prio_p3_source_policy_sp.py'
+      - 'tests/test_work2_paladin_p3_source_naked.py'
       - 'tests/test_level_legality_p00c.py'
       - 'src/v2/generic_frontier.py'
       - 'src/v2/generic_melee_routes.py'
@@ -150,6 +151,7 @@ jobs:
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
+          tests/test_work2_paladin_p3_source_naked.py
           tests/test_native_p3_item_options.py
           integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
           tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
@@ -167,3 +169,50 @@ jobs:
           tests/mechanics/hunter/test_hunter_mechanics_layout.py
           tests/mechanics/mage/test_mage_extended_layout.py
           tests/mechanics/paladin/test_paladin_mechanics_layout.py
+
+      - name: Run no-record Paladin L20 P3 source-naked producer
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/paladin-l20-p3-no-record.json"
+          rc=0
+          python tools/wf_gate.py --class paladin --level 20 --spec unrestricted \
+            --gate P3 --out "$report" || rc=$?
+          python - "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          report = json.loads(Path(sys.argv[1]).read_text())
+          rc = int(sys.argv[2])
+          assert report["class"] == "paladin" and report["level"] == 20, report
+          assert report["spec"] == "unrestricted" and report["gate"] == "P3", report
+          assert report["status"] == "BLOCKED" and rc == 1, (report, rc)
+          assert len(report["results"]) == 1, report
+          row = report["results"][0]
+          assert row["real_source_search_evaluated"] == 0, row
+          stage = row["source_naked_stage"]
+          assert stage["search_backend"] == "prefix", stage
+          assert stage["search_status"] == "BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK", stage
+          diagnostics = row["source_naked_diagnostics"]
+          assert diagnostics["fillers"] == [], diagnostics
+          assert diagnostics["auto_fallback_ids"] == [], diagnostics
+          actor = row["source_actor_context"]
+          assert actor["base_stats_are_zero_proxy"] is True, actor
+          assert actor["actor_provenance"][0]["authority"] == (
+              "scenario_proxy_not_source_backed"
+          ), actor
+          auto = actor["auto_attacks"][0]
+          assert auto["damage_source"]["flat_dps"] == 14.0, auto
+          assert any(source.get("caveat") ==
+                     "ordinary_melee_auto_and_weapon_speed_scenario_proxy"
+                     for source in auto["provenance"]), auto
+          print("NO_RECORD_P3_PALADIN_L20_EXACT_BLOCK",
+                "attempted", stage["attempted"],
+                "evaluated", row["real_source_search_evaluated"],
+                "source_actions", diagnostics["actions"],
+                "source_fillers", diagnostics["fillers"],
+                "auto_fallback_ids", diagnostics["auto_fallback_ids"],
+                "base_stats_proxy", actor["base_stats_are_zero_proxy"],
+                "weapon_dps_proxy", auto["damage_source"]["flat_dps"],
+                flush=True)
+          PY
