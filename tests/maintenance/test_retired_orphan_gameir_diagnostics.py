@@ -30,6 +30,8 @@ RETIRED_TOOLS = (
     "tools/wf300_continuous_source_policy_benchmark.py",
     # One-off Python talent-source transcription; frozen stage retained.
     "tools/wf350_build_source_evidence.py",
+    # P2-only Swiftmend 100-mob diagnostic depended on the retired staged Druid database.
+    "tools/wf441_100mob_swiftmend_evidence.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
@@ -140,6 +142,7 @@ RETIRED_IMPORT_NAMES = (
     "wf424_druid_l30_insect_probe",
     "wf429_l30_pushback_100mob",
     "wf430_l30_starfire_100mob",
+    "wf441_100mob_swiftmend_evidence",
     "wf357_l30_recovery_frontier",
     "test_wf357_source_between_pull_recovery",
     "test_wf391_generic_joint_frontier",
