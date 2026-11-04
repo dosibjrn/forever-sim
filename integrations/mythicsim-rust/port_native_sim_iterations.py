@@ -26,6 +26,7 @@ def patch_main(root: Path) -> bool:
             '"--iterations" if args[0] == "sim" =>',
             "apply_iterations_override(&mut prepared, iterations_override)?;",
             "iterations_override.is_some() || gate || rotation_stats",
+            "[--iterations N] [--rng-mode balanced|stochastic]",
         ]
         missing = [marker for marker in required if marker not in source]
         if missing:
@@ -120,6 +121,7 @@ def patch_cli_tests(root: Path) -> bool:
         required = [
             '.args(["--rng-mode", "balanced", "--outfile"])',
             '.args(["--iterations", "3", "--rng-mode", "stochastic", "--outfile"])',
+            '.args(["--rng-mode", "balanced"])',
         ]
         missing = [item for item in required if item not in source]
         if missing:
