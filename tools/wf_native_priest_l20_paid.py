@@ -614,6 +614,15 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
         (selected[:index], item_id, slot)
         for index, (item_id, slot) in enumerate(selected, start=1)
     ]
+    # With more sourced slots than paid evaluations, linear one-item-at-a-time
+    # growth spends nearly the entire native-paid cap on under-equipped
+    # candidates. Make one *earlier* full-build proposal using the same
+    # native-reported items. Rust alone accepts or refuses the combination;
+    # a refusal still cannot consume a paid slot. Keep the usual progressive
+    # proposals afterward as a fallback, without increasing the search budget.
+    if len(selected) >= max_paid_builds and max_paid_builds > 1:
+        dense = selected[:min(len(selected), max_paid_builds + 1)]
+        requests.insert(0, (dense, dense[-1][0], dense[-1][1]))
     for item_id, slot in alternates:
         if len(requests) >= proposal_limit:
             break
