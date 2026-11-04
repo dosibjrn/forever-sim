@@ -1,11 +1,17 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `1cdf1479f85db080439e51b220d62192136e8967` (2026-11-04). Canonical ledger blob: `5cab5f4e4ae87db153730bd3bb02149eae3cdde6`; scoreboard script blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
+Refreshed against main `0cdfc7bbe134fcdd071a9e017fa8c303bc642855` (2026-11-04). Canonical ledger blob: `5cab5f4e4ae87db153730bd3bb02149eae3cdde6`; scoreboard script blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
 
 ## M1 scoreboard
 
 - **M1 measured: 2.2041% (float=0.0220405148)**; **29.358 / 1,332** measured gate-equivalents; **23 PASS / 11 active PARTIAL**. Diagnostic coverage, not 148-checkpoint certification.
 - Official Mage L30 P3 is **FAIL / PARTIAL 129/224** ([Merge #41793008067](https://github.com/dosibjrn/forever-sim/actions/runs/41793008067)); the current no-record production run [#41825458652](https://github.com/dosibjrn/forever-sim/actions/runs/41825458652) reproduces 129/224 with 44 paid evaluations. Only Merge launches trusted recorders and writes `M1_PASSES.tsv`.
+
+## Merge — first cheap, not-yet-measured active gate: Warrior L20 P3 ([#891](https://github.com/dosibjrn/forever-sim/issues/891))
+
+- **Selected checkpoint/gate:** `warrior:20:unrestricted:P3`. Latest canonical ledger (blob `5cab5f4e4ae87db153730bd3bb02149eae3cdde6`) has **no row**: **not yet measured**, not an assumed FAIL/PASS. Existing unrestricted L20 P3 machinery has an accepted Druid [PASS](https://github.com/dosibjrn/forever-sim/actions/runs/41504000590); Warrior is registered in `src/game/data/forever/registry.py` and does not require the selected-native P3 item-options binary. This is a cheap *first real measurement*, not a proposed new game-model implementation.
+- **Next executable action (Merge only):** invoke **one existing trusted** `warrior:20:unrestricted:P3` production recorder from fresh `main`, as specified in [#891](https://github.com/dosibjrn/forever-sim/issues/891). Capture exact SHA/Actions and actual PASS, eligible `verified/applicable` PARTIAL, or first concrete refusal. Script decides whether to update the sole ledger; do not duplicate a run, hand-grade M1 or invent a diagnosis before execution. No Work1/Work2 preemption.
+- **Float versus work:** one unmeasured gate can add up to **+0.07508 M1 percentage points** on genuine PASS (or an actual measured fraction), versus **+0.03184 pp** *total remaining ceiling* for the already 129/224 Mage L30 P3; both unearned and not probability forecasts. This one bounded P3 run precedes another speculative code change. If the producer is BLOCKED, track the exact refusal in #891, without inventing a new source-rule validator.
 
 ## Work1 — Priest L20 unrestricted P4/P5 ([#817](https://github.com/dosibjrn/forever-sim/issues/817))
 
@@ -18,6 +24,8 @@ Refreshed against main `1cdf1479f85db080439e51b220d62192136e8967` (2026-11-04). 
 - **Active next implementation.** Official [#41793008067](https://github.com/dosibjrn/forever-sim/actions/runs/41793008067) and changed-production no-record [#41825458652](https://github.com/dosibjrn/forever-sim/actions/runs/41825458652) both show **FAIL / PARTIAL 129/224**. Remaining measured causes include missing Stamina/Strength weights, nonpositive Agility/AP/MP5/Spirit and native unknown-level/unmapped axes; positive Intellect, Spell Power and Hit already work.
 - **First action:** prove the actual production `axis_set` before changing code. The P3 provider requests Stamina/Strength, but `source_budgeted_gear.py` filters them through `executable_gear_stats(ir)`; the default executable list omits both, while source conversions/primary facts may add axes. The only Mage-specific Stamina conversion found in the repository is a staged ForeverDB import/test path, not proof of presence in the production default DB. Do not append generic axes, invent zero/epsilon, or guess Strength mechanics. Use only an actual source/native-backed delta in the unchanged paid scorer.
 - **Verification:** focused regression plus one changed-HEAD light no-record P3 run with the exact selected engine and 44-evaluation cap. Ask Merge for one official recorder only after a comparable result **greater than 129/224** or PASS. Each additional assertion is **+0.000335 pp**; the remaining 95/224 is an arithmetic **+0.03184 pp ceiling**, not a forecast.
+
+- **No-gain Work2 PR #889 closed unmerged:** exact-HEAD [selected-engine #41827445775](https://github.com/dosibjrn/forever-sim/actions/runs/41827445775) returned **FAIL 129/224**, 44/44 paid evaluations; maintenance and source-paid regressions passed, but winner-first scheduling added no comparable assertion. Do **not** repeat that producer, request a Merge recorder or continue scheduling-only changes. [#818](https://github.com/dosibjrn/forever-sim/issues/818) remains the implementation owner: obtain a real source/native executable Mage stat-delta path (native `player_context` currently refuses non-Paladin, and staged Stamina conversion is not proved in default production DB) before one changed-code P3 probe. Reassess against #891's cheap first-measurement result before pursuing a costly Rust change.
 
 ## Merge / parked work
 
