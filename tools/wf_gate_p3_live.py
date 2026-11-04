@@ -82,6 +82,7 @@ def native_item_options_required(
     return (
         (key in ("priest", "mage") and level == 20)
         or (key == "shaman" and level == 20 and profile == "unrestricted")
+        or (key == "paladin" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
     )
 
@@ -285,6 +286,31 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     "reasons": [str(exc)],
                     "production_component": "src.game.native_p3_item_options",
                 }
+    native_player_context = None
+    if (str(class_key).lower() == "paladin" and int(level) == 20
+            and str(spec).lower() == "unrestricted"):
+        # Source-backed actor and equipped-weapon facts come from the selected
+        # Rust authority, never from the old zero-stat/14-DPS scenario proxy.
+        # This is still a context-only query, not native L20 combat execution.
+        from src.game.native_p3_player_context import (
+            NativePlayerContextError, apply_native_player_context,
+            query_native_player_context,
+        )
+        # The selected item-options engine is also the Paladin actor authority.
+        # A second environment variable is optional; never silently fall back
+        # to the zero-stat proxy when it is omitted.
+        player_context_binary = (
+            os.environ.get("FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN") or native_binary)
+        try:
+            native_player_context = query_native_player_context(
+                player_context_binary, class_key, level)
+            ir = apply_native_player_context(ir, native_player_context)
+        except (NativePlayerContextError, ValueError, TypeError, KeyError) as exc:
+            return {
+                "status": "BLOCKED",
+                "reasons": [str(exc)],
+                "production_component": "src.game.native_p3_player_context",
+            }
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
@@ -545,4 +571,27 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "native_spell_coefficients_applied": native_spell_coefficients_applied,
         "native_spell_coefficients_error": native_spell_coefficients_error,
         "native_paid_winner_spell_probe_enabled": native_fallback_action,
+        "native_player_context_id": (
+            native_player_context.get("source_context_id")
+            if native_player_context else None),
+        "native_player_context_scope": (
+            native_player_context.get("source_scope")
+            if native_player_context else None),
+        "native_player_context_kind": (
+            native_player_context.get("context_kind")
+            if native_player_context else None),
+        "native_player_context_race": (
+            native_player_context.get("race") if native_player_context else None),
+        "native_player_context_base_stats": (
+            dict(native_player_context.get("base_stats") or {})
+            if native_player_context else {}),
+        "native_player_context_resources": (
+            dict(native_player_context.get("resources") or {})
+            if native_player_context else {}),
+        "native_player_context_weapon": (
+            dict(native_player_context.get("weapon") or {})
+            if native_player_context else {}),
+        "native_player_context_unresolved_fields": (
+            native_player_context.get("unsupported_fields", ())
+            if native_player_context else ()),
     }

@@ -128,6 +128,7 @@ jobs:
             if [[ "$gate" == P3 ]]; then
               if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||
                  [[ "$level" == 20 && "$class" == shaman && "$spec" == unrestricted ]] ||
+                 [[ "$level" == 20 && "$class" == paladin && "$spec" == unrestricted ]] ||
                  [[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then
                 native_options_needed=true
               fi
@@ -223,6 +224,7 @@ jobs:
           ALLOW_HEAVY: ${{ steps.targets.outputs.heavy }}
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
+          FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
         run: |
           set -euo pipefail
           # Freeze already-completed accepted priors before this batch records
