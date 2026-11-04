@@ -1,5 +1,7 @@
 """Regression: one P6 cold search, paid snapshot, replay reuse and 1% 300s non-regression."""
 from pathlib import Path
+
+import pytest
 from unittest.mock import patch
 
 from tools.wf_gate_p6_full_source import (run_full_source_comparison,
@@ -69,7 +71,7 @@ def test_p6_300s_degradation_over_one_percent_fails():
     assert calls[1][0] == '--replay-from'
     assert result['status'] == 'FAIL'
     assert result['reasons'] == ['P6_300S_REGRESSION_EXCEEDS_1_PERCENT']
-    assert result['source_replay_T30_T300'] == 0.98
+    assert result['source_replay_T30_T300'] == pytest.approx(0.98)
     assert result['source_replay_300s_nonregression'] is False
     assert result['source_replay_results'][0]['reused'] is False
     assert result['source_replay_results'][1]['reused'] is True
@@ -106,7 +108,7 @@ def test_p6_300s_slightly_slower_within_one_percent_is_allowed():
     with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
         result = run_full_source_comparison(Path('.'), 'druid', 30)
     assert result['status'] == 'PASS'
-    assert result['source_replay_T30_T300'] == 0.995
+    assert result['source_replay_T30_T300'] == pytest.approx(0.995)
     assert result['source_replay_300s_nonregression'] is True
 
 
