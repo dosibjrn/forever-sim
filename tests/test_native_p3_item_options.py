@@ -478,7 +478,10 @@ def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
             "class": "Shaman",
             "spells": [
                 {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
+                # Same spell ID, different native action: overload proc tag.
+                {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
                 {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+                {"action_id": {"spell_id": 943, "tag": 6}, "bonus_coefficient": 0.11},
             ],
         },
     }
@@ -496,7 +499,7 @@ def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
     assert "mage" not in observed
     assert observed["elementalShaman"] == {"options": {"classOptions": {}}}
     assert observed["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"] == 915
-    assert facts["spell_power_coefficients"] == {915: 0.42, 943: 0.63}
+    assert facts["spell_power_coefficients"] == {915: 0.42}
     assert facts["engine_revision"] == "native-shaman-test-revision"
 
 
@@ -507,6 +510,7 @@ def test_native_shaman_spell_coefficients_fail_closed_on_missing_rank_or_refusal
         "reference": {"engine_revision": "native-shaman-test-revision"},
         "player": {"class": "Shaman", "spells": [
             {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+            {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
         ]},
     }
     with pytest.raises(NativeItemOptionsError, match="LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE"):
