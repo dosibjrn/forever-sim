@@ -59,7 +59,9 @@ def test_paladin_l20_stateful_auto_fallback_reproduces_within_44_evaluations():
     assert ir.actor.metadata["base_stats_are_zero_proxy"] is True
     assert ir.actor.state_status == "qualified_native_class_actor_scenario_not_final"
     assert ir.actor.provenance[0]["authority"] == "scenario_proxy_not_source_backed"
+    assert ir.actor.provenance[0]["capture_id"] == "wf251_two_classes_2026-10-11"
     auto = next(a for a in ir.auto_attacks if a.owner_actor_id == ir.actor.id)
+    assert auto.provenance[0]["capture_id"] == "wf251_two_classes_2026-10-11"
     assert auto.damage_source.flat_dps == 14.0
     assert auto.provenance[0]["caveat"] == (
         "ordinary_melee_auto_and_weapon_speed_scenario_proxy"
