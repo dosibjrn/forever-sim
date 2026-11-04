@@ -73,6 +73,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                              stateful_search_auto_fallback: bool = False,
                              stateful_family_budget_mode: str = 'legacy',
                              gear_role_exploration: bool = False,
+                             allow_source_only_without_gear_roles: bool = False,
                              exclude_unknown_item_effects: bool = False) -> dict:
     """Spend a hard shared simulation budget on evidence-led gear/policy changes.
 
@@ -86,6 +87,8 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     """
     if not isinstance(gear_role_exploration, bool):
         raise ValueError('gear_role_exploration must be bool')
+    if not isinstance(allow_source_only_without_gear_roles, bool):
+        raise ValueError('allow_source_only_without_gear_roles must be bool')
     if max_evaluations < 1 or initial_search < 1 or search_per_gear < 1 or max_gear_states < 1:
         raise ValueError('positive evaluation/search/state budgets required')
     if policy_search_backend not in ('prefix','stateful'):
@@ -101,12 +104,14 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     ir = ir_slice if ir_slice is not None else build_game_ir_slice(class_key=class_key, level=level)
     if ir is None or str(ir.actor.metadata.get('class_key','')).lower() != class_key.lower() or int(ir.actor.metadata.get('level',-1)) != level:
         raise ValueError('Game IR source class/level mismatch')
-    if not available_gear_roles(class_key):
+    if (not available_gear_roles(class_key)
+            and not allow_source_only_without_gear_roles):
         raise ValueError('no canonical named gear role for requested class')
     ir = remove_combat_policy_seeds_preserve_maintenance(ir)  # never trust a historical priority winner
     context = sha256(dumps({'ir':ir.as_dict(),'software':SOFTWARE_VERSION,
                            'objective':'real_incoming_combat_recovery',
                            'required_level_policy':required_level_policy,
+                           'allow_source_only_without_gear_roles':allow_source_only_without_gear_roles,
                            'exclude_unknown_item_effects':exclude_unknown_item_effects},
                           sort_keys=True,default=str).encode()).hexdigest()
     tried = 0
