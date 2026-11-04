@@ -270,6 +270,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return {'status': 'BLOCKED',
                 'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
                 'production_component': 'src.game.native_p3_item_options'}
+    native_options = None
     if (str(class_key).lower() == "rogue" and int(level) == 20
             and str(spec).lower() == "unrestricted"):
         # Rogue's selected engine capability was previously untested because
@@ -468,7 +469,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
-            native_options_binary=native_binary)
+            native_options_binary=native_binary,
+            native_options_response=native_options)
     except ValueError as exc:
         if native_binary is None:
             raise
@@ -594,7 +596,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
-            native_options_binary=native_binary)
+            native_options_binary=native_binary,
+            native_options_response=native_options)
     reasons = list(item_check["blockers"])
     # The same source-legal selected IR was used for actual CombatRuntime
     # sensitivity and the real item scorer. Never fake a positive stat weight.
