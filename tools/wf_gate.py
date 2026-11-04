@@ -98,9 +98,10 @@ def _p6_replay_receipts(report: dict) -> list[dict] | None:
     rows = report.get("source_replay_results")
     if not isinstance(rows, list):
         return None
-    allowed = ("cold_search_budget_s", "status", "reason", "count",
+    allowed = ("cold_search_budget_s", "budget_s", "status", "reason", "count",
                "mob_completed", "failed_pull_index", "paid_screens",
-               "mean_s_per_mob", "s_per_mob", "events")
+               "mean_s_per_mob", "s_per_mob", "events", "reused",
+               "shared_with_30s")
     out = []
     for row in rows[:2]:
         if not isinstance(row, dict):
@@ -109,7 +110,9 @@ def _p6_replay_receipts(report: dict) -> list[dict] | None:
         clean = {}
         for key in allowed:
             value = row.get(key)
-            if type(value) is str:
+            if type(value) is bool:
+                clean[key] = value
+            elif type(value) is str:
                 clean[key] = value[:240]
             elif type(value) in (int, float) and math.isfinite(value):
                 clean[key] = value
@@ -167,9 +170,8 @@ def main(argv=None) -> int:
                     "sampled_source_fights", "saved_source_iterations",
                     "native_first_duration_s", "world_first_duration_s",
                     "source_replay_Tfirst_Tsecond", "source_replay_T30_T300",
-                    "source_replay_300s_nonregression",
                     "source_replay_T30_s_per_mob", "source_replay_T300_s_per_mob",
-                    "selected_paid_winners", "source_replay_numeric_saturation",
+                    "selected_paid_winners", "source_replay_300s_nonregression",
                     "joint_cold_world_dps", "joint_cold_native_dps",
                     "frozen_stochastic_iterations", "frozen_stochastic_native_dps",
                     "frozen_request_raw_sha256", "search_wall_s",

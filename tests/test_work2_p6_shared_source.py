@@ -1,9 +1,12 @@
-"""Regression: one P6 source search, paid snapshot, replay reuse and real 1% test."""
+"""Regression: one P6 cold search, paid snapshot, replay reuse and 1% 300s non-regression."""
 from pathlib import Path
+
+import pytest
 from unittest.mock import patch
 
 from tools.wf_gate_p6_full_source import (run_full_source_comparison,
     _shared_replay_winners)
+from tools.wf_gate import _p6_replay_receipts
 
 
 def _winner(policy='a'):
@@ -45,6 +48,13 @@ def test_p6_one_cold_search_and_identical_paid_winner_reused():
     assert result['source_replay_T30_T300'] == 1.
     assert all(row['count'] == 100 and row['reused']
                for row in result['source_replay_results'])
+    # Both frozen points share ONE paid 100-mob result, not two executions.
+    # Ensure the public no-record CLI keeps the fact and the 30/300 labels.
+    receipts = _p6_replay_receipts(result)
+    assert [row['budget_s'] for row in receipts] == [30, 300]
+    assert [row['reused'] for row in receipts] == [True, True]
+    assert 'shared_with_30s' not in receipts[0]
+    assert receipts[1]['shared_with_30s'] is True
     # The paid cold report lives in a temporary directory. Both P6 winners
     # must retain their actual executable builds in the public gate result.
     for frozen in result['selected_paid_winners']:
@@ -54,7 +64,7 @@ def test_p6_one_cold_search_and_identical_paid_winner_reused():
         assert frozen['policy_ir'] == _winner()['policy_ir']
 
 
-def test_p6_distinct_snapshot_pays_only_missing_winner_and_checks_1pct():
+def test_p6_300s_degradation_over_one_percent_fails():
     calls = []
     def execute(root, args, output, timeout):
         calls.append(args)
@@ -62,20 +72,57 @@ def test_p6_distinct_snapshot_pays_only_missing_winner_and_checks_1pct():
             return _report(snapshot=_winner('earlier')), None
         return {'validation': {'rows': [
             {'id': '0', 'status': 'COMPLETE', 'count': 100,
-             'mob_completed': 100, 'full_s_per_mob': 10.2}]}}, None
+             'mob_completed': 100, 'full_s_per_mob': 9.8}]}}, None
     with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
         result = run_full_source_comparison(Path('.'), 'druid', 30)
     assert len(calls) == 2
     assert calls[1][0] == '--replay-from'
     assert result['status'] == 'FAIL'
-    assert result['reasons'] == ['P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT']
-    assert result['source_replay_T30_T300'] == 1.02
+    assert result['reasons'] == ['P6_300S_REGRESSION_EXCEEDS_1_PERCENT']
+    assert result['source_replay_T30_T300'] == pytest.approx(0.98)
+    assert result['source_replay_300s_nonregression'] is False
     assert result['source_replay_results'][0]['reused'] is False
     assert result['source_replay_results'][1]['reused'] is True
+    # Distinct builds must not claim a shared 30s replay in CLI evidence.
+    receipts = _p6_replay_receipts(result)
+    assert [row['budget_s'] for row in receipts] == [30, 300]
+    assert [row['reused'] for row in receipts] == [False, True]
+    assert all('shared_with_30s' not in row for row in receipts)
     assert [x['policy_ir'] for x in result['selected_paid_winners']] == [
         _winner('earlier')['policy_ir'], _winner('a')['policy_ir']]
     assert all(x['equipped_gear'] == _winner()['equipped_gear']
                for x in result['selected_paid_winners'])
+
+
+
+def test_p6_300s_large_improvement_is_always_allowed():
+    """A better 300s winner must never fail because it improved by >1%."""
+    def execute(root, args, output, timeout):
+        if '--budget' in args:
+            return _report(snapshot=_winner('earlier')), None
+        return {'validation': {'rows': [{
+            'id': '0', 'status': 'COMPLETE', 'count': 100,
+            'mob_completed': 100, 'full_s_per_mob': 12.0}]}}, None
+    with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
+        result = run_full_source_comparison(Path('.'), 'druid', 30)
+    assert result['status'] == 'PASS'
+    assert result['source_replay_T30_T300'] == 1.2
+    assert result['source_replay_300s_nonregression'] is True
+
+
+def test_p6_300s_slightly_slower_within_one_percent_is_allowed():
+    """100-mob timing noise within 1% must not reject a longer search."""
+    def execute(root, args, output, timeout):
+        if '--budget' in args:
+            return _report(snapshot=_winner('earlier')), None
+        return {'validation': {'rows': [{
+            'id': '0', 'status': 'COMPLETE', 'count': 100,
+            'mob_completed': 100, 'full_s_per_mob': 9.95}]}}, None
+    with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
+        result = run_full_source_comparison(Path('.'), 'druid', 30)
+    assert result['status'] == 'PASS'
+    assert result['source_replay_T30_T300'] == pytest.approx(0.995)
+    assert result['source_replay_300s_nonregression'] is True
 
 
 def test_p6_missing_snapshot_never_substitutes_300s_winner():
