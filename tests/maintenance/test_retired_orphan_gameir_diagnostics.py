@@ -40,6 +40,8 @@ RETIRED_TOOLS = (
     "tools/wf353_l30_p3_context_replay.py",
     "tools/wf303_checkpoint_falsifier.py",
     "tools/wf305_ingest_web_observed_spell_dependencies.py",
+    "tools/wf357_l30_fresh_replay.py",
+    "tools/wf358_l30_fresh_joint_replay.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
@@ -81,6 +83,8 @@ RETIRED_IMPORT_NAMES = (
     "source_sqlite_spell_semantics",
     "wf303_checkpoint_falsifier",
     "wf305_ingest_web_observed_spell_dependencies",
+    "wf357_l30_fresh_replay",
+    "wf358_l30_fresh_joint_replay",
     "source_spell_dependency_observations",
     "source_gap_audit",
     "scope_audit(",
