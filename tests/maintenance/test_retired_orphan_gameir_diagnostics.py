@@ -39,6 +39,15 @@ RETIRED_TOOLS = (
     "tools/wf254_ingest_paladin_talents.py",
     "tools/wf257_ingest_flash_recovery.py",
     "tools/wf257_ingest_paladin_corridor.py",
+    # Retired one-shot GameIR/SQLite observation ingesters; no active native or gate callers.
+    "tools/wf437_ingest_critical_resource_source.py",
+    "tools/wf438_ingest_resource_actions.py",
+    "tools/wf439_ingest_channel_heal.py",
+    "tools/wf440_ingest_direct_control.py",
+    "tools/wf440_ingest_next_cast_instant.py",
+    "tools/wf441_ingest_active_periodic_heal.py",
+    "tools/wf441_ingest_spatial_charge.py",
+    "tools/wf471_ingest_enemy_ap.py",
     # Historical one-shot Python item/stat source stagers; staged SQLite data and consumers remain.
     "tools/wf346_type_resistance_equipment.py",
     "tools/wf385_stage_mage_stamina.py",
@@ -56,6 +65,10 @@ RETIRED_TOOLS = (
     "tools/wf249_ingest_talent_scope.py",
     "tools/wf302_persistent_joint_optimizer.py",
     # Orphaned WF389/WF408/WF410/WF412 Python GameIR P3/100-mob report runners.
+    # Historical WF412 P3 recertifier demanded positive Spirit/MP5/etc and
+    # pinned obsolete PROCESS hashes; neither is active P3 acceptance.
+    "tools/wf412_recertify_druid20_p3.py",
+    "tests/test_wf412_p3_same_winner_evidence_tdd.py",
     "tools/wf389_paid_weapon_package_probe.py",
     "tools/wf408_rerun_druid20_p3.py",
     "tools/wf410_druid20_live_p3.py",
