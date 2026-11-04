@@ -249,6 +249,24 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # this, repeated baseline runs consume the fixed P3 budget before later
     # required axes (such as Spirit) receive their own paid perturbation.
     source_policy_baseline_cache = {}
+    # Reuse the exact paid Mage L30 source-naked winner as the stat-witness
+    # baseline. Other profiles retain their established policy/cache behavior.
+    use_paid_winner_baseline = mage_l30_native
+    paid_winner_baseline_available = False
+    if use_paid_winner_baseline:
+        try:
+            record_prefix = tuple(str(x) for x in record.get("prefix", ()))
+            record_score = float(record.get("score_s_per_mob"))
+            selected = tuple(record.get("selected_actions") or ())
+            selected_prefix = tuple(
+                str(row.get("action_id", "")) for row in selected[:len(record_prefix)]
+                if isinstance(row, dict))
+            paid_winner_baseline_available = (
+                record.get("status") == "evaluated"
+                and isfinite(record_score) and record_score > 0.
+                and (not record_prefix or selected_prefix == record_prefix))
+        except (TypeError, ValueError, AttributeError):
+            paid_winner_baseline_available = False
     witness_priority = _p3_stat_witness_priority(ir, policy)
     witness_rank = {axis: index for index, axis in enumerate(witness_priority)}
     witness_blockers = sorted(
@@ -285,7 +303,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             for key, value in source_policy_baseline_cache.items()
         )
         minimum_evaluations = (
-            1 if has_reusable_baseline
+            1 if (has_reusable_baseline or paid_winner_baseline_available)
             else (3 if mage_l30_native and record.get("prefix") else 2)
         )
         if remaining < minimum_evaluations:
@@ -295,7 +313,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
-            opening_action_ids=tuple(record.get("prefix", ())))
+            opening_action_ids=tuple(record.get("prefix", ())),
+            preferred_policy=(policy if use_paid_winner_baseline else None),
+            baseline_record=(record if use_paid_winner_baseline else None))
         if mage_l30_native:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
