@@ -392,26 +392,129 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                            'bounded real combat/recovery search, no global optimum']}
 
 
+def paid_search_winner_baseline(preferred_policy, baseline_record, opening_action_ids):
+    """Return a paid search score only when its exact policy execution matches.
+
+    The source-naked winner is reusable only for the same ordered opening,
+    fallback, guarded continuation and selected-action prefix. A score from a
+    different policy is not a baseline for this policy's stat perturbations.
+    """
+    from src.v2.source_budgeted_prefix import AUTO_ONLY_FALLBACK
+
+    if preferred_policy is None or not isinstance(baseline_record, dict):
+        return None
+    provenance = getattr(preferred_policy, 'provenance', None)
+    if (not isinstance(provenance, dict)
+            or provenance.get('authority') != 'source_stateful_budgeted'
+            or provenance.get('search_performed') is not True):
+        return None
+
+    try:
+        if baseline_record.get('status') != 'evaluated':
+            return None
+        score = float(baseline_record.get('score_s_per_mob'))
+        if not isfinite(score) or score <= 0.:
+            return None
+
+        raw_prefix = baseline_record.get('prefix', ())
+        if (not isinstance(raw_prefix, (list, tuple))
+                or any(not isinstance(action_id, str) or not action_id
+                       for action_id in raw_prefix)):
+            return None
+        record_prefix = tuple(raw_prefix)
+        if record_prefix != tuple(str(x) for x in opening_action_ids):
+            return None
+        if record_prefix:
+            selected = baseline_record.get('selected_actions')
+            if not isinstance(selected, (list, tuple)) or len(selected) < len(record_prefix):
+                return None
+            selected_prefix = tuple(
+                row.get('action_id') if isinstance(row, dict) else None
+                for row in selected[:len(record_prefix)])
+            if selected_prefix != record_prefix:
+                return None
+
+        record_fallback = baseline_record.get('fallback')
+        if not isinstance(record_fallback, str) or not record_fallback:
+            return None
+        guarded_action = baseline_record.get('guarded_action')
+        if guarded_action is not None and not isinstance(guarded_action, str):
+            return None
+        raw_guarded_conditions = baseline_record.get('guarded_conditions') or ()
+        if (not isinstance(raw_guarded_conditions, (list, tuple))
+                or any(not isinstance(condition, dict)
+                       for condition in raw_guarded_conditions)):
+            return None
+        expected_guarded_conditions = tuple(
+            dict(condition) for condition in raw_guarded_conditions)
+
+        rules = tuple(getattr(preferred_policy, 'rules', ()) or ())
+        fallback_rules = tuple(
+            rule for rule in rules if getattr(rule, 'id', None) == 'fallback:0')
+        guarded_rules = tuple(
+            rule for rule in rules
+            if getattr(rule, 'id', None) == 'continuation:guarded')
+        expected_rule_count = (
+            (0 if record_fallback == AUTO_ONLY_FALLBACK else 1)
+            + (0 if guarded_action is None else 1))
+        if len(rules) != expected_rule_count:
+            return None
+        if record_fallback == AUTO_ONLY_FALLBACK:
+            if fallback_rules:
+                return None
+        elif (len(fallback_rules) != 1
+              or getattr(fallback_rules[0], 'action_id', None) != record_fallback):
+            return None
+
+        if guarded_action is None:
+            if guarded_rules or expected_guarded_conditions:
+                return None
+        else:
+            if (len(guarded_rules) != 1
+                    or getattr(guarded_rules[0], 'action_id', None) != guarded_action):
+                return None
+            actual_guarded_conditions = []
+            for condition in tuple(getattr(guarded_rules[0], 'conditions', ()) or ()):
+                as_dict = getattr(condition, 'as_dict', None)
+                if callable(as_dict):
+                    payload = as_dict()
+                elif isinstance(condition, dict):
+                    payload = dict(condition)
+                else:
+                    return None
+                if not isinstance(payload, dict):
+                    return None
+                actual_guarded_conditions.append(payload)
+            if tuple(actual_guarded_conditions) != expected_guarded_conditions:
+                return None
+
+        if not isinstance(getattr(preferred_policy, 'id', None), str):
+            return None
+        return score
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        return None
+
+
 def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    probe_deltas: tuple[float, ...] = (5., 20.),
                                    max_evaluations: int = 4,
                                    schedule_incoming_attacks: bool = True,
                                    baseline_cache: dict | None = None,
-                                   opening_action_ids: tuple[str, ...] = ()) -> dict:
-    """Find a *measured* beneficial stat delta on an existing legal policy.
+                                   opening_action_ids: tuple[str, ...] = (),
+                                   preferred_policy=None,
+                                   baseline_record: dict | None = None,
+                                   allow_paid_winner_after_nonpositive: bool = False) -> dict:
+    """Find a measured beneficial stat delta on an executable source policy.
 
-    A bounded cold gear search may select a policy that does not use a stat at
-    all (e.g. Cat Form on a Balance talent build). That measured zero proves
-    only non-use by THAT policy. The generic gear scorer can also consume
-    source-authored, executable alternative policies for the *same* talent IR.
-
-    Preserve the existing source-policy baseline first. If it cannot establish
-    a killing baseline, retry that same policy with the exact ordered opening
-    prefix from the successful source-naked search. The chosen prefix (empty or
-    non-empty) is used for both baseline and perturbation, and is part of the
-    cache key. Cache failed baseline attempts too, so an unexecutable no-prefix
-    candidate is not paid for again on every stat axis. No synthetic policy,
-    epsilon, or inferred stat weight is introduced.
+    Keep source-IR policies first. On the Mage L30 native-item path, use the
+    exact winning opening prefix as the source-policy baseline attempt; the
+    empty-prefix attempt is known not to establish the kill objective. The
+    selected paid winner normally remains a baseline fallback only. When its
+    exact fallback action has been enriched from native PreparedV2 spell data,
+    permit one largest native item-sized probe after a nonpositive source-policy
+    result. Reuse the exact already-paid winner baseline; do not spend another
+    baseline evaluation. Every perturbation still runs through the real
+    executor; no synthetic policy, epsilon, or inferred stat weight is used.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -427,29 +530,75 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     baseline_failures = []
     baseline_reused_any = False
     opening_action_ids = tuple(str(x) for x in opening_action_ids)
-    prefix_options = ((), opening_action_ids) if opening_action_ids else ((),)
-    cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
-    # With only one paid evaluation left, a fresh baseline cannot establish a
-    # stat slope. Reserve that last evaluation for a previously paid baseline
-    # instead of spending it on an earlier, uncached policy.
-    reusable_cached_baseline = any(
-        isinstance(key, tuple) and key[:3] == cache_prefix
-        and type(value) in (int, float) and isfinite(value) and value > 0
-        for key, value in (baseline_cache or {}).items()
+    prefix_options = (
+        (opening_action_ids,) if opening_action_ids and preferred_policy is not None
+        else (((), opening_action_ids) if opening_action_ids else ((),))
     )
+    cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
+    baseline_cache = {} if baseline_cache is None else baseline_cache
 
+    # This is a genuinely paid source-search score, not a free replay. Reuse it
+    # only after exact policy/record identity has been established above.
+    preferred_score = paid_search_winner_baseline(
+        preferred_policy, baseline_record, opening_action_ids)
+    preferred_prefix = None
+    if preferred_score is not None:
+        preferred_prefix = opening_action_ids
+        baseline_cache[(*cache_prefix, str(preferred_policy.id),
+                        preferred_prefix)] = preferred_score
+
+    candidate_policies = []
     for policy in ir.policies:
         if not getattr(policy, 'provenance', None):
             continue
+        if (preferred_policy is not None and
+                str(policy.id) == str(getattr(preferred_policy, 'id', ''))):
+            continue
+        candidate_policies.append((policy, 'source_ir_policy'))
+    # Only spend the remaining budget on the already-paid search winner after
+    # the source policy probes have had their chance to reproduce the positive
+    # native item-sized derivative (Mage L30 Intellect in #825).
+    if preferred_policy is not None and getattr(preferred_policy, 'provenance', None):
+        candidate_policies.append((preferred_policy, 'paid_search_winner'))
+
+    # With only one paid evaluation left, a fresh baseline cannot establish a
+    # stat slope. Reserve that last evaluation for a previously paid baseline.
+    reusable_cached_baseline = any(
+        isinstance(key, tuple) and key[:3] == cache_prefix
+        and type(value) in (int, float) and isfinite(value) and value > 0
+        for key, value in baseline_cache.items()
+    )
+
+    source_policy_baseline_established = False
+    for policy, policy_source in candidate_policies:
+        if (policy_source == 'paid_search_winner'
+                and source_policy_baseline_established
+                and not allow_paid_winner_after_nonpositive):
+            # Without a native coefficient-backed action, the paid winner is
+            # only a baseline fallback, not a second policy after a source
+            # baseline has been established.
+            continue
+        policy_probe_deltas = tuple(probe_deltas)
+        if (policy_source == 'paid_search_winner'
+                and source_policy_baseline_established
+                and allow_paid_winner_after_nonpositive):
+            # The selected winner already has a paid baseline. One largest
+            # native item-sized perturbation is the bounded alternative probe.
+            policy_probe_deltas = tuple(probe_deltas[:1])
         baseline = None
         baseline_source = None
         policy_baseline_reused = False
         active_prefix = None
+        if policy_source == 'paid_search_winner':
+            candidate_prefixes = (
+                (preferred_prefix,) if preferred_prefix is not None
+                else ((opening_action_ids, ()) if opening_action_ids else ((),)))
+        else:
+            candidate_prefixes = prefix_options
 
-        for candidate_prefix in prefix_options:
+        for candidate_prefix in candidate_prefixes:
             cache_key = (*cache_prefix, str(policy.id), tuple(candidate_prefix))
-            cached_baseline = (baseline_cache.get(cache_key)
-                               if baseline_cache is not None else None)
+            cached_baseline = baseline_cache.get(cache_key)
             if isinstance(cached_baseline, dict) and cached_baseline.get('status') == 'FAILED':
                 baseline_failures.append({
                     'policy_id': str(policy.id),
@@ -464,10 +613,17 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     cached_value = float('nan')
                 if isfinite(cached_value) and cached_value > 0.:
                     baseline = cached_value
-                    baseline_source = 'source_policy_baseline_cache'
+                    baseline_source = (
+                        'paid_search_winner_record'
+                        if policy_source == 'paid_search_winner'
+                        and preferred_prefix is not None
+                        and tuple(candidate_prefix) == preferred_prefix
+                        else 'source_policy_baseline_cache')
                     policy_baseline_reused = True
                     baseline_reused_any = True
                     active_prefix = tuple(candidate_prefix)
+                    if policy_source == 'source_ir_policy':
+                        source_policy_baseline_established = True
                     break
 
             if used >= max_evaluations:
@@ -488,8 +644,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'opening_action_ids': list(candidate_prefix),
                     'reason': reason,
                 })
-                if baseline_cache is not None:
-                    baseline_cache[cache_key] = {'status': 'FAILED', 'reason': reason}
+                baseline_cache[cache_key] = {'status': 'FAILED', 'reason': reason}
                 continue
             if before is None or execution is None:
                 reason = 'BASELINE_NO_EVALUATION'
@@ -511,15 +666,15 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'opening_action_ids': list(candidate_prefix),
                     'reason': reason,
                 })
-                if baseline_cache is not None:
-                    baseline_cache[cache_key] = {'status': 'FAILED', 'reason': reason}
+                baseline_cache[cache_key] = {'status': 'FAILED', 'reason': reason}
                 continue
 
             baseline = baseline_value
             baseline_source = 'paid_policy_baseline'
             active_prefix = tuple(candidate_prefix)
-            if baseline_cache is not None:
-                baseline_cache[cache_key] = baseline
+            baseline_cache[cache_key] = baseline
+            if policy_source == 'source_ir_policy':
+                source_policy_baseline_established = True
             break
 
         if baseline is None:
@@ -528,9 +683,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             continue
 
         attempted_policies.append(str(policy.id))
-        attempted_policy_sources.append('source_ir_policy')
+        attempted_policy_sources.append(policy_source)
         attempted_policy_opening_action_ids.append(list(active_prefix))
-        for delta in probe_deltas:
+        for delta in policy_probe_deltas:
             if used >= max_evaluations:
                 break
             used += 1
@@ -555,12 +710,17 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 return {
                     'status': 'MEASURED_POSITIVE_SOURCE_POLICY_WITNESS',
                     'stat': stat, 'policy_id': str(policy.id),
-                    'policy_source': 'source_ir_policy',
+                    'policy_source': policy_source,
                     'weight_s_saved_per_mob_per_unit': improvement / float(delta),
                     'baseline_seconds_per_mob': baseline,
                     'perturbed_seconds_per_mob': float(after.seconds_per_mob),
                     'delta': float(delta),
-                    'probe_deltas': [float(x) for x in probe_deltas],
+                    'probe_deltas': [float(x) for x in policy_probe_deltas],
+                    'requested_probe_deltas': [float(x) for x in probe_deltas],
+                    'paid_winner_fallback_after_nonpositive_source': bool(
+                        policy_source == 'paid_search_winner'
+                        and source_policy_baseline_established
+                        and allow_paid_winner_after_nonpositive),
                     'paid_evaluations': used,
                     'baseline_reused': policy_baseline_reused,
                     'baseline_source': baseline_source,
@@ -571,7 +731,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'baseline_failures': baseline_failures,
                     'source_ir_id': str(ir.id),
                     'engine': 'gsim_CombatRuntime',
-                    'method': 'same_source_policy_real_combat_and_recovery_before_after',
+                    'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
                 }
     return {
         'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
@@ -584,3 +744,4 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
         'attempted_policy_opening_action_ids': attempted_policy_opening_action_ids,
         'baseline_failures': baseline_failures,
     }
+

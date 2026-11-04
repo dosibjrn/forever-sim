@@ -7,7 +7,10 @@ it never consults Forever's SQLite item catalogue or infers legality.
 from __future__ import annotations
 
 import json
+import math
 import subprocess
+import tempfile
+from dataclasses import replace
 from pathlib import Path
 from typing import Callable
 
@@ -73,6 +76,230 @@ def query_native_p3_item_options(
                 or not isinstance(item.get("slot"), str)):
             raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_ITEM_SHAPE")
     return response
+
+
+def _native_mage_spellbook_request() -> dict:
+    """Minimal prepare request; only the native Mage spellbook is consumed."""
+    return {
+        "encounter": {
+            "duration": 60,
+            "targets": [{
+                "canCrush": True,
+                "damageSpread": 0.3333,
+                "id": 213336,
+                "level": 63,
+                "minBaseDamage": 3000.0,
+                "name": "Native Mage spellbook probe",
+                "parryHaste": True,
+                "stats": [0.0] * 41,
+                "swingSpeed": 2.0,
+            }],
+        },
+        "raid": {
+            "parties": [{
+                "players": [{
+                    "class": "ClassMage",
+                    "name": "native-mage-spellbook",
+                    "race": "RaceGnome",
+                    "talentsString": "0-0-0",
+                    "mage": {"options": {"classOptions": {
+                        "defaultMageArmor": "MageArmorMageArmor",
+                    }}},
+                    "equipment": {"items": []},
+                    "rotation": {
+                        "type": "TypeAPL",
+                        "priorityList": [{
+                            "action": {
+                                "castSpell": {
+                                    "spellId": {"spellId": 8401},
+                                },
+                            },
+                        }],
+                    },
+                }],
+            }],
+        },
+        "simOptions": {"iterations": 1, "randomSeed": "42"},
+    }
+
+
+def query_native_mage_spell_coefficients(
+    binary: str | Path, *, runner: Callable = subprocess.run,
+) -> dict:
+    """Read rank-specific coefficients from the selected Rust PreparedV2 spellbook.
+
+    The request only prepares a Mage spellbook. No character stats, legality,
+    rotation result or stat weight are taken from this level-60 preparation;
+    the returned coefficients are matched later to exact source-ranked action
+    IDs already selected by the existing L30 source context.
+    """
+    request = _native_mage_spellbook_request()
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", encoding="utf-8", delete=True
+        ) as handle:
+            json.dump(request, handle)
+            handle.flush()
+            completed = runner(
+                [str(binary), "prepare", "--request", handle.name],
+                capture_output=True, text=True, timeout=60, check=False,
+            )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_EXECUTION_FAILED") from exc
+    if completed.returncode != 0:
+        details = str(completed.stderr or "").strip()
+        try:
+            failure = json.loads(completed.stdout)
+        except (ValueError, TypeError):
+            failure = None
+        if isinstance(failure, dict):
+            refusal = failure.get("refusal")
+            if isinstance(refusal, dict):
+                code = str(refusal.get("code") or "UNKNOWN")
+                reason = str(refusal.get("reason") or "")
+                details = f"{code}:{reason}".strip(":")
+            elif not details:
+                details = json.dumps(failure, sort_keys=True)
+        if not details:
+            details = str(completed.stdout or "").strip()
+        raise NativeItemOptionsError(
+            "P3_NATIVE_SPELLBOOK_PREPARE_FAILED:" + details[-500:])
+    try:
+        prepared = json.loads(completed.stdout)
+    except (ValueError, TypeError) as exc:
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_JSON") from exc
+    if (not isinstance(prepared, dict)
+            or prepared.get("contract") != "forever-prepared"
+            or prepared.get("schema_version") != 2):
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_PREPARED_V2")
+    player = prepared.get("player")
+    if (not isinstance(player, dict)
+            or str(player.get("class") or "").lower().removeprefix("class") != "mage"):
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_CLASS_MISMATCH")
+    spells = player.get("spells")
+    if not isinstance(spells, list):
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_SPELLS_UNAVAILABLE")
+    coefficients = {}
+    for spell in spells:
+        if not isinstance(spell, dict):
+            continue
+        action_id = spell.get("action_id")
+        spell_id = action_id.get("spell_id") if isinstance(action_id, dict) else None
+        coefficient = spell.get("bonus_coefficient")
+        if type(spell_id) is not int or type(coefficient) not in (int, float):
+            continue
+        coefficient = float(coefficient)
+        if not math.isfinite(coefficient) or coefficient < 0.0:
+            raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_COEFFICIENT")
+        previous = coefficients.get(spell_id)
+        if previous is not None and abs(previous - coefficient) > 1e-9:
+            raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT")
+        coefficients[spell_id] = coefficient
+    if not coefficients:
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_NO_DAMAGE_COEFFICIENTS")
+    reference = prepared.get("reference")
+    engine_revision = (
+        reference.get("engine_revision") if isinstance(reference, dict) else None)
+    if not isinstance(engine_revision, str) or not engine_revision:
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_ENGINE_REVISION_UNAVAILABLE")
+    return {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": engine_revision,
+        "spell_power_coefficients": coefficients,
+    }
+
+
+def apply_native_mage_spell_coefficients(ir, native_facts: dict):
+    """Copy exact native coefficients onto matching existing source-ranked actions.
+
+    This is a field-level native fact transport, not action generation or a
+    second legality catalogue. Only actions already present in the source IR
+    and carrying the exact native spell ID can be enriched.
+    """
+    from src.game.model.ir import DamageEffect
+
+    coefficients = native_facts.get("spell_power_coefficients")
+    if not isinstance(coefficients, dict):
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_COEFFICIENT_MAP_INVALID")
+    source = native_facts.get("source")
+    engine_revision = native_facts.get("engine_revision")
+    if source != "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS" or not engine_revision:
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_PROVENANCE_INVALID")
+
+    updated_actions = []
+    applied = []
+    resolved_spell_ids = set()
+    new_source_facts = list(getattr(ir, "source_facts", ()) or ())
+    for action in tuple(getattr(ir, "actions", ()) or ()):
+        metadata = dict(getattr(action, "metadata", {}) or {})
+        rank_source = metadata.get("rank_source")
+        spell_id = rank_source.get("spell_id") if isinstance(rank_source, dict) else None
+        if type(spell_id) is not int or spell_id not in coefficients:
+            updated_actions.append(action)
+            continue
+        coefficient = float(coefficients[spell_id])
+        if not math.isfinite(coefficient) or coefficient < 0.0:
+            raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_COEFFICIENT")
+        effects = []
+        has_direct_damage = False
+        fact = {
+            "authority": "mythicsim_rust_prepared_v2",
+            "engine_revision": engine_revision,
+            "spell_id": spell_id,
+            "field": "bonus_coefficient",
+            "value": coefficient,
+            "action_id": str(getattr(action, "id", "")),
+        }
+        for effect in tuple(getattr(action, "effects", ()) or ()):
+            if isinstance(effect, DamageEffect):
+                current = float(effect.spell_power_coefficient)
+                if current > 1e-12 and abs(current - coefficient) > 1e-9:
+                    raise NativeItemOptionsError(
+                        "P3_NATIVE_SPELL_COEFFICIENT_CONFLICT:" + str(spell_id))
+                field_provenance = dict(effect.field_provenance or {})
+                existing = tuple(field_provenance.get("spell_power_coefficient", ()) or ())
+                if fact not in existing:
+                    field_provenance["spell_power_coefficient"] = existing + (fact,)
+                effects.append(replace(
+                    effect, spell_power_coefficient=coefficient,
+                    field_provenance=field_provenance))
+                has_direct_damage = True
+            else:
+                effects.append(effect)
+        if not has_direct_damage:
+            updated_actions.append(action)
+            continue
+        metadata["native_spell_power_coefficient_verified"] = True
+        metadata["native_spell_power_coefficient"] = coefficient
+        metadata["native_spell_power_coefficient_engine_revision"] = engine_revision
+        provenance = tuple(getattr(action, "provenance", ()) or ())
+        if fact not in provenance:
+            provenance = provenance + (fact,)
+        updated_actions.append(replace(
+            action, effects=tuple(effects), metadata=metadata, provenance=provenance))
+        applied.append({
+            "action_id": str(getattr(action, "id", "")),
+            "spell_id": spell_id,
+            "spell_power_coefficient": coefficient,
+        })
+        resolved_spell_ids.add(spell_id)
+        new_source_facts.append(fact)
+
+    if not applied:
+        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_NO_MATCHING_SOURCE_ACTION")
+    unsupported = tuple(
+        blocker for blocker in tuple(getattr(ir, "unsupported_semantics", ()) or ())
+        if not (
+            isinstance(blocker, dict)
+            and blocker.get("code") == "source_rank_spell_power_coefficient_unverified"
+            and blocker.get("spell_id") in resolved_spell_ids
+        )
+    )
+    enriched = replace(
+        ir, actions=tuple(updated_actions), source_facts=tuple(new_source_facts),
+        unsupported_semantics=unsupported,
+    )
+    return enriched, applied
 
 
 # Only unit-preserving source fields. Native rating and pseudo-stat units
