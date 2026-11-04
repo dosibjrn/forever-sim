@@ -692,3 +692,26 @@ def test_cold_does_not_credit_native_only_talent_cast_when_world_route_refuses(
     assert result["native_cold_rows"][1]["status"] == "WORLD_INCOMPLETE"
     assert result["native_cold_talent_action_witnesses"] == []
     assert native_cold_gate_verdicts(result)["P4"]["status"] == "FAIL"
+
+
+def test_merge_heavy_priest_m1_routes_to_native_cold_producer(monkeypatch, tmp_path):
+    """Official heavy P4/P5 must use the same native source path as Work1."""
+    from tools import wf_gate_p4_p5_partial as adapter
+
+    monkeypatch.setenv("FOREVER_P4_P5_FULL_SOURCE", "1")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH", "1")
+    called = []
+
+    def native(class_key, level, spec, *, gate):
+        called.append((class_key, level, spec, gate))
+        return {"status": "FAIL", "reasons": ["REAL_NATIVE_RESULT"]}
+
+    monkeypatch.setattr(adapter, "_native_cold_options_without_paid_executor", native)
+    monkeypatch.setattr(adapter, "run_full_paid_source_search",
+                        lambda *args, **kwargs: pytest.fail("generic source dispatch"))
+    for gate in ("P4", "P5"):
+        result = adapter.run_paid_partial(tmp_path, "priest", 20,
+                                          spec="unrestricted", gate=gate)
+        assert result == {"status": "FAIL", "reasons": ["REAL_NATIVE_RESULT"]}
+    assert called == [("priest", 20, "unrestricted", "P4"),
+                      ("priest", 20, "unrestricted", "P5")]

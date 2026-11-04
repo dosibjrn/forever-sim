@@ -261,6 +261,13 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     # Full acceptance budgets are explicit: never run 30/300 s during hourly
     # bounded gate probes or ordinary CI. Both modes reuse WF437 production.
     import os
+    # The Priest L20 official heavy recorder must execute the integrated
+    # source-native cold path, not an unrelated generic gsim cold search.
+    # This opt-in still uses the ordinary gate verdict and sole M1 ledger.
+    if ((class_key, level, spec) == ("priest", 20, "unrestricted")
+            and os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1"):
+        return _native_cold_options_without_paid_executor(
+            class_key, level, spec, gate=gate)
     if os.environ.get("FOREVER_P4_P5_FULL_SOURCE") == "1":
         return run_full_paid_source_search(root, class_key, level,
                                            spec=spec, gate=gate)

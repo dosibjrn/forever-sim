@@ -242,6 +242,16 @@ jobs:
             # source-paid cold search and selected 2D 100-mob acceptance,
             # rather than the default bounded PARTIAL-only diagnostic.
             # This opt-in is strictly per target, so ordinary M1 is cheap.
+            if [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest &&
+                  "$level" == 20 && "$spec" == unrestricted && "$ALLOW_HEAVY" == true ]]; then
+              export FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR=integrations/mythicsim-rust/fixtures/priest-l20-source-frontier
+              export FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD=1
+              export FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS=100
+              export FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH=1
+            else
+              unset FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD \
+                FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH || true
+            fi
             if [[ ( "$gate" == P4 || "$gate" == P5 ) && "$ALLOW_HEAVY" == true ]]; then
               export FOREVER_P4_P5_FULL_SOURCE=1
               timeout_s=900
