@@ -31,7 +31,7 @@ on:
       - 'src/v2/class_model.py'
       - 'src/game/level_legality.py'
       - 'src/game/data/forever/source_indexed_action_coverage.py'
-      - 'tools/wf270_action_source_coverage.py'
+      - 'tests/test_wf270_index_to_ir_action_frontier.py'
       - 'tests/test_wf272_source_ranked_periodic_finisher.py'
       - 'src/v2/source_budgeted_gear.py'
       - 'src/game/checkpoint_p3_smoke.py'
@@ -97,6 +97,7 @@ jobs:
           tests/gates/test_wf_gate_class_cli.py
           tests/gates/test_wf_gate_runtime_authority.py
           tests/test_level_legality_p00c.py
+          tests/test_wf270_index_to_ir_action_frontier.py
           tests/test_wf272_source_ranked_periodic_finisher.py
           tests/test_wf328_mode_joint_prefix_admission.py
           tests/test_wf330_queued_swing_source_runtime.py
