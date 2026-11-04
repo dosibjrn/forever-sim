@@ -1,6 +1,6 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `c0358aa7dd0c26129831db97cb416da82a20dae2`. Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
+Refreshed against main `1643c99d8978a9cccbe68ec2fd5af072e7644672`. Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
 
 ## Current M1 scoreboard
 
@@ -10,27 +10,28 @@ Refreshed against main `c0358aa7dd0c26129831db97cb416da82a20dae2`. Canonical led
 
 ## Immediate dependency-ordered queue
 
-### 1. Merge — Shaman L20 unrestricted P3 (single light measurement)
+### 1. Work1 — Shaman L20 unrestricted P3 native ItemSparse candidates
 
-- **Gate:** `shaman:20:unrestricted:P3`; canonical ledger has **no row** (not yet measured, not PASS/FAIL).
-- Existing `registry.py` Shaman source provider declares L10–L20 coverage; `wf_gate_p3_live.py` uses the real bounded **44-evaluation** paid scorer and selected native item-options client. This is a credible cheap first measurement, **not** a promise that source-naked policy or item context succeeds.
-- **One dispatch request already exists** on [issue #131 comment](https://github.com/dosibjrn/forever-sim/issues/131#issuecomment-6624706584). Merge checks for ACK/active writer, then launches exactly one light production recorder on fresh main. Do not add another command. If BLOCKED, preserve the actual reason and do not repeat unchanged.
-- Conditional maximum full-PASS gain: `1/1332` = **+0.07508 percentage points**. Any eligible PARTIAL earns only its actual measured fraction. No gain is credited before a trusted recorder.
+- New owner task [#847](https://github.com/dosibjrn/forever-sim/issues/847), selected ahead of Priest #817 because the Shaman source-naked policy reached the item-check stage and the first actual failure is a narrow native item-candidate gap.
+- The single official light recorder [#41789474594](https://github.com/dosibjrn/forever-sim/actions/runs/41789474594) returned **FAIL**: `P3_NO_LEGAL_ITEMS_IN_CURRENT_DB`. It reached `fast_p3_smoke_for_policy`; no legal Shaman L20 items were found in the ordinary SQLite catalogue. No ledger row or M1 increment. Do not rerun unchanged.
+- The selected MythicSim ItemSparse API explicitly supports only Priest/Mage; its Rust class map returns `NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS` for Shaman. Forever's `native_item_options_required()` also excludes Shaman, so the failed run did not use native options. The Rust helper's armor/weapon filters are currently Priest/Mage-specific; simply adding Shaman to the class map would not establish correct L20 equipment eligibility.
+- **Next action:** implement source-backed Shaman L20 class/level/armor/weapon/slot eligibility in the MythicSim native ItemSparse API, with explicit refusal if source facts are unavailable; add Rust tests; then enable the Shaman L20 native caller in Forever. Preserve the existing 44-evaluation P3 cap, source-naked policy and measured-weight predicates. One changed-HEAD no-record P3 run must show nonempty legal native candidates, `real_source_search_evaluated>0`, paid evaluations within 44, and the actual gate result before Merge considers one official recorder.
+- Conditional maximum full-PASS gain: `1/1332` = **+0.07508 percentage points**; an eligible PARTIAL earns only its actual measured fraction. No credit is assumed.
 
-### 2. Work1 — Priest L20 unrestricted P4/P5 native level-aware actor
+### 2. Work2 — Mage L30 unrestricted P3 source-witness repair
 
-- Existing owner [issue #817](https://github.com/dosibjrn/forever-sim/issues/817), updated to the exact native capability gap. **Unpark and execute this independently of Work2 #818.**
-- PR #822 already merged the native ItemSparse options transport. The post-merge light recorder [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) invoked both gates but returned **BLOCKED**: `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED`; it produced zero complete paid screens and zero source-action casts.
-- Work1's exact selected fork audit ([evidence](https://github.com/dosibjrn/forever-sim/issues/817#issuecomment-6623513584)) shows the real missing capability: selected MythicSim `proto.Player` has no level field; native `new_character` unconditionally sets level 60; selected `go-tables.json` base stats are class/race max-level rows with no level dimension. A request-side `level:20` or CLI flag alone is not sufficient.
-- **Next action:** implement a MythicSim-owned level-aware Player contract, requested-level actor preparation, and source-backed L20 base stats/conversions; connect the actor to the existing paid whole-build evaluator and real 2D/source-action screen. Rust tests first, then one exact-HEAD no-record Priest L20 P4/P5 producer showing actual actor level 20, COMPLETE paid screens and positive source-action casts. No level-60 proxy, guessed stats, Forever GameIR/SQLite fallback or new gate.
-- If both gates eventually produce 2/6 comparable paid-screen behaviors, their conditional combined partial-inclusive M1 opportunity is **+0.05005 pp**. Not earned. Merge dispatches only after real eligible coverage is demonstrated; full PASS still requires the approved 30/300-second searches and 100-mob finalist.
-
-### 3. Work2 — Mage L30 unrestricted P3 source-witness repair
-
-- Owner [issue #818](https://github.com/dosibjrn/forever-sim/issues/818); current [PR #831](https://github.com/dosibjrn/forever-sim/pull/831), latest head `ba377ceb152013ed5cd1ab43ea8f8a2097ecd57d`, based on main `384e584` (one Prio-only queue commit behind current main).
+- Owner [issue #818](https://github.com/dosibjrn/forever-sim/issues/818); current [PR #831](https://github.com/dosibjrn/forever-sim/pull/831), latest checked head `45c67c1060aca4a5d32f4ad1c051f308456d2075`, based on main `384e584` (the intervening main commits are Prio queue updates).
 - Canonical high-water remains **PARTIAL 85/224** from merged #825. The positive +50 Intellect witness is preserved; no new Spell Power witness or M1 increment is demonstrated.
 - Previous exact head `f3f9187` maintenance [#41788709671](https://github.com/dosibjrn/forever-sim/actions/runs/41788709671) failed one fixture: it expected three calls, but the bounded production sequence is two evaluations — source-policy baseline with the observed `mage:fireball` opening fails, then the exact paid-search-winner perturbation uses that same opening. The source-policy perturbation must not run without a valid source-policy baseline. Do not increase the 44-evaluation cap or invent a baseline.
-- Work2 has pushed the fixture correction to `ba377c`. New exact-head maintenance [#41789457136](https://github.com/dosibjrn/forever-sim/actions/runs/41789457136) and selected-Rust verification [#41789457074](https://github.com/dosibjrn/forever-sim/actions/runs/41789457074) are **in progress**; generic source-paid [#41789457098](https://github.com/dosibjrn/forever-sim/actions/runs/41789457098) is **pending**. Wait for these exact-head results, then run one no-record Mage L30 P3 producer and compare against 85/224. No merge or official M1 dispatch at an unchanged result. No synthetic weights or GameIR workaround.
+- On the latest checked head `45c67c`, exact-head maintenance [#41789543108](https://github.com/dosibjrn/forever-sim/actions/runs/41789543108), selected-Rust verification [#41789543123](https://github.com/dosibjrn/forever-sim/actions/runs/41789543123), and generic source-paid [#41789543137](https://github.com/dosibjrn/forever-sim/actions/runs/41789543137) were **in progress**. Wait for exact-head results, then run one no-record Mage L30 P3 producer and compare against 85/224. No merge or official M1 dispatch at an unchanged result. No synthetic weights or GameIR workaround.
+
+### 3. Work1 — Priest L20 unrestricted P4/P5 native level-aware actor
+
+- Existing owner [issue #817](https://github.com/dosibjrn/forever-sim/issues/817), now sharpened to the exact selected-Rust capability gap. Queue this **after #847**; it remains independent of Work2 #818.
+- PR #822 already merged native ItemSparse options transport. The post-merge light recorder [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) invoked both gates but returned **BLOCKED**: `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED`; zero complete paid screens and zero source-action casts.
+- Exact selected fork audit ([evidence](https://github.com/dosibjrn/forever-sim/issues/817#issuecomment-6623513584)) shows `proto.Player` has no level field, native `new_character` sets level 60 unconditionally, and the selected `go-tables.json` base-stat rows have no level dimension. A request-side `level:20` or CLI flag alone is not sufficient.
+- **Next action after #847:** implement a MythicSim-owned level-aware Player contract, requested-level actor preparation and source-backed L20 base stats/conversions; connect it to the existing paid whole-build evaluator and real 2D/source-action screen. Rust tests first, then one exact-HEAD no-record Priest L20 P4/P5 producer showing actor level 20, COMPLETE paid screens and positive source-action casts. No level-60 proxy, guessed stats, Forever GameIR/SQLite fallback or new gate.
+- If both gates eventually produce 2/6 comparable paid-screen behaviors, their conditional combined partial-inclusive M1 opportunity is **+0.05005 pp**. Not earned. Merge dispatches only after real eligible coverage; full PASS still requires the approved 30/300-second searches and 100-mob finalist.
 
 ### 4. Backlog — Paladin L20 unrestricted P3 source-naked executable baseline
 
@@ -43,6 +44,7 @@ Refreshed against main `c0358aa7dd0c26129831db97cb416da82a20dae2`. Canonical led
 - Hunter L20 P3: `BLOCKED_NO_NAKED_SUCCESS`, zero paid source evaluations; no unchanged retry.
 - Mage L20 P3: preserve the 88/224 high-water; no unchanged retry.
 - Mage L30 P3: preserve the 85/224 high-water until a changed real producer exceeds it.
+- Shaman L20 P3: the one light recorder #41789474594 returned `P3_NO_LEGAL_ITEMS_IN_CURRENT_DB`; this is a terminal measured FAIL, not an unmeasured gate or a PASS. Native source-candidate repair is queued as #847; no unchanged retry.
 
 ## Operating constraints
 
