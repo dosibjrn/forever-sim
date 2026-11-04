@@ -36,6 +36,7 @@ RETIRED_TOOLS = (
     "tools/wf_native_session_capability.py",
     "tools/wf369_druid_l30_apl_probe.py",
     "tools/wf365_bear_primal_diagnostic.py",
+    "tools/wf365_druid_l30_reaudit.py",
     "tools/wf353_l30_p3_context_replay.py",
     "tools/wf303_checkpoint_falsifier.py",
     "tools/wf305_ingest_web_observed_spell_dependencies.py",
@@ -74,6 +75,7 @@ RETIRED_IMPORT_NAMES = (
     "wf_native_session_capability",
     "wf369_druid_l30_apl_probe",
     "wf365_bear_primal_diagnostic",
+    "wf365_druid_l30_reaudit",
     "wf353_l30_p3_context_replay",
     "source_sqlite_spell_facts",
     "source_sqlite_spell_semantics",
@@ -98,6 +100,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 RETIRED_TESTS = (
     "tests/test_wf378_recovery_channel_tdd.py",
+    "tests/test_wf365_druid_l30_holdout.py",
     "tests/gates/test_wf_first_checkpoint_vertical.py",
     "tests/test_wf_gen03a4c2_sqlite_materialization.py",
     "tests/test_wf_gen03a4c2b2_semantic.py",
@@ -116,6 +119,11 @@ RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
+)
+
+
+RETAINED_HISTORICAL_EVIDENCE = (
+    "evidence/wf365/WF365_DRUID_L30_REVOCATION.json",
 )
 
 
@@ -152,6 +160,10 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
         assert relative in workflow, f"retained recovery regression is not run: {relative}"
     for relative in RETAINED_SEARCH_TESTS:
         assert (ROOT / relative).is_file(), f"retained search regression was removed: {relative}"
+    for relative in RETAINED_HISTORICAL_EVIDENCE:
+        assert (ROOT / relative).is_file(), f"historical revocation evidence was removed: {relative}"
+    reader = (ROOT / "src/game/checkpoint_acceptance_status.py").read_text(encoding="utf-8")
+    assert "evidence/wf365/WF365_DRUID_L30_REVOCATION.json" in reader
 
     for workflow_path in (ROOT / ".github/workflows").glob("*.yml"):
         workflow_source = workflow_path.read_text(encoding="utf-8")
