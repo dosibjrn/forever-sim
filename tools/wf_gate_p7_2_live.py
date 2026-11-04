@@ -92,10 +92,10 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     """One exact-source native preflight shared by P7 discovery gates."""
     # "unrestricted" imposes no Balance/Feral/Restoration profile constraint:
     # the authenticated level-60 Balance build remains an eligible Druid
-    # reference for P7.2. Keep the narrower selection for other P7 producers.
+    # reference for P7.2/P7.3. Keep narrower selection for other P7 producers.
     if ((class_key, level) != ("druid", 60)
             or not (spec == "balance"
-                    or (gate == "P7.2" and spec == "unrestricted"))):
+                    or (gate in ("P7.2", "P7.3") and spec == "unrestricted"))):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
     request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"

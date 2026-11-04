@@ -865,11 +865,11 @@ def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_pa
     getattr(module, test_name)(monkeypatch, tmp_path)
 
 
-def test_p73_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
+def test_p73_changed_talent_is_native_balanced_without_stochastic_holdout(
         monkeypatch, tmp_path):
     _run_sibling_gate_policy_regression(
         "test_wf_gate_p7_3_live.py",
-        "test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout",
+        "test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates",
         monkeypatch, tmp_path)
 
 
@@ -910,12 +910,12 @@ def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
     assert '"holdout_mode":"stochastic"' in source
 
 
-def test_p73_p74_stochastic_rng_calls_are_confined_to_frozen_holdout():
+def test_p74_stochastic_rng_calls_are_confined_to_frozen_holdout():
     """Static guard: optimizer calls are balanced; stochastic calls sit under complete_search."""
     import ast
     from pathlib import Path
 
-    for filename in ("wf_gate_p7_3_live.py", "wf_gate_p7_4_live.py"):
+    for filename in ("wf_gate_p7_4_live.py",):
         source = Path(__file__).parents[2] / "tools" / filename
         module = ast.parse(source.read_text())
         run_live = next(
@@ -945,3 +945,17 @@ def test_p73_p74_stochastic_rng_calls_are_confined_to_frozen_holdout():
         assert modes.count("balanced") == 2
         assert modes.count("stochastic") == 2
         assert len(modes) == 4
+
+
+def test_p73_calls_native_balanced_only_not_2d_or_stochastic_holdout():
+    import ast
+    from pathlib import Path
+    source = (Path(__file__).parents[2] / "tools/wf_gate_p7_3_live.py").read_text()
+    function = next(node for node in ast.parse(source).body
+                    if isinstance(node, ast.FunctionDef)
+                    and node.name == "run_live")
+    modes = [kw.value.value for node in ast.walk(function)
+             if isinstance(node, ast.Call) for kw in node.keywords
+             if kw.arg == "rng_mode" and isinstance(kw.value, ast.Constant)]
+    assert modes == ["balanced"]
+    assert "winner_native_dps" in source
