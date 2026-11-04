@@ -74,16 +74,21 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
     }
 
 
-def native_item_options_required(class_key: str, level: int) -> bool:
-    """Native P3 is currently enabled only for the two verified L20 targets."""
-    return str(class_key).lower() in ('priest', 'mage') and level == 20
+def native_item_options_required(
+        class_key: str, level: int, spec: str = "unrestricted") -> bool:
+    """Use native ItemSparse only for source-verified unrestricted P3 targets."""
+    key = str(class_key).lower()
+    profile = str(spec).lower()
+    return (
+        (key in ("priest", "mage") and level == 20)
+        or (key == "mage" and level == 30 and profile == "unrestricted")
+    )
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
-    # Priest/Mage L20 P3 is owned by the tested native item-options provider.
-    # Other levels retain their pre-existing path until their own no-record
-    # native-provider evidence is accepted.
-    native_required = native_item_options_required(class_key, level)
+    # Priest/Mage L20 and unrestricted Mage L30 P3 use the native
+    # ItemSparse provider; all other profiles/levels retain their existing path.
+    native_required = native_item_options_required(class_key, level, spec)
     native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
                      if native_required else None)
     if native_required and not native_binary:
@@ -145,8 +150,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     weights = dict(sensitivity["values"])
     if not all(type(v) in (int, float) and isfinite(v) for v in weights.values()):
         return {"status": "FAIL", "reasons": ["P3_REAL_PRODUCTION_WEIGHTS_NONFINITE"]}
-    # Native Priest/Mage activation was required before paid search above;
-    # other classes continue through their existing P3 source path.
+    # Native ItemSparse activation was required before paid search above;
+    # non-target profiles continue through their existing P3 source path.
     try:
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
