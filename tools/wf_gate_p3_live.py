@@ -264,12 +264,44 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                      "spirit", "spell_power", "attack_power", "mp5",
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
-        schedule_incoming_attacks=schedule_incoming_attacks)
+        schedule_incoming_attacks=schedule_incoming_attacks,
+        allow_cooldown_fallback=True)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())
                         if x.get("stage") == "source_naked"
                         and isinstance(x.get("values"), dict)), None)
+    # A cooldown-bound source action can now be explored by the real prefix
+    # executor even when no zero-cooldown filler exists. Its observed score
+    # is NOT P3 evidence when the selected actor or weapon is still a
+    # scenario proxy. Do not turn a successful proxy search into an M1 row.
+    fallback_id = str((naked or {}).get("winner", {}).get("fallback") or "")
+    cooldown_fallback = any(
+        action.id == fallback_id and action.cooldown_s > 0
+        for action in ir.actions)
+    actor_proxy = ir.actor.metadata.get("base_stats_are_zero_proxy") is True
+    weapon_proxy = any(
+        "proxy" in str(source.get("caveat") or "")
+        for attack in ir.auto_attacks
+        for source in attack.provenance if isinstance(source, dict))
+    if cooldown_fallback and (actor_proxy or weapon_proxy):
+        return {
+            "status": "BLOCKED",
+            "reasons": ["P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"],
+            "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
+            "real_source_search_attempts": result.get("attempted", 0),
+            "real_source_search_evaluated": 0,
+            "diagnostic_proxy_search_evaluated": result.get("evaluated", 0),
+            "source_naked_stage": {
+                "search_backend": naked.get("search_backend"),
+                "search_status": naked.get("search_status"),
+                "attempted": naked.get("attempted", 0),
+                "evaluated": naked.get("evaluated", 0),
+                "blocked": naked.get("blocked", 0),
+            },
+            "source_naked_diagnostics": naked.get("source_search_diagnostics"),
+            "source_actor_context": _source_actor_context_summary(ir),
+        }
     if not naked or not naked.get("winner") or sensitivity is None:
         return {"status": "BLOCKED", "reasons": [
             "P3_PRODUCTION_SEARCH_OR_MEASURED_WEIGHT_CONTEXT_UNAVAILABLE:"
