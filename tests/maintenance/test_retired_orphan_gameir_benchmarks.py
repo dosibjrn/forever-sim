@@ -10,6 +10,7 @@ RETIRED = (
     "tools/wf277_real_guarded_benchmark.py",
     "tools/wf281_measured_family_benchmark.py",
     "tools/wf287_real_auto_frontier_benchmark.py",
+    "tools/wf283_corridor_benchmark.py",
 )
 RETAINED_TESTS = (
     "tests/test_wf277_guarded_source_continuation.py",

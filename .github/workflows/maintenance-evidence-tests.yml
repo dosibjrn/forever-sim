@@ -59,7 +59,6 @@ on:
       - 'tools/wf299_100_mob_continuity_probe.py'
       - 'tests/test_wf243_source_joint_repeated_pulls.py'
       - 'tests/test_wf245_policy_frontier.py'
-      - 'tests/test_wf283_online_source_corridors.py'
       - 'tests/test_wf300_continuous_mob.py'
       - 'WF243_INDEPENDENT_JOINT_REPEATED_PULL.json'
       - 'tools/wf251_native_replay.py'
