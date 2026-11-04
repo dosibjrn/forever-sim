@@ -577,6 +577,20 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "native_player_context_scope": (
             native_player_context.get("source_scope")
             if native_player_context else None),
+        "native_player_context_kind": (
+            native_player_context.get("context_kind")
+            if native_player_context else None),
+        "native_player_context_race": (
+            native_player_context.get("race") if native_player_context else None),
+        "native_player_context_base_stats": (
+            dict(native_player_context.get("base_stats") or {})
+            if native_player_context else {}),
+        "native_player_context_resources": (
+            dict(native_player_context.get("resources") or {})
+            if native_player_context else {}),
+        "native_player_context_weapon": (
+            dict(native_player_context.get("weapon") or {})
+            if native_player_context else {}),
         "native_player_context_unresolved_fields": (
             native_player_context.get("unsupported_fields", ())
             if native_player_context else ()),
