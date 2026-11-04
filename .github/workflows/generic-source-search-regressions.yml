@@ -1,6 +1,7 @@
 name: Generic source-paid search regressions
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'tests/generic/search/**'
       - 'tests/generic/publication/**'
@@ -157,8 +158,9 @@ jobs:
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_cold_apl_can_generate_19_actions_from_10_action_source_grammar
 
   work2-p6-shared-cold-no-record:
-    # One changed-HEAD paid diagnostic, not an hourly run or M1 recorder.
-    if: startsWith(github.head_ref, 'work/work2-p6-shared-cold-')
+    # Opt-in only: changed integration code must not replay the same 300s
+    # source search automatically on every subsequent PR push.
+    if: startsWith(github.head_ref, 'work/work2-p6-shared-cold-') && contains(github.event.pull_request.labels.*.name, 'p6-paid-no-record')
     needs: source-search
     runs-on: ubuntu-latest
     timeout-minutes: 25
