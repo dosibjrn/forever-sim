@@ -158,6 +158,9 @@ RETIRED_TOOLS = (
     "tests/test_wf438_source_resource_talent_action_p2_tdd.py",
     "tests/test_wf442_source_dodge_resource_and_heal_crit_p2_tdd.py",
     "tests/test_prio_blood_frenzy_canonical_tooltip.py",
+    "tools/wf342_build_deliverables.py",
+    "tools/wf342_live_equipped_rating_demo.py",
+    "tools/wf342_rating_report.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -367,6 +370,7 @@ def test_unapproved_p7_legacy_holdout_preflight_is_retired():
 def test_retired_one_off_p3_report_writers_keep_historical_evidence():
     """Retiring one-off generators must not delete their retained evidence."""
     retained = (
+        "evidence/wf342/WF342_PROVISIONAL_RATING_TOP5.json",
         "evidence/wf344/WF344_P4_SOURCE_EQUIPMENT_30S.json",
         "evidence/wf344/WF344_P5_SOURCE_EQUIPMENT_300S.json",
         "evidence/wf344/WF344_SOURCE_DISPLAY_PERCENT_EQUIPMENT_TOP5.json",
