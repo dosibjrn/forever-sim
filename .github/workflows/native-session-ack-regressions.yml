@@ -8,6 +8,7 @@ on:
       - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
+      - 'integrations/mythicsim-rust/tests/test_port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
       - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
       - 'tools/diagnostics/replay_historical_wf678_winner.py'
@@ -34,6 +35,8 @@ jobs:
           python-version: '3.11'
       - name: Install bounded test dependency
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify typed RNG source-port compatibility
+        run: python integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - name: Verify native clock and real gsim world lethal ACK (not gate)
         run: python -m pytest -q tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
 

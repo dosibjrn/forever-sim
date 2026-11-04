@@ -31,6 +31,19 @@ def edit(root, name, transformations):
 def one(root, name, old, new):
     edit(root, name, [(old, new, 1)])
 
+
+def ensure_rng_mode_import(root, name):
+    """Accept typed RNG imports when newer native CLI imports are also present."""
+    source = (root / name).read_text()
+    start = source.find("use forever_engine::{")
+    end = source.find("};", start) if start >= 0 else -1
+    if start < 0 or end < 0:
+        raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: public engine import block missing")
+    if "RngMode" in source[start:end]:
+        return
+    one(root, name, "PreparedError, Refusal, Request, Rules, SOURCE_REVISION,",
+        "PreparedError, Refusal, Request, RngMode, Rules, SOURCE_REVISION,")
+
 def add_explicit_mode_to_test_calls(source):
     """Add a typed stochastic mode to every legacy one-argument test call.
 
@@ -278,8 +291,7 @@ mod typed_rng_api_tests {
     one(root, eng, "classes::run_prepared(prepared)", "classes::run_prepared(prepared, rng_mode)")
     one(root, "src/lib.rs", "pub mod contracts;", "pub mod contracts;\npub use core::rng::RngMode;")
     main = "src/main.rs"
-    one(root, main, "PreparedError, Refusal, Request, Rules, SOURCE_REVISION,",
-        "PreparedError, Refusal, Request, RngMode, Rules, SOURCE_REVISION,")
+    ensure_rng_mode_import(root, main)
     one(root, main, "    let mut infile = None;", "    let mut rng_mode: Option<RngMode> = None;\n    let mut infile = None;")
     one(root, main,
         '            "--trace" if !trace => trace = true,',

@@ -7,10 +7,36 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from port_native_typed_rng import (add_explicit_mode_to_test_calls, edit,
-                                   migrate_test_simulate_calls)
+                                   ensure_rng_mode_import, migrate_test_simulate_calls)
 
 
 class TypedRngTestCallMigrationTests(unittest.TestCase):
+    def test_expanded_native_cli_import_keeps_existing_rng_mode(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            path = root / "src/main.rs"
+            original = (
+                "use forever_engine::{\\n"
+                "    contracts::prepared_v2::PreparedV2, gear_options, native_item_options,\\n"
+                "    Request, RngMode, Rules, SOURCE_REVISION,\\n"
+                "};\\n"
+            )
+            path.write_text(original)
+            ensure_rng_mode_import(root, "src/main.rs")
+            self.assertEqual(path.read_text(), original)
+
+    def test_legacy_public_import_still_receives_rng_mode(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            path = root / "src/main.rs"
+            path.write_text(
+                "use forever_engine::{PreparedError, Refusal, Request, Rules, SOURCE_REVISION,};\\n"
+            )
+            ensure_rng_mode_import(root, "src/main.rs")
+            self.assertIn("Request, RngMode, Rules, SOURCE_REVISION", path.read_text())
+
     def test_migrates_simple_and_nested_legacy_calls(self):
         source = """
 let first = simulate_prepared(&prepared).unwrap();
