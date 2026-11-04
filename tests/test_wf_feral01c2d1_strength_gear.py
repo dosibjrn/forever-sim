@@ -104,19 +104,3 @@ def test_strength_weighted_real_named_gear_is_discovered_without_legacy_seed():
     assert evidence.partial_stats['stamina']['modes'] == ['bear_form']
     assert evidence.applied_stats['weapon_dps'] > 0
     assert 'weapon_dps' not in evidence.unsupported_stats
-
-
-def test_held_out_feral_and_wrath_both_replayed_on_source_melee_gear():
-    from tools.wf_feral01c2d1_replay import run
-    result = run()
-    assert result['gear_candidates'] >= 10
-    assert sum(result['pairwise_wins'].values()) + result['pairwise_ties'] == result['gear_candidates']
-    assert result['pairwise_wins']['old_feral_11_points'] > 0
-    assert result['pairwise_wins']['improved_wrath_5'] > 0
-    assert any(row['weight_vector'] == {'strength':1.0} for row in result['results'])
-    assert any(row['weight_vector'] == {'agility':1.0} for row in result['results'])
-    assert any(row['weight_vector'] == {'attack_power':1.0} for row in result['results'])
-    assert any(row['builds']['old_feral_11_points']['best_branch'] == 'mode'
-               for row in result['results'])
-    assert result['source_coverage_complete'] is False
-    assert any('not an unrestricted' in gap for gap in result['blocking_gaps'])

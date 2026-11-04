@@ -68,6 +68,14 @@ on:
       - 'tools/wf328_druid_l20_mode_search_evidence.py'
       - 'tools/wf328_geared_blind_joint_check.py'
       - 'tools/run_wf_feral01_evidence.py'
+      - 'tools/wf_feral01b_source_damage_probe.py'
+      - 'tools/wf_feral01c2c_replay.py'
+      - 'tools/wf_feral01c2d1_replay.py'
+      - 'tools/wf325_druid_l20_blind_joint.py'
+      - 'tools/wf325_druid_l20_paid_persistent_replay.py'
+      - 'tools/wf347_hp5_persistent_probe.py'
+      - 'tests/test_wf_feral01c2c_heart_runtime.py'
+      - 'tests/test_wf_feral01c2d1_strength_gear.py'
       - 'tests/test_wf357_source_between_pull_recovery.py'
       - 'tests/generic/search/test_wf391_generic_joint_frontier.py'
       - 'tests/test_wf424_insect_source_talent_100mob_tdd.py'
@@ -199,6 +207,8 @@ jobs:
           tests/test_wf319_druid_l20_canonical_numeric_authority.py::test_real_l20_druid_core_spell_amounts_match_canonical_sqlite
           tests/test_wf322_druid_l20_web_observed_build_parity.py::test_historical_build_uses_canonical_index_not_future_external_stage
           tests/test_wf322_druid_l20_web_observed_build_parity.py::test_newer_web_text_stage_changes_actual_core_runtime_but_not_canonical
+          tests/test_wf_feral01c2c_heart_runtime.py
+          tests/test_wf_feral01c2d1_strength_gear.py
           tests/test_p7_search_deadline_contract.py
           tests/gates/test_wf_gate_p7_5_prior.py
           tests/gates/test_wf_gate_p7_5_receipts.py
