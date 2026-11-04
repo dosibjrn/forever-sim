@@ -70,7 +70,53 @@ def _verified_auto_fallback(ir):
     return tuple(matches)
 
 
+def _source_auto_rejection_reasons(ir, auto) -> tuple[str, ...]:
+    """Explain why a provenance-bearing auto is still not source-authoritative.
+
+    A capture URL is not enough when the capture explicitly labels the actor or
+    weapon numbers as proxies. P3 must not turn those scenario values into a
+    measured baseline.
+    """
+    actor = ir.actor
+    actor_metadata = getattr(actor, 'metadata', {}) or {}
+    actor_provenance = tuple(getattr(actor, 'provenance', ()) or ())
+    auto_provenance = tuple(getattr(auto, 'provenance', ()) or ())
+    reasons = []
+
+    if actor_metadata.get('base_stats_are_zero_proxy') is True:
+        reasons.append('actor_base_stats_are_zero_proxy')
+
+    def declares_proxy(records):
+        for row in records:
+            if not isinstance(row, dict):
+                continue
+            for key in ('authority', 'source_status', 'status', 'caveat', 'caveats'):
+                value = row.get(key)
+                values = value if isinstance(value, (tuple, list)) else (value,)
+                for item in values:
+                    if isinstance(item, str):
+                        lowered = item.lower()
+                        if any(token in lowered for token in (
+                                'proxy', 'not_verified', 'not_source_backed',
+                                'not_final')):
+                            return True
+        return False
+
+    if declares_proxy(actor_provenance):
+        reasons.append('actor_provenance_declares_proxy')
+    if not any(isinstance(row, dict) and row.get('source_url')
+               and row.get('capture_id') for row in actor_provenance):
+        reasons.append('actor_source_identity_missing')
+    if declares_proxy(auto_provenance):
+        reasons.append('auto_provenance_declares_proxy')
+    if not any(isinstance(row, dict) and row.get('source_url')
+               and row.get('capture_id') for row in auto_provenance):
+        reasons.append('auto_source_identity_missing')
+    return tuple(reasons)
+
+
 def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = False,
+                           require_source_verified_auto: bool = False,
                            l0_action_priority: dict[str, int] | None = None) -> dict:
     """Find executable offensive source buttons, plus repeatable direct fillers."""
     discovered = discover_source_combat_buttons(
@@ -111,7 +157,26 @@ def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = Fals
                and not any(req.get('kind') == 'resource_min' and
                            req.get('resource_id') in target_resources
                            for req in action_map[aid].requirements)]
+    if require_source_verified_auto and not include_auto_fallback:
+        raise ValueError('source-verified auto requirement needs auto fallback enabled')
+    auto_fallback_rejections = []
     auto_attacks = _verified_auto_fallback(ir) if include_auto_fallback else ()
+    if require_source_verified_auto:
+        accepted_auto_attacks = []
+        for auto in auto_attacks:
+            reasons = _source_auto_rejection_reasons(ir, auto)
+            if reasons:
+                rejection = {'id': auto.id, 'reasons': reasons}
+                auto_fallback_rejections.append(rejection)
+                blocked.append({'id': auto.id,
+                                'reason': 'auto_fallback_not_source_verified',
+                                'details': reasons})
+            else:
+                accepted_auto_attacks.append(auto)
+        auto_attacks = tuple(accepted_auto_attacks)
+        if include_auto_fallback and not auto_attacks and not auto_fallback_rejections:
+            blocked.append({'id': 'auto_fallback',
+                            'reason': 'no_source_verified_auto_attack'})
     if auto_attacks:
         fillers.append(AUTO_ONLY_FALLBACK)
     # A legal initial-mode transition is a real action, not an offensive
@@ -187,6 +252,7 @@ def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = Fals
     return {'actions': tuple(eligible), 'fillers': tuple(fillers), 'blocked': blocked,
             'mode_paths':tuple(mode_paths), 'source_ir_id': ir.id,
             'auto_fallback_ids':tuple(a.id for a in auto_attacks),
+            'auto_fallback_rejections':tuple(auto_fallback_rejections),
             'l0_priored_candidate_order_applied':l0_action_priority is not None,
             'l0_action_proxy_coverage':proxy_coverage}
 
@@ -194,6 +260,8 @@ def source_prefix_envelope(ir, *, level: int, include_auto_fallback: bool = Fals
 def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: int,
                                max_prefix_length: int = 4, beam_width: int = 2,
                                ir_slice=None, schedule_incoming_attacks: bool = True,
+                               include_auto_fallback: bool = False,
+                               require_source_verified_auto: bool = False,
                                l0_action_priority: dict[str, int] | None = None) -> dict:
     """Online search: each next depth>=3 trial is chosen using measured scores.
 
@@ -209,7 +277,10 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
         raise ValueError('no canonical Game IR slice')
     if str(ir.actor.metadata.get('class_key','')).lower() != class_key.lower() or int(ir.actor.metadata.get('level',-1)) != level:
         raise ValueError('IR class/level mismatch')
-    envelope = source_prefix_envelope(ir, level=level, l0_action_priority=l0_action_priority)
+    envelope = source_prefix_envelope(
+        ir, level=level, include_auto_fallback=include_auto_fallback,
+        require_source_verified_auto=require_source_verified_auto,
+        l0_action_priority=l0_action_priority)
     actions, fillers = envelope['actions'], envelope['fillers']
     # An executable destination mode can be the only combat branch. Do not
     # suppress it merely because the starting mode has no repeatable filler.
