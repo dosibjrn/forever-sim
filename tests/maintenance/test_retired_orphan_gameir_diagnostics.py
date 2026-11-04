@@ -20,6 +20,10 @@ RETIRED_TOOLS = (
     "tools/wf319_druid_l20_index_l2_parity.py",
     # One-off WF300 GameIR talent-neighbor diagnostic had no callers; active runtime regressions remain.
     "tools/wf300_two_stage_adversarial_100mob.py",
+    # One-off equal-terms comparison wrapper; the shared WF299 continuity probe and its tests remain live.
+    "tools/wf300_continuous_100_mob_acceptance.py",
+    # Historical WF357 P3 recovery-recalibration producer; its completed report is retained.
+    "tools/wf357_l30_recovery_p3_recalibrate.py",
     # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
     "tools/wf343_direct_percent_top5.py",
     # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
@@ -108,6 +112,8 @@ RETIRED_IMPORT_NAMES = (
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
     "wf300_two_stage_adversarial_100mob",
+    "wf300_continuous_100_mob_acceptance",
+    "wf357_l30_recovery_p3_recalibrate",
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
     "wf359_druid_l30_p3_rebase",
@@ -253,6 +259,7 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf359/WF359_RECONSTRUCTION.json",
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
+    "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
     "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
     "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",
