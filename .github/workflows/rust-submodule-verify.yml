@@ -117,6 +117,10 @@ jobs:
           assert row["native_item_options_status"] == "ok"
           assert row["native_unverified_candidate_count"] == 0
           assert row["native_excluded_non_client_item_count"] > 0
+          assert isinstance(row["native_player_context_id"], str) and row["native_player_context_id"]
+          assert row["native_player_context_kind"] == "source_backed_baseline_context_not_full_native_sim_actor"
+          assert row["native_player_context_race"] in ("dwarf", "human")
+          assert row["native_player_context_base_stats"]["strength"] > 0
           assert row["native_player_context_id"]
           assert row["native_player_context_scope"] == "inherited_vanilla_classic_not_forever_verified"
           assert row["native_player_context_kind"] == "source_backed_baseline_context_not_full_native_sim_actor"
