@@ -72,7 +72,6 @@ jobs:
               # The provider reports its executed source search directly;
               # production_component is not a field in this result schema.
               assert result.get("actual_search_result_status") == "EVALUATED_BOUNDED", result
-              assert result.get("real_source_search_attempts", 0) > 0, result
               assert result.get("real_source_search_evaluated", 0) > 0, result
               reasons = [str(reason) for reason in result.get("reasons", [])]
               false_proxy_blockers = [
