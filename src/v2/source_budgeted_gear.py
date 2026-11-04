@@ -397,21 +397,23 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    max_evaluations: int = 4,
                                    schedule_incoming_attacks: bool = True,
                                    baseline_cache: dict | None = None,
-                                   opening_action_ids: tuple[str, ...] = ()) -> dict:
+                                   opening_action_ids: tuple[str, ...] = (),
+                                   selected_policy=None) -> dict:
     """Find a *measured* beneficial stat delta on an existing legal policy.
 
     A bounded cold gear search may select a policy that does not use a stat at
     all (e.g. Cat Form on a Balance talent build). That measured zero proves
-    only non-use by THAT policy. The generic gear scorer can also consume
-    source-authored, executable alternative policies for the *same* talent IR.
+    only non-use by THAT policy. Test the actual paid-search winner first,
+    then source-authored executable alternatives for the same talent IR.
 
-    Preserve the existing source-policy baseline first. If it cannot establish
-    a killing baseline, retry that same policy with the exact ordered opening
-    prefix from the successful source-naked search. The chosen prefix (empty or
-    non-empty) is used for both baseline and perturbation, and is part of the
-    cache key. Cache failed baseline attempts too, so an unexecutable no-prefix
-    candidate is not paid for again on every stat axis. No synthetic policy,
-    epsilon, or inferred stat weight is introduced.
+    For each candidate, retry a failed empty-prefix baseline with the exact
+    ordered opening prefix from the successful source-naked search. The chosen
+    prefix (empty or non-empty) is used for both baseline and perturbation, and
+    is part of the cache key. Cache failed baseline attempts too, so an
+    unexecutable no-prefix candidate is not paid for again on every stat axis.
+    The paid-search winner is source-derived and is tried before source-IR
+    alternatives. No synthetic policy, epsilon, or inferred stat weight is
+    introduced.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -438,9 +440,22 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
         for key, value in (baseline_cache or {}).items()
     )
 
-    for policy in ir.policies:
-        if not getattr(policy, 'provenance', None):
+    policy_candidates = []
+    if selected_policy is not None:
+        provenance = getattr(selected_policy, 'provenance', None)
+        if (not isinstance(provenance, dict) or
+                provenance.get('authority') != 'source_stateful_budgeted' or
+                provenance.get('search_performed') is not True):
+            raise ValueError('UNSOURCED_SELECTED_POLICY_STAT_WITNESS')
+        policy_candidates.append(('paid_search_winner', selected_policy))
+    for source_policy in ir.policies:
+        if not getattr(source_policy, 'provenance', None):
             continue
+        if source_policy is selected_policy:
+            continue
+        policy_candidates.append(('source_ir_policy', source_policy))
+
+    for policy_source, policy in policy_candidates:
         baseline = None
         baseline_source = None
         policy_baseline_reused = False
@@ -448,11 +463,15 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
 
         for candidate_prefix in prefix_options:
             cache_key = (*cache_prefix, str(policy.id), tuple(candidate_prefix))
+            if policy_source == 'paid_search_winner':
+                cache_key = (*cache_prefix, policy_source, str(policy.id),
+                             tuple(candidate_prefix))
             cached_baseline = (baseline_cache.get(cache_key)
                                if baseline_cache is not None else None)
             if isinstance(cached_baseline, dict) and cached_baseline.get('status') == 'FAILED':
                 baseline_failures.append({
                     'policy_id': str(policy.id),
+                    'policy_source': policy_source,
                     'opening_action_ids': list(candidate_prefix),
                     'reason': 'CACHED_' + str(cached_baseline.get('reason', 'BASELINE_FAILED')),
                 })
@@ -485,6 +504,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 reason = f'BASELINE_EVALUATION_ERROR:{type(exc).__name__}:{exc}'
                 baseline_failures.append({
                     'policy_id': str(policy.id),
+                    'policy_source': policy_source,
                     'opening_action_ids': list(candidate_prefix),
                     'reason': reason,
                 })
@@ -508,6 +528,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             if reason is not None:
                 baseline_failures.append({
                     'policy_id': str(policy.id),
+                    'policy_source': policy_source,
                     'opening_action_ids': list(candidate_prefix),
                     'reason': reason,
                 })
@@ -528,7 +549,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             continue
 
         attempted_policies.append(str(policy.id))
-        attempted_policy_sources.append('source_ir_policy')
+        attempted_policy_sources.append(policy_source)
         attempted_policy_opening_action_ids.append(list(active_prefix))
         for delta in probe_deltas:
             if used >= max_evaluations:
@@ -555,11 +576,13 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 return {
                     'status': 'MEASURED_POSITIVE_SOURCE_POLICY_WITNESS',
                     'stat': stat, 'policy_id': str(policy.id),
-                    'policy_source': 'source_ir_policy',
+                    'policy_source': policy_source,
                     'weight_s_saved_per_mob_per_unit': improvement / float(delta),
                     'baseline_seconds_per_mob': baseline,
                     'perturbed_seconds_per_mob': float(after.seconds_per_mob),
-                    'delta': float(delta), 'paid_evaluations': used,
+                    'delta': float(delta),
+                    'probe_deltas': [float(x) for x in probe_deltas],
+                    'paid_evaluations': used,
                     'baseline_reused': policy_baseline_reused,
                     'baseline_source': baseline_source,
                     'opening_action_ids': list(active_prefix),
@@ -573,7 +596,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 }
     return {
         'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
-        'stat': stat, 'paid_evaluations': used,
+        'stat': stat, 'probe_deltas': [float(x) for x in probe_deltas],
+        'paid_evaluations': used,
         'baseline_reused': baseline_reused_any,
         'opening_action_ids': list(opening_action_ids),
         'attempted_policies': attempted_policies,
