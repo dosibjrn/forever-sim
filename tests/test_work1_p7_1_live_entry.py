@@ -374,24 +374,24 @@ def _native_p71_mock(tmp_path, monkeypatch, *, dps=730.0, fights=None):
     monkeypatch.setattr(gate, "SAVED_BALANCE_RAW_SHA",
                         hashlib.sha256(request.read_bytes()).hexdigest())
     binary = tmp_path / "upstream/target/release/forever-engine"
-    binary.parent.mkdir(parents=True)
+    binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_text("unit-test stub")
     monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
     selected = "1f170913f0af47f0de455c2b91581d777e713d3a"
     monkeypatch.setattr(gate, "_selected_rust_submodule",
                         lambda root, upstream: selected)
     provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
-    provider.parent.mkdir(parents=True)
+    provider.parent.mkdir(parents=True, exist_ok=True)
     provider.write_text(
-        "def native_source_control(binary, request, iterations, *, rng_mode):\\n"
-        "    assert rng_mode == 'stochastic'\\n"
+        "def native_source_control(binary, request, iterations, *, rng_mode):\n"
+        "    assert rng_mode == 'stochastic'\n"
         "    return {'iterations': " + (
             "iterations" if fights is None else str(fights)) +
-        ", 'native_dps': " + repr(dps) + "}\\n"
-        "def run(*args, **kwargs):\\n"
-        "    raise AssertionError('P7.1 must not execute 2D world')\\n"
-        "def run_range_perturbation_pair(*args, **kwargs):\\n"
-        "    raise AssertionError('P7.1 must not require range perturbation')\\n")
+        ", 'native_dps': " + repr(dps) + "}\n"
+        "def run(*args, **kwargs):\n"
+        "    raise AssertionError('P7.1 must not execute 2D world')\n"
+        "def run_range_perturbation_pair(*args, **kwargs):\n"
+        "    raise AssertionError('P7.1 must not require range perturbation')\n")
     return request, selected
 
 
