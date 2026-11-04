@@ -53,10 +53,11 @@ _EQUIPPED_WEAPON_DPS_AXES = frozenset({
 
 
 def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
-    """Return (equipped weapon DPS, equipped mean weapon hit) dependencies.
+    """Derive equipped-item DPS and mean-hit dependencies from canonical source facts only.
 
-    Source facts use the same canonical resolver as actual gear application.
-    All source-specific equipment behavior remains in SQLite, not class checks.
+    A proxy may carry a stat-shaped field such as wand_dps without any
+    replaceable equipped item. The field name alone is never an applicability
+    proof; the same mode/source fact used by gear application must match.
     """
     by_id = {action.id: action for action in ir.actions}
     actions = []
@@ -93,12 +94,13 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
             source = getattr(effect, 'damage_source', None)
             if source is None:
                 raise ValueError('P3_UNRESOLVED_WEAPON_DAMAGE_SOURCE:' + str(action.id))
-            if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
-                equipped_dps = True
-                equipped_mean_hit = True
+            # A stat-shaped proxy field is not evidence of an equipped item.
+            # Match the exact mode, source kind and stat against the canonical
+            # facts shared with the production gear applicator.
             for fact, mode_id in facts:
                 if (mode_id in action_modes
                         and source.kind == fact.damage_source_kind
+                        and getattr(source, 'dps_stat_id', None) == fact.source_stat
                         and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                     equipped_dps = True
                     # A fixed-speed cat/bear attack depends on equipped DPS,
@@ -111,13 +113,16 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
         source = getattr(attack, 'damage_source', None)
         if source is None:
             raise ValueError('P3_UNRESOLVED_AUTO_DAMAGE_SOURCE:' + str(attack.id))
-        if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
-            equipped_dps = True
+        # The same source-fact match is required for autoattacks. The
+        # equipped weapon's own speed makes mean-hit damage relevant too;
+        # form-fixed attacks depend on DPS but not the weapon's hit range/speed.
         for fact, mode_id in facts:
             if (mode == mode_id
                     and source.kind == fact.damage_source_kind
+                    and getattr(source, 'dps_stat_id', None) == fact.source_stat
                     and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                 equipped_dps = True
+                equipped_mean_hit |= fact.weapon_speed_semantics == 'equipped'
     return equipped_dps, equipped_mean_hit
 
 
@@ -331,7 +336,7 @@ def fast_p3_smoke_for_policy(*, source_ir, policy, **kwargs) -> dict:
         'policy_id': str(policy.id),
         'action_ids': [str(rule.action_id) for rule in policy.rules],
         'weapon_damage_effect_derived_from_ir': bool(has_weapon_effect),
-        'equipped_weapon_dependency_derived_from_source_dps_stat_or_canonical_mode_facts': True,
+        'equipped_weapon_dependency_derived_from_canonical_mode_facts_only': True,
         'equipped_weapon_mean_hit_relevant': bool(uses_equipped_mean_hit),
         'equipped_weapon_damage_relevant': bool(uses_equipped_weapon),
         'defensive_positive_required': defensive_positive_required,
