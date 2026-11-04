@@ -93,11 +93,10 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
             source = getattr(effect, 'damage_source', None)
             if source is None:
                 raise ValueError('P3_UNRESOLVED_WEAPON_DAMAGE_SOURCE:' + str(action.id))
-            if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
-                equipped_dps = True
-                equipped_mean_hit = True
+            # A stat-axis label alone is not evidence that an equipped item
+            # supplies this effect. Match the canonical mode/source fact.
             for fact, mode_id in facts:
-                if (mode_id in action_modes
+                if ((mode_id is None or mode_id in action_modes)
                         and source.kind == fact.damage_source_kind
                         and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                     equipped_dps = True
@@ -111,13 +110,14 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
         source = getattr(attack, 'damage_source', None)
         if source is None:
             raise ValueError('P3_UNRESOLVED_AUTO_DAMAGE_SOURCE:' + str(attack.id))
-        if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
-            equipped_dps = True
+        # A stat-axis label alone is not evidence that this auto attack uses
+        # an equipped item. Match the canonical source fact, including '*'.
         for fact, mode_id in facts:
-            if (mode == mode_id
+            if ((mode_id is None or mode == mode_id)
                     and source.kind == fact.damage_source_kind
                     and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                 equipped_dps = True
+                equipped_mean_hit |= fact.weapon_speed_semantics == 'equipped'
     return equipped_dps, equipped_mean_hit
 
 
@@ -331,7 +331,7 @@ def fast_p3_smoke_for_policy(*, source_ir, policy, **kwargs) -> dict:
         'policy_id': str(policy.id),
         'action_ids': [str(rule.action_id) for rule in policy.rules],
         'weapon_damage_effect_derived_from_ir': bool(has_weapon_effect),
-        'equipped_weapon_dependency_derived_from_source_dps_stat_or_canonical_mode_facts': True,
+        'equipped_weapon_dependency_derived_from_canonical_mode_source_facts': True,
         'equipped_weapon_mean_hit_relevant': bool(uses_equipped_mean_hit),
         'equipped_weapon_damage_relevant': bool(uses_equipped_weapon),
         'defensive_positive_required': defensive_positive_required,
