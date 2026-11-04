@@ -59,13 +59,13 @@ def test_feral_native_stochastic_forwarding_and_99_percent_floor(
     provider.parent.mkdir(parents=True)
     score = gate.FERAL_REFERENCE_DPS * dps_factor
     provider.write_text(
-        "def native_source_control(binary, request, iterations, *, rng_mode):\\n"
-        "    assert rng_mode == 'stochastic'\\n"
-        "    assert request.name == 'saved_811_request.json'\\n"
-        "    assert iterations == 1000\\n"
-        f"    return {{'native_dps': {score!r}, 'iterations': iterations}}\\n"
-        "def run(*args, **kwargs):\\n"
-        "    raise AssertionError('P7.1 must remain native-only')\\n"
+        "def native_source_control(binary, request, iterations, *, rng_mode):\n"
+        "    assert rng_mode == 'stochastic'\n"
+        "    assert request.name == 'saved_811_request.json'\n"
+        "    assert iterations == 1000\n"
+        f"    return {{'native_dps': {score!r}, 'iterations': iterations}}\n"
+        "def run(*args, **kwargs):\n"
+        "    raise AssertionError('P7.1 must remain native-only')\n"
     )
     result = gate.run_live(tmp_path, "druid", 60, spec="feral")
     assert result["status"] == expected_status  # Mocked transport; no gate credit.
