@@ -2,6 +2,8 @@ name: Repository maintenance regressions
 on:
   pull_request:
     paths:
+      - 'tools/wf260_run_budgeted_joint.py'
+      - 'tests/generic/search/test_wf260_budgeted_joint_talents.py'
       - 'tools/wf_combat232_weapon_evidence.py'
       - 'tools/wf_combat233_source_armor_replay.py'
       - 'tools/audit_l20_fidelity.py'

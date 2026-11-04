@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # WF260 historical GameIR talent/gear/policy and frozen Mage challenger runner; active gates use native producers.
+    "tools/wf260_run_budgeted_joint.py",
     # Orphan WF-COMBAT232/233 GameIR weapon and armor paid-report runners.
     "tools/wf_combat232_weapon_evidence.py",
     "tools/wf_combat233_source_armor_replay.py",
@@ -188,6 +190,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf260_run_budgeted_joint",
     "wf_combat232_weapon_evidence",
     "wf_combat233_source_armor_replay",
     "audit_l20_fidelity",
@@ -376,6 +379,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/generic/search/test_wf260_budgeted_joint_talents.py",
     "tests/test_wf358_p3_contextual_top5.py",
     "tests/test_wf300_continuous_mob.py",
     "tests/gates/test_wf299_30_second_gate.py",
