@@ -258,6 +258,26 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
     }
 
 
+def _native_world_error(exc: BaseException) -> str:
+    """Keep native failure code and completed-kill count, not a truncated tuple.
+
+    For a long 100-target run the raw AssertionError includes up to 100 kill
+    receipts. Truncating its string from the right discarded the causal
+    RUST_TWO_WORLD_* error and made the actual failed producer untraceable.
+    """
+    detail = exc.args[0] if len(exc.args) == 1 else None
+    if isinstance(detail, tuple) and detail and isinstance(detail[0], str):
+        code = detail[0]
+        if (code == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
+                and len(detail) >= 4 and isinstance(detail[2], list)):
+            return (f"{code}:completed={len(detail[2])}"
+                    f":native_damage_events={detail[3]}")
+        if code == "RUST_TWO_WORLD_NATIVE_FAILED" and len(detail) >= 3:
+            return f"{code}:exit={detail[1]}:{str(detail[2])[-350:]}"[-500:]
+        return (code + ":" + str(detail[1:])[-350:])[-500:]
+    return str(exc)[-500:]
+
+
 def score_source_priest_l20_candidates(binary: str | Path,
                                       source_directory: str | Path, *,
                                       score_request=None, world_screen=None,
@@ -436,7 +456,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
                         except (OSError, ValueError, RuntimeError, TimeoutError,
                                 AssertionError, KeyError, TypeError,
                                 subprocess.SubprocessError) as exc:
-                            candidate["native_2d_persistent_error"] = str(exc)[-500:]
+                            candidate["native_2d_persistent_error"] = _native_world_error(exc)
                 if world_screen is not None:
                     if (not isinstance(live, dict)
                             or live.get("native_2d_fight_ack_complete") is not True):
