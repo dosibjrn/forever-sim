@@ -70,7 +70,7 @@ class ManualExactHeadContract(unittest.TestCase):
     def test_relocated_service_queue_tests_have_a_bounded_manual_suite(self):
         # Same PR identity, SHA and read-only token constraints as other suites.
         self.assertIn("          - service-queue-unit", TEXT)
-        self.assertIn("source-periodic-unit|service-queue-unit) ;;", TEXT)
+        self.assertIn("source-periodic-unit|source-profile-unit|service-queue-unit) ;;", TEXT)
         self.assertIn("source-periodic-unit|service-queue-unit)", TEXT)
         self.assertIn("tests/integration/service/test_g50[c-i]_*.py", TEXT)
         self.assertIn("tests/maintenance/test_manual_exact_pr_head_workflow.py", TEXT)
