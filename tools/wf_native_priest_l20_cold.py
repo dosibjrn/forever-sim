@@ -131,17 +131,34 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         raise ValueError("PRIEST_L20_COLD_BUDGET_INVALID")
     if not isinstance(item_options, list):
         raise ValueError("PRIEST_L20_NATIVE_OPTIONS_REQUIRED")
-    try:
-        source = json.loads(Path(request_file).read_text(encoding="utf-8"))
-        actor = source["raid"]["parties"][0]["players"][0]
-    except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
-        raise ValueError("PRIEST_L20_SOURCE_REQUEST_REQUIRED") from exc
-    if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
-            or type(actor.get("level")) is not int or actor["level"] != 20
-            or not isinstance(actor.get("equipment"), dict)
-            or actor["equipment"].get("items") != []
-            or not isinstance(source.get("simOptions"), dict)):
-        raise ValueError("PRIEST_L20_COLD_SOURCE_ACTOR_INVALID")
+    # A source-backed directory can contribute distinct native whole-build
+    # talent/APL policies as well as gear proposals. All Warcraft legality
+    # stays with MythicSim; compare only the same actual world encounter.
+    input_path = Path(request_file)
+    request_paths = (sorted(input_path.glob("*.json"))
+                     if input_path.is_dir() else [input_path])
+    if not request_paths:
+        raise ValueError("PRIEST_L20_SOURCE_REQUEST_REQUIRED")
+    sources = []
+    encounter = None
+    for candidate_path in request_paths:
+        try:
+            source = json.loads(candidate_path.read_text(encoding="utf-8"))
+            actor = source["raid"]["parties"][0]["players"][0]
+        except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
+            raise ValueError("PRIEST_L20_SOURCE_REQUEST_REQUIRED") from exc
+        if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
+                or type(actor.get("level")) is not int or actor["level"] != 20
+                or not isinstance(actor.get("equipment"), dict)
+                or actor["equipment"].get("items") != []
+                or not isinstance(source.get("simOptions"), dict)
+                or not isinstance(source.get("encounter"), dict)):
+            raise ValueError("PRIEST_L20_COLD_SOURCE_ACTOR_INVALID")
+        if encounter is None:
+            encounter = source["encounter"]
+        elif source["encounter"] != encounter:
+            raise ValueError("PRIEST_L20_COLD_COMPARABLE_ENCOUNTER_MISMATCH")
+        sources.append(source)
     clock = clock or time.monotonic
     world_screen = world_screen or couple_source_priest_l20_persistent_world
     start = clock()
@@ -164,7 +181,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
     completed_after = 0
     with TemporaryDirectory(prefix="priest-l20-native-cold-") as directory:
         path = Path(directory) / "candidate.json"
-        for build in _source_native_builds(source, item_options):
+        for build in itertools.chain.from_iterable(
+                _source_native_builds(source, item_options) for source in sources):
             if len(rows) >= max_attempts or clock() >= deadline:
                 break
             identity = hashlib.sha256(json.dumps(
