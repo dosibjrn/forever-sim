@@ -212,6 +212,21 @@ def main(argv=None) -> int:
             paid_winner_probe = report.get("native_paid_winner_spell_probe_enabled")
             if type(paid_winner_probe) is bool:
                 record["native_paid_winner_spell_probe_enabled"] = paid_winner_probe
+            # Forward only the native context identity and bounded facts already
+            # returned by the P3 provider. This is a source receipt, not a new
+            # player-stat calculation or acceptance requirement.
+            for key in ("native_player_context_id", "native_player_context_scope",
+                        "native_player_context_kind", "native_player_context_race"):
+                value = report.get(key)
+                if isinstance(value, str) and 0 < len(value) <= 256:
+                    record[key] = value
+            context_stats = report.get("native_player_context_base_stats")
+            if isinstance(context_stats, dict):
+                record["native_player_context_base_stats"] = {
+                    str(key): float(value)
+                    for key, value in list(context_stats.items())[:16]
+                    if type(value) in (int, float) and math.isfinite(value)
+                }
             profile = report.get("source_profile_production_build")
             if isinstance(profile, dict):
                 record["source_profile_production_build"] = profile
