@@ -20,6 +20,8 @@ RETIRED_TOOLS = (
     "tools/wf319_druid_l20_index_l2_parity.py",
     # One-off WF300 GameIR talent-neighbor diagnostic had no callers; active runtime regressions remain.
     "tools/wf300_two_stage_adversarial_100mob.py",
+    # One-off equal-terms wrapper; retain the shared WF299 probe and behavior tests.
+    "tools/wf300_continuous_100_mob_acceptance.py",
     # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
     "tools/wf343_direct_percent_top5.py",
     # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
@@ -80,6 +82,17 @@ RETIRED_TOOLS = (
     "tools/wf430_l30_starfire_100mob.py",
     # One-off WF357 staged-SQLite recovery frontier; keep its report as historical evidence.
     "tools/wf357_l30_recovery_frontier.py",
+    # Standalone recalibration producer has no callers; retain its completed report.
+    "tools/wf357_l30_recovery_p3_recalibrate.py",
+    # Legacy v2 challenger exporter has no active P7 consumer; retain reconstruction manifests.
+    "tools/wf356_export_legacy_druid30.py",
+    # WF322's one-off staged build-parity producer; the input and behavior regressions remain.
+    "tools/wf322_druid_l20_build_parity.py",
+    # WF328's one-off GameIR/SQLite report producers; keep their historical JSON and prefix regression.
+    "tools/wf328_druid_l20_mode_search_evidence.py",
+    "tools/wf328_geared_blind_joint_check.py",
+    # Orphaned WF_FERAL01 Druid L20 evidence generator; no retained consumer.
+    "tools/run_wf_feral01_evidence.py",
     # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
     "evidence/wf438/run300.py",
 )
@@ -101,6 +114,7 @@ RETIRED_IMPORT_NAMES = (
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
     "wf300_two_stage_adversarial_100mob",
+    "wf300_continuous_100_mob_acceptance",
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
     "wf359_druid_l30_p3_rebase",
@@ -152,6 +166,13 @@ RETIRED_IMPORT_NAMES = (
     "wf430_l30_starfire_100mob",
     "wf441_100mob_swiftmend_evidence",
     "wf357_l30_recovery_frontier",
+    "wf357_l30_recovery_p3_recalibrate",
+    "wf356_export_legacy_druid30",
+    "export_legacy_winner",
+    "wf322_druid_l20_build_parity",
+    "wf328_druid_l20_mode_search_evidence",
+    "wf328_geared_blind_joint_check",
+    "run_wf_feral01_evidence",
     "test_wf357_source_between_pull_recovery",
     "test_wf391_generic_joint_frontier",
     "test_wf424_insect_source_talent_100mob_tdd",
@@ -209,6 +230,7 @@ RETIRED_TESTS = (
     "tests/gates/test_wf367_six_port_acceptance.py",
     "tests/test_wf359_druid_l30_p3_rebase.py",
     "tests/test_wf427_quest_horizon_paid_tdd.py",
+    "tests/test_wf356_export_legacy_druid30.py",
 )
 
 RETIRED_COMMANDS = (
@@ -218,6 +240,8 @@ RETIRED_COMMANDS = (
 
 
 RETAINED_BEHAVIOR_TESTS = (
+    "tests/test_wf322_druid_l20_web_observed_build_parity.py",
+    "tests/test_wf328_mode_joint_prefix_admission.py",
     "tests/test_wf270_index_to_ir_action_frontier.py",
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
@@ -238,9 +262,15 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf359/WF359_L30_P3_REBASED_DIRECT_100MOB.json",
     "evidence/wf359/WF359_L30_P3_REBASED_TOP5.json",
     "evidence/wf359/WF359_RECONSTRUCTION.json",
+    # Retain the WF394 reconstruction manifest that records the archived WF356 source run.
+    "evidence/wf394/RECONSTRUCTION.json",
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
+    "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
+    "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
+    "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",
+    "evidence/WF322_DRUID_L20_WEB_TEXT_OBSERVATIONS_70338.json",
     # WF427 inputs and result remain historical evidence; only the producer is retired.
     "evidence/wf427/WF427_L30_COLD_FINALISTS.json",
     "evidence/wf427/DRUID_L30_QUEST_HORIZONS_2_4_8_16.json",
@@ -264,6 +294,10 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(
         encoding="utf-8"
     )
+    workflow_triggers = workflow.split("permissions:", 1)[0]
+    assert "      - 'tools/wf300_continuous_100_mob_acceptance.py'" in workflow_triggers
+    assert "      - 'tools/wf356_export_legacy_druid30.py'" in workflow_triggers
+    assert "      - 'tests/test_wf356_export_legacy_druid30.py'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative

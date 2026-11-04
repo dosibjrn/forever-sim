@@ -10,8 +10,9 @@ import pytest
 
 from src.game.native_p3_item_options import (
     NativeItemOptionsError, apply_native_mage_spell_coefficients,
+    apply_native_shaman_lightning_bolt_coefficient,
     native_p3_item_records, query_native_mage_spell_coefficients,
-    query_native_p3_item_options,
+    query_native_shaman_spell_coefficients, query_native_p3_item_options,
 )
 from src.game.checkpoint_p3_smoke import fast_p3_smoke
 from src.rulesets.forever.items.catalogue import ItemRecord
@@ -544,3 +545,147 @@ def test_native_mage_spell_coefficients_enrich_only_exact_source_rank_actions():
         for blocker in enriched.unsupported_semantics
     )
 
+
+
+def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {
+            "class": "Shaman",
+            "spells": [
+                {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
+                # Same spell ID, different native actions: proc tag,
+                # item action, and nonempty other-ID are not the source cast.
+                {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
+                {"action_id": {"spell_id": 915, "item_id": 123}, "bonus_coefficient": 0.13},
+                {"action_id": {"spell_id": 915, "other_id": "proc"}, "bonus_coefficient": 0.11},
+                {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+                # Unrelated conflicting rank IDs are outside this exact Shaman query.
+                {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.99},
+                {"action_id": {"spell_id": 943, "tag": 6}, "bonus_coefficient": 0.11},
+            ],
+        },
+    }
+    observed = {}
+
+    def runner(command, **kwargs):
+        assert command[1:3] == ["prepare", "--request"]
+        player = json.loads(Path(command[-1]).read_text())["raid"]["parties"][0]["players"][0]
+        observed.update(player)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(prepared), stderr="")
+
+    facts = query_native_shaman_spell_coefficients("native", runner=runner)
+    assert observed["class"] == "ClassShaman"
+    assert observed["race"] == "RaceOrc"
+    assert "mage" not in observed
+    assert observed["elementalShaman"] == {"options": {"classOptions": {}}}
+    assert observed["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"] == 915
+    assert facts["spell_power_coefficients"] == {915: 0.42}
+    assert facts["engine_revision"] == "native-shaman-test-revision"
+
+
+def test_native_shaman_conflicting_untagged_rank_915_coefficients_fail_closed():
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {"class": "Shaman", "spells": [
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.43},
+            {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
+            # Conflicting unrelated ranks must not block the exact 915 query.
+            {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+            {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.99},
+        ]},
+    }
+    with pytest.raises(NativeItemOptionsError) as exc:
+        query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
+    message = str(exc.value)
+    assert "P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT" in message
+    assert '"spell_id": 915' in message
+    assert '"previous_coefficient": 0.42' in message
+    assert '"coefficient": 0.43' in message
+
+
+def test_native_shaman_spell_coefficients_fail_closed_on_missing_rank_or_refusal():
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {"class": "Shaman", "spells": [
+            {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+            {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
+        ]},
+    }
+    with pytest.raises(NativeItemOptionsError, match="LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE"):
+        query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
+    with pytest.raises(NativeItemOptionsError, match="PREPARE_FAILED:unsupported:rank"):
+        query_native_shaman_spell_coefficients(
+            "native", runner=_runner({
+                "refusal": {"code": "unsupported", "reason": "rank"},
+            }, returncode=5))
+
+
+def test_native_shaman_spell_coefficient_enriches_only_matching_existing_rank():
+    from dataclasses import replace
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.model.ir import DamageEffect
+
+    ir = build_game_ir_slice(class_key="shaman", level=20)
+    bolt = next(action for action in ir.actions if action.id == "lightning_bolt:915")
+    reset_bolt = replace(bolt, effects=tuple(
+        replace(effect, spell_power_coefficient=0.0)
+        if isinstance(effect, DamageEffect) else effect
+        for effect in bolt.effects))
+    ir = replace(ir, actions=tuple(
+        reset_bolt if action.id == bolt.id else action for action in ir.actions))
+    native = {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": "native-shaman-test-revision",
+        "spell_power_coefficients": {915: 0.42, 943: 0.63},
+    }
+
+    enriched, applied = apply_native_shaman_lightning_bolt_coefficient(ir, native)
+    assert applied == [{
+        "action_id": "lightning_bolt:915",
+        "spell_id": 915,
+        "spell_power_coefficient": 0.42,
+    }]
+    updated = next(action for action in enriched.actions if action.id == bolt.id)
+    direct = next(effect for effect in updated.effects if isinstance(effect, DamageEffect))
+    assert direct.spell_power_coefficient == 0.42
+    assert updated.metadata["native_spell_power_coefficient_verified"] is True
+    assert all(
+        after is before for before, after in zip(ir.actions, enriched.actions)
+        if before.id != "lightning_bolt:915"
+    )
+    assert any(fact.get("spell_id") == 915 for fact in enriched.source_facts
+               if fact.get("authority") == "mythicsim_rust_prepared_v2")
+
+    wrong = replace(reset_bolt, metadata={
+        **reset_bolt.metadata, "rank_source": {"spell_id": 943},
+    })
+    mismatch = replace(ir, actions=tuple(
+        wrong if action.id == bolt.id else action for action in ir.actions))
+    with pytest.raises(NativeItemOptionsError, match="SOURCE_RANK_MISMATCH"):
+        apply_native_shaman_lightning_bolt_coefficient(mismatch, native)
+
+
+
+def test_native_shaman_spellbook_reports_conflicting_exact_action_ids():
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {"class": "Shaman", "spells": [
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.43},
+        ]},
+    }
+    with pytest.raises(
+        NativeItemOptionsError,
+        match=r"DUPLICATE_COEFFICIENT_CONFLICT:.*previous_action_id",
+    ):
+        query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
