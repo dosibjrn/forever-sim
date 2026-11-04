@@ -138,6 +138,32 @@ def _p3_executable_weight_witness_axes(blockers, weights, executable_axes, prior
     return sorted(selected, key=lambda axis: (rank.get(axis, len(rank)), axis))
 
 
+def _accept_paid_p3_stat_witness(weights: dict, axis: str, witness: dict) -> bool:
+    """Apply only a real paid positive slope or a genuinely measured missing zero.
+
+    Exact-zero derivatives may satisfy P3's nonnegative item requirement, but
+    only when a completed paid before/after witness exists. They must not
+    overwrite an existing measured weight, turn a negative effect into zero,
+    or turn an unsupported stat into an assumed zero.
+    """
+    status = witness.get("status")
+    if witness.get("stat") != axis:
+        return False
+    measured = witness.get("weight_s_saved_per_mob_per_unit")
+    if type(measured) not in (int, float) or not isfinite(measured):
+        return False
+    if status == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
+        if measured <= 0:
+            return False
+    elif status == "MEASURED_ZERO_SOURCE_POLICY_WITNESS":
+        if measured != 0.0 or axis in weights:
+            return False
+    else:
+        return False
+    weights[axis] = float(measured)
+    return True
+
+
 def _native_item_stat_probe_deltas(item_check: dict, axis: str):
     """Return native item-sized deltas in descending measurement value.
 
@@ -444,6 +470,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # source search's remaining bounded budget.
     extra_evaluations = 0
     source_policy_stat_witnesses = []
+    newly_measured_weight = False
     # Reuse a paid baseline for the same source policy across stat axes. Without
     # this, repeated baseline runs consume the fixed P3 budget before later
     # required axes (such as Spirit) receive their own paid perturbation.
@@ -537,10 +564,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
-        if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
-            weights[axis] = witness["weight_s_saved_per_mob_per_unit"]
-    if any(w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
-           for w in source_policy_stat_witnesses):
+        if _accept_paid_p3_stat_witness(weights, axis, witness):
+            newly_measured_weight = True
+    if newly_measured_weight:
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
