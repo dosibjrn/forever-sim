@@ -156,14 +156,22 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         has_reusable_baseline = any(
             key[:3] == cache_prefix for key in source_policy_baseline_cache
         )
-        minimum_evaluations = 1 if has_reusable_baseline else 2
+        primary_baseline = record.get("score_s_per_mob")
+        primary_baseline_valid = (
+            type(primary_baseline) in (int, float)
+            and isfinite(primary_baseline) and primary_baseline > 0
+        )
+        minimum_evaluations = 1 if (has_reusable_baseline or primary_baseline_valid) else 2
         if remaining < minimum_evaluations:
             break
         witness = paid_source_policy_stat_witness(
             ir, stat=axis, level=level, probe_deltas=(5., 20.),
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
-            baseline_cache=source_policy_baseline_cache)
+            baseline_cache=source_policy_baseline_cache,
+            primary_policy=policy,
+            primary_opening_action_ids=tuple(record.get("prefix", ())),
+            primary_baseline_seconds_per_mob=primary_baseline)
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
