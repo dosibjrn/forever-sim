@@ -299,3 +299,14 @@ def test_minimal_rank_neighbors_are_generic_source_edits_not_legality_checks():
                sum(map(int, (c for c in original if c.isdigit()))) - 1
                for s in variants)
     assert all(v.count("-") == original.count("-") for v in variants)
+
+
+def test_structured_native_talent_refusal_is_not_a_python_engine_error():
+    refusal = RuntimeError(
+        'NATIVE_SOURCE_CONTROL_FAILED exit=5 request_sha256=abc '
+        'output={"prepared":false,"refusal":{"code":"talents",'
+        '"reason":"druid talent rank rejected by native"}}')
+    assert gate._native_refusal(refusal) == (
+        "INVALID", "NATIVE_TALENTS:druid talent rank rejected by native")
+    assert gate._native_refusal(RuntimeError("native process crashed")) == (
+        "ERROR", "native process crashed")
