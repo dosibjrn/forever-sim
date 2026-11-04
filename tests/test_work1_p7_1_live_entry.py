@@ -12,8 +12,8 @@ from tools import wf_gate_p7_1_live as gate
 def _fixture(root):
     request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
-    request.parent.mkdir(parents=True)
-    witness.parent.mkdir(parents=True)
+    request.parent.mkdir(parents=True, exist_ok=True)
+    witness.parent.mkdir(parents=True, exist_ok=True)
     request.write_text(json.dumps({
         "raid": {"parties": [{"players": [{"class": "ClassDruid",
                                          "balanceDruid": {},
