@@ -484,6 +484,8 @@ def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
                 {"action_id": {"spell_id": 915, "item_id": 123}, "bonus_coefficient": 0.13},
                 {"action_id": {"spell_id": 915, "other_id": "proc"}, "bonus_coefficient": 0.11},
                 {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+                # Unrelated conflicting rank IDs are outside this exact Shaman query.
+                {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.99},
                 {"action_id": {"spell_id": 943, "tag": 6}, "bonus_coefficient": 0.11},
             ],
         },
@@ -504,6 +506,29 @@ def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
     assert observed["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"] == 915
     assert facts["spell_power_coefficients"] == {915: 0.42}
     assert facts["engine_revision"] == "native-shaman-test-revision"
+
+
+def test_native_shaman_conflicting_untagged_rank_915_coefficients_fail_closed():
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {"class": "Shaman", "spells": [
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.43},
+            {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
+            # Conflicting unrelated ranks must not block the exact 915 query.
+            {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
+            {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.99},
+        ]},
+    }
+    with pytest.raises(NativeItemOptionsError) as exc:
+        query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
+    message = str(exc.value)
+    assert "P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT" in message
+    assert '"spell_id": 915' in message
+    assert '"previous_coefficient": 0.42' in message
+    assert '"coefficient": 0.43' in message
 
 
 def test_native_shaman_spell_coefficients_fail_closed_on_missing_rank_or_refusal():
