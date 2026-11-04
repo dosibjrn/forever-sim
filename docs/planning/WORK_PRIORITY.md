@@ -2,29 +2,26 @@
 
 **Policy:** maximize genuine partial-inclusive M1 measured-float per total implementation, verification and compute time. Active gates: P3–P6 and P7.1–P7.5 (1,332 checkpoint-gate pairs). **Only Merge** dispatches the trusted recorder and writes `docs/planning/M1_PASSES.tsv`. MythicSim Rust owns Warcraft facts and legal optimization choices; Forever owns scenarios, search and scoring. No P1/P2, GameIR rebuild, duplicate legality, fabricated weights, MythicSim mechanics audit or unchanged heavy rerun.
 
-**Last published M1 baseline:** the post-PR #819 trusted recorder [#41778065670](https://github.com/dosibjrn/forever-sim/actions/runs/41778065670) ran `tools/m1_progress.py` and printed **M1 measured: 2.0846% (float=0.0208459033)** = **27.767/1,332** measured equivalents; **22/1,332** accepted PASS gates; **0/148** certified checkpoints. It reported no genuinely improved gate evidence, so the M1 ledger and chart did not change. The separate Priest recorder below is still running.
-
-## Current in-flight Merge action
-
-- **Priest L20 unrestricted P4/P5:** trusted post-merge recorder [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) is **in progress**, currently building the exact pinned native `item-options` engine. Work1's [PR #822](https://github.com/dosibjrn/forever-sim/pull/822) and companion M1 workflow plumbing [PR #826](https://github.com/dosibjrn/forever-sim/pull/826) are merged. The merged native list boundary is not a paid whole-build/2D executor; Work1's current handoff expects `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED` until that executor exists. Wait for this recorder to become terminal; do not start another ledger writer concurrently.
+**Latest trusted scoreboard:** [Merge Actions #41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) ran `tools/m1_progress.py`: **M1 measured: 2.0846% (float=0.0208459033)** = **27.767/1,332** measured equivalents; **22/1,332** accepted PASS gates; **0/148** certified checkpoints. Both Priest targets in that run were BLOCKED, so no new M1 evidence or ledger change.
 
 ## Next queue
 
-### #1 — Merge: one-shot Hunter L20 unrestricted P3 measurement — [#827](https://github.com/dosibjrn/forever-sim/issues/827)
+### #1 — Merge: one-shot Hunter L20 unrestricted P3 measurement — [#827](https://github.com/dosibjrn/forever-sim/issues/827) <ready>
 
 - **Baseline:** no `hunter:20:unrestricted:P3` row in the current M1 ledger and no existing task for this exact measurement.
-- **Why this is the best next measurement:** Hunter's production profile is verified through L20, its existing gear bridge has a Hunter role and canonical per-level item data, and P3 is the fast gear-scoring smoke (bounded source search, up to 44 evaluations). This is a more credible cheap attempt than unverified deeper Hunter levels or Paladin's experimental profile, and it does not duplicate the in-flight Priest/Mage work.
-- **Action:** after [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) is terminal, run once on fresh `main` through the trusted Merge recorder: `python tools/wf_gate.py --class hunter --level 20 --spec unrestricted --gate P3`. No code change or predicate change.
+- **Why this is the best next measurement:** Hunter's production profile is verified through L20, its existing gear bridge has a Hunter role and canonical per-level item data, and P3 is the fast gear-scoring smoke (bounded source search, up to 44 evaluations). This is a more credible cheap attempt than unverified deeper Hunter levels or Paladin's experimental profile, and it does not duplicate the Priest/Mage work already underway.
+- **Action:** run once on fresh `main` through the trusted Merge recorder: `python tools/wf_gate.py --class hunter --level 20 --spec unrestricted --gate P3`. Both earlier recorders are terminal; there is no active trusted M1 writer. Do not add code or change the predicate.
 - **Conditional upside, not earned:** one genuine PASS adds `1/1332` = **+0.07508 percentage points**. If the real run fails, only the recorder's eligible measured PARTIAL may count; report the actual result and do not retry unchanged code.
 
 ### #2 — Work1: Priest L20 unrestricted P4/P5 native paid-search repair — [#817](https://github.com/dosibjrn/forever-sim/issues/817)
 
 - **Baseline:** trusted [#41775113953](https://github.com/dosibjrn/forever-sim/actions/runs/41775113953) returned BLOCKED for both gates with `SOURCE_COLD_SEARCH_IR_OR_GEAR_ROLE_UNAVAILABLE`; neither has an M1 row.
-- **Merged slice:** [PR #822](https://github.com/dosibjrn/forever-sim/pull/822) now queries selected Rust `item-options` rather than treating the missing Python Priest role as missing legal gear. The focused source-boundary regression passed **310/310** in [#41777980141](https://github.com/dosibjrn/forever-sim/actions/runs/41777980141). This removes the pre-veto but does not execute paid whole builds or source-action screens.
-- **Next action:** finish the current Merge light recorder; then Work1 constructs/prepares a real Priest L20 native candidate and connects it to the existing paid whole-build/world screen. Run one bounded no-record P4/P5 producer. Only hand off to Merge after actual COMPLETE paid screens and source-action casts. No Python Priest role, SQLite fallback or GameIR adapter.
+- **Merged slice:** [PR #822](https://github.com/dosibjrn/forever-sim/pull/822) now queries selected Rust `item-options` rather than treating the missing Python Priest role as missing legal gear. The focused source-boundary regression passed **310/310** in [#41777980141](https://github.com/dosibjrn/forever-sim/actions/runs/41777980141). Companion recorder plumbing [PR #826](https://github.com/dosibjrn/forever-sim/pull/826) is also merged.
+- **Actual post-merge result:** trusted [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) invoked both P4 and P5; both returned BLOCKED with `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED`. No paid source-action screens, eligible PARTIAL or M1 credit. This is the precise remaining capability, not a missing Priest item list.
+- **Next action:** construct/prepare a real Priest L20 native candidate and connect it to the existing paid whole-build/world screen. Then run one bounded no-record P4/P5 producer. Only hand off to Merge after actual COMPLETE paid screens and source-action casts. No Python Priest role, SQLite fallback or GameIR adapter.
 - **Conditional upside, not earned:** if both gates genuinely reach 2/6, about **+0.05005 percentage points** combined. No 30/300-second or 100-mob acceptance merely to collect partial credit.
 
-### #3 — Work2: Mage L30 unrestricted P3 paid stat-witness repair — [#818](https://github.com/dosibjrn/forever-sim/issues/818)
+### #3 — Work2: Mage L30 unrestricted P3 paid stat-witness repair — [#818](https://github.com/dosibjrn/forever-sim/pull/825)
 
 - **Baseline:** official [#41775113953](https://github.com/dosibjrn/forever-sim/actions/runs/41775113953) recorded FAIL / PARTIAL **44/224**.
 - **Latest no-record production result:** [#41778805293](https://github.com/dosibjrn/forever-sim/actions/runs/41778805293) on Work2 HEAD `ccb5a8a6d11054caf9990fedfb5a7bc70c54c9fa` still returned **44/224**: 1,458 known-legal native items, 2,239 unknown-required-level exclusions, 85 top-five items scored, 44 source-search evaluations. No M1 improvement.
