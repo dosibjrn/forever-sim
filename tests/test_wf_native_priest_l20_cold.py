@@ -311,7 +311,7 @@ def test_300s_paid_world_snapshot_survives_deferred_100mob_validation(tmp_path):
 
 
 def test_300s_best_of_uses_paid_100mob_not_two_target_proxy(tmp_path):
-    # Search probes favor the late candidate (23 < 27 seconds/mob), but
+    # Search probes favor the late candidate (25 < 27 seconds/mob), but
     # its truly executed 100-mob world route is slower (9 > 7 s/mob).
     # The longer 300s frontier includes the genuine early source build.
     receipt, paid, world = _runner(
