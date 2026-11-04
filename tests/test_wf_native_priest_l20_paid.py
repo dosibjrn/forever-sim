@@ -1363,7 +1363,9 @@ def test_p4_p5_native_100mob_gate_exposes_real_outcome_without_fake_pass(
     assert len(calls) == 1
     assert calls[0]["persistent_target_count"] == 100
     assert calls[0]["world_screen"] is None
-    assert report["status"] == "BLOCKED"
+    assert report["status"] == (
+        "FAIL" if expected_reason.startswith("P4_P5_NATIVE_2D_100MOB_FAILED:")
+        else "BLOCKED")
     assert report["reasons"] == [expected_reason]
     assert report["native_2d_screen_complete"] is False
     assert report["screen_complete_candidates"] == 0
