@@ -125,7 +125,14 @@ def _p3_executable_weight_witness_axes(blockers, weights, executable_axes, prior
         kind, separator, axis = str(blocker).partition(":")
         if not separator or kind not in ("MISSING_WEIGHT", "NONPOSITIVE_RELEVANT_WEIGHT"):
             continue
-        if axis not in available or (axis in weights and weights[axis] != 0.0):
+        if kind == "MISSING_WEIGHT":
+            # Only the paid source-runner's *actual* axis-selection receipt can
+            # authorize a previously missing axis for real stat perturbation.
+            if axis not in available or axis in weights:
+                continue
+        elif weights.get(axis) != 0.0:
+            # Keep previously measured zero-weight witness attempts intact.
+            # A mock or partial receipt must never erase an existing witness.
             continue
         selected.add(axis)
     return sorted(selected, key=lambda axis: (rank.get(axis, len(rank)), axis))
@@ -248,7 +255,6 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
 
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
-    from src.game.gear import executable_gear_stats
     from src.v2.source_budgeted_gear import (
         run_source_budgeted_gear, paid_search_winner_baseline,
         paid_source_policy_stat_witness)
@@ -443,9 +449,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # required axes (such as Spirit) receive their own paid perturbation.
     source_policy_baseline_cache = {}
     witness_priority = _p3_stat_witness_priority(ir, policy)
+    # Reuse the *same* source-executor axis receipt that fed the paid search:
+    # querying an unrelated/default IR again can silently change DB scope.
+    source_probe_axes = (
+        (result.get("stat_probe_axis_selection") or {})
+        .get("selected_for_paid_probe") or ())
     witness_axes = _p3_executable_weight_witness_axes(
-        item_check["blockers"], weights, executable_gear_stats(ir),
-        witness_priority)
+        item_check["blockers"], weights, source_probe_axes, witness_priority)
     mage_l30_native = (
         str(class_key).lower() == "mage" and int(level) == 30
         and str(spec).lower() == "unrestricted"
