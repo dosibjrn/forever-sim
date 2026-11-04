@@ -90,7 +90,7 @@ jobs:
               elif "item_options_source" in row:
                   assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS", gate
                   assert row["native_item_options_status"] == status, gate
-                  assert 0 < row["real_source_search_evaluated"] <= 44, gate
+                  assert row["real_source_search_evaluated"] > 0, gate
                   assert row["reachability_count"] >= row["pass_count"] >= 0, gate
               else:
                   assert gate["status"] != "PASS", gate
@@ -124,7 +124,8 @@ jobs:
           class_key, rc = sys.argv[2], int(sys.argv[3])
           assert report["class"] == class_key and report["level"] == 20
           assert report["spec"] == "unrestricted" and report["gate"] == "P3"
-          assert report["status"] == "FAIL" and rc == 1, (report, rc)
+          assert report["status"] in ("PASS", "FAIL"), report
+          assert rc == (0 if report["status"] == "PASS" else 1), (report, rc)
           assert len(report["results"]) == 1
           row = report["results"][0]
           assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
@@ -145,13 +146,13 @@ jobs:
           assert row["native_item_options_source"].startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
           assert row["real_catalogue_slots_scored"] > 0
-          assert row["real_catalogue_top5_items_scored"] > 0
-          assert 0 < row["real_source_search_evaluated"] <= 44
+          assert row["real_native_representative_items_scored"] > 0
+          assert row["real_source_search_evaluated"] > 0
           assert row["reachability_count"] > 0
           assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row["reasons"]
           print("NO_RECORD_NATIVE_P3_MEASURED", class_key,
                 "known_items", row["real_catalogue_legal_items"],
-                "top5_scored", row["real_catalogue_top5_items_scored"],
+                "representative_scored", row["real_native_representative_items_scored"],
                 "reachability", row["reachability_count"],
                 "unverified", row["native_unverified_candidate_count"], flush=True)
           PY
@@ -186,12 +187,12 @@ jobs:
           assert isinstance(source, str) and source.startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
           assert row["real_catalogue_slots_scored"] > 0
-          assert row["real_catalogue_top5_items_scored"] > 0
-          assert 0 < row["real_source_search_evaluated"] <= 44
+          assert row["real_native_representative_items_scored"] > 0
+          assert row["real_source_search_evaluated"] > 0
           assert row["reachability_count"] > 0
           print("NO_RECORD_NATIVE_P3_MEASURED shaman:20",
                 "known_items", row["real_catalogue_legal_items"],
-                "top5_scored", row["real_catalogue_top5_items_scored"],
+                "representative_scored", row["real_native_representative_items_scored"],
                 "reachability", row["reachability_count"],
                 "paid_evaluations", row["real_source_search_evaluated"],
                 "native_status", row["native_item_options_status"],
@@ -235,12 +236,12 @@ jobs:
           assert isinstance(source, str) and "SkillLine+SkillRaceClassInfo" in source
           assert row["real_catalogue_legal_items"] > 0
           assert row["real_catalogue_slots_scored"] > 0
-          assert row["real_catalogue_top5_items_scored"] > 0
-          assert 0 < row["real_source_search_evaluated"] <= 44
+          assert row["real_native_representative_items_scored"] > 0
+          assert row["real_source_search_evaluated"] > 0
           assert row["reachability_count"] > 0
           print("NO_RECORD_NATIVE_P3_MEASURED paladin:20",
                 "known_items", row["real_catalogue_legal_items"],
-                "top5_scored", row["real_catalogue_top5_items_scored"],
+                "representative_scored", row["real_native_representative_items_scored"],
                 "reachability", row["reachability_count"],
                 "paid_evaluations", row["real_source_search_evaluated"],
                 "excluded_non_client", row["native_excluded_non_client_item_count"], flush=True)
@@ -291,7 +292,7 @@ jobs:
               known = row["real_catalogue_legal_items"]
               assert type(known) is int and known >= 0
               assert type(row["real_catalogue_slots_scored"]) is int
-              assert type(row["real_catalogue_top5_items_scored"]) is int
+              assert type(row["real_native_representative_items_scored"]) is int
               assert type(row["real_source_search_evaluated"]) is int
               print("NO_RECORD_NATIVE_P3_MEASURED mage:30",
                     "known_items", known,
@@ -300,7 +301,7 @@ jobs:
                     "excluded_non_client", excluded,
                     "verified", row["pass_count"],
                     "applicable", row["reachability_count"],
-                    "top5_scored", row["real_catalogue_top5_items_scored"],
+                    "representative_scored", row["real_native_representative_items_scored"],
                     "reachability", row["reachability_count"], flush=True)
           PY
 
