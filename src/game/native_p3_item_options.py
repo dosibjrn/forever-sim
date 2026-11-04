@@ -130,17 +130,30 @@ def _native_mage_spellbook_request() -> dict:
     }
 
 
-def query_native_mage_spell_coefficients(
-    binary: str | Path, *, runner: Callable = subprocess.run,
-) -> dict:
-    """Read rank-specific coefficients from the selected Rust PreparedV2 spellbook.
+def _native_shaman_spellbook_request() -> dict:
+    """Minimal native Shaman spellbook probe for the existing rank-4 Lightning Bolt.
 
-    The request only prepares a Mage spellbook. No character stats, legality,
-    rotation result or stat weight are taken from this level-60 preparation;
-    the returned coefficients are matched later to exact source-ranked action
-    IDs already selected by the existing L30 source context.
+    PreparedV2 is a level-60 preparation, but this caller consumes only the
+    source engine's coefficient for spell 915. It never reads its actor stats,
+    equipment, eligibility, rotation result or stat weights as L20 evidence.
     """
     request = _native_mage_spellbook_request()
+    player = request["raid"]["parties"][0]["players"][0]
+    player["class"] = "ClassShaman"
+    player["name"] = "native-shaman-spellbook"
+    player["race"] = "RaceOrc"
+    player.pop("mage", None)
+    player["elementalShaman"] = {"options": {"classOptions": {}}}
+    player["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"] = 915
+    return request
+
+
+def _query_native_spell_coefficients(
+    binary: str | Path, request: dict, expected_class: str, *,
+    required_spell_ids: tuple[int, ...] = (),
+    runner: Callable = subprocess.run,
+) -> dict:
+    """Read rank-specific bonus coefficients from native PreparedV2 player.spells."""
     try:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", encoding="utf-8", delete=True
@@ -181,7 +194,8 @@ def query_native_mage_spell_coefficients(
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_PREPARED_V2")
     player = prepared.get("player")
     if (not isinstance(player, dict)
-            or str(player.get("class") or "").lower().removeprefix("class") != "mage"):
+            or str(player.get("class") or "").lower().removeprefix("class")
+            != expected_class):
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_CLASS_MISMATCH")
     spells = player.get("spells")
     if not isinstance(spells, list):
@@ -204,6 +218,11 @@ def query_native_mage_spell_coefficients(
         coefficients[spell_id] = coefficient
     if not coefficients:
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_NO_DAMAGE_COEFFICIENTS")
+    missing = sorted(set(required_spell_ids) - set(coefficients))
+    if missing:
+        raise NativeItemOptionsError(
+            "P3_NATIVE_SPELLBOOK_TARGET_COEFFICIENT_UNAVAILABLE:"
+            + ",".join(str(spell_id) for spell_id in missing))
     reference = prepared.get("reference")
     engine_revision = (
         reference.get("engine_revision") if isinstance(reference, dict) else None)
@@ -216,13 +235,26 @@ def query_native_mage_spell_coefficients(
     }
 
 
-def apply_native_mage_spell_coefficients(ir, native_facts: dict):
-    """Copy exact native coefficients onto matching existing source-ranked actions.
+def query_native_mage_spell_coefficients(
+    binary: str | Path, *, runner: Callable = subprocess.run,
+) -> dict:
+    """Read exact Mage coefficients; no Mage L60 actor fields become P3 evidence."""
+    return _query_native_spell_coefficients(
+        binary, _native_mage_spellbook_request(), "mage", runner=runner)
 
-    This is a field-level native fact transport, not action generation or a
-    second legality catalogue. Only actions already present in the source IR
-    and carrying the exact native spell ID can be enriched.
-    """
+
+def query_native_shaman_spell_coefficients(
+    binary: str | Path, *, runner: Callable = subprocess.run,
+) -> dict:
+    """Read native rank-4 Lightning Bolt's coefficient, and no L20 actor proxy data."""
+    return _query_native_spell_coefficients(
+        binary, _native_shaman_spellbook_request(), "shaman",
+        required_spell_ids=(915,), runner=runner)
+
+
+def _apply_native_spell_coefficients(
+        ir, native_facts: dict, *, required_actions: dict[str, int] | None = None):
+    """Copy native coefficients onto exact source-ranked actions already in the IR."""
     from src.game.model.ir import DamageEffect
 
     coefficients = native_facts.get("spell_power_coefficients")
@@ -238,10 +270,29 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
     resolved_spell_ids = set()
     new_source_facts = list(getattr(ir, "source_facts", ()) or ())
     for action in tuple(getattr(ir, "actions", ()) or ()):
+        action_id = str(getattr(action, "id", ""))
+        expected_spell_id = (
+            required_actions.get(action_id) if required_actions is not None else None)
+        if required_actions is not None and action_id not in required_actions:
+            updated_actions.append(action)
+            continue
         metadata = dict(getattr(action, "metadata", {}) or {})
         rank_source = metadata.get("rank_source")
         spell_id = rank_source.get("spell_id") if isinstance(rank_source, dict) else None
-        if type(spell_id) is not int or spell_id not in coefficients:
+        if type(spell_id) is not int:
+            if required_actions is not None:
+                raise NativeItemOptionsError(
+                    "P3_NATIVE_SPELLBOOK_SOURCE_ACTION_RANK_UNAVAILABLE:" + action_id)
+            updated_actions.append(action)
+            continue
+        if expected_spell_id is not None and spell_id != expected_spell_id:
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SPELLBOOK_SOURCE_ACTION_RANK_MISMATCH:" + action_id)
+        if spell_id not in coefficients:
+            if required_actions is not None:
+                raise NativeItemOptionsError(
+                    "P3_NATIVE_SPELLBOOK_TARGET_COEFFICIENT_UNAVAILABLE:"
+                    + str(spell_id))
             updated_actions.append(action)
             continue
         coefficient = float(coefficients[spell_id])
@@ -255,7 +306,7 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
             "spell_id": spell_id,
             "field": "bonus_coefficient",
             "value": coefficient,
-            "action_id": str(getattr(action, "id", "")),
+            "action_id": action_id,
         }
         for effect in tuple(getattr(action, "effects", ()) or ()):
             if isinstance(effect, DamageEffect):
@@ -274,6 +325,9 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
             else:
                 effects.append(effect)
         if not has_direct_damage:
+            if required_actions is not None:
+                raise NativeItemOptionsError(
+                    "P3_NATIVE_SPELLBOOK_SOURCE_ACTION_HAS_NO_DIRECT_DAMAGE:" + action_id)
             updated_actions.append(action)
             continue
         metadata["native_spell_power_coefficient_verified"] = True
@@ -285,13 +339,20 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
         updated_actions.append(replace(
             action, effects=tuple(effects), metadata=metadata, provenance=provenance))
         applied.append({
-            "action_id": str(getattr(action, "id", "")),
+            "action_id": action_id,
             "spell_id": spell_id,
             "spell_power_coefficient": coefficient,
         })
         resolved_spell_ids.add(spell_id)
         new_source_facts.append(fact)
 
+    if required_actions is not None:
+        applied_ids = [row["action_id"] for row in applied]
+        if applied_ids != list(required_actions):
+            missing = sorted(set(required_actions) - set(applied_ids))
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SPELLBOOK_EXPECTED_SOURCE_ACTION_UNAVAILABLE:"
+                + ",".join(missing))
     if not applied:
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_NO_MATCHING_SOURCE_ACTION")
     unsupported = tuple(
@@ -307,6 +368,17 @@ def apply_native_mage_spell_coefficients(ir, native_facts: dict):
         unsupported_semantics=unsupported,
     )
     return enriched, applied
+
+
+def apply_native_mage_spell_coefficients(ir, native_facts: dict):
+    """Preserve the existing Mage L30 exact-rank native coefficient adapter."""
+    return _apply_native_spell_coefficients(ir, native_facts)
+
+
+def apply_native_shaman_spell_coefficients(ir, native_facts: dict):
+    """Enrich only source action lightning_bolt:915, never another rank or action."""
+    return _apply_native_spell_coefficients(
+        ir, native_facts, required_actions={"lightning_bolt:915": 915})
 
 
 # Only unit-preserving source fields. Native rating and pseudo-stat units
