@@ -202,7 +202,7 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
             or type(proof.get("world_targets_killed")) is not int
             or proof["world_targets_killed"] != target_count
             or len(proof.get("native_windows", ())) != target_count
-            or proof.get("paid_recovery") is not False):
+            or type(proof.get("paid_recovery")) is not bool):
         raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_WORLD_RECEIPT_INCOMPLETE")
     # Native Rust already reports each target's *actual* source-action
     # damage events in the retained actor's windows. Preserve those receipts
@@ -253,7 +253,11 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
             "native_health_damage"),
         "native_2d_persistent_actor_verified": True,
         "native_2d_persistent_world_ack_verified": True,
-        "native_2d_persistent_paid_recovery": False,
+        "native_2d_persistent_paid_recovery": proof["paid_recovery"],
+        "native_2d_persistent_recovery_ns_by_target": proof.get(
+            "native_passive_recovery_ns_by_target"),
+        "native_2d_persistent_recovery_ticks_by_target": proof.get(
+            "native_passive_recovery_ticks_by_target"),
         "native_2d_screen_complete": False,
     }
 

@@ -232,6 +232,56 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
     return receipt
 
 
+def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> dict:
+    """Carry only source-Rust regeneration actually paid on the ACKed 2D clock.
+
+    Older pins lacking native tick receipts remain unobserved. A timed pause
+    without a native regeneration event cannot by itself certify recovery.
+    """
+    if not windows or len(windows) != len(kills):
+        raise AssertionError("RUST_WORLD_PAID_RECOVERY_TARGET_COUNT_INVALID")
+    present = [
+        isinstance(window, dict)
+        and "native_passive_recovery_ns" in window
+        and "native_passive_recovery_ticks" in window
+        for window in windows
+    ]
+    if not any(present):
+        return {
+            "native_passive_recovery_observed": False,
+            "native_passive_recovery_ns_by_target": None,
+            "native_passive_recovery_ticks_by_target": None,
+            "paid_recovery": False,
+        }
+    if not all(present):
+        raise AssertionError("RUST_WORLD_PAID_RECOVERY_RECEIPT_INCOMPLETE")
+    elapsed, ticks_by_target = [], []
+    for index, window in enumerate(windows):
+        ns = window["native_passive_recovery_ns"]
+        ticks = window["native_passive_recovery_ticks"]
+        if type(ns) is not int or ns < 0 or type(ticks) is not int or ticks < 0:
+            raise AssertionError("RUST_WORLD_PAID_RECOVERY_RECEIPT_INVALID")
+        if index == 0:
+            if ns != 0 or ticks != 0:
+                raise AssertionError("RUST_WORLD_FIRST_TARGET_HAS_UNPAID_RECOVERY")
+        else:
+            between_kills_ns = (
+                kills[index]["world_kill_clock_ns"]
+                - kills[index - 1]["world_kill_clock_ns"]
+            )
+            if ns > between_kills_ns or (ns == 0 and ticks > 0):
+                raise AssertionError("RUST_WORLD_PAID_RECOVERY_CLOCK_INVALID")
+        elapsed.append(ns)
+        ticks_by_target.append(ticks)
+    return {
+        "native_passive_recovery_observed": True,
+        "native_passive_recovery_ns_by_target": elapsed,
+        "native_passive_recovery_ticks_by_target": ticks_by_target,
+        "paid_recovery": all(ns > 0 and ticks > 0
+                             for ns, ticks in zip(elapsed[1:], ticks_by_target[1:])),
+    }
+
+
 def _native_health_damage_summary(windows: list[dict], *,
                                   require_positive: bool,
                                   require_zero: bool = False) -> dict:
@@ -536,7 +586,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 or result["world_targets_killed"] != target_count
                 or not result["continuous_native_actor"]
                 or not result["actual_2d_ack"]
-                or result["paid_recovery"]
+                or type(result.get("paid_recovery")) is not bool
                 or len(result["windows"]) != target_count
                 or any(b["native_kill_ns"] <= a["native_kill_ns"]
                        for a, b in zip(result["windows"], result["windows"][1:]))
@@ -551,6 +601,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             result["windows"], target_count)
         native_mana = _native_mana_continuity(
             result["windows"], target_count)
+        recovery = _native_paid_recovery_receipts(result["windows"], kills)
+        if result["paid_recovery"] is not recovery["paid_recovery"]:
+            raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
         native_health_damage = _native_health_damage_summary(
             result["windows"], require_positive=require_native_health_damage,
             require_zero=require_native_zero_health_damage)
@@ -565,6 +618,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "native_windows": result["windows"], "world_kills": kills,
             "minimum_native_actor_health": min_native_health,
             **native_mana,
+            **recovery,
             "native_health_damage": native_health_damage,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
@@ -578,7 +632,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "gsim_route_legs": walks,
             "gsim_route_paid_receipts": route_receipts,
             "gsim_route_paid_movement_s": paid_world_movement_s,
-            "paid_recovery": False, "checkpoint_certified": False,
+            "checkpoint_certified": False,
         }
     finally:
         if proc.poll() is None:

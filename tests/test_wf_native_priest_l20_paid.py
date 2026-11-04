@@ -1380,6 +1380,20 @@ def test_priest_p4_p5_full_screen_skips_redundant_one_fight_smoke(
         },
         "P4_P5_NATIVE_PAID_RECOVERY_AND_COLD_SEARCH_NOT_COMPLETE",
     ),
+    (
+        {
+            "native_2d_persistent_verified": 1,
+            "native_2d_persistent_targets_killed": 100,
+            "native_candidate_receipts": [{
+                "status": "NATIVE_PAID",
+                "native_2d_persistent_world": {
+                    "native_2d_persistent_world_targets_killed": 100,
+                    "native_2d_persistent_paid_recovery": True,
+                },
+            }],
+        },
+        "P4_P5_NATIVE_100MOB_PAID_RECOVERY_VERIFIED_COLD_SEARCH_NOT_COMPLETE",
+    ),
 ])
 def test_p4_p5_native_100mob_gate_exposes_real_outcome_without_fake_pass(
         tmp_path, monkeypatch, native_receipt, expected_reason):
@@ -1627,3 +1641,30 @@ def test_priest_native_item_frontier_pays_distinct_dense_builds_before_sparse_fa
     assert result["native_item_option_dense_builds_proposed"] == 3
     assert result["native_2d_screen_complete"] is False
     assert json.loads(source_file.read_text(encoding="utf-8")) == _request()
+
+
+def test_native_paid_recovery_requires_actual_rust_ticks_and_ack_clock():
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    # The selected native/2D runner is a script rather than an import package.
+    runner = Path(__file__).resolve().parents[1] / (
+        "integrations/mythicsim-rust/live_two_world_pulls.py")
+    spec = spec_from_file_location("test_paid_world_runner", runner)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    kills = [{"world_kill_clock_ns": 5_000_000_000},
+             {"world_kill_clock_ns": 19_000_000_000}]
+    windows = [{"native_passive_recovery_ns": 0,
+                "native_passive_recovery_ticks": 0},
+               {"native_passive_recovery_ns": 12_000_000_000,
+                "native_passive_recovery_ticks": 6}]
+    paid = module._native_paid_recovery_receipts(windows, kills)
+    assert paid["paid_recovery"] is True
+    assert paid["native_passive_recovery_ns_by_target"] == [0, 12_000_000_000]
+    windows[1]["native_passive_recovery_ticks"] = 0
+    assert module._native_paid_recovery_receipts(windows, kills)["paid_recovery"] is False
+    windows[1]["native_passive_recovery_ticks"] = 6
+    windows[1]["native_passive_recovery_ns"] = 15_000_000_000
+    with pytest.raises(AssertionError, match="RECOVERY_CLOCK_INVALID"):
+        module._native_paid_recovery_receipts(windows, kills)
+

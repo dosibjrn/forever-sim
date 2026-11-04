@@ -152,7 +152,16 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             # result, not a missing bridge. They are still NOT a completed
             # P4/P5 gate: native-paid recovery and the cold 30/300s search
             # have not been established by this bounded producer.
+            recovered = any(
+                row.get("status") == "NATIVE_PAID"
+                and isinstance(row.get("native_2d_persistent_world"), dict)
+                and row["native_2d_persistent_world"].get(
+                    "native_2d_persistent_paid_recovery") is True
+                for row in paid.get("native_candidate_receipts", ())
+            )
             report["reasons"] = [
+                "P4_P5_NATIVE_100MOB_PAID_RECOVERY_VERIFIED_COLD_SEARCH_NOT_COMPLETE"
+                if recovered else
                 "P4_P5_NATIVE_PAID_RECOVERY_AND_COLD_SEARCH_NOT_COMPLETE"]
         else:
             # Keep the *observed* source/native-world failure on the active
