@@ -1093,3 +1093,78 @@ def test_priest_100_target_persistent_world_carries_native_source_action_windows
         assert all(not counts for index, counts in enumerate(windows) if index != 19)
         assert receipt["native_2d_persistent_paid_recovery"] is False
         assert receipt["native_2d_screen_complete"] is False
+
+
+@pytest.mark.parametrize("one_fight_mode", ["omitted", "raises", "no_ack"])
+def test_retained_100_target_native_world_is_not_vetoed_by_one_fight_probe(
+        tmp_path, one_fight_mode):
+    """Only the real retained actor decides its 100-target outcome.
+
+    A separate one-fight probe can be absent, refused or fail without
+    preventing native-paid source candidates from reaching the true 2D run.
+    The mock receipt below never certifies a P4/P5 gate.
+    """
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    source = _request()
+    (tmp_path / "source.json").write_text(json.dumps(source))
+    retained_requests = []
+
+    def native_paid(binary, candidate, **kwargs):
+        effective = copy.deepcopy(candidate)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        return {
+            "effective_request_sha256": sha256(json.dumps(
+                effective, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest(),
+            "score": 12.0,
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 3}],
+        }, {}
+
+    def retained(binary, path, *, target_count):
+        assert target_count == 100
+        retained_requests.append(json.loads(path.read_text()))
+        return {
+            "native_2d_persistent_actor_verified": True,
+            "native_2d_persistent_world_ack_verified": True,
+            "native_2d_persistent_world_targets_killed": 100,
+            "native_2d_persistent_source_action_events": 100,
+            "native_2d_persistent_source_action_counts_by_target": [
+                {"spellId:585": 1} for _ in range(100)],
+            "native_2d_screen_complete": False,
+        }
+
+    def one_fight(binary, path):
+        if one_fight_mode == "raises":
+            raise RuntimeError("INDEPENDENT_ONE_FIGHT_DIAGNOSTIC_FAILED")
+        return {"native_2d_fight_ack_complete": False}
+
+    result = score_source_priest_l20_candidates(
+        "/selected/native", tmp_path, score_request=native_paid,
+        world_screen=None if one_fight_mode == "omitted" else one_fight,
+        persistent_world=retained, persistent_target_count=100)
+
+    expected = copy.deepcopy(source)
+    expected["simOptions"].update(iterations=1, randomSeed="42")
+    assert retained_requests == [expected]
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_2d_persistent_attempted"] == 1
+    assert result["native_2d_persistent_verified"] == 1
+    assert result["native_2d_persistent_targets_killed"] == 100
+    assert result["native_2d_live_ack_attempted"] == (
+        0 if one_fight_mode == "omitted" else 1)
+    assert result["native_2d_live_ack_verified"] == 0
+    assert result["native_2d_screen_complete"] is False
+    row = result["native_candidate_receipts"][0]
+    assert row["native_2d_persistent_world"]["native_2d_persistent_world_targets_killed"] == 100
+    if one_fight_mode == "raises":
+        assert row["native_2d_fight_error"] == "INDEPENDENT_ONE_FIGHT_DIAGNOSTIC_FAILED"
+    elif one_fight_mode == "no_ack":
+        assert row["native_2d_fight_error"] == "PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED"
+    else:
+        assert "native_2d_fight_error" not in row
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["source.json"]
+    assert json.loads((tmp_path / "source.json").read_text()) == source
