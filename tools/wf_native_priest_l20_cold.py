@@ -45,12 +45,26 @@ def _source_native_builds(source: dict, item_options: list[dict]):
         yield copy.deepcopy(source)
         return
     grouped = list(slots.values())
-    # Full build first, then native-sourced single-slot replacements, then
-    # combinations. Do not spend the first 30s on empty/single-item prefixes.
-    selections = [tuple(choices[0] for choices in grouped)]
+    # Try the native-sourced complete build first. A real cold run showed
+    # thousands of full-build alternatives refused by Rust for an unsupported
+    # L20 rating conversion. Source-native *subsets* must therefore be
+    # reachable before a bounded search exhausts its full-build product.
+    # This is proposal diversity, NOT Python item-stat or legality filtering:
+    # MythicSim still accepts/refuses every actual paid whole build.
+    full = tuple(choices[0] for choices in grouped)
+    selections = [full]
+    if len(grouped) >= 3:
+        # Remove one slot at a time, then try smaller source-backed subsets
+        # and the unequipped source request before the large Cartesian tail.
+        selections.extend(full[:i] + full[i + 1:] for i in range(len(full)))
+        for size in range(len(full) - 2, 0, -1):
+            selections.extend((full[:size], full[-size:]))
+        for choices in grouped:
+            selections.extend((alternative,) for alternative in choices[1:])
+        selections.append(())
     for slot_index, choices in enumerate(grouped):
         for alternative in choices[1:]:
-            swapped = list(selections[0])
+            swapped = list(full)
             swapped[slot_index] = alternative
             selections.append(tuple(swapped))
     yielded = set()
@@ -63,10 +77,9 @@ def _source_native_builds(source: dict, item_options: list[dict]):
             {"id": item_id} for item_id in ids
         ]
         yield build
-    # Keep the naked source request as an ordinary fallback, not the first
-    # expensive 100-mob screen that consumes the real 30s window before the
-    # native-sourced complete gear proposals are even attempted.
-    yield copy.deepcopy(source)
+    if len(grouped) < 3:
+        # Preserve the existing two-slot ordering used by cheap regressions.
+        yield copy.deepcopy(source)
 
 
 def _verified_route(receipt: dict) -> float | None:
