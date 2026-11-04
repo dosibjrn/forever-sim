@@ -264,6 +264,33 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "reasons": [str(exc)],
                 "production_component": "src.game.native_p3_item_options",
             }
+    native_player_context = None
+    if (str(class_key).lower() == "paladin" and int(level) == 20
+            and str(spec).lower() == "unrestricted"):
+        # Source-backed actor and equipped-weapon facts come from the selected
+        # Rust authority, never from the old zero-stat/14-DPS scenario proxy.
+        # This is still a context-only query, not native L20 combat execution.
+        from src.game.native_p3_player_context import (
+            NativePlayerContextError, apply_native_player_context,
+            query_native_player_context,
+        )
+        player_context_binary = os.environ.get("FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN")
+        if not player_context_binary:
+            return {
+                "status": "BLOCKED",
+                "reasons": ["P3_NATIVE_PLAYER_CONTEXT_BINARY_REQUIRED"],
+                "production_component": "src.game.native_p3_player_context",
+            }
+        try:
+            native_player_context = query_native_player_context(
+                player_context_binary, class_key, level)
+            ir = apply_native_player_context(ir, native_player_context)
+        except (NativePlayerContextError, ValueError, TypeError, KeyError) as exc:
+            return {
+                "status": "BLOCKED",
+                "reasons": [str(exc)],
+                "production_component": "src.game.native_p3_player_context",
+            }
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
@@ -492,4 +519,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             native_spell_facts.get("engine_revision") if native_spell_facts else None),
         "native_spell_coefficients_applied": native_spell_coefficients_applied,
         "native_paid_winner_spell_probe_enabled": native_fallback_action,
+        "native_player_context_id": (
+            native_player_context.get("source_context_id")
+            if native_player_context else None),
+        "native_player_context_scope": (
+            native_player_context.get("source_scope")
+            if native_player_context else None),
+        "native_player_context_unresolved_fields": (
+            native_player_context.get("unsupported_fields", ())
+            if native_player_context else ()),
     }
