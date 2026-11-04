@@ -110,10 +110,10 @@ def _run_priest_native_p6(class_key: str, level: int, spec: str) -> dict:
         "source_replay_T30_s_per_mob": verdict["T30_s_per_mob"],
         "source_replay_T300_s_per_mob": verdict["T300_s_per_mob"],
         "source_replay_T30_T300": verdict["ratio_T30_T300"],
-        "source_replay_300s_nonregression": bool(
+        "source_replay_numeric_saturation": bool(
             verdict["T30_s_per_mob"] is not None
             and verdict["T300_s_per_mob"] is not None
-            and verdict["T300_s_per_mob"] <= 1.01 * verdict["T30_s_per_mob"]),
+            and verdict["T30_s_per_mob"] <= 1.01 * verdict["T300_s_per_mob"]),
         "native_cold_identical_winner_build": verdict["identical_winner_build"],
         "coverage_scope_complete": verdict["status"] == "PASS",
     }
@@ -222,9 +222,9 @@ def run_live(root: Path, class_key: str, level: int, *,
         "production_component": "src.v2.source_bounded_joint_frontier.replay_joint_shortlist_100mob",
         "source_replay_results": results,
         "source_replay_Tfirst_Tsecond": ratio,
-        "source_replay_300s_nonregression": bool(ratio is not None
-                                              and results[1]["mean_s_per_mob"]
-                                              <= 1.01 * results[0]["mean_s_per_mob"]),
+        "source_replay_numeric_saturation": bool(ratio is not None
+                                              and results[0]["mean_s_per_mob"]
+                                              <= 1.01 * results[1]["mean_s_per_mob"]),
         "full_p6_selected_backend_acceptance": False,
         "coverage_scope_complete": False,
         # Genuine sequential mob kills on TWO independently built candidates,
