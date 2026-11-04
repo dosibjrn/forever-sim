@@ -316,8 +316,8 @@ def damage_spell_power(item: ItemRecord) -> float:
     return max(float(item.spell_power or 0.0), float(item.extra_stats.get("spldmg", 0.0) or 0.0))
 
 
-_ITEM_VECTOR_CACHE: dict[int, dict[str, float]] = {}
-_ITEM_SCORING_VECTOR_CACHE: dict[int, dict[str, float]] = {}
+_ITEM_VECTOR_CACHE: dict[tuple[int, str], dict[str, float]] = {}
+_ITEM_SCORING_VECTOR_CACHE: dict[tuple[int, str], dict[str, float]] = {}
 _ACTIVE_CATALOGUE_PATH_KEY: str | None = None
 
 def _sync_catalogue_path(path: Path) -> None:
@@ -340,7 +340,9 @@ def _sync_catalogue_path(path: Path) -> None:
         _ACTIVE_CATALOGUE_PATH_KEY=key
 
 def item_vector(item: ItemRecord) -> dict[str, float]:
-    key=int(item.item_id)
+    # Native and legacy catalogue rows may share an item ID but carry distinct
+    # source stat units. Never reuse a cached SQLite vector for a Rust item.
+    key=(int(item.item_id), str(item.identity_origin))
     cached=_ITEM_VECTOR_CACHE.get(key)
     if cached is not None:
         return cached
@@ -366,7 +368,8 @@ def item_scoring_vector(item: ItemRecord) -> dict[str, float]:
     fields remain in their SOURCE units; no invented rating conversion.
     Reuse the immutable per-catalogue item vector in the hot gear-search path.
     """
-    cached = _ITEM_SCORING_VECTOR_CACHE.get(int(item.item_id))
+    key=(int(item.item_id), str(item.identity_origin))
+    cached = _ITEM_SCORING_VECTOR_CACHE.get(key)
     if cached is not None:
         return cached
     value = dict(item_vector(item))
@@ -392,7 +395,7 @@ def item_scoring_vector(item: ItemRecord) -> dict[str, float]:
     from .source_numeric_extras import modeled_source_numeric_extras
     for key, amount in modeled_source_numeric_extras(item).items():
         value[key] = value.get(key, 0.) + float(amount)
-    _ITEM_SCORING_VECTOR_CACHE[int(item.item_id)] = value
+    _ITEM_SCORING_VECTOR_CACHE[key] = value
     return value
 
 
