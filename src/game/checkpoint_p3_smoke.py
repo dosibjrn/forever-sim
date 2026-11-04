@@ -97,11 +97,13 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
             # A stat-shaped proxy field is not evidence of an equipped item.
             # Match the exact mode, source kind and stat against the canonical
             # facts shared with the production gear applicator.
+            # The gear applicator matches the canonical mode and source kind,
+            # including flat-DPS anchors (dps_stat_id=None) that it replaces.
+            # A stat-ID equality check here would reject those real sources.
             for fact, mode_id in facts:
                 if (mode_id in action_modes
                         and source.kind == fact.damage_source_kind
-                        and getattr(source, 'dps_stat_id', None) == fact.source_stat
-                        and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
+                            and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                     equipped_dps = True
                     # A fixed-speed cat/bear attack depends on equipped DPS,
                     # not on weapon speed or the original weapon hit range.
@@ -119,7 +121,6 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
         for fact, mode_id in facts:
             if (mode == mode_id
                     and source.kind == fact.damage_source_kind
-                    and getattr(source, 'dps_stat_id', None) == fact.source_stat
                     and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                 equipped_dps = True
                 equipped_mean_hit |= fact.weapon_speed_semantics == 'equipped'
