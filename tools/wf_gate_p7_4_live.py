@@ -162,15 +162,21 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
     raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
-def _paid_gear_elite_choice(elites, rng, proposal_index):
-    """Choose a parent only from this run's balanced-scored paid archive.
+def _paid_gear_elite_choice(elites, rng, proposal_index, reranked=()):
+    """Use paid multi-seed Balanced finalists for part of local gear search.
 
-    Every fifth proposal is an independent cold source draw; the others
-    explore among the top 15 distinct, source-legal candidates already paid
-    with balanced RNG. The saved reference and stochastic holdout are never
-    used to choose a parent.
+    Every fifth proposal stays a fresh cold draw. Once native+2D has paid for
+    independent finalist screens, alternating local proposals exploit the top
+    four of their more reliable scores instead of continuing exclusively from
+    noisy three-fight leaders. Other proposals retain the top-15 paid archive
+    for diversity. Neither the reference nor stochastic holdout seeds search.
     """
-    if proposal_index % 5 == 0 or not elites:
+    if proposal_index % 5 == 0:
+        return None
+    if reranked and proposal_index % 2 == 0:
+        ranked = sorted(reranked, key=lambda row: row[0], reverse=True)
+        return rng.choice(ranked[:min(4, len(ranked))])[3]
+    if not elites:
         return None
     return rng.choice(elites[:min(15, len(elites))])[1]
 
@@ -410,7 +416,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                 # cold run; every fifth draw is independently cold. The saved
                 # gear and other gates' winners are never injected as elites.
                 # Only the balanced-scored paid archive may guide local edits.
-                elite = (_paid_gear_elite_choice(elites, rng, proposals)
+                elite = (_paid_gear_elite_choice(elites, rng, proposals, reranked)
                          if full_search else None)
                 candidate = _cold_gear(
                     base, validator, gear_search, rng, pool=pool,

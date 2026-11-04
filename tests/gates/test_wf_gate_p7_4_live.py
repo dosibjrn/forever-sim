@@ -340,6 +340,38 @@ def test_p74_source_paid_elite_archive_preserves_native_diversity_and_cold_resta
     assert len(paid) == 24  # sampling never mutates the measured archive
 
 
+def test_p74_paid_multiseed_finalists_guide_later_gear_proposals():
+    """After paying for independent Balanced scores, exploit their winners.
+
+    The noisy three-fight leader is still in the paid archive, but must not
+    monopolize parent selection once stronger paid finalist evidence exists.
+    Cold restarts and the original paid archive remain reachable.
+    """
+    screens = [(900.0, {"paid_candidate": "lucky-three-fight"})]
+    finalists = [
+        (710.0, {}, "low", {"paid_candidate": "low"}, 900.0),
+        (740.0, {}, "best", {"paid_candidate": "best-multiseed"}, 690.0),
+        (720.0, {}, "mid", {"paid_candidate": "mid"}, 730.0),
+        (700.0, {}, "bottom", {"paid_candidate": "bottom"}, 710.0),
+        (705.0, {}, "fifth", {"paid_candidate": "fifth"}, 720.0),
+    ]
+    class ChooseFirst:
+        def choice(self, rows):
+            if len(rows) > 1:
+                assert len(rows) == 4  # bounded top paid finalists
+            return rows[0]
+
+    rng = ChooseFirst()
+    assert gate._paid_gear_elite_choice(
+        screens, rng, 2, finalists) == {"paid_candidate": "best-multiseed"}
+    assert gate._paid_gear_elite_choice(
+        screens, rng, 3, finalists) == {"paid_candidate": "lucky-three-fight"}
+    assert gate._paid_gear_elite_choice(screens, rng, 5, finalists) is None
+    assert gate._paid_gear_elite_choice(
+        screens, rng, 2, ()) == {"paid_candidate": "lucky-three-fight"}
+    assert finalists[0][2] == "low"  # parent ranking does not mutate receipts
+
+
 def test_source_ranked_p74_samples_high_stat_sources_without_truncating_pool():
     """Actual complete sorted candidate pool stays reachable, unlike top-N."""
     source_items = list(range(1000))  # ascending ids stand for source rank
