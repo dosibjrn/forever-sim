@@ -35,6 +35,7 @@ RETIRED_TOOLS = (
     "tools/wf_checkpoint_druid_balance_l60.py",
     "tools/wf_native_session_capability.py",
     "tools/wf369_druid_l30_apl_probe.py",
+    "tools/wf365_bear_primal_diagnostic.py",
     "tools/wf353_l30_p3_context_replay.py",
 )
 RETIRED_SOURCE_MODULES = (
@@ -70,6 +71,7 @@ RETIRED_IMPORT_NAMES = (
     "wf_checkpoint_druid_balance_l60",
     "wf_native_session_capability",
     "wf369_druid_l30_apl_probe",
+    "wf365_bear_primal_diagnostic",
     "wf353_l30_p3_context_replay",
     "source_sqlite_spell_facts",
     "source_sqlite_spell_semantics",
@@ -79,6 +81,7 @@ RETIRED_IMPORT_NAMES = (
 RETIRED_OUTPUTS = (
     "evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",
     "evidence/wf369/WF369_DRUID_L30_APL_PROBE.json",
+    "evidence/wf365/WF365_BEAR_PRIMAL_DIAGNOSTIC.json",
 )
 
 
