@@ -699,6 +699,29 @@ def test_p74_freeze_prefers_independently_confirmed_balanced_winner():
         best, reranked, {"third"})
     assert confirmed[2] == "third"
     assert confirmed[5] == "paid_4x3_balanced_native_world_confirmed"
+    deep = gate._freeze_paid_p74_balanced_winner(
+        best, reranked, {"third"}, {"third"})
+    assert deep[2] == "third"
+    assert deep[5] == "paid_6x3_balanced_native_world_deep_confirmed"
+
+
+def test_p74_deep_confirmation_requires_eight_finalists_and_five_confirmed():
+    """Deep comparisons are bounded to two already-confirmed paid leaders."""
+    reranked = [
+        (float(index), {}, f"candidate-{index}", {}, float(index))
+        for index in range(8)]
+    confirmed = {f"candidate-{index}" for index in range(5)}
+    selected = gate._next_p74_deep_confirmation(
+        reranked, confirmed, set(), 270.0)
+    assert selected is not None
+    assert selected[1][2] == "candidate-4"
+    assert gate._next_p74_deep_confirmation(
+        reranked[:7], confirmed, set(), 270.0) is None
+    assert gate._next_p74_deep_confirmation(
+        reranked, {"candidate-0", "candidate-1", "candidate-2", "candidate-3"},
+        set(), 270.0) is None
+    assert gate._next_p74_deep_confirmation(
+        reranked, confirmed, {"candidate-4", "candidate-3"}, 270.0) is None
 
 
 def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
@@ -728,7 +751,7 @@ def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
     # Start, three paid screens, three independent re-screens, confirmation,
     # end of the full 300s window and observed deadline.
     times = iter([0.0, 0.0, 0.0, 0.0, 130.0, 150.0,
-                  170.0, 270.0, 300.0, 300.0])
+                  170.0, 270.0, 280.0, 300.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic",
                         lambda: next(times, 300.0))
     monkeypatch.setattr(gate.time, "sleep", lambda s: None)
@@ -781,19 +804,34 @@ def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
     def rerank(production, binary, request, distance, *, seeds=("1955004", "1955047")):
         paid_reranks.append((item(request), seeds))
         scores = {11: 690.0, 12: 742.0, 13: 735.0}
-        return (740.0 if seeds[0] == "1955113" else scores[item(request)]), {
-            "world_mean_dps": scores[item(request)],
+        if seeds[0] == "1955113":
+            score = 740.0
+        elif seeds[0] == "1955181":
+            score = 760.0
+        else:
+            score = scores[item(request)]
+        return score, {
+            "world_mean_dps": score,
             "native_damage_events": 2, "native_world_ticks": 3}
     monkeypatch.setattr(gate, "_paid_p74_balanced_finalist", rerank)
+
+    def deep_confirmation(reranked, confirmed, attempted, elapsed):
+        if elapsed < 280.0 or not confirmed:
+            return None
+        return next(((index, row) for index, row in enumerate(reranked)
+                     if row[2] in confirmed and row[2] not in attempted), None)
+    monkeypatch.setattr(gate, "_next_p74_deep_confirmation", deep_confirmation)
 
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report["status"] == "PASS"  # mocked backend; not real gate evidence
     assert report["winner_screen_dps"] == 755.0
-    assert report["winner_selection"] == "paid_4x3_balanced_native_world_confirmed"
+    assert report["winner_selection"] == "paid_6x3_balanced_native_world_deep_confirmed"
     assert report["cold_winner_gear"][0]["item_id"] == 12
     assert report["paid_balanced_finalists"] == 3
     assert report["paid_balanced_confirmed"] == 1
+    assert report["paid_balanced_deep_confirmed"] == 1
+    assert report["balanced_finalist_failure_count"] == 0
     assert report["frozen_stochastic_iterations"] == 1000
-    assert len(paid_reranks) == 4
-    assert paid_reranks[-1] == (12, ("1955113", "1955139"))
+    assert len(paid_reranks) == 5
+    assert paid_reranks[-1] == (12, ("1955181", "1955207"))
     assert base == original
