@@ -2741,6 +2741,113 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
         'talent_probes':talent_probes,'paid_evaluations':evaluated,
         'events':events,'worker_cpu_s':cpu,'rows':rows}
 
+def _validated_unallocated_talent_baseline(compiled, *, level,
+        bonus_talent_points, search_only, allow_unallocated_talent_baseline,
+        spec_tree):
+    """Return an empty search-only baseline only after canonical validation."""
+    if not search_only:
+        return None, "FULL_POINT_SOURCE_TALENT_FRONTIER_REQUIRED"
+    if not allow_unallocated_talent_baseline:
+        return None, "UNALLOCATED_TALENT_BASELINE_NOT_ENABLED"
+    if spec_tree is not None:
+        return None, "UNALLOCATED_BASELINE_DOES_NOT_SATISFY_SPEC_TREE"
+    try:
+        validate_talent_selection(compiled, {}, level=level,
+            bonus_talent_points=bonus_talent_points)
+    except (TypeError, ValueError) as exc:
+        return None, ("UNALLOCATED_BASELINE_REJECTED_BY_CANONICAL_VALIDATOR:"
+                      + str(exc)[:240])
+    return {}, None
+
+
+def _blocked_empty_talent_frontier_result(*, class_key, level, enemy,
+        pack_size, bonus_talent_points, frontier, coverage, spec_tree,
+        min_spec_points, search_only, screen_evaluator_backend, reason,
+        wall_s):
+    blocker = {"allocation": {}, "reason": reason}
+    return {
+        "status": "BLOCKED",
+        "reason": reason,
+        "reasons": [reason],
+        "class_key": class_key,
+        "level": level,
+        "enemy": enemy.as_dict(),
+        "pack_size": pack_size,
+        "talented_enabled": bool(bonus_talent_points),
+        "bonus_talent_points": bonus_talent_points,
+        "talent_point_budget": available_talent_points(
+            level, bonus_talent_points=bonus_talent_points),
+        "talent_frontier": frontier,
+        "talent_allocation_scope": "BLOCKED_NO_VALID_FULL_POINT_TALENT_FRONTIER",
+        "diagnostic_unallocated_baseline": False,
+        "talent_allocations_proposed": 0,
+        "full_point_talent_allocations_proposed": 0,
+        "diagnostic_talent_baselines_proposed": 0,
+        "reference_origin": None,
+        "spec_constraint": {
+            "tree_key": spec_tree,
+            "minimum_points": min_spec_points if spec_tree else None,
+        },
+        "p4_talent_unlock_coverage": {},
+        "p4_talent_unlock_coverage_pass": False,
+        "p4_talent_unlock_preparation_blockers": [blocker],
+        "real_talent_unlocked_actions_cast": 0,
+        "talent_ranks_missing_executor": coverage.get("rank_missing_executor", []),
+        "gear_variants": 0,
+        "policy_variants": 0,
+        "recovery_variants": 0,
+        "paid_candidates": 0,
+        "initial_frontier_paid_candidates": 0,
+        "first_pass_screen_candidates": 0,
+        "backfill_screen_candidates": 0,
+        "screen_complete_candidates": 0,
+        "full_evaluated_candidates": 0,
+        "unique_full_builds": 0,
+        "complete_100mob_candidates": 0,
+        "winner": None,
+        "search_winner": None,
+        "validation_shortlist": [],
+        "paid_refinement_lineages": [],
+        "refinement": {"rounds_completed": 0, "stat_probes": 0,
+            "gear_probes": 0, "policy_probes": 0, "talent_probes": 0,
+            "paid_evaluations": 0, "events": 0, "worker_cpu_s": 0.0,
+            "rows": []},
+        "source_slot_proposal_coverage": {
+            "strategy": _SOURCE_GEAR_SAMPLING_VERSION,
+            "slot_offset": 0,
+            "slot_quota": 0,
+            "source_slot_inventory_complete": False,
+            "source_legal_slot_counts": {},
+            "eligible_slots": [],
+            "proposed_slots": [],
+            "paid_slots": [],
+            "unproposed_slots": [],
+            "source_universe_exhaustive": False,
+        },
+        "joint_axis_paid_coverage": {
+            "distinct_talent_allocations": 0,
+            "distinct_gear_configs": 0,
+            "distinct_policy_signatures": 0,
+            "distinct_recovery_policies": 0,
+            "paid_screens": 0,
+        },
+        "search_only": bool(search_only),
+        "screen_evaluator_backend": screen_evaluator_backend,
+        "search_strategy": "quick_screen_top_n_refinement" if search_only else "immediate_full",
+        "full_100mob_within_search_budget": not search_only,
+        "validation_required_outside_search_budget": bool(search_only),
+        "source_legal_gear_universe_verified": False,
+        "named_forever_enemy_verified": enemy.exact_forever_enemy_verified,
+        "global_optimum_proven": False,
+        "eligible_for_checkpoint_acceptance": False,
+        "rows": [],
+        "events": 0,
+        "parent_cpu_s": 0.0,
+        "worker_cpu_s_reported": 0.0,
+        "wall_s": max(0.0, float(wall_s)),
+    }
+
+
 def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   bonus_talent_points=0,max_talents=4,
                                   max_gear_moves=2,max_policies=2,gear_slot_offset=0,
@@ -2753,7 +2860,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   max_qualifiers=12,progress_path=None,
                                   proposal_strategy="diagonal",resume_progress=False,
                                   screen_budget_fraction=None,
-                                  search_only=False,refinement_top_n=3,
+                                  search_only=False,allow_unallocated_talent_baseline=False,refinement_top_n=3,
                                   refinement_rounds=0,refinement_stat_axes=(
                                       'spell_power','strength','agility','intellect'),
                                   refinement_probe_delta=20.,
@@ -2821,7 +2928,9 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             max_finalists=max_finalists,pack_size=pack_size,
             qualification_mobs=qualification_mobs,max_qualifiers=max_qualifiers,
             proposal_strategy=proposal_strategy,screen_budget_fraction=screen_budget_fraction,
-            search_only=search_only,refinement_top_n=refinement_top_n,
+            search_only=search_only,
+             allow_unallocated_talent_baseline=bool(allow_unallocated_talent_baseline),
+             refinement_top_n=refinement_top_n,
             refinement_rounds=refinement_rounds,
             refinement_stat_axes=tuple(refinement_stat_axes),
             refinement_probe_delta=refinement_probe_delta,
@@ -2862,6 +2971,33 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             level=level,bonus_talent_points=bonus_talent_points,
             max_frontier=max_talents)
         frontier={**frontier,**spec_ledger}
+    unallocated_talent_baseline = False
+    if not talents:
+        baseline, baseline_error = _validated_unallocated_talent_baseline(
+            compiled, level=level, bonus_talent_points=bonus_talent_points,
+            search_only=search_only,
+            allow_unallocated_talent_baseline=allow_unallocated_talent_baseline,
+            spec_tree=spec_tree)
+        if baseline is None:
+            return _blocked_empty_talent_frontier_result(
+                class_key=class_key, level=level, enemy=enemy,
+                pack_size=pack_size, bonus_talent_points=bonus_talent_points,
+                frontier=frontier, coverage=coverage, spec_tree=spec_tree,
+                min_spec_points=min_spec_points, search_only=search_only,
+                screen_evaluator_backend=screen_evaluator_backend,
+                reason=baseline_error or "NO_FULL_POINT_SOURCE_TALENT_FRONTIER",
+                wall_s=monotonic()-t0)
+        talents = [baseline]
+        unallocated_talent_baseline = True
+        frontier = {
+            **frontier,
+            "diagnostic_unallocated_baseline": True,
+            "diagnostic_unallocated_baseline_validated": True,
+            "diagnostic_unallocated_baseline_scope": "SEARCH_ONLY_NON_CERTIFYING",
+            "full_point_talent_allocations": 0,
+            "source_talent_coverage_complete": False,
+            "source_talent_unlock_credit": False,
+        }
     source_allocation=seed_stage.get('allocation')
     if spec_tree is not None:
         definition_tree={t.id:t.tree_key for t in compiled.talents}
@@ -2871,6 +3007,10 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     talents,reference_origin=_source_reference_talents(compiled,level=level,
         candidates=talents,source_allocation=source_allocation,
         bonus_talent_points=bonus_talent_points)
+    if unallocated_talent_baseline and not talents:
+        # A source-reference projection may not erase the already validated
+        # empty diagnostic baseline.
+        talents = [{}]
     base=seed_stage['gear_policy_result']['winner']['gear']
     # Reserve some search budget for coherent multi-slot statistical moves;
     # otherwise a short paid search samples only isolated gear substitutions.
@@ -2908,6 +3048,20 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     policies_by_talent, expected_unlocks, unlock_preparation_blockers = (
         _source_talent_policy_variants(compiled, talents, seed_stage, policies,
             level=level, bonus_talent_points=bonus_talent_points))
+    if unallocated_talent_baseline:
+        unlock_preparation_blockers.append({
+            "allocation": {},
+            "reason": "UNALLOCATED_DIAGNOSTIC_BASELINE_NO_FULL_POINT_TALENT_FRONTIER",
+        })
+    if not policies_by_talent or not policies_by_talent[0]:
+        return _blocked_empty_talent_frontier_result(
+            class_key=class_key, level=level, enemy=enemy,
+            pack_size=pack_size, bonus_talent_points=bonus_talent_points,
+            frontier=frontier, coverage=coverage, spec_tree=spec_tree,
+            min_spec_points=min_spec_points, search_only=search_only,
+            screen_evaluator_backend=screen_evaluator_backend,
+            reason="NO_SOURCE_POLICY_VARIANTS_FOR_TALENT_FRONTIER",
+            wall_s=monotonic()-t0)
     recoveries=_recovery_variants(compiled,seed_stage,max_recovery_policies)
     attempted=deepcopy(recovered['rows']) if recovered else []
     completed=[r for r in attempted if r.get('status')=='COMPLETE'
@@ -3207,6 +3361,12 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'talent_point_budget':available_talent_points(level,bonus_talent_points=bonus_talent_points),
         'spatial_mode':('simultaneous_2d_pack' if pack_size>1 else '2d_sequential_not_simultaneous_pack'),
         'talent_frontier':frontier,'reference_origin':reference_origin,
+        'talent_allocation_scope':('VALIDATED_UNALLOCATED_BASELINE_SEARCH_ONLY'
+            if unallocated_talent_baseline else 'FULL_POINT_SOURCE_TALENT_FRONTIER'),
+        'diagnostic_unallocated_baseline':unallocated_talent_baseline,
+        'full_point_talent_allocations_proposed':(0 if unallocated_talent_baseline
+            else len(talents)),
+        'diagnostic_talent_baselines_proposed':(1 if unallocated_talent_baseline else 0),
         'spec_constraint':{'tree_key':spec_tree,
             'minimum_points':min_spec_points if spec_tree else None,
             'required_combat_mode':required_combat_mode},
@@ -3215,7 +3375,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'p4_talent_unlock_preparation_blockers':unlock_preparation_blockers,
         'proposal_strategy':proposal_strategy,
         'talent_ranks_missing_executor':coverage['rank_missing_executor'],
-        'talent_allocations_proposed':len(talents),'gear_variants':len(gear_stages),
+        'talent_allocations_proposed':(0 if unallocated_talent_baseline
+            else len(talents)),'gear_variants':len(gear_stages),
         # Proposal coverage is NOT paid coverage, and neither proves the
         # complete legal gear universe. Preserve exact source slot omissions
         # for independently comparable 30s/300s cold searches.
@@ -3261,7 +3422,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         # actually paid in the current run. Proposed but never evaluated
         # alternatives do not count as joint search coverage.
         'joint_axis_paid_coverage':{
-            'distinct_talent_allocations':len({_key(row['allocation']) for row in paid_rows}),
+            'distinct_talent_allocations':(0 if unallocated_talent_baseline else
+                len({_key(row['allocation']) for row in paid_rows})),
             'distinct_gear_configs':len({json.dumps(row['equipped_gear'],sort_keys=True,default=str)
                 for row in paid_rows}),
             'distinct_policy_signatures':len({row['policy_signature'] for row in paid_rows}),
