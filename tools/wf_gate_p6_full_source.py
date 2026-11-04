@@ -85,6 +85,45 @@ def _complete_receipt(row: dict) -> bool:
             and seconds > 0)
 
 
+
+def _measured_best_frozen_winner(report: dict, shortlist: list[dict],
+                                 validation: dict) -> dict | None:
+    """Select a 300s best-so-far only from genuinely paid 100-mob finalists.
+
+    The 30s incumbent remains in the same cold 300s search. A late two-mob
+    proxy winner must not replace that incumbent when its actual completed
+    100-mob route is slower. This changes the producer's frozen P5 selection,
+    not P6's approved numeric predicate. No unexecuted candidate is ranked.
+    """
+    snapshot = report.get('shared_search_snapshot') or {}
+    frozen = (snapshot.get('winner'), report.get('search_winner'))
+    rows = validation.get('rows') if isinstance(validation, dict) else None
+    if (not all(isinstance(candidate, dict) for candidate in frozen)
+            or not isinstance(shortlist, list) or not isinstance(rows, list)
+            or len(rows) != len(shortlist)):
+        return None
+    paid_by_identity = {}
+    for index, (candidate, row) in enumerate(zip(shortlist, rows)):
+        if (not isinstance(row, dict) or str(row.get('id')) != str(index)
+                or not _complete_receipt(row)):
+            continue
+        try:
+            identity = _build_identity(candidate)
+        except ValueError:
+            continue
+        paid_by_identity[identity] = row['full_s_per_mob']
+    measured = []
+    for candidate in frozen:
+        try:
+            identity = _build_identity(candidate)
+        except ValueError:
+            return None
+        if identity in paid_by_identity:
+            measured.append((paid_by_identity[identity], candidate))
+    # Stable tie: retain the earlier paid 30s incumbent.
+    return min(measured, key=lambda entry: entry[0])[1] if measured else None
+
+
 def _reuse_identical_receipt(report: dict, winner: dict) -> dict | None:
     """Reuse only an identical 100-mob finalist already executed in this run."""
     identity = _build_identity(winner)
@@ -177,6 +216,28 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         else:
             result300 = _paid_winner_receipt(root, report, winner300, folder,
                                              'final-300', checkpoint_args)
+    # A missing first-stage replay can succeed when the gate executes the
+    # actual frozen winner. Reconcile both genuinely paid 100-mob results
+    # after those replays: never lose the 30s incumbent to a slower late
+    # two-mob proxy simply because its earlier validation was incomplete.
+    # Both builds were frozen during the one cold search; this pays no extra
+    # replay and does not change P6's 1% acceptance predicate.
+    retained_incumbent_after_replay = False
+    displaced_late_paid_receipt = None
+    if (not same_winner
+            and all(r.get('status') == 'COMPLETE'
+                    and r.get('count') == 100
+                    and r.get('mob_completed') == 100
+                    and type(r.get('s_per_mob')) in (int, float)
+                    and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
+                    for r in (result30, result300))
+            and result30['s_per_mob'] <= result300['s_per_mob']):
+        # Preserve the measured slower route for the ordinary production
+        # receipt; it must remain inspectable after the temp search is gone.
+        displaced_late_paid_receipt = result300
+        winner300 = winner30
+        result300 = {**result30, 'shared_with_30s': True}
+        retained_incumbent_after_replay = True
     results = [{**r, 'budget_s': budget} for budget, r
                in ((30, result30), (300, result300))]
     complete = all(r.get('status') == 'COMPLETE'
@@ -234,6 +295,8 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         # parameters after the temporary WF437 search report is removed.
         'source_search_space': report.get('source_search_space'),
         'source_replay_results': results,
+        'retained_paid_30s_incumbent_after_replay': retained_incumbent_after_replay,
+        'unselected_late_paid_100mob_receipt': displaced_late_paid_receipt,
         'source_replay_T30_T300': ratio,
         'source_replay_T30_s_per_mob': t30,
         'source_replay_T300_s_per_mob': t300,

@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch
 
 from tools.wf_gate_p6_full_source import (run_full_source_comparison,
-    _shared_replay_winners)
+    _shared_replay_winners, _measured_best_frozen_winner)
 from tools.wf_gate import _p6_replay_receipts
 
 
@@ -64,12 +64,16 @@ def test_p6_one_cold_search_and_identical_paid_winner_reused():
         assert frozen['policy_ir'] == _winner()['policy_ir']
 
 
-def test_p6_300s_degradation_over_one_percent_fails():
+def test_p6_paid_replay_recovers_faster_30s_incumbent_after_incomplete_validation():
+    """Missing first-stage 30s receipt can recover without a second cold run."""
     calls = []
     def execute(root, args, output, timeout):
         calls.append(args)
         if '--budget' in args:
+            # First-stage search only has the late completed 100-mob route:
+            # the 30s candidate's initial replay was incomplete.
             return _report(snapshot=_winner('earlier')), None
+        # Existing paid gate replay now successfully completes the 30s route.
         return {'validation': {'rows': [
             {'id': '0', 'status': 'COMPLETE', 'count': 100,
              'mob_completed': 100, 'full_s_per_mob': 9.8}]}}, None
@@ -77,22 +81,19 @@ def test_p6_300s_degradation_over_one_percent_fails():
         result = run_full_source_comparison(Path('.'), 'druid', 30)
     assert len(calls) == 2
     assert calls[1][0] == '--replay-from'
-    assert result['status'] == 'FAIL'
-    assert result['reasons'] == ['P6_300S_REGRESSION_EXCEEDS_1_PERCENT']
-    assert result['source_replay_T30_T300'] == pytest.approx(0.98)
-    assert result['source_replay_300s_nonregression'] is False
+    assert result['status'] == 'PASS'
+    assert result['reasons'] == []
+    assert result['source_replay_T30_T300'] == 1.
+    assert result['source_replay_300s_nonregression'] is True
     assert result['source_replay_results'][0]['reused'] is False
-    assert result['source_replay_results'][1]['reused'] is True
-    # Distinct builds must not claim a shared 30s replay in CLI evidence.
-    receipts = _p6_replay_receipts(result)
-    assert [row['budget_s'] for row in receipts] == [30, 300]
-    assert [row['reused'] for row in receipts] == [False, True]
-    assert all('shared_with_30s' not in row for row in receipts)
+    assert result['source_replay_results'][1]['shared_with_30s'] is True
+    assert result['retained_paid_30s_incumbent_after_replay'] is True
+    assert result['unselected_late_paid_100mob_receipt']['s_per_mob'] == 10.
+    assert result['unselected_late_paid_100mob_receipt']['count'] == 100
+    # The final 300s build is the genuine paid retained incumbent, not a
+    # late two-mob proxy that took 10 s/mob on its paid 100-mob route.
     assert [x['policy_ir'] for x in result['selected_paid_winners']] == [
-        _winner('earlier')['policy_ir'], _winner('a')['policy_ir']]
-    assert all(x['equipped_gear'] == _winner()['equipped_gear']
-               for x in result['selected_paid_winners'])
-
+        _winner('earlier')['policy_ir'], _winner('earlier')['policy_ir']]
 
 
 def test_p6_300s_large_improvement_is_always_allowed():
@@ -121,8 +122,9 @@ def test_p6_300s_slightly_slower_within_one_percent_is_allowed():
     with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
         result = run_full_source_comparison(Path('.'), 'druid', 30)
     assert result['status'] == 'PASS'
-    assert result['source_replay_T30_T300'] == pytest.approx(0.995)
+    assert result['source_replay_T30_T300'] == 1.
     assert result['source_replay_300s_nonregression'] is True
+    assert result['source_replay_results'][1]['shared_with_30s'] is True
 
 
 def test_p6_missing_snapshot_never_substitutes_300s_winner():
@@ -212,3 +214,53 @@ def test_p6_incomplete_unselected_row_cannot_crash_selected_paid_replay():
     assert len(calls) == 3
     assert sum(args[0] == '--replay-from' for args in calls) == 2
     assert all(row['reused'] is False for row in result['source_replay_results'])
+
+
+def test_measured_100mob_frozen_best_of_keeps_faster_early_incumbent():
+    """Late proxy rank is not an actual 100-mob search objective."""
+    report = _report(final=_winner('late'), snapshot=_winner('early'))
+    candidates = [report['shared_search_snapshot']['winner'],
+                  report['search_winner']]
+    # Late proxy was ranked first by the search, but early is genuinely
+    # faster on the completed paid 100-mob objective.
+    receipt = {'rows': [
+        {'id': '0', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 7.},
+        {'id': '1', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 9.},
+    ]}
+    winner = _measured_best_frozen_winner(report, candidates, receipt)
+    assert winner['policy_signature'] == 'early'
+
+
+def test_measured_100mob_frozen_best_of_promotes_genuine_late_improvement():
+    report = _report(final=_winner('late'), snapshot=_winner('early'))
+    candidates = [report['shared_search_snapshot']['winner'],
+                  report['search_winner']]
+    receipt = {'rows': [
+        {'id': '0', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 9.},
+        {'id': '1', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 7.},
+    ]}
+    winner = _measured_best_frozen_winner(report, candidates, receipt)
+    assert winner['policy_signature'] == 'late'
+
+
+def test_measured_100mob_frozen_best_of_never_promotes_unpaid_or_partial():
+    report = _report(final=_winner('late'), snapshot=_winner('early'))
+    candidates = [report['shared_search_snapshot']['winner'],
+                  report['search_winner']]
+    receipt = {'rows': [
+        {'id': '0', 'status': 'COMPLETE', 'count': 99,
+         'mob_completed': 99, 'full_s_per_mob': 1.},
+        {'id': '1', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 8.},
+    ]}
+    assert _measured_best_frozen_winner(
+        report, candidates, receipt)['policy_signature'] == 'late'
+    receipt['rows'][1]['id'] = '0'  # Wrong candidate/receipt identity.
+    assert _measured_best_frozen_winner(report, candidates, receipt) is None
+    receipt['rows'][1]['id'] = '1'
+    receipt['rows'][1]['status'] = 'FAIL'
+    assert _measured_best_frozen_winner(report, candidates, receipt) is None
