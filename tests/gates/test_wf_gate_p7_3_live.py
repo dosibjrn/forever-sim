@@ -495,3 +495,19 @@ def test_feral_p73_pinned_source_identity_still_fails_closed(
         root, "druid", 60, "feral", "P7.3", require_world=False)
     assert result["status"] == "BLOCKED"
     assert result["reasons"] == ["P7_3_PINNED_SOURCE_REQUEST_CHANGED"]
+
+
+def test_p73_direct_selected_native_refusal_is_invalid_not_execution_error():
+    """The real scorer raises a typed NativeSourceRefusal, not JSON text."""
+    class NativeSourceRefusal(RuntimeError):
+        def __init__(self, code, reason):
+            self.code = code
+            self.reason = reason
+            super().__init__(reason)
+
+    assert gate._native_refusal(NativeSourceRefusal("talents", "rank rejected")) == (
+        "INVALID", "NATIVE_TALENTS:rank rejected")
+    assert gate._native_refusal(NativeSourceRefusal("unsupported", "no build")) == (
+        "UNSUPPORTED", "NATIVE_UNSUPPORTED:no build")
+    assert gate._native_refusal(NativeSourceRefusal("gear", "item rejected")) == (
+        "INVALID", "NATIVE_GEAR:item rejected")
