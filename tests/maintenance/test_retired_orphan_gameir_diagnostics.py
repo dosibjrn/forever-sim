@@ -178,6 +178,12 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Orphan Mage analytic projection, route simulation, and v1 stochastic diagnostics.
+    "src/v2/mechanics_projection.py",
+    "src/v2/latent_search.py",
+    "src/v2/path_validation.py",
+    "src/v2/stochastic_diagnostics.py",
+    "src/v2/stochastic_race.py",
     # Exclusive Python source/legal empirical P3 proxy and 100-mob causal reporter.
     "src/game/data/forever/source_checkpoint_p3_empirical_weights.py",
     "src/game/data/forever/source_checkpoint_p3_causal_summary.py",
@@ -192,6 +198,11 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "mechanics_projection",
+    "latent_search",
+    "path_validation",
+    "stochastic_diagnostics",
+    "stochastic_race",
     "wf260_run_budgeted_joint",
     "wf_combat232_weapon_evidence",
     "wf_combat233_source_armor_replay",
@@ -381,6 +392,10 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_v2_projection.py",
+    "tests/generic/search/test_v2_path_validation_inputs.py",
+    "tests/test_v2_stochastic_diagnostics.py",
+    "tests/test_v2_stochastic_race.py",
     "tests/test_wf61_live_persistent_replay.py",
     "tests/generic/search/test_wf260_budgeted_joint_talents.py",
     "tests/test_wf358_p3_contextual_top5.py",

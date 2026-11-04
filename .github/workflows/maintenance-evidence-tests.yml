@@ -3,6 +3,15 @@ on:
   pull_request:
     paths:
       - 'src/game/checkpoint_pipeline.py'
+      - 'src/v2/mechanics_projection.py'
+      - 'src/v2/latent_search.py'
+      - 'src/v2/path_validation.py'
+      - 'src/v2/stochastic_diagnostics.py'
+      - 'src/v2/stochastic_race.py'
+      - 'tests/test_v2_projection.py'
+      - 'tests/generic/search/test_v2_path_validation_inputs.py'
+      - 'tests/test_v2_stochastic_diagnostics.py'
+      - 'tests/test_v2_stochastic_race.py'
       - 'tests/gates/test_wf384_generic_checkpoint_pipeline.py'
       - 'tests/test_wf390_generic_talent_execution_pipeline.py'
       - 'tests/test_wf429_process_v2_p3_preflight_tdd.py'
