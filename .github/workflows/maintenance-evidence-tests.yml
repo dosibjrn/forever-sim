@@ -21,6 +21,13 @@ on:
       - 'tools/wf431_modified_action_paid_search.py'
       - 'tools/wf359_druid_l30_p3_rebase.py'
       - 'tests/test_wf359_druid_l30_p3_rebase.py'
+      - 'src/v2/source_persistent_joint_finalists.py'
+      - 'tools/wf61_live_persistent_replay.py'
+      - 'tools/wf427_druid_l30_quest_horizon.py'
+      - 'tests/test_wf427_quest_horizon_paid_tdd.py'
+      - 'tests/test_wf61_live_persistent_replay.py'
+      - 'tests/test_wf61_companion_persistence.py'
+      - 'tests/test_work2_persistent_pack_budget.py'
       - 'tools/wf300_continuous_source_policy_benchmark.py'
       - 'tools/wf350_build_source_evidence.py'
       - 'tools/wf341_rating_probe.py'
@@ -172,6 +179,9 @@ jobs:
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/test_wf241_mixed_hot_recovery.py
           tests/test_actor_recovery_channel.py
+          tests/test_wf61_live_persistent_replay.py
+          tests/test_wf61_companion_persistence.py
+          tests/test_work2_persistent_pack_budget.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
           tests/mechanics/druid/test_druid_cat_closure_v0114896.py
           tests/mechanics/druid/test_druid_balance_mana_weights_v0114854.py
