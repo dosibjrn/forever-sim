@@ -226,7 +226,7 @@ jobs:
           python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
           echo "Measured production HEAD: $(git rev-parse HEAD)"
           read -r -a entries <<< "$TARGETS"
-          # Explicit heavy Priest P4+P5(+P6) uses ONE source-native cold
+          # Explicit heavy Priest P4+P5, P5+P6 or P4+P5+P6 uses ONE source-native cold
           # producer, then records each requested independent gate verdict.
           # Other classes, gates, and single-target runs stay unchanged.
           priest_pair=false
@@ -239,6 +239,15 @@ jobs:
               priest_triple=true
             fi
           fi
+          # P4 is already recorded on this checkpoint. P5+P6 must share
+          # one paid producer WITHOUT running or recording P4 again.
+          priest_p5_p6=false
+          if [[ "$ALLOW_HEAVY" == true &&
+                " $TARGETS " == *" priest:20:unrestricted:P5 "* &&
+                " $TARGETS " == *" priest:20:unrestricted:P6 "* &&
+                " $TARGETS " != *" priest:20:unrestricted:P4 "* ]]; then
+            priest_p5_p6=true
+          fi
           echo "## M1 live-gate results" >> "$GITHUB_STEP_SUMMARY"
           echo "| Gate | Verdict | Measured component / objective |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
@@ -246,8 +255,10 @@ jobs:
             if [[ "$priest_pair" == true &&
                   "$entry" == priest:20:unrestricted:P5 ]] ||
                [[ "$priest_triple" == true &&
+                  "$entry" == priest:20:unrestricted:P6 ]] ||
+               [[ "$priest_p5_p6" == true &&
                   "$entry" == priest:20:unrestricted:P6 ]]; then
-              continue  # Independent P5/P6 verdicts share the P4 native run.
+              continue  # Every requested verdict shares one paid cold producer.
             fi
             IFS=: read -r class level spec gate <<< "$entry"
             cli_gate="$gate"
@@ -257,6 +268,9 @@ jobs:
               if [[ "$priest_triple" == true ]]; then
                 cli_gate="P4+P5+P6"
               fi
+            elif [[ "$priest_p5_p6" == true &&
+                    "$entry" == priest:20:unrestricted:P5 ]]; then
+              cli_gate="P5+P6"
             fi
             echo "::group::M1 $entry"
             report="$(mktemp)"
