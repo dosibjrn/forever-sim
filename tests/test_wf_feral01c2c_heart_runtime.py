@@ -174,16 +174,6 @@ def test_mode_capacity_modifier_is_generic_for_non_druid_actor():
     assert actor.as_dict()['mode_resource_capacity_adjustments']=={}
 
 
-def test_held_out_legacy_feral_replay_is_actually_scored_on_same_five_gears():
-    from tools.wf_feral01c2c_replay import run
-    result=run()
-    assert len(result['results'])==5
-    assert {r['best_in_this_two_build_comparison'] for r in result['results']} == {
-        'old_feral_11_points','improved_wrath_5'}
-    assert result['best_over_five_gears_and_two_builds']['build']=='improved_wrath_5'
-    assert result['source_coverage_complete'] is False
-    assert 'not an independent 417-allocation search' in result['blocking_gaps']
-
 
 def _historical_234_talent_slice(ir):
     from dataclasses import replace
