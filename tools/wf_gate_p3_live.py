@@ -277,13 +277,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # scenario proxy. Do not turn a successful proxy search into an M1 row.
     fallback_id = str(((naked or {}).get("winner") or {}).get("fallback") or "")
     cooldown_fallback = any(
-        action.id == fallback_id and action.cooldown_s > 0
+        getattr(action, 'id', None) == fallback_id
+        and float(getattr(action, 'cooldown_s', 0) or 0) > 0
         for action in ir.actions)
-    actor_proxy = ir.actor.metadata.get("base_stats_are_zero_proxy") is True
+    actor_proxy = getattr(ir.actor, "metadata", {}).get("base_stats_are_zero_proxy") is True
     weapon_proxy = any(
         "proxy" in str(source.get("caveat") or "")
-        for attack in ir.auto_attacks
-        for source in attack.provenance if isinstance(source, dict))
+        for attack in getattr(ir, 'auto_attacks', ())
+        for source in getattr(attack, 'provenance', ())
+        if isinstance(source, dict))
     if cooldown_fallback and (actor_proxy or weapon_proxy):
         return {
             "status": "BLOCKED",
