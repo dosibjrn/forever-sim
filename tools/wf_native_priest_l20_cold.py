@@ -83,6 +83,27 @@ def _source_native_builds(source: dict, item_options: list[dict]):
         yield copy.deepcopy(source)
 
 
+def _source_native_frontier(sources: list[dict], item_options: list[dict]):
+    """Interleave source talent/APL requests before deep gear combinations.
+
+    A large legal/UNSUPPORTED gear Cartesian product on the first source
+    request must not starve other source-provided policies in the 30s window.
+    Native evaluates legality for every yielded full build.
+    """
+    active = [iter(_source_native_builds(source, item_options))
+              for source in sources]
+    while active:
+        next_round = []
+        for proposals in active:
+            try:
+                build = next(proposals)
+            except StopIteration:
+                continue
+            yield build
+            next_round.append(proposals)
+        active = next_round
+
+
 def _paid_route_seconds_per_mob(receipt: dict, target_count: int) -> float | None:
     """Score an actually executed, paid native/2D route, never native DPS.
 
@@ -181,8 +202,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
     completed_after = 0
     with TemporaryDirectory(prefix="priest-l20-native-cold-") as directory:
         path = Path(directory) / "candidate.json"
-        for build in itertools.chain.from_iterable(
-                _source_native_builds(source, item_options) for source in sources):
+        for build in _source_native_frontier(sources, item_options):
             if len(rows) >= max_attempts or clock() >= deadline:
                 break
             identity = hashlib.sha256(json.dumps(
