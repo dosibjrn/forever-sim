@@ -58,6 +58,7 @@ def test_paid_native_source_request_transport_and_exact_cast_identity(tmp_path):
     assert kwargs["objective"] == "DPS"
     assert result["native_paid_whole_builds"] == 1
     assert result["native_source_action_casts"] == 3
+    assert result["native_source_action_cast_counts"] == {'{"spellId":585}': 3}
     assert result["native_source_action_ids_cast"] == 1
     assert result["native_request_sha256"] == "exact-native-paid-request"
     assert result["native_actor_requested_level"] == 20
