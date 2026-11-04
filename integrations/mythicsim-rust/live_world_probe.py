@@ -44,6 +44,25 @@ def _set_stationary_target_distance_for_probe(world, distance_yards: float) -> N
     world._pack_positions[target_id] = position
 
 
+def _iteration_limited_request(source: dict, iterations: int):
+    """Build the same iteration-bounded native request for both executions.
+
+    The original request remains the provenance identity. Its historical
+    simOptions.iterations is not a cap; native control and the live world
+    receive the same first-N execution request so their prepared identities
+    and stochastic streams are directly comparable.
+    """
+    if not isinstance(source.get("simOptions"), dict):
+        raise ValueError("RUST_SOURCE_SIM_OPTIONS_MISSING")
+    reduced = json.loads(json.dumps(source))
+    reduced["simOptions"]["iterations"] = iterations
+    request_dir = tempfile.TemporaryDirectory(
+        prefix="forever-p7-iteration-request-")
+    path = Path(request_dir.name) / "request.json"
+    path.write_text(json.dumps(reduced, sort_keys=True))
+    return request_dir, path
+
+
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
@@ -59,6 +78,10 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     assert source["encounter"]["targets"][0]["level"] == 63
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_WORLD_ITERATIONS_INVALID")
+    source_target_health = source_target_health_from_request(raw)
+    # Preserve original bytes for provenance and finite target-health setup;
+    # only the native execution request is normalized to the requested N.
+    request_dir, execution_request = _iteration_limited_request(source, iterations)
     if facing_switch_at_s is not None and (
             not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
@@ -75,18 +98,19 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     def new_world():
         world = diagnostic_gsim_world(
             target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
-            target_health=source_target_health_from_request(raw), source_single_target=True,
+            target_health=source_target_health, source_single_target=True,
             source_in_front_of_target=players[0].get("inFrontOfTarget", False),
         )
         return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
     world = feed = applier = None
+    world_target_health_start = None
     raw_sha = hashlib.sha256(raw).hexdigest()
     # Rust's prepared request identity is SHA256 of deterministic protobuf
     # wire encoding, NOT the raw JSON byte hash. Ask the genuine source engine.
     with tempfile.TemporaryDirectory() as prep_dir:
         prepared_file = Path(prep_dir) / "prepared.json"
         subprocess.run([str(binary.resolve()), "prepare", "--request",
-                        str(request.resolve()), "--outfile", str(prepared_file)],
+                        str(execution_request.resolve()), "--outfile", str(prepared_file)],
                        check=True, capture_output=True, text=True)
         request_sha = json.loads(prepared_file.read_text())["request_sha256"]
     previous_ack_id = ""
@@ -118,7 +142,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             "FOREVER_GSIM_WORLD_ITERATIONS": str(iterations),
         }
         proc = subprocess.Popen(
-            [str(binary.resolve()), "sim", "--request", str(request.resolve()),
+            [str(binary.resolve()), "sim", "--request", str(execution_request.resolve()),
              "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, bufsize=1, env=env,
@@ -136,6 +160,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     target_health_remaining = float(target.health)
                     target_max_health = float(target.max_health)
                     samples.append({
+                        "world_target_health_start": world_target_health_start,
                         "iteration_index": iteration,
                         "duration_s": native["native_duration_ns"] / 1e9,
                         "world_applied_damage": iteration_damage,
@@ -159,6 +184,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     assert native["sequence"] == 0
                     iteration = native["iteration_index"]
                     world, feed, applier = new_world()
+                    world_target_health_start = float(world.targets["m1"].health)
                     previous_ack_id = ""
                     last_tick = -1
                     iteration_damage = 0.
@@ -323,6 +349,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "per_iteration": samples,
                     "source_request_proto_sha256": request_sha,
                     "source_request_raw_sha256": raw_sha,
+                    "execution_request_raw_sha256": hashlib.sha256(
+                        execution_request.read_bytes()).hexdigest(),
+                    "source_target_health": source_target_health,
                     "facing_switch_clock_ns": facing_switch_clock_ns,
                     "range_switch_clock_ns": range_switch_clock_ns,
                     "range_switch_before_yards": range_switch_before_yards,
@@ -438,12 +467,10 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
     source = json.loads(request.read_text())
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_NATIVE_CONTROL_ITERATIONS_INVALID")
-    # Original report iteration count is not a cap on a new accepted final.
-    source["simOptions"]["iterations"] = iterations
+    # Original report iteration count is provenance, not a cap.
+    request_dir, reduced = _iteration_limited_request(source, iterations)
     with tempfile.TemporaryDirectory() as folder:
-        reduced = Path(folder) / "native_source_control.json"
         output = Path(folder) / "native_result.json"
-        reduced.write_text(json.dumps(source, sort_keys=True))
         completed = subprocess.run(
             [str(binary.resolve()), "sim", "--request", str(reduced),
              "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
@@ -468,9 +495,13 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
         assert result["identity"]["engine"] == "forever-engine"
         measured = result["result"]
         assert measured["iterationsDone"] == iterations
+        execution_sha = hashlib.sha256(reduced.read_bytes()).hexdigest()
         return {"native_dps": measured["raidMetrics"]["dps"].get("avg", 0.),
                 "first_duration_s": measured["firstIterationDuration"],
-                "iterations": iterations}
+                "iterations": iterations,
+                "source_request_proto_sha256": result["request_sha256"],
+                "source_request_raw_sha256": execution_sha,
+                "execution_request_raw_sha256": execution_sha}
 
 
 def main() -> None:
