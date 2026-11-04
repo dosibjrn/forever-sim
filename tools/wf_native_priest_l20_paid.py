@@ -87,3 +87,78 @@ def score_source_priest_l20(binary: str | Path, request_file: str | Path, *,
         # source-action screen has deliberately NOT been run.
         "native_2d_screen_complete": False,
     }
+
+
+def score_source_priest_l20_candidates(binary: str | Path,
+                                      source_directory: str | Path, *,
+                                      score_request=None,
+                                      budget_s: float = 6.0,
+                                      max_paid_builds: int = 4) -> dict:
+    """Pay a bounded cold frontier of explicit source/native build requests.
+
+    Each JSON supplies its *own* gear, talents and APL. Forever never derives
+    their Warcraft legality, copies L60 data, or reuses another winner.
+    MythicSim evaluates each distinct whole build; no native fight becomes
+    an invented continuous 2D/world gate screen.
+    """
+    from hashlib import sha256
+
+    folder = Path(source_directory)
+    if not folder.is_dir():
+        raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATE_DIRECTORY_REQUIRED")
+    if not (0 < budget_s <= 30 and 1 <= max_paid_builds <= 16):
+        raise ValueError("P4_P5_NATIVE_CANDIDATE_BUDGET_INVALID")
+    paths = sorted(folder.glob("*.json"))
+    if not paths:
+        raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATES_EMPTY")
+
+    deadline = time.monotonic() + budget_s
+    seen = set()
+    rows = []
+    comparable_encounter = None
+    for path in paths:
+        if len(rows) >= max_paid_builds or time.monotonic() >= deadline:
+            break
+        try:
+            request = json.loads(path.read_text(encoding="utf-8"))
+            encounter = request["encounter"]
+            player = request["raid"]["parties"][0]["players"][0]
+            # A native-backed candidate must stay inside the same supplied
+            # world scenario; comparing unlike mobs is not optimization.
+            if not isinstance(encounter, dict) or not isinstance(player, dict):
+                raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATE_INVALID")
+            if comparable_encounter is None:
+                comparable_encounter = encounter
+            elif encounter != comparable_encounter:
+                raise ValueError("P4_P5_NATIVE_CANDIDATE_ENCOUNTER_MISMATCH")
+            candidate_key = sha256(json.dumps(
+                request, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")).hexdigest()
+            if candidate_key in seen:
+                continue
+            seen.add(candidate_key)
+            receipt = score_source_priest_l20(
+                binary, path, score_request=score_request,
+                budget_s=max(0.001, deadline - time.monotonic()))
+            rows.append({"candidate": path.name, "source_request_sha256":
+                         candidate_key, "status": "NATIVE_PAID",
+                         **receipt})
+        except (OSError, ValueError, RuntimeError, TimeoutError) as exc:
+            # Explicit native refusal is a measured candidate failure, never
+            # a successful paid screen or a reason to try a Python model.
+            rows.append({"candidate": path.name, "status": "NATIVE_REFUSED",
+                         "reason": str(exc)[-400:]})
+
+    paid = [row for row in rows if row["status"] == "NATIVE_PAID"]
+    return {
+        "native_candidate_requests_attempted": len(rows),
+        "native_paid_whole_builds": len(paid),
+        "native_source_action_casts": sum(
+            row["native_source_action_casts"] for row in paid),
+        "native_source_action_ids_cast": max(
+            (row["native_source_action_ids_cast"] for row in paid),
+            default=0),
+        "native_candidate_receipts": rows,
+        "native_2d_screen_complete": False,
+        "native_candidate_search_budget_s": budget_s,
+    }
