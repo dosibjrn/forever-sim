@@ -113,3 +113,98 @@ def test_p4_p5_paid_native_receipt_does_not_claim_2d_completion(tmp_path, monkey
     assert report["reasons"] == ["P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
     assert "pass_count" not in report
     assert report["native_source_action_casts"] == 2
+
+
+def test_bounded_source_candidate_frontier_scores_distinct_native_builds(tmp_path):
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    first = _request()
+    alternate = copy.deepcopy(first)
+    # Only proposal axes change; native decides whether the build is legal.
+    alternate["raid"]["parties"][0]["players"][0]["talentsString"] = "1-0-0"
+    for name, value in (("a.json", first), ("b.json", alternate),
+                        ("c-duplicate.json", first)):
+        (tmp_path / name).write_text(json.dumps(value))
+    scored = []
+
+    def scorer(binary, candidate, **kwargs):
+        scored.append(copy.deepcopy(candidate))
+        return {
+            "effective_request_sha256": "native-score-" + str(len(scored)),
+            "score": 20.0 + len(scored), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2},
+                {"id": {"spellId": 585, "tag": 1}, "casts": 7}],
+        }, {}
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer)
+    assert len(scored) == 2
+    assert scored == [first, alternate]
+    assert result["native_paid_whole_builds"] == 2
+    assert result["native_source_action_casts"] == 4
+    assert result["native_candidate_requests_attempted"] == 2
+    assert [r["candidate"] for r in result["native_candidate_receipts"]] == [
+        "a.json", "b.json"]
+    assert all(r["status"] == "NATIVE_PAID"
+               for r in result["native_candidate_receipts"])
+    assert result["native_2d_screen_complete"] is False
+
+
+def test_bounded_source_frontier_reports_native_refusals_without_credit(tmp_path):
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    invalid = _request()
+    invalid["raid"]["parties"][0]["players"][0]["level"] = 60
+    (tmp_path / "a-invalid.json").write_text(json.dumps(invalid))
+    valid = _request()
+    (tmp_path / "b-valid.json").write_text(json.dumps(valid))
+    scored = []
+
+    def scorer(binary, candidate, **kwargs):
+        scored.append(candidate)
+        raise RuntimeError("NATIVE_INVALID_TALENTS")
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer)
+    assert len(scored) == 1
+    assert result["native_paid_whole_builds"] == 0
+    assert result["native_source_action_casts"] == 0
+    assert [r["status"] for r in result["native_candidate_receipts"]] == [
+        "NATIVE_REFUSED", "NATIVE_REFUSED"]
+    assert result["native_2d_screen_complete"] is False
+
+
+def test_p4_p5_gate_uses_paid_source_candidate_directory_without_m1_credit(
+        tmp_path, monkeypatch):
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game import native_p3_item_options
+    from tools import wf_native_priest_l20_paid
+
+    (tmp_path / "a.json").write_text(json.dumps(_request()))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/native")
+    monkeypatch.delenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST", raising=False)
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR", str(tmp_path))
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        lambda *a, **k: {
+                            "status": "ok", "items": [{"item_id": 25, "slot": "chest"}],
+                            "unverified_candidate_count": 0,
+                        })
+    calls = []
+    monkeypatch.setattr(
+        wf_native_priest_l20_paid, "score_source_priest_l20_candidates",
+        lambda binary, directory: (
+            calls.append((binary, directory)) or {
+                "native_paid_whole_builds": 2, "native_source_action_casts": 4,
+                "native_2d_screen_complete": False,
+                "native_candidate_receipts": [],
+            }))
+    report = gate._native_cold_options_without_paid_executor(
+        "priest", 20, "unrestricted")
+    assert calls == [("/native", str(tmp_path))]
+    assert report["status"] == "BLOCKED"
+    assert report["paid_candidates"] == 2
+    assert report["screen_complete_candidates"] == 0
+    assert report["coverage_scope_complete"] is False
+    assert report["reasons"] == ["P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
+    assert "pass_count" not in report
