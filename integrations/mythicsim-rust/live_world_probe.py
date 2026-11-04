@@ -44,6 +44,41 @@ def _set_stationary_target_distance_for_probe(world, distance_yards: float) -> N
     world._pack_positions[target_id] = position
 
 
+def _iteration_limited_request(source: dict, iterations: int):
+    """Write the exact same iteration-bounded native request for both controls.
+
+    The original request remains the provenance identity. Its historical
+    simOptions.iterations is not an acceptance cap; both standalone native
+    control and live world must execute the same first N fights from an
+    otherwise identical request so RNG streams and first-fight duration agree.
+    """
+    if not isinstance(source.get("simOptions"), dict):
+        raise ValueError("RUST_SOURCE_SIM_OPTIONS_MISSING")
+    reduced = json.loads(json.dumps(source))
+    reduced["simOptions"]["iterations"] = iterations
+    request_dir = tempfile.TemporaryDirectory(
+        prefix="forever-p7-iteration-request-")
+    path = Path(request_dir.name) / "request.json"
+    path.write_text(json.dumps(reduced, sort_keys=True))
+    return request_dir, path
+
+
+def _fresh_source_world(*, distance: float, target_health: float,
+                        source_in_front: bool):
+    """Create a new 2D target with the saved HP for each native iteration."""
+    world = diagnostic_gsim_world(
+        target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
+        target_health=target_health, source_single_target=True,
+        source_in_front_of_target=source_in_front,
+    )
+    target = world.targets["m1"]
+    if (not target.alive
+            or not math.isclose(float(target.max_health), target_health, rel_tol=0, abs_tol=1e-6)
+            or not math.isclose(float(target.health), target_health, rel_tol=0, abs_tol=1e-6)):
+        raise AssertionError("RUST_WORLD_FINITE_TARGET_HEALTH_NOT_RESET")
+    return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
+
+
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
@@ -59,6 +94,10 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     assert source["encounter"]["targets"][0]["level"] == 63
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_WORLD_ITERATIONS_INVALID")
+    # Keep the standalone native control and the live world on byte-identical
+    # native requests. Only the iteration budget changes; source provenance
+    # and world construction continue to use the untouched original bytes.
+    request_dir, execution_request = _iteration_limited_request(source, iterations)
     if facing_switch_at_s is not None and (
             not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
@@ -72,13 +111,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             raise ValueError("RUST_WORLD_RANGE_SWITCH_INVALID")
     elif distance_after_switch_yards is not None:
         raise ValueError("RUST_WORLD_RANGE_SWITCH_WITHOUT_CLOCK")
-    def new_world():
-        world = diagnostic_gsim_world(
-            target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
-            target_health=source_target_health_from_request(raw), source_single_target=True,
-            source_in_front_of_target=players[0].get("inFrontOfTarget", False),
-        )
-        return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
+    source_target_health = source_target_health_from_request(raw)
     world = feed = applier = None
     raw_sha = hashlib.sha256(raw).hexdigest()
     # Rust's prepared request identity is SHA256 of deterministic protobuf
@@ -86,7 +119,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     with tempfile.TemporaryDirectory() as prep_dir:
         prepared_file = Path(prep_dir) / "prepared.json"
         subprocess.run([str(binary.resolve()), "prepare", "--request",
-                        str(request.resolve()), "--outfile", str(prepared_file)],
+                        str(execution_request.resolve()), "--outfile", str(prepared_file)],
                        check=True, capture_output=True, text=True)
         request_sha = json.loads(prepared_file.read_text())["request_sha256"]
     previous_ack_id = ""
@@ -118,7 +151,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             "FOREVER_GSIM_WORLD_ITERATIONS": str(iterations),
         }
         proc = subprocess.Popen(
-            [str(binary.resolve()), "sim", "--request", str(request.resolve()),
+            [str(binary.resolve()), "sim", "--request", str(execution_request.resolve()),
              "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, bufsize=1, env=env,
@@ -144,9 +177,6 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         # damage, though native encounter total and actual gsim
                         # target HP include it. Score only in-fight damage.
                         "world_dps": (iteration_damage - iteration_precombat_damage) / (native["native_duration_ns"] / 1e9),
-                        # A lethal world ACK legitimately ends the native fight.
-                        # Keep the per-fight HP receipt so standalone source-only
-                        # controls are not compared past a world-only terminal event.
                         "world_target_health_remaining": target_health_remaining,
                         "world_target_max_health": target_max_health,
                         "world_target_lethal": not bool(target.alive),
@@ -158,7 +188,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     assert native["iteration_index"] == iteration + 1 == len(samples)
                     assert native["sequence"] == 0
                     iteration = native["iteration_index"]
-                    world, feed, applier = new_world()
+                    world, feed, applier = _fresh_source_world(
+                        distance=distance, target_health=source_target_health,
+                        source_in_front=players[0].get("inFrontOfTarget", False))
                     previous_ack_id = ""
                     last_tick = -1
                     iteration_damage = 0.
@@ -438,12 +470,11 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
     source = json.loads(request.read_text())
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_NATIVE_CONTROL_ITERATIONS_INVALID")
-    # Original report iteration count is not a cap on a new accepted final.
-    source["simOptions"]["iterations"] = iterations
+    # Original report iteration count is provenance, not a cap on a new
+    # accepted final. Use the shared request normalizer also used by run().
+    request_dir, reduced = _iteration_limited_request(source, iterations)
     with tempfile.TemporaryDirectory() as folder:
-        reduced = Path(folder) / "native_source_control.json"
         output = Path(folder) / "native_result.json"
-        reduced.write_text(json.dumps(source, sort_keys=True))
         completed = subprocess.run(
             [str(binary.resolve()), "sim", "--request", str(reduced),
              "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
