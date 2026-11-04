@@ -95,6 +95,8 @@ RETIRED_TOOLS = (
     "tools/run_wf_feral01_evidence.py",
     # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
     "evidence/wf438/run300.py",
+    # Standalone Hunter/pet partial replay has no consumers; shared companion search stays covered.
+    "tools/wf252_companion_replay.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
@@ -182,6 +184,7 @@ RETIRED_IMPORT_NAMES = (
     "scope_audit(",
     "checkpoint_acceptance_status",
     "accepted_checkpoint_status",
+    "wf252_companion_replay",
 )
 
 
@@ -298,6 +301,7 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     assert "      - 'tools/wf300_continuous_100_mob_acceptance.py'" in workflow_triggers
     assert "      - 'tools/wf356_export_legacy_druid30.py'" in workflow_triggers
     assert "      - 'tests/test_wf356_export_legacy_druid30.py'" in workflow_triggers
+    assert "      - 'tools/wf252_companion_replay.py'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative
