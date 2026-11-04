@@ -19,6 +19,8 @@ from tempfile import TemporaryDirectory
 from tools.wf_native_priest_l20_paid import (
     couple_source_priest_l20_persistent_world,
     score_source_priest_l20,
+    _native_world_completed_kills,
+    _native_world_error,
 )
 
 
@@ -159,9 +161,14 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                         row["real_100mob_receipt"] = world
                     else:
                         row["status"] = "WORLD_INCOMPLETE"
-            except (OSError, ValueError, RuntimeError, TimeoutError,
-                    subprocess.SubprocessError) as exc:
-                row["reason"] = type(exc).__name__ + ":" + str(exc)[-240:]
+            except (OSError, ValueError, RuntimeError, AssertionError,
+                    TimeoutError, subprocess.SubprocessError) as exc:
+                # Native/world 100-mob failures surface as AssertionError
+                # tuples. They are candidate-local observed failures, not an
+                # exception that aborts the other paid cold proposals.
+                row["reason"] = _native_world_error(exc)
+                row["native_2d_persistent_observed_kills"] = (
+                    _native_world_completed_kills(exc))
             elapsed = clock() - start
             row["paid_completed_elapsed_s"] = elapsed
             # Late completions are never paid 30s or 300s candidates.
