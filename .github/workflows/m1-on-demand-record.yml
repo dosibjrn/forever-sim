@@ -226,28 +226,37 @@ jobs:
           python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
           echo "Measured production HEAD: $(git rev-parse HEAD)"
           read -r -a entries <<< "$TARGETS"
-          # An explicit heavy Priest P4+P5 batch must execute exactly ONE
-          # 300s source-native cold producer and record two independent gates.
+          # Explicit heavy Priest P4+P5(+P6) uses ONE source-native cold
+          # producer, then records each requested independent gate verdict.
           # Other classes, gates, and single-target runs stay unchanged.
           priest_pair=false
+          priest_triple=false
           if [[ "$ALLOW_HEAVY" == true &&
                 " $TARGETS " == *" priest:20:unrestricted:P4 "* &&
                 " $TARGETS " == *" priest:20:unrestricted:P5 "* ]]; then
             priest_pair=true
+            if [[ " $TARGETS " == *" priest:20:unrestricted:P6 "* ]]; then
+              priest_triple=true
+            fi
           fi
           echo "## M1 live-gate results" >> "$GITHUB_STEP_SUMMARY"
           echo "| Gate | Verdict | Measured component / objective |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
           for entry in "${entries[@]}"; do
             if [[ "$priest_pair" == true &&
-                  "$entry" == priest:20:unrestricted:P5 ]]; then
-              continue  # P5 is recorded in the same P4 native cold process.
+                  "$entry" == priest:20:unrestricted:P5 ]] ||
+               [[ "$priest_triple" == true &&
+                  "$entry" == priest:20:unrestricted:P6 ]]; then
+              continue  # Independent P5/P6 verdicts share the P4 native run.
             fi
             IFS=: read -r class level spec gate <<< "$entry"
             cli_gate="$gate"
             if [[ "$priest_pair" == true &&
                   "$entry" == priest:20:unrestricted:P4 ]]; then
               cli_gate="P4+P5"
+              if [[ "$priest_triple" == true ]]; then
+                cli_gate="P4+P5+P6"
+              fi
             fi
             echo "::group::M1 $entry"
             report="$(mktemp)"
