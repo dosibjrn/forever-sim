@@ -97,6 +97,8 @@ RETIRED_TOOLS = (
     "evidence/wf438/run300.py",
     # Standalone Hunter/pet partial replay has no consumers; shared companion search stays covered.
     "tools/wf252_companion_replay.py",
+    # One-off .242 test aggregator has no callers; its constituent tests remain available.
+    "tools/wf242_validate.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
@@ -185,6 +187,7 @@ RETIRED_IMPORT_NAMES = (
     "checkpoint_acceptance_status",
     "accepted_checkpoint_status",
     "wf252_companion_replay",
+    "wf242_validate",
 )
 
 
@@ -304,6 +307,7 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     assert "      - 'tools/wf356_export_legacy_druid30.py'" in workflow_triggers
     assert "      - 'tests/test_wf356_export_legacy_druid30.py'" in workflow_triggers
     assert "      - 'tools/wf252_companion_replay.py'" in workflow_triggers
+    assert "      - 'tools/wf242_validate.py'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative
