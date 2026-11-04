@@ -36,6 +36,7 @@ def test_native_source_control_explicit_rng_mode(monkeypatch, tmp_path, mode):
         assert source["simOptions"]["randomSeed"] == "1179706472"
         Path(argv[argv.index("--outfile") + 1]).write_text(json.dumps({
             "identity": {"engine": "forever-engine"},
+            "request_sha256": "native-request-id",
             "result": {"iterationsDone": 3,
                        "raidMetrics": {"dps": {"avg": 730.0}},
                        "firstIterationDuration": 120.0}}))
@@ -44,6 +45,8 @@ def test_native_source_control_explicit_rng_mode(monkeypatch, tmp_path, mode):
     monkeypatch.setattr(producer.subprocess, "run", fake_run)
     result = producer.native_source_control(binary, request, 3, rng_mode=mode)
     assert result["native_dps"] == 730.0
+    assert result["source_request_proto_sha256"] == "native-request-id"
+    assert len(result["source_request_raw_sha256"]) == 64
     assert len(seen) == 1
     assert seen[0][0][seen[0][0].index("--rng-mode") + 1] == mode
     assert "WOWSIM_RNG_MODE" not in seen[0][1]
