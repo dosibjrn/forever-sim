@@ -262,7 +262,7 @@ def test_real_native_rating_refusals_do_not_starve_sparse_paid_proposals(tmp_pat
                for row in receipt["native_cold_rows"][4:])
     assert receipt["native_cold_completed_routes_after_30"] == 3
     assert receipt["native_cold_snapshot_30"] is None
-    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 8.0
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 4.0
     assert receipt["native_cold_gate_accepted"] is False
 
 
