@@ -858,17 +858,24 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
          "hand_type": "HandTypeOneHand", "weapon_type": "WeaponTypeShield"},
     ])
     relic_type = search.RUST_TYPES["relic"]
-    item_rows.append({
-        "id": 9003, "type": relic_type,
-        "scaling_options": {"0": {"stats": {"5": 100.0}}},
-        "ranged_weapon_type": "RangedWeaponTypeBow",
-    })
-    item_rows.append({
-        "id": 9004, "type": relic_type,
-        "scaling_options": {"0": {"ilvl": 65}},
-        "ranged_weapon_type": "RangedWeaponTypeIdol",
-        "item_effects": [{"buff_id": 27851, "buff_name": "Reduced Claw and Rake Cost"}],
-    })
+    item_rows.extend([
+        {
+            "id": 9003, "type": relic_type,
+            "scaling_options": {"0": {"stats": {"5": 100.0}}},
+            "ranged_weapon_type": "RangedWeaponTypeBow",
+        },
+        {
+            "id": 9004, "type": relic_type,
+            "scaling_options": {"0": {"ilvl": 65}},
+            "ranged_weapon_type": "RangedWeaponTypeIdol",
+            "item_effects": [{"buff_id": 27851, "buff_name": "Reduced Claw and Rake Cost"}],
+        },
+        {
+            # Protobuf JSON omits enum-zero RangedWeaponTypeUnknown.
+            "id": 9005, "type": relic_type,
+            "scaling_options": {"0": {"stats": {"5": 100.0}}},
+        },
+    ])
 
     items_path = tmp_path / "items.jsonl"
     enchants_path = tmp_path / "enchants.jsonl"
@@ -880,10 +887,48 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
 
     assert pool[0][:2] == [9999, 1000 + item_types.index(head_type)]
     assert pool[14] == [1000 + item_types.index(weapon_type)]
-    assert pool[15][0] == 1000 + item_types.index(relic_type)
+    assert pool[15][0] == 9005  # omitted enum zero is proposed; native decides legality
+    assert 9003 not in pool[15]  # a known bow is not a druid relic proposal
     assert 9004 in pool[15]  # real relics can have item_effects but no stat map
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
     assert metadata == {
-        "unique_item_options": len(item_types) + 2,
+        "unique_item_options": len(item_types) + 3,
         "unique_enchant_options": len(item_types),
     }
+
+
+
+def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
+    """Exercise the actual pinned item/enchant rows and all 16 slot pools."""
+    import os
+    import pytest
+    import sys
+    from pathlib import Path
+
+    root = Path(gate.__file__).resolve().parents[1]
+    engine_data = root / "integrations/mythicsim-rust/engine/data"
+    items_path = engine_data / "items.jsonl"
+    enchants_path = engine_data / "enchants.jsonl"
+    if not items_path.is_file() or not enchants_path.is_file():
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.fail("Generic source-paid CI must check out the pinned Rust data submodule")
+        pytest.skip("pinned MythicSim source data is not checked out")
+
+    source_dir = root / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(source_dir))
+    try:
+        search = gate._source_module(
+            source_dir / "p74_gear_search.py", "p74_actual_engine_jsonl_search_test")
+    finally:
+        sys.path.remove(str(source_dir))
+
+    pool, enchant_pools, metadata = search.pinned_rust_candidate_pool(
+        items_path, enchants_path)
+    assert set(pool) == set(range(len(search.SLOTS)))
+    assert all(pool[index] for index in range(len(search.SLOTS)))
+    assert 22397 in pool[15]  # Idol of Ferocity: statless effect-only relic
+    assert 833 in pool[12] and 833 in pool[13]  # Lifestone: statless trinket
+    assert 754 in pool[14]  # Shortsword of Vengeance: statless weapon
+    assert metadata["unique_item_options"] > 0
+    assert metadata["unique_enchant_options"] > 0
+    assert all(choices and choices[0] is None for choices in enchant_pools.values())
