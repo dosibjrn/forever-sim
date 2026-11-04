@@ -221,3 +221,15 @@ def test_paid_p3_missing_weight_not_reclassified_as_measured_zero():
         ("stamina",))
     assert result == ["stamina"]
     assert weights == {}
+
+
+def test_paid_p3_existing_zero_witness_survives_missing_axis_receipt():
+    """A measured-zero stat keeps its paid follow-up even in partial receipts."""
+    from tools.wf_gate_p3_live import _p3_executable_weight_witness_axes
+
+    weights = {"spirit": 0.0}
+    result = _p3_executable_weight_witness_axes(
+        ["NONPOSITIVE_RELEVANT_WEIGHT:spirit", "MISSING_WEIGHT:stamina"],
+        weights, (), ("spirit", "stamina"))
+    assert result == ["spirit"]
+    assert weights == {"spirit": 0.0}
