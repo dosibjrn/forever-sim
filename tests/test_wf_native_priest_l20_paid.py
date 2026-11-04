@@ -650,8 +650,8 @@ def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_
     monkeypatch.setattr(subprocess, "run", prepare)
     world_calls = []
 
-    def native_world(binary, prepared, *, mob_health, target_count):
-        world_calls.append((json.loads(prepared.read_text()), mob_health, target_count))
+    def native_world(binary, prepared, *, mob_health, target_count, rng_mode):
+        world_calls.append((json.loads(prepared.read_text()), mob_health, target_count, rng_mode))
         return {
             "continuous_native_actor": True, "actual_2d_ack": True,
             "world_targets_killed": 2, "native_windows": [{}, {}],
@@ -664,7 +664,7 @@ def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_
     assert world_calls == [({
         "player": {"class": "ClassPriest", "level": 20},
         "request_sha256": "a" * 64,
-    }, 484.0, 2)]
+    }, 484.0, 2, "balanced")]
     assert receipt["native_2d_persistent_world_targets_killed"] == 2
     assert receipt["native_2d_persistent_actor_verified"] is True
     assert receipt["native_2d_screen_complete"] is False
