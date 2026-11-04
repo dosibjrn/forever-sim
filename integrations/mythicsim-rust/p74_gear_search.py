@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cold native P7.4 gear search. Diagnostic only; not live Go↔Rust gate proof."""
+"""P7.4 gear-search helpers; live candidate pools come from pinned Rust gear-options."""
 import argparse
 from collections import Counter
 import copy
