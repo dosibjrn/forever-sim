@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Standalone legacy GameIR talent/gear/policy bounded search CLI; live gates use wf_gate.py.
+    "scripts/run_staged_joint_search.py",
     # Retired WF442 P2 source-rank ingester (source captures remain historical).
     "tools/wf442_ingest_source_rank_observations.py",
     # Retired P2-only Warrior/Mage talent snapshot builders (historical staged files retained).
@@ -187,6 +189,9 @@ RETIRED_TOOLS = (
     "tools/wf255_paladin_command_replay.py",
     "tools/wf256_paladin_seals_replay.py",
     "tools/wf256_run_full_search.py",
+    # Retired WF238/239 GameIR talent-sampling scripts; no active gate or optimizer caller.
+    "scripts/run_wf_coverage238_sample.py",
+    "scripts/run_wf_coverage239_sample.py",
     # P00b/P00c/P01a source-legality and naked-envelope diagnostic entrypoints.
     "scripts/evaluate_source_candidates.py",
     "scripts/prove_p00c_legality.py",
@@ -376,6 +381,8 @@ RETIRED_IMPORT_NAMES = (
     "validate_level_state",
     "validate_level_transition",
     "require_exact_talent_ranks",
+    "run_wf_coverage238_sample",
+    "run_wf_coverage239_sample",
     "wf251_native_replay",
     "wf253_paladin_seal_replay",
     "wf254_paladin_talent_replay",
@@ -429,6 +436,7 @@ RETIRED_TESTS = (
     "tests/test_wf442_generic_direct_heal_crit_red.py",
     "tests/test_wf444_joint_critical_proc_tdd.py",
     "tests/test_wf445_joint_incoming_dodge_resource_tdd.py",
+    "tests/maintenance/test_wf_coverage_sample_wrappers.py",
     "tests/test_wf254_paladin_rank_batch.py",
     "tests/test_v2_parallel_path.py",
     "tests/generic/search/test_v2_path_score.py",
