@@ -33,7 +33,7 @@ def _source_fact(
     )
 
 
-def test_real_druid_l20_claw_feral_weapon_effect_is_not_equipped_weapon_stat():
+def test_real_druid_l20_claw_flat_anchor_is_equipped_dps_not_equipped_mean_hit():
     ir = build_source_slice(20)
     claw = next(action for action in ir.actions if action.family_key == "claw")
     policy = _policy(claw.id)
@@ -41,11 +41,11 @@ def test_real_druid_l20_claw_feral_weapon_effect_is_not_equipped_weapon_stat():
     effect = next(effect for effect in claw.effects if effect.effect_type == "weapon_damage")
     assert effect.damage_source.flat_dps > 0
     assert effect.damage_source.dps_stat_id is None
-    assert policy_uses_equipped_weapon_damage(ir, policy) is False
+    assert policy_uses_equipped_weapon_damage(ir, policy) is True
     assert policy_uses_equipped_weapon_mean_hit(ir, policy) is False
 
 
-def test_source_druid_claw_allows_zero_gear_weapon_dps_and_mean_hit(monkeypatch):
+def test_source_druid_claw_requires_equipped_dps_but_not_mean_hit(monkeypatch):
     weapon = ItemRecord(
         94001,
         "Feral stat mace",
@@ -71,9 +71,11 @@ def test_source_druid_claw_allows_zero_gear_weapon_dps_and_mean_hit(monkeypatch)
         weights={"stamina": 0.1, "weapon_dps": 0},
         weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
     )
-    assert result["p3_pass"], result["blockers"]
+    assert result["p3_pass"] is False
+    assert "MISSING_APPLICABLE_DPS_WEIGHT" in result["blockers"]
+    assert "MISSING_WEIGHT:mean_weapon_hit_damage" not in result["blockers"]
     assert result["weapon_damage_dependent"] is False
-    assert result["equipped_weapon_dps_relevant"] is False
+    assert result["equipped_weapon_dps_relevant"] is True
     assert result["slots"]["weapon"]["items"][0]["score"] == 0.5
 
 
@@ -131,7 +133,7 @@ def test_equipped_weapon_action_requires_matching_mode_source_and_both_weights(m
     )
     assert "MISSING_APPLICABLE_DPS_WEIGHT" in result["blockers"]
     assert "MISSING_WEIGHT:mean_weapon_hit_damage" in result["blockers"]
-    assert result["source_policy"]["equipped_weapon_dps_relevant"] is True
+    assert result["source_policy"]["equipped_weapon_damage_relevant"] is True
     assert result["source_policy"]["equipped_weapon_mean_hit_relevant"] is True
     assert result["source_policy"]["equipped_weapon_dependency_derived_from_canonical_mode_facts_only"] is True
 
@@ -230,7 +232,7 @@ def test_mode_free_source_fact_backed_autoattack_requires_dps_and_equipped_mean_
     ir = SimpleNamespace(
         id="warrior-ir",
         actor=SimpleNamespace(metadata={"class_key": "warrior"}),
-        actions=(),
+        actions=(SimpleNamespace(id="rally", effects=(), requirements=()),),
         auto_attacks=(auto,),
     )
     policy = _policy("rally")
@@ -255,7 +257,7 @@ def test_form_fixed_source_fact_backed_autoattack_needs_dps_but_not_equipped_mea
     ir = SimpleNamespace(
         id="druid-ir",
         actor=SimpleNamespace(metadata={"class_key": "druid"}),
-        actions=(),
+        actions=(SimpleNamespace(id="cat-policy", effects=(), requirements=()),),
         auto_attacks=(auto,),
     )
     policy = _policy("cat-policy")
