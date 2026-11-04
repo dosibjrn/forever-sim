@@ -3,7 +3,9 @@ import copy
 import hashlib
 import json
 
-from tools.wf_native_priest_l20_cold import run_native_priest_l20_cold
+from tools.wf_native_priest_l20_cold import (
+    _source_native_builds, run_native_priest_l20_cold,
+)
 
 
 def _source():
@@ -27,7 +29,7 @@ def _options():
 
 def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
-            first_world_native_failure=False):
+            first_world_native_failure=False, cast_receipts=1):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -47,7 +49,7 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             "effective_request_sha256": digest if native_identity else "wrong",
             "score": 10.0, "rng_mode": "balanced",
             "native_action_cast_receipts": [
-                {"id": {"spellId": 585}, "casts": 1}],
+                {"id": {"spellId": 585}, "casts": cast_receipts}],
         }, {})
 
     def world(_binary, request, *, target_count):
@@ -165,7 +167,7 @@ def test_cold_opt_in_uses_one_real_producer_and_does_not_grant_gate_pass(
         calls.append(args)
         return {
             "native_cold_300s_reached": True,
-            "native_cold_300s_overrun": False,
+            "native_cold_300s_overrun": True,
             "native_cold_snapshot_30": {"route_s_per_mob": 10.0},
             "native_cold_final_300": {"route_s_per_mob": 9.5},
             "native_cold_native_paid_before_30": 2,
@@ -182,3 +184,41 @@ def test_cold_opt_in_uses_one_real_producer_and_does_not_grant_gate_pass(
     assert result["screen_complete_candidates"] == 3
     assert result["reasons"] == [
         "P4_P5_NATIVE_COLD_PRODUCER_EXECUTED_GATE_NOT_ACCEPTED"]
+
+
+def test_native_equipped_builds_precede_naked_baseline():
+    builds = list(_source_native_builds(_source(), _options()))
+    equipped = [b["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+                for b in builds]
+    assert equipped[0] == [{"id": 11}, {"id": 21}]
+    assert equipped[-1] == []
+    assert len(equipped) == len({json.dumps(x, sort_keys=True) for x in equipped})
+
+
+def test_late_100mob_completion_cannot_displace_in_budget_native_winner(tmp_path):
+    # Five paid + 100-mob source/world calls finish at 8,16,24,32,40s.
+    # The final native world session began before 36s, ended after cutoff.
+    receipt, paid, world = _runner(tmp_path, budget=36.0, snapshot=10.0)
+    assert len(paid) == len(world) == 5
+    assert receipt["native_cold_300s_reached"] is True
+    assert receipt["native_cold_300s_overrun"] is True
+    assert receipt["native_cold_native_paid_before_30"] == 1
+    assert receipt["native_cold_native_paid_after_30"] == 3
+    assert receipt["native_cold_completed_routes_before_30"] == 1
+    assert receipt["native_cold_completed_routes_after_30"] == 3
+    assert receipt["native_cold_snapshot_30"]["route_s_per_mob"] == 10.0
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 7.0
+    assert receipt["native_cold_final_300"]["paid_completed_elapsed_s"] == 32.0
+    assert receipt["native_cold_rows"][-1]["paid_completed_elapsed_s"] == 40.0
+    assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_paid_native_no_source_cast_cannot_count_as_cold_paid_build(tmp_path):
+    receipt, paid, world = _runner(tmp_path, cast_receipts=0)
+    assert len(paid) == 5
+    assert world == []
+    assert receipt["native_cold_native_paid_before_30"] == 0
+    assert receipt["native_cold_native_paid_after_30"] == 0
+    assert receipt["native_cold_final_300"] is None
+    assert all(row["status"] == "NATIVE_NO_SOURCE_CAST"
+               for row in receipt["native_cold_rows"])
