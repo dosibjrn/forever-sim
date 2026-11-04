@@ -202,7 +202,6 @@ from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 names = (
     'wf247_ingest_outgoing',
-    'wf250_ingest_source_capture',
     'wf252_ingest_companions',
     'wf253_ingest_seal',
 )
