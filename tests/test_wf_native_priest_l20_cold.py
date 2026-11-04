@@ -366,8 +366,10 @@ def test_cold_source_directory_pays_distinct_source_talent_apl_candidates(tmp_pa
     (folder / "02.json").write_text(json.dumps(second))
 
     receipt, paid, world = _runner(
-        tmp_path, budget=300.0, snapshot=30.0, options=[],
-        source_request=folder)
+        tmp_path, budget=300.0, snapshot=30.0, options=_options(),
+        max_attempts=2, source_request=folder)
+    # A shallow cold budget must pay both distinct source requests BEFORE
+    # exploring the deep gear cartesian tail of the first request.
     assert len(paid) == 2  # Both full source requests were actually scored.
     assert paid[0]["raid"] != paid[1]["raid"]
     assert paid[1]["raid"]["parties"][0]["players"][0]["talentsString"] == "1-0-0"
