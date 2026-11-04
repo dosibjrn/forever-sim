@@ -2741,6 +2741,28 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
         'talent_probes':talent_probes,'paid_evaluations':evaluated,
         'events':events,'worker_cpu_s':cpu,'rows':rows}
 
+def _ensure_searchable_talent_frontier(talents, frontier, *, search_only, spec_tree):
+    """Keep short unrestricted paid diagnostics useful when no full-point talent build exists.
+
+    The empty selection is only a neutral baseline for collecting real source-action
+    screens. Preserve an explicit unresolved-talent marker so it can never certify
+    the P4 talent-unlock requirement. Full searches and named-spec searches fail
+    closed instead of silently relaxing their talent constraints.
+    """
+    talents = list(talents)
+    frontier = dict(frontier or {})
+    if talents:
+        return talents, frontier
+    if not search_only or spec_tree is not None:
+        raise ValueError('SOURCE_FULL_POINT_TALENT_FRONTIER_EMPTY')
+    unresolved = list(frontier.get('source_unlock_allocation_unresolved') or ())
+    unresolved.append({'reason': 'NO_EXECUTABLE_FULL_POINT_TALENT_FRONTIER'})
+    frontier['source_unlock_allocation_unresolved'] = unresolved
+    frontier['empty_talent_frontier_fallback'] = (
+        'EMPTY_SELECTION_BASELINE_FOR_UNRESTRICTED_SHORT_PAID_DIAGNOSTIC_ONLY')
+    return [{}], frontier
+
+
 def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   bonus_talent_points=0,max_talents=4,
                                   max_gear_moves=2,max_policies=2,gear_slot_offset=0,
@@ -2862,6 +2884,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             level=level,bonus_talent_points=bonus_talent_points,
             max_frontier=max_talents)
         frontier={**frontier,**spec_ledger}
+    talents,frontier=_ensure_searchable_talent_frontier(
+        talents,frontier,search_only=search_only,spec_tree=spec_tree)
     source_allocation=seed_stage.get('allocation')
     if spec_tree is not None:
         definition_tree={t.id:t.tree_key for t in compiled.talents}
