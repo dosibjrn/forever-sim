@@ -9,6 +9,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # M47 GameIR-scored baseline/adversarial report CLIs and their exclusive
+    # historical report checks; retained M47 mechanics tests are independent.
+    "tools/m47_3x3_baseline.py",
+    "tools/m47_druid_l60_adversarial.py",
+    "tools/m47_mage_l20_adversarial.py",
+    "tools/m47_paladin_l40_adversarial.py",
+    "tools/m47_paladin_l60_adversarial.py",
+    "tests/test_m47_3x3_baseline_v011470.py",
+    "tests/test_m47_druid_l60_adversarial_v011475.py",
+    "tests/test_m47_mage_l20_adversarial_v0114711.py",
+    "tests/test_m47_paladin_selection_v011472.py",
     # Retired M47 Paladin L20 hybrid Python selection/adversarial report drivers;
     # their required root-level baseline and report JSON files are not tracked.
     "tools/m47_paladin_l20_selection.py",
