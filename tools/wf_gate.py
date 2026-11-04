@@ -187,9 +187,11 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if type(value) in (int, float) and math.isfinite(value) and value >= 0:
                     record[key] = value
-            for key in ("reference_profile", "selected_validation"):
+            for key in ("reference_profile", "selected_validation",
+                        "native_execution_error"):
                 value = report.get(key)
-                if isinstance(value, str) and len(value) <= 128:
+                if isinstance(value, str) and len(value) <= (
+                        256 if key == "native_execution_error" else 128):
                     record[key] = value
         if gate == "P3":
             # Make the real bounded Rust baseline/equipped pair visible to the
