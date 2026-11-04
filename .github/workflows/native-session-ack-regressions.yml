@@ -118,7 +118,7 @@ jobs:
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
             --mob-health 1200 --targets 2 --require-native-health-damage
-      - name: Replay exact P7.4 frozen winner against native and live 2D (5 stochastic fights; not gate)
+      - name: Replay exact P7.4 frozen winner against native and live 2D (25 stochastic fights; not gate)
         run: |
           python integrations/mythicsim-rust/diagnose_p74_frozen_winner.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine
