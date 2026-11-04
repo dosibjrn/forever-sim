@@ -1,33 +1,53 @@
-# FOREVER SIM — active M1 work queue
+# WORK PRIORITY — live M1 queue
 
-**Policy:** maximize genuine partial-inclusive M1 measured-float per implementation + verification + compute time. Active gates: P3–P6 and P7.1–P7.5 (1,332 pairs). Only **Merge** dispatches trusted M1 recording and writes `docs/planning/M1_PASSES.tsv`. MythicSim Rust owns game facts, legality and available choices; Forever owns scenarios, search and scoring. No P1/P2, GameIR rebuild, duplicate legality, fabricated stat weights or unchanged heavy rerun.
+Refreshed against current main `276a470a9f9638bed483cc25dbea6e557bd91a65` (Clean #842 is M1-affected-gates: none). Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
 
-**Latest trusted scoreboard:** canonical `M1_PASSES.tsv` on main is blob `cdbcd3170662406308d8f9b6c0bcfa1f5138df34`: **M1 measured: 2.0983% (float=0.0209833175)**, **27.950/1,332** measured equivalents, **22/1,332** accepted PASS gates, **0/148** certified checkpoints. This is partial-inclusive diagnostic coverage, not certified completion. Official Mage L30 P3 remains **FAIL / PARTIAL 85/224**, not PASS.
+## Current M1 scoreboard
 
-## #1 — Work2: improve Mage L30 P3 beyond the officially recorded 85/224 — [#818](https://github.com/dosibjrn/forever-sim/issues/818), [merged PR #825](https://github.com/dosibjrn/forever-sim/pull/825), [open PR #831](https://github.com/dosibjrn/forever-sim/pull/831)
+- **M1 measured: 2.1000%** (`measured_fraction=0.0210002413`).
+- **27.972 / 1,332** measured gate-equivalents.
+- **23 PASS / 17 PARTIAL** active-scope gate rows.
+- **0 / 148** certified checkpoints. Druid L60 Balance now has nine PASS gate rows, but the rows do not share a certified compatibility identity; do not claim a completed checkpoint.
 
-- **Checkpoint/gate:** `mage:30:unrestricted:P3`. The trusted recorder [#41782711990](https://github.com/dosibjrn/forever-sim/actions/runs/41782711990) published **PARTIAL 85/224**, advancing the previous 44/224 high-water by 41 genuinely verified assertions. The production gate still returns FAIL.
-- **Measured mechanism:** merged #825 used native ItemSparse item-sized perturbations and real paid CombatRuntime before/after evaluations to establish positive Intellect weight **0.2298024691 s/mob/unit** from +25/+50 native item deltas. Official ledger row points to run #41782711990.
-- **Duplicate reconciliation:** accidental duplicate recorder [#41782739728](https://github.com/dosibjrn/forever-sim/actions/runs/41782739728) also completed; its atomic publisher reported **“Concurrent run already recorded equal or stronger evidence.”** It added no second receipt. No more dispatches for this target.
-- **Current Work2 PR #831:** exact-head [selected-engine #41782113954](https://github.com/dosibjrn/forever-sim/actions/runs/41782113954) returned **FAIL / 44/224**, unchanged; maintenance [#41782113997](https://github.com/dosibjrn/forever-sim/actions/runs/41782113997) passed 386 tests and generic source-paid [#41782114129](https://github.com/dosibjrn/forever-sim/actions/runs/41782114129) passed 310. Selected-winner baseline reuse alone did not reproduce an improvement. PR #831 is behind current main and `mergeable=false`.
-- **Next action:** Work2 should rebase/reconcile on fresh main and combine the validated native item-sized probe deltas from #825 with the correctly scoped Mage-only selected-winner baseline reuse from #831. Run one exact-head no-record Mage L30 P3 producer; require **>85/224** or a specifically reproduced, fixable defect before requesting integration. Preserve the Druid L40 P3 PASS regression. Do not merge #831 or dispatch M1 on its unchanged 44/224 result.
-- **Conditional upside:** each additional comparable assertion is ~+0.000335 pp; remaining full-PASS headroom from 85/224 is ~+0.04659 pp. No further credit is assumed.
+The scoreboard is the output of the canonical `python tools/m1_progress.py` run in Merge recorder #41784946720. Prio does not edit `M1_PASSES.tsv`.
 
-## #2 — Work1: finish Druid L60 Balance P7.4 finite-health parity repair — [#131](https://github.com/dosibjrn/forever-sim/issues/131), [PR #835](https://github.com/dosibjrn/forever-sim/pull/835)
+## Immediate queue
 
-- **Checkpoint/gate:** `druid:60:balance:P7.4`. Accepted high-water **PARTIAL 704.6605/720.9117 DPS**; original trusted [#41778065670](https://github.com/dosibjrn/forever-sim/actions/runs/41778065670) completed the 300-second search but failed the frozen 1,000-fight native/world parity check.
-- **Latest evidence:** PR #835's five-fight exact frozen-winner no-record replay [#41782630542](https://github.com/dosibjrn/forever-sim/actions/runs/41782630542) passed at the original saved target health, with native/live/world DPS all 918.2620959505 and matching 133.002693869 s first duration. Its focused clock/ACK and source-paid workflows passed. However, the earlier 25-fight diagnostic [#41781871815](https://github.com/dosibjrn/forever-sim/actions/runs/41781871815) still failed at saved target health 127,393 even with both requests normalized to 25 iterations; only the 10M-health diagnostic control passed. Five fights therefore do not establish that the finite-health defect is fixed.
-- **Next action:** before merge, Work1 must run the 25-fight no-record frozen-winner replay on **exact PR #835 HEAD** at the original 127,393 target health. If it still diverges, repair/reset the live 2D target-health lifecycle and add a focused regression; do not use the 10M-health control or alter P7.4 acceptance. If the exact saved-health replay passes, rebase on fresh main, consolidate overlapping diagnostics, hand to Merge for review and one changed-code official P7.4 recorder. PR #835 is currently behind the post-recorder main head (`mergeable=false`). Do not repeat the unchanged 300-second search or 1,000-fight holdout.
-- **Remaining measured-float proximity:** ~+0.00169 pp; keep this behind the higher-return Mage P3 work.
+### 1. Merge — finish the post-#840 Druid L60 Balance P7.4 revalidation
 
-## #3 — Parked prerequisite: Priest L20 P4/P5 native level-aware player support — [#817](https://github.com/dosibjrn/forever-sim/issues/817)
+- PR #833's finite-target lethal-aware comparator was merged as `cd743de`; official heavy recorder [#41784946720](https://github.com/dosibjrn/forever-sim/actions/runs/41784946720) returned a genuine **P7.4 PASS**: 300.000146734 s independent cold search, 992 paid source-legal candidates, frozen 1,000-fight stochastic final, native/world mean 961.5548432073 DPS against the 720.9117 floor.
+- Production hardening PR [#840](https://github.com/dosibjrn/forever-sim/pull/840) then changed the executable P7.4 live path in `integrations/mythicsim-rust/live_world_probe.py`: identical iteration-limited native/live requests and a fresh saved-HP target for every fight. Its exact 25-fight diagnostic [#41785767359](https://github.com/dosibjrn/forever-sim/actions/runs/41785767359) passed with the original 127,393 HP target and lethal-aware coupled native↔2D parity.
+- The mandatory changed-code heavy revalidation was already dispatched twice by Merge on the same merged main SHA `e53f0ca`: [#41786536534](https://github.com/dosibjrn/forever-sim/actions/runs/41786536534) and duplicate [#41786566461](https://github.com/dosibjrn/forever-sim/actions/runs/41786566461). Both were still in progress at this refresh.
+- **Do not dispatch again.** Merge must inspect both terminal runs, reconcile the recorder's blob-SHA/CAS outcome, and post one terminal verdict. Current main's later Clean #842 commit changes no M1-affected gate.
 
-- Trusted [#41779281303](https://github.com/dosibjrn/forever-sim/actions/runs/41779281303) invoked both gates and returned **BLOCKED**, `P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED`; zero paid screens/casts. Native item-options integration #822 is merged.
-- Work1 proved the selected Rust pin `5f116607b955a87c124b67a3ba4750ba0c508e42` hardcodes player level 60 in `new_character` and lacks a level-20 player base-stat profile. A level-60 actor wearing L20 gear is not valid evidence. The truthful prerequisite is a source-backed native level-aware player contract and L20 base-stat/rating data, then a real prepared Priest L20 actor → paid whole-build/world screen → source-action casts → bounded no-record P4/P5 producer.
-- Park this engine-sized implementation until the Mage P3 continuation and P7.4 exact saved-health validation above are reconciled. Reassess its conditional two-gate upside (~+0.05005 pp for genuine 2/6 PARTIALs) against actual implementation effort; do not repeat unchanged Priest P4/P5 or fabricate a Python role/SQLite fallback.
+### 2. Merge — next independent low-cost measurement: Paladin L20 unrestricted P3
 
-## Completed / no unchanged redispatch
+- The canonical ledger has **no** `paladin:20:unrestricted:P3` row; this is unmeasured, not a known PASS or FAIL.
+- Current main registers the existing Paladin native source provider for L10–L30 and has existing `paladin_ret` / `paladin_tank` gear roles and runtime selection. The real P3 production path uses the existing bounded paid scorer and a 44-evaluation budget; this is not a 100-mob or 300-second acceptance.
+- A full PASS would add at most `1/1332 = 0.07508` percentage points; an eligible PARTIAL contributes only its actual measured fraction. This is a conditional opportunity, not a predicted result.
+- **Do not dispatch while either #41786536534 or #41786566461 is active.** Once both are terminal and the ledger is reconciled, Prio may post one `M1-DISPATCH-REQUEST` for `paladin:20:unrestricted:P3` on this existing owner issue [#131](https://github.com/dosibjrn/forever-sim/issues/131). Use one production run only; if the source scenario or legal item path is BLOCKED, retain the exact reason and do not retry unchanged. No separate queue issue.
 
-- [Mage L20 P3 #829](https://github.com/dosibjrn/forever-sim/issues/829): trusted [#41781642094](https://github.com/dosibjrn/forever-sim/actions/runs/41781642094) returned **FAIL / 88/224**, unchanged. Do not retry unchanged code.
-- [Hunter L20 P3 #827](https://github.com/dosibjrn/forever-sim/issues/827): trusted [#41780398474](https://github.com/dosibjrn/forever-sim/actions/runs/41780398474) and duplicate [#41780529685](https://github.com/dosibjrn/forever-sim/actions/runs/41780529685) returned **BLOCKED** before source-search evaluations. The source-backed repeated-pull policy is absent; do not fake auto/pet behavior or redispatch unchanged.
-- Work2 unrelated [PR #537](https://github.com/dosibjrn/forever-sim/pull/537) remains DRAFT/HOLD.
+### 3. Work2 — Mage L30 P3 source-witness repair
+
+- Owner issue [#818](https://github.com/dosibjrn/forever-sim/issues/818); current PR [#831](https://github.com/dosibjrn/forever-sim/pull/831), API head `e74e951`, base `547c18a` (behind current main `276a470`). The PR body is stale: it still describes `4c88590` as HEAD.
+- Last validated production behavior on `6f3ce498`: selected-engine/no-record [#41785534565](https://github.com/dosibjrn/forever-sim/actions/runs/41785534565) remains **FAIL 85/224**, equal to the accepted #825 high-water. The +50 Intellect witness is preserved; native +74/+101 Spell Power probes remain nonpositive on both source-IR and paid-winner policies. No M1 increment.
+- The later test-only head `4c88590` also returned 85/224; maintenance [#41786092998](https://github.com/dosibjrn/forever-sim/actions/runs/41786092998) exposed two invalid fixtures whose mock IR omitted `mage:fireball`. Current PR head `e74e951` changes those fixtures but has no exact-head validation yet.
+- Next Work2 action: rebase onto fresh main, update the PR body to the real HEAD, get exact-head maintenance green, then inspect a genuinely native/source-authorized executable alternative for Spell Power. **No synthetic weights, no gate weakening, no merge or M1 dispatch at 85/224.**
+
+### 4. Work1 — Priest L20 P4/P5 remains parked
+
+- Existing owner issue [#817](https://github.com/dosibjrn/forever-sim/issues/817) tracks the missing native level-aware player/base-stat contract for the real P4/P5 path.
+- Keep parked until the Mage L30 P3 investigation and the post-#840 P7.4 revalidation are reconciled. This is an implementation-sized dependency, not a reason to build a parallel simulator or add diagnostic-only work.
+
+## Closed / no unchanged redispatch
+
+- Hunter L20 P3: `BLOCKED_NO_NAKED_SUCCESS`, zero paid source evaluations. Do not rerun unchanged.
+- Mage L20 P3: retain the existing 88/224 high-water; do not rerun unchanged.
+- Mage L30 P3: retain the official 85/224 high-water from #825; #831/#837/#838 experiments have not exceeded it.
+- Druid L60 Balance P7.4: pre-#840 official PASS is historical; the two post-#840 heavy runs above are the only current-code revalidation attempts.
+
+## Operating constraints
+
+- Merge alone dispatches official M1 recorders and writes `M1_PASSES.tsv`; Prio only maintains this queue and submits requests on existing owner issues.
+- Never launch a second M1 writer while a recorder is active. Never duplicate a request already ACKed/launched.
+- Prioritize real active P3–P7.5 production progress. No P1/P2 work, no retired GameIR search runner, no HPS/TPS witness work, no MythicSim self-validation, no invented positive weights, and no fabricated M1 rows.
