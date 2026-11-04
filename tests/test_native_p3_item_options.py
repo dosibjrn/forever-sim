@@ -300,6 +300,11 @@ def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     assert not native_item_options_required("mage", 40, "unrestricted")
     assert not native_item_options_required("warrior", 20, "unrestricted")
 
+
+def test_selected_engine_workflow_requires_the_exact_shaman_engine_pin():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    assert 'expected_sha="51f4847d68c8d5026aaabe24894b8012aacba969"' in workflow
+
 def test_selected_engine_workflow_runs_shaman_l20_native_p3_without_record():
     workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
     assert "Run no-record Shaman L20 P3 with native item options" in workflow

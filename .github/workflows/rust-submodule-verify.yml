@@ -32,9 +32,11 @@ jobs:
         run: |
           set -euo pipefail
           engine=integrations/mythicsim-rust/engine
-          expected="$(git ls-tree HEAD "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          expected_sha="51f4847d68c8d5026aaabe24894b8012aacba969"
+          gitlink_sha="$(git ls-tree HEAD "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
           actual="$(git -C "$engine" rev-parse HEAD)"
-          test -n "$expected" && test "$expected" = "$actual"
+          test "$gitlink_sha" = "$expected_sha"
+          test "$actual" = "$expected_sha"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
       - name: Set up Python for the live P3 provider
