@@ -43,6 +43,13 @@ def test_p6_one_cold_search_and_identical_paid_winner_reused():
     assert result['source_replay_T30_T300'] == 1.
     assert all(row['count'] == 100 and row['reused']
                for row in result['source_replay_results'])
+    # The paid cold report lives in a temporary directory. Both P6 winners
+    # must retain their actual executable builds in the public gate result.
+    for frozen in result['selected_paid_winners']:
+        assert frozen['allocation'] == _winner()['allocation']
+        assert frozen['equipped_gear'] == _winner()['equipped_gear']
+        assert frozen['opening_action_ids'] == _winner()['opening_action_ids']
+        assert frozen['policy_ir'] == _winner()['policy_ir']
 
 
 def test_p6_distinct_snapshot_pays_only_missing_winner_and_checks_1pct():
@@ -63,6 +70,10 @@ def test_p6_distinct_snapshot_pays_only_missing_winner_and_checks_1pct():
     assert result['source_replay_T30_T300'] == 1.02
     assert result['source_replay_results'][0]['reused'] is False
     assert result['source_replay_results'][1]['reused'] is True
+    assert [x['policy_ir'] for x in result['selected_paid_winners']] == [
+        _winner('earlier')['policy_ir'], _winner('a')['policy_ir']]
+    assert all(x['equipped_gear'] == _winner()['equipped_gear']
+               for x in result['selected_paid_winners'])
 
 
 def test_p6_missing_snapshot_never_substitutes_300s_winner():
