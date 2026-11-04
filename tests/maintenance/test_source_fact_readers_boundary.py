@@ -299,7 +299,6 @@ operations = {
     'wf255_ingest_command': 'ingest',
     'wf256_ingest_seals': 'ingest',
     'wf257_ingest_paladin_corridor': 'ingest',
-    'wf381_stage_mage_talent_positions': 'stage',
 }
 for name, function_name in operations.items():
     module = importlib.import_module('tools.' + name)
@@ -322,52 +321,6 @@ assert legacy_default is DEFAULT_DB
         capture_output=True, text=True, timeout=30, check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-
-
-def test_historical_mage_stager_keeps_explicit_db_and_source_identity(tmp_path):
-    """The import-only change must preserve the staged SQLite output contract."""
-    import hashlib
-    import json
-
-    import pytest
-    from tools.wf381_stage_mage_talent_positions import stage
-
-    base = tmp_path / "canonical.sqlite"
-    source = tmp_path / "talent_positions.json"
-    target = tmp_path / "staged.sqlite"
-    with sqlite3.connect(base) as db:
-        db.execute("CREATE TABLE keep_me (value TEXT)")
-        db.execute("INSERT INTO keep_me VALUES ('canonical')")
-    payload = {
-        "schema": "forever_source_talent_positions_v1",
-        "source_build": "fixture-build",
-        "class_key": "mage",
-        "min_level": 30,
-        "talents": [{"name": "fixture talent"}],
-    }
-    source.write_text(json.dumps(payload), encoding="utf-8")
-    original = base.read_bytes()
-    result = stage(source=source, base=base, target=target)
-
-    assert base.read_bytes() == original
-    assert result["base_sha256"] == hashlib.sha256(original).hexdigest()
-    assert result["source_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
-    assert result["positions"] == 1
-    assert result["source_build"] == "fixture-build"
-    assert result["sqlite_integrity"] == "ok"
-    with sqlite3.connect(target) as db:
-        assert db.execute("SELECT value FROM keep_me").fetchone() == ("canonical",)
-        row = db.execute(
-            "SELECT class_key, source_build, min_level, source_json "
-            "FROM checkpoint_talent_source_positions"
-        ).fetchone()
-        assert row[:3] == ("mage", "fixture-build", 30)
-        assert json.loads(row[3]) == payload
-        assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
-
-    with pytest.raises(ValueError, match="STAGED_TALENT_SOURCE_DB_MUST_NOT_BE_OVERWRITTEN"):
-        stage(source=source, base=base, target=base)
-    assert base.read_bytes() == original
 
 
 def test_armor_source_rule_reader_import_does_not_load_gameir():

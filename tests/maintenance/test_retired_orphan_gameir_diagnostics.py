@@ -9,6 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired P2-only Warrior/Mage talent snapshot builders (historical staged files retained).
+    "tools/wf362_stage_warrior30_talents.py",
+    "tools/wf381_stage_mage_talent_positions.py",
     # Historical one-shot Python item/stat source stagers; staged SQLite data and consumers remain.
     "tools/wf346_type_resistance_equipment.py",
     "tools/wf385_stage_mage_stamina.py",
