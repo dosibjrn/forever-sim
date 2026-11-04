@@ -38,19 +38,25 @@ def _blocked(reason: str):
     return {"status": "BLOCKED", "reasons": [reason]}
 
 
-def _cold_apl(base: dict, rng: random.Random, mutation, *, elite=None):
-    """Cold grammar draw or local improvement of this search's paid archive.
+def _cold_apl(base: dict, rng: random.Random, mutation, *,
+              elite=None, reference_parent=False):
+    """Generate an APL-only proposal while freezing the source build.
 
-    The first candidate is sampled independently of the saved reference.
-    An optional elite must be a source-legal candidate already paid in this
-    search with deterministic Balanced native+2D scoring. Only its rotation
-    is mutable; gear and talents remain pinned.
+    P7.2 does not require a cold restart: a local mutation of the runnable
+    source rotation is a useful first candidate before broader cold draws.
+    Optional elites come only from this search's paid Balanced native archive.
+    Gear and talents are never mutated.
     """
     result = copy.deepcopy(base)
     p = result["raid"]["parties"][0]["players"][0]
     original = base["raid"]["parties"][0]["players"][0]
     grammar = original["rotation"]["priorityList"]
-    if elite is None:
+    if elite is None and reference_parent:
+        # The authenticated reference is a legal starting *policy* for this
+        # single-axis reachability gate, not an already-paid changed result.
+        # Native alone decides legality of the proposed changed rotation.
+        candidate = mutation.mutate_apl(grammar, grammar, rng, cold=False)
+    elif elite is None:
         candidate = mutation.mutate_apl(None, grammar, rng, cold=True)
     else:
         winner = elite["raid"]["parties"][0]["players"][0]
@@ -162,7 +168,9 @@ def run_live(root: Path, class_key: str, level: int, *,
         try:
             elite = (_paid_elite_choice(elites, rng, proposals)
                      if full_search else None)
-            candidate = _cold_apl(base, rng, mutation, elite=elite)
+            candidate = _cold_apl(
+                base, rng, mutation, elite=elite,
+                reference_parent=(not full_search and proposals <= 2))
             changed_apl = candidate["raid"]["parties"][0]["players"][0][
                 "rotation"]["priorityList"]
             if changed_apl == original_apl:

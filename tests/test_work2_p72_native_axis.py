@@ -122,3 +122,59 @@ def test_public_gate_receipt_keeps_real_native_score_and_changed_apl(
     assert row["cold_winner_request_sha256"] == "paid-candidate"
     assert row["reference_profile"] == "balance"
     assert row["checkpoint_spec"] == "unrestricted"
+
+def test_p72_tries_reference_policy_mutation_then_cold_candidates(monkeypatch):
+    """A P7.2 axis probe need not rebuild a random cold policy to find a
+    native-legal change; failed/no-op local proposals still reach cold search.
+    """
+    import json
+
+    baseline = _source()
+    source_apl = baseline["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+    changed = [{"action": {"castSpell": {"spellId": 8921}}}]
+    attempts = []
+    scored = []
+
+    def mutate(actions, source_actions, _rng, *, cold):
+        attempts.append((copy.deepcopy(actions), cold))
+        assert source_actions == source_apl
+        # The first local proposal happens to be a no-op. The next local
+        # proposal is distinct but refused; the cold candidate is paid.
+        if len(attempts) == 1:
+            return copy.deepcopy(source_apl)
+        return changed if cold else [{"action": {"castSpell": {"spellId": 1126}}}]
+
+    def native(_binary, request_path, iterations, *, rng_mode):
+        request = json.loads(request_path.read_text())
+        policy = request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+        scored.append(policy)
+        assert iterations == 3 and rng_mode == "balanced"
+        if policy[0]["action"]["castSpell"]["spellId"] == 1126:
+            raise RuntimeError("NATIVE_REFUSAL")
+        return {"iterations": 3, "native_dps": 25.0}
+
+    monkeypatch.setattr(p72, "_pinned_source_runtime",
+                        lambda *args, **kwargs: (
+                            baseline, {"reference_dps": 20.0,
+                                       "selected_engine_revision": "selected-rust-sha"},
+                            Path("/selected/forever-engine")))
+    mutation = SimpleNamespace(mutate_apl=mutate)
+    production = SimpleNamespace(native_source_control=native)
+    monkeypatch.setattr(p72, "_source_module",
+                        lambda _path, name: mutation if "mutator" in name else production)
+    monkeypatch.delenv("FOREVER_P7_FULL_SOURCE_SEARCH", raising=False)
+
+    report = p72.run_live(Path("/not-needed"), "druid", 60, spec="unrestricted")
+
+    assert [is_cold for _, is_cold in attempts] == [False, False, True, True]
+    assert attempts[0][0] == source_apl
+    assert attempts[1][0] == source_apl
+    assert attempts[2][0] is None
+    assert report["status"] == "PASS"
+    assert report["source_legal_cold_candidates_paid"] == 1
+    assert report["winner_native_dps"] == 25.0
+    assert report["checkpoint_spec"] == "unrestricted"
+    assert len(scored) == 2
+    assert scored[0] != scored[1]
+    assert "NATIVE_REFUSAL" in report["cold_candidate_failures"][0]
+
