@@ -2525,7 +2525,8 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                            min_spec_points=21, required_combat_mode=None,
                            per_candidate_wall_s, deadline,
                            screen_mobs, pack_size, allow_partial_gear_stats,
-                           attempted,quick_backend,max_evaluations):
+                           attempted,quick_backend,max_evaluations,
+                           search_started_at=None):
     """Live local stat gradient -> sourced equipment -> APL within one search budget.
 
     The quick score comes from the SAME real CombatRuntime as the global screen,
@@ -2625,6 +2626,9 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                         for aid in _policy_mode_damage_action_ids(
                                             fresh.ir,fresh.policy,required_combat_mode))):
                                 result={**result,'status':'SPEC_COMBAT_MODE_ACTION_NOT_EXECUTED'}
+                            trace['screen_finished_elapsed_s'] = (
+                                monotonic()-search_started_at
+                                if search_started_at is not None else None)
                             trace.update(screen_status=result['status'],
                                 screen_s_per_mob=result.get('mean_s_per_mob'),
                                 status='SCREEN_COMPLETE_NOT_PROMOTED' if result['status']=='COMPLETE' else 'SCREEN_BLOCKED',
@@ -2721,6 +2725,9 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                 for aid in _policy_mode_damage_action_ids(
                                     fresh.ir,fresh.policy,required_combat_mode))):
                         result={**result,'status':'SPEC_COMBAT_MODE_ACTION_NOT_EXECUTED'}
+                    trace['screen_finished_elapsed_s'] = (
+                        monotonic()-search_started_at
+                        if search_started_at is not None else None)
                     trace.update(screen_status=result['status'],screen_s_per_mob=result.get('mean_s_per_mob'),
                         status='SCREEN_COMPLETE_NOT_PROMOTED' if result['status']=='COMPLETE' else 'SCREEN_BLOCKED',
                         screen_invoked=True,
@@ -2800,12 +2807,16 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   screen_evaluator_backend="isolated",
                                   spec_tree=None, min_spec_points=21,
                                   required_combat_mode=None,
-                                  allow_unallocated_talent_baseline=False):
+                                  allow_unallocated_talent_baseline=False,
+                                  snapshot_at_s=None):
     """Budgeted combination search using *one* real paid L2 evaluator.
 
     4-mob screens are pruning proxies only; only 100-mob completions rank.
     Gear membership and exact Forever encounters remain explicit blockers.
     """
+    if snapshot_at_s is not None and (
+            not search_only or not 0 < snapshot_at_s < max_cpu_s):
+        raise ValueError('SHARED_SEARCH_SNAPSHOT_REQUIRES_INTERNAL_BOUNDARY')
     if (spec_tree is None and required_combat_mode is not None):
         raise ValueError('SOURCE_MODE_REQUIRES_SPEC_TREE')
     if screen_evaluator_backend not in ('isolated','direct'):
@@ -3154,6 +3165,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                     backend=screen_evaluator_backend,
                     mobs=screen_mobs,timeout_s=min(per_candidate_wall_s,remaining),
                     recovery_policy=recovery,pack_size=pack_size)
+                # A paid candidate finishing after the freeze cannot enter P4.
+                row['screen_finished_elapsed_s']=monotonic()-t0
                 row['screen_events']=int(screen.get('events') or 0)
                 events+=row['screen_events']
                 row['screen_status']=screen['status']
@@ -3230,6 +3243,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             per_candidate_wall_s=per_candidate_wall_s,screen_mobs=screen_mobs,
             pack_size=pack_size,allow_partial_gear_stats=allow_partial_gear_stats,
             attempted=attempted,quick_backend=screen_evaluator_backend,
+            search_started_at=t0,
             max_evaluations=max(0,max_paid_builds-paid))
         events+=refinement['events']
         paid+=refinement['paid_evaluations']
@@ -3296,6 +3310,29 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                           for row,_,_ in ranked_screen]
     paid_refinement_lineages=_paid_refinement_lineages(attempted,validation_shortlist)
     search_winner=validation_shortlist[0] if validation_shortlist else None
+    # Freeze the actually paid best-so-far of this SAME ongoing cold run.
+    # Completion timestamps exclude screens still running at 30 seconds.
+    shared_snapshot=None
+    if snapshot_at_s is not None:
+        boundary_rows=[row for row in attempted
+            if type(row.get('screen_finished_elapsed_s')) in (int,float)
+            and row['screen_finished_elapsed_s'] <= snapshot_at_s]
+        boundary_screened=[entry for entry in screened
+            if type(entry[0].get('screen_finished_elapsed_s')) in (int,float)
+            and entry[0]['screen_finished_elapsed_s'] <= snapshot_at_s]
+        frozen=_select_screen_finalists(boundary_screened,1)
+        shared_snapshot={
+            'elapsed_boundary_s':snapshot_at_s,
+            'winner':dict(frozen[0][0],
+                paid_candidate_index=paid_positions[id(frozen[0][0])]) if frozen else None,
+            'paid_candidates':sum(bool(row.get('screen_invoked')) for row in boundary_rows),
+            'screen_complete_candidates':len(boundary_screened),
+            'unique_full_builds':_unique_paid_full_builds(boundary_rows),
+            'post_boundary_paid_evaluations':sum(
+                bool(row.get('screen_invoked')) for row in attempted
+                if type(row.get('screen_finished_elapsed_s')) in (int,float)
+                and row['screen_finished_elapsed_s'] > snapshot_at_s),
+        }
     # Three phase times partition one shared wall budget without double counting.
     finalist_phase_wall_s=monotonic()-t0-screen_phase_wall_s-qualification_phase_wall_s
     completed.sort(key=lambda r:(float(r['seconds_per_mob']),_key(r['allocation']),
@@ -3367,6 +3404,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'search_only':bool(search_only),
         'screen_evaluator_backend':screen_evaluator_backend,
         'search_winner':search_winner,
+        **({'shared_search_snapshot':shared_snapshot}
+           if snapshot_at_s is not None else {}),
         'validation_shortlist':validation_shortlist,
         'paid_refinement_lineages':paid_refinement_lineages,
         'refinement':refinement,
