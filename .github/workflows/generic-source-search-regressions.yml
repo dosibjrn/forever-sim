@@ -6,6 +6,7 @@ on:
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
       - 'tests/gates/test_wf_gate_p7_5_live.py'
+      - 'tests/gates/test_wf_gate_p7_5_native_unrestricted.py'
       - 'tools/wf_gate_p7_5_live.py'
       - 'tests/gates/test_wf_gate_p7_2_live.py'
       - 'tests/test_work2_p72_native_axis.py'
@@ -124,6 +125,7 @@ jobs:
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           tests/gates/test_wf_gate_p7_5_live.py
+          tests/gates/test_wf_gate_p7_5_native_unrestricted.py
           tests/gates/test_wf_gate_p7_2_live.py
           tests/test_work2_p72_native_axis.py
           tests/gates/test_wf_gate_p7_3_live.py
