@@ -8,6 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    "tools/wf261_stateful_benchmark.py",
+    "tools/wf263_l1_value_benchmark.py",
+    "tools/wf276_resource_prefix_benchmark.py",
     "tools/wf303_source_wide_100mob.py",
     "tools/wf319_druid_l20_index_l2_parity.py",
     "tools/wf399_qualification_probe.py",
@@ -27,6 +30,9 @@ RETIRED_TOOLS = (
     "tools/wf262_run_stateful_joint.py",
 )
 RETIRED_IMPORT_NAMES = (
+    "wf261_stateful_benchmark",
+    "wf263_l1_value_benchmark",
+    "wf276_resource_prefix_benchmark",
     "wf303_source_wide_100mob",
     "wf319_druid_l20_index_l2_parity",
     "wf399_qualification_probe",
