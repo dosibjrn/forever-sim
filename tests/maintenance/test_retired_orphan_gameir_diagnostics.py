@@ -12,6 +12,8 @@ RETIRED_TOOLS = (
     # Historical one-shot Python item/stat source stagers; staged SQLite data and consumers remain.
     "tools/wf346_type_resistance_equipment.py",
     "tools/wf385_stage_mage_stamina.py",
+    # P2-era Druid talent SQLite stager: the generated staged database was already retired.
+    "tools/wf350_stage_druid30_talents.py",
     # Retired gsim-only 1/2/100-mob historical replay (no active native gate caller).
     "tools/wf61_live_persistent_replay.py",
     # WF260 historical GameIR talent/gear/policy and frozen Mage challenger runner; active gates use native producers.
