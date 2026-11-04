@@ -466,3 +466,148 @@ def test_native_mage_spell_coefficients_enrich_only_exact_source_rank_actions():
         for blocker in enriched.unsupported_semantics
     )
 
+
+
+def test_native_shaman_spell_coefficients_are_read_from_prepared_v2(tmp_path):
+    from src.game.native_p3_item_options import query_native_shaman_spell_coefficients
+
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {
+            "class": "Shaman",
+            "spells": [
+                {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.857},
+                {"action_id": {"spell_id": 403}, "bonus_coefficient": 0.429},
+            ],
+        },
+    }
+    observed = {}
+
+    def runner(command, **kwargs):
+        assert command[1:3] == ["prepare", "--request"]
+        request = json.loads(Path(command[-1]).read_text(encoding="utf-8"))
+        player = request["raid"]["parties"][0]["players"][0]
+        observed["class"] = player["class"]
+        observed["race"] = player["race"]
+        observed["talents"] = player["talentsString"]
+        observed["elemental_options"] = player["elementalShaman"]["options"]["classOptions"]
+        observed["has_mage_options"] = "mage" in player
+        observed["lightning_bolt_action"] = (
+            player["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"]
+        )
+        observed["equipment"] = player["equipment"]
+        return SimpleNamespace(returncode=0, stdout=json.dumps(prepared), stderr="")
+
+    result = query_native_shaman_spell_coefficients("native-engine", runner=runner)
+
+    assert observed == {
+        "class": "ClassShaman",
+        "race": "RaceOrc",
+        "talents": "0-0-0",
+        "elemental_options": {},
+        "has_mage_options": False,
+        "lightning_bolt_action": 915,
+        "equipment": {"items": []},
+    }
+    assert result["source"] == "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS"
+    assert result["engine_revision"] == "native-shaman-test-revision"
+    assert result["spell_power_coefficients"] == {915: 0.857, 403: 0.429}
+
+
+def test_native_shaman_spellbook_fails_closed_without_rank_915_coefficient():
+    from src.game.native_p3_item_options import query_native_shaman_spell_coefficients
+
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {
+            "class": "Shaman",
+            "spells": [{"action_id": {"spell_id": 403}, "bonus_coefficient": 0.429}],
+        },
+    }
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="P3_NATIVE_SPELLBOOK_TARGET_COEFFICIENT_UNAVAILABLE:915",
+    ):
+        query_native_shaman_spell_coefficients(
+            "native-engine", runner=_runner(prepared))
+
+
+def test_native_shaman_coefficient_enriches_only_exact_lightning_bolt_rank_915():
+    from dataclasses import replace
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.model.ir import DamageEffect
+    from src.game.native_p3_item_options import apply_native_shaman_spell_coefficients
+
+    ir = build_game_ir_slice(class_key="shaman", level=20)
+    lightning = next(action for action in ir.actions if action.id == "lightning_bolt:915")
+    assert lightning.metadata["rank_source"]["spell_id"] == 915
+    reset_effects = tuple(
+        replace(effect, spell_power_coefficient=0.0)
+        if isinstance(effect, DamageEffect) else effect
+        for effect in lightning.effects
+    )
+    reset_lightning = replace(lightning, effects=reset_effects)
+    ir = replace(
+        ir,
+        actions=tuple(reset_lightning if action.id == lightning.id else action
+                      for action in ir.actions),
+    )
+    native = {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": "native-shaman-test-revision",
+        "spell_power_coefficients": {915: 0.857},
+    }
+
+    enriched, applied = apply_native_shaman_spell_coefficients(ir, native)
+    updated = next(action for action in enriched.actions if action.id == "lightning_bolt:915")
+    direct = next(effect for effect in updated.effects if isinstance(effect, DamageEffect))
+
+    assert direct.spell_power_coefficient == 0.857
+    assert updated.metadata["native_spell_power_coefficient_verified"] is True
+    assert applied == [{
+        "action_id": "lightning_bolt:915",
+        "spell_id": 915,
+        "spell_power_coefficient": 0.857,
+    }]
+    assert any(
+        fact.get("authority") == "mythicsim_rust_prepared_v2"
+        and fact.get("spell_id") == 915
+        and fact.get("action_id") == "lightning_bolt:915"
+        for fact in enriched.source_facts
+    )
+    assert not any(
+        blocker.get("code") == "source_rank_spell_power_coefficient_unverified"
+        and blocker.get("spell_id") == 915
+        for blocker in enriched.unsupported_semantics
+    )
+
+
+def test_native_shaman_coefficient_refuses_a_different_action_with_rank_915():
+    from dataclasses import replace
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.native_p3_item_options import apply_native_shaman_spell_coefficients
+
+    ir = build_game_ir_slice(class_key="shaman", level=20)
+    ir = replace(
+        ir,
+        actions=tuple(
+            replace(action, id="renamed_lightning_bolt:915")
+            if action.id == "lightning_bolt:915" else action
+            for action in ir.actions
+        ),
+    )
+    native = {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": "native-shaman-test-revision",
+        "spell_power_coefficients": {915: 0.857},
+    }
+
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="P3_NATIVE_SPELLBOOK_EXPECTED_SOURCE_ACTION_UNAVAILABLE:lightning_bolt:915",
+    ):
+        apply_native_shaman_spell_coefficients(ir, native)
