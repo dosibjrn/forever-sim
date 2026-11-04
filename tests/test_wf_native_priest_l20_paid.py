@@ -253,6 +253,60 @@ def test_item_options_create_actual_native_paid_gear_requests_without_slot_rules
     assert json.loads(source_file.read_text()) == source
 
 
+
+@pytest.mark.parametrize(
+    ("options", "expected_builds", "expected_alternatives"),
+    [
+        (
+            [{"item_id": 102, "slot": "chest"},
+             {"item_id": 103, "slot": "chest"},
+             {"item_id": 104, "slot": "chest"},
+             {"item_id": 105, "slot": "chest"}],
+            [[], [102], [103], [104]], 2,
+        ),
+        (
+            [{"item_id": 102, "slot": "chest"},
+             {"item_id": 103, "slot": "chest"},
+             {"item_id": 104, "slot": "head"},
+             {"item_id": 105, "slot": "head"}],
+            [[], [102], [102, 104], [103, 104]], 1,
+        ),
+    ],
+)
+def test_native_item_options_use_spare_paid_budget_for_same_slot_alternatives(
+        tmp_path, options, expected_builds, expected_alternatives):
+    """A short native slot list must not waste available whole-build evaluations."""
+    from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
+
+    source = _request()
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(source))
+    evaluated = []
+
+    def scorer(binary, candidate, **kwargs):
+        evaluated.append(copy.deepcopy(candidate))
+        return {
+            "effective_request_sha256": "native-" + str(len(evaluated)),
+            "score": float(len(evaluated)), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 1}],
+        }, {}
+
+    receipt = score_native_priest_l20_item_candidates(
+        "/native", path, options, score_request=scorer, max_paid_builds=4)
+    actual = [
+        [item["id"] for item in request["raid"]["parties"][0][
+            "players"][0]["equipment"]["items"]]
+        for request in evaluated
+    ]
+    assert actual == expected_builds
+    assert receipt["native_paid_whole_builds"] == 4
+    assert receipt["native_item_options_proposed"] == 3
+    assert receipt["native_item_option_alternative_builds_proposed"] == expected_alternatives
+    assert receipt["native_2d_screen_complete"] is False
+    assert json.loads(path.read_text()) == source
+
+
 def test_native_item_proposals_do_not_overwrite_an_already_equipped_source(
         tmp_path):
     from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
