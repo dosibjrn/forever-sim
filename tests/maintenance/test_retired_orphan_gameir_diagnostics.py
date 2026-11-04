@@ -11,12 +11,16 @@ RETIRED_TOOLS = (
     "tools/wf319_druid_l20_index_l2_parity.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
+    "tools/wf384_generic_checkpoint_screen.py",
+    "tools/wf385_mage_stamina_100mob.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf303_source_wide_100mob",
     "wf319_druid_l20_index_l2_parity",
     "wf399_qualification_probe",
     "wf399_replay_winner",
+    "wf384_generic_checkpoint_screen",
+    "wf385_mage_stamina_100mob",
 )
 
 

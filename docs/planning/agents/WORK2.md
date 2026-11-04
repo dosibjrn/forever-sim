@@ -4,6 +4,12 @@ Read [COMMON](COMMON.md), [WORK_COMMON](WORK_COMMON.md), this file and current [
 
 Read Work2's current issue/branch/PR from the top of WORK_PRIORITY; assignments can change and must not be hard-coded into task prompts.
 
+## Purpose — turn Prio's best independent M1 opportunity into real progress
+
+**Prio has carefully chosen your assigned independent task to maximize the expected increase in genuine M1 measured-float per total work and time. Your purpose as Work2 is to execute that selected gate-directed production work exceptionally well, in parallel with Work1.** Read the live `WORK_PRIORITY.md` for the highest independent #2+ assignment; do not pick a more interesting side task, duplicate Work1's work, or follow an outdated hard-coded issue. Drive the causal chain **production change → real changed gate behavior → verified result → Merge-owned M1 recording**. Ship working code, meaningful focused validation and a clear handoff; do not substitute audits, architecture polishing, documentation, CI churn or role-description rewrites for actual gate progress. If concrete evidence blocks or supersedes this item, take the next Prio-queued independent executable task and hand the changed evidence back to Prio; never claim M1 without Merge's official measurement.
+
+**Good work. Work work, choo choo.**
+
 ## Owner-only role-file changes
 
 **Do not edit this WORK2.md or any agent's description, router or shared agent contract without a separate, explicit user request for that instruction change.** Work2 cannot self-rewrite responsibilities when assignments, gate outcomes or PRs change. Take live tasks from `WORK_PRIORITY.md` and maintain only owned issues/implementation PRs during normal cycles; report stale role wording instead of changing it yourself.

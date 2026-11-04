@@ -46,6 +46,11 @@ RETIRED_TOOLS = (
     "tools/wf356_legacy_l30_equipment_audit.py",
     "tools/wf344_source_equipment_merged_report.py",
     "tools/wf352_p3_reaudit.py",
+    "tools/wf352_os_probe.py",
+    "tools/wf463_spec_druid_l30_search.py",
+    "tools/wf_gate_import_search.py",
+    "tools/wf_gate_engine_fingerprint.py",
+    "tests/gates/test_wf_gate_import_search.py",
     "tools/ingest_source_acquisition_evidence_sqlite.py",
     "tools/ingest_source_acquisition_entities_sqlite.py",
     "tools/wf_gate_p1_live.py",
@@ -64,11 +69,7 @@ RETIRED_TOOLS = (
     "tests/generic/search/test_source_talent_allocation_adapter.py",
     "tools/wf390_generic_talent_search.py",
     "tools/wf_druid_progress.py",
-    "tools/wf463_spec_druid_l30_search.py",
-    "tools/wf_gate_engine_fingerprint.py",
-    "tools/wf_gate_import_search.py",
     "tests/gates/test_wf_gate_p3_approved.py",
-    "tests/gates/test_wf_gate_import_search.py",
     "tests/test_prio_p5_contract_alignment.py",
     "tests/test_wf318_index_composite_batch.py",
     "src/engine_client/native_p2_rank_probe.py",
@@ -412,4 +413,16 @@ def test_retired_p2_gate_and_checkpoint_chain_has_no_code_or_actions():
     assert "test_wf_p2_source_witness_priority.py" not in generic
     assert "cargo build --locked --bin forever-engine" in submodule_workflow
 
+
+def test_retired_wf463_gameir_search_and_import_path_is_gone():
+    """The Druid-L30 WF463 GameIR importer is not an active P4/P5/P6 gate."""
+    gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
+    assert "WF463_SOURCE_SEARCH_REPLAY" not in gate_cli
+    for relative in (
+        "tools/wf463_spec_druid_l30_search.py",
+        "tools/wf_gate_import_search.py",
+        "tools/wf_gate_engine_fingerprint.py",
+        "tests/gates/test_wf_gate_import_search.py",
+    ):
+        assert not (ROOT / relative).exists(), relative
 
