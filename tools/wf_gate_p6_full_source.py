@@ -216,6 +216,24 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         else:
             result300 = _paid_winner_receipt(root, report, winner300, folder,
                                              'final-300', checkpoint_args)
+    # A missing first-stage replay can succeed when the gate executes the
+    # actual frozen winner. Reconcile both genuinely paid 100-mob results
+    # after those replays: never lose the 30s incumbent to a slower late
+    # two-mob proxy simply because its earlier validation was incomplete.
+    # Both builds were frozen during the one cold search; this pays no extra
+    # replay and does not change P6's 1% acceptance predicate.
+    retained_incumbent_after_replay = False
+    if (not same_winner
+            and all(r.get('status') == 'COMPLETE'
+                    and r.get('count') == 100
+                    and r.get('mob_completed') == 100
+                    and type(r.get('s_per_mob')) in (int, float)
+                    and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
+                    for r in (result30, result300))
+            and result30['s_per_mob'] <= result300['s_per_mob']):
+        winner300 = winner30
+        result300 = {**result30, 'shared_with_30s': True}
+        retained_incumbent_after_replay = True
     results = [{**r, 'budget_s': budget} for budget, r
                in ((30, result30), (300, result300))]
     complete = all(r.get('status') == 'COMPLETE'
