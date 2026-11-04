@@ -421,3 +421,66 @@ def test_target_health_probe_preserves_p7_default_but_accepts_explicit_l20():
         raw, expected_target_level=20) == 10000.
     source["encounter"]["targets"][0]["level"] = 63
     assert source_target_health_from_request(json.dumps(source).encode()) == 10000.
+
+
+def test_paid_world_retries_another_source_build_without_polluting_frontier(tmp_path):
+    """One failed source-native 2D ACK must not discard other paid candidates."""
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    baseline = _request()
+    preferred = copy.deepcopy(baseline)
+    preferred["raid"]["parties"][0]["players"][0]["talentsString"] = "1-0-0"
+    preferred["simOptions"]["randomSeed"] = "913"
+    (tmp_path / "a.json").write_text(json.dumps(baseline))
+    (tmp_path / "b.json").write_text(json.dumps(preferred))
+    attempted = []
+
+    def scorer(binary, candidate, **kwargs):
+        # Keep the identity of the exact native-paid normalized source request.
+        effective = copy.deepcopy(candidate)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        native_sha = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        is_preferred = effective["raid"]["parties"][0]["players"][0][
+            "talentsString"] == "1-0-0"
+        return {
+            "effective_request_sha256": native_sha,
+            "score": 30.0 if is_preferred else 20.0,
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2},
+            ],
+        }, {}
+
+    def world_screen(binary, request_path):
+        assert request_path.parent != tmp_path
+        assert request_path.is_file()
+        observed = json.loads(request_path.read_text())
+        attempted.append(observed)
+        if observed["raid"]["parties"][0]["players"][0]["talentsString"] == "1-0-0":
+            # A native-only high scorer is not necessarily world-executable.
+            return {"native_2d_fight_ack_complete": False}
+        return {
+            "native_2d_fight_ack_complete": True,
+            "native_2d_world_ticks": 5,
+            "native_2d_screen_complete": False,
+        }
+
+    report = score_source_priest_l20_candidates(
+        "/selected/native", tmp_path, score_request=scorer,
+        world_screen=world_screen)
+    assert len(attempted) == 2
+    assert attempted[0]["simOptions"]["randomSeed"] == "42"
+    assert attempted[0]["raid"]["parties"][0]["players"][0]["talentsString"] == "1-0-0"
+    assert attempted[1]["raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-0"
+    assert report["native_paid_whole_builds"] == 2
+    assert report["native_2d_live_ack_attempted"] == 2
+    assert report["native_2d_live_ack_verified"] == 1
+    assert report["native_2d_screen_complete"] is False
+    rows = report["native_candidate_receipts"]
+    assert rows[1]["native_2d_fight_error"] == "PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED"
+    assert rows[0]["native_2d_fight"]["native_2d_fight_ack_complete"] is True
+    # Critical for cold P4/P5: no synthetic candidate becomes a new input.
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["a.json", "b.json"]
+    assert json.loads((tmp_path / "b.json").read_text()) == preferred
