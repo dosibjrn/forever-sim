@@ -267,20 +267,19 @@ def test_no_live_python_imports_retired_source_proof_and_audit_clis():
                 assert not (imported & retired_modules), (path, node.lineno, imported & retired_modules)
 
 
-def test_retired_checkpoint_acquisition_proof_and_l0_verdict_are_gone():
+def test_retired_checkpoint_acquisition_proof_and_l0_frontier_are_gone():
     for relative in RETIRED_SOURCE_PROOF_MODULES:
         assert not (ROOT / relative).exists(), relative
-    frontier = (ROOT / "src/game/data/forever/source_checkpoint_l0.py").read_text(encoding="utf-8")
-    for obsolete in (
-        "source_checkpoint_acquisition",
-        "source_acquisition_frontier",
-        "source_acquisition_category",
-        "source_acquisition_evidence_status",
-        "'blocker':",
-        "'PASS1':False",
-        "legal_combat_spell_proven",
+    # The entire obsolete L0 frontier, text-proxy and detail classifier are
+    # retired, not merely stripped of one acquisition verdict.
+    for relative in (
+        "src/game/data/forever/source_checkpoint_l0.py",
+        "src/game/data/forever/source_checkpoint_context_proxy.py",
+        "src/game/data/forever/source_checkpoint_detail_observations.py",
+        "tests/gates/test_wf327_checkpoint_action_l0.py",
+        "tests/gates/test_wf329_checkpoint_context_proxies.py",
     ):
-        assert obsolete not in frontier, obsolete
+        assert not (ROOT / relative).exists(), relative
 
 
 def test_historical_p1_gameir_admission_toolchain_is_retired():

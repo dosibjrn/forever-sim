@@ -3,7 +3,6 @@ import json,sqlite3
 from pathlib import Path
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.data.forever.registry import build_game_ir_slice
-from src.game.data.forever.source_checkpoint_l0 import action_frontier
 from src.game.data.forever.source_checkpoint_web_l0 import ingest_observations
 from src.game.data.forever.source_observed_rank_parity import ingest_observations as ingest_beta
 from src.game.data.forever.source_queued_swing import ingest as ingest_maul
@@ -30,53 +29,6 @@ def stage(tmp_path):
     ingest_maul(path,ROOT/'evidence/wf330/druid_l20_maul_observations.json')
     assert ingest_observations(path,OBS)['observations_ingested']==20
     return path
-
-def test_runes_off_preserves_every_source_index_row_but_excludes_setup(tmp_path):
-    path=stage(tmp_path)
-    with ability_source_scope(path):
-        ir=build_game_ir_slice(class_key='druid',level=20,ability_db_path=path)
-        r=action_frontier(ir,class_key='druid',level=20,db_path=path)
-    assert ir.provenance['rune_system_enabled'] is False
-    assert r['use_runes'] is False
-    assert r['rune_engraving_rows_disabled']==37
-    assert r['rune_conditional_grants_blocked_without_talent']==9
-    assert r['auxiliary_nonbuttons_needing_parent_coverage']==4
-    assert r['potentially_legal_positive_ranks']==52
-    # Current staged snapshot has three unresolved source role/amount rows; do not claim P1 from this older index.
-    assert r['potential_ranks_unknown_role_and_amount']==3
-    # Only source-executable rows are admitted to the historical L0 index.
-    assert r['paid_search_admitted_source_rows']==16
-    all_rows={x['spell_id']:x for x in r['records'] if 'spell_id' in x}
-    assert all_rows[410021]['eligibility']=='RUNE_ENGRAVING_DISABLED_BY_DEFAULT'
-    assert all_rows[417157]['eligibility']=='RUNE_CONDITIONAL_GRANT_DISABLED_TALENT_PATH_UNVERIFIED'
-    assert all_rows[408245]['eligibility']=='AUXILIARY_OR_PASSIVE_NOT_STANDALONE_ACTION'
-
-def test_rune_option_does_not_imply_live_rune_vendor_or_legal_action(tmp_path):
-    path=stage(tmp_path)
-    with ability_source_scope(path):
-        ir=build_game_ir_slice(class_key='druid',level=20,ability_db_path=path,use_runes=True)
-        r=action_frontier(ir,class_key='druid',level=20,db_path=path,use_runes=True)
-    assert ir.provenance['rune_system_enabled'] is True
-    assert r['rune_engraving_rows_disabled']==0
-    assert r['potentially_legal_positive_ranks']==60
-    # Only source-executable rows are admitted to the historical L0 index.
-    assert r['paid_search_admitted_source_rows']==16
-    rune=next(x for x in r['records'] if x.get('spell_id')==410021)
-
-def test_rune_derived_action_can_be_eligible_through_sourced_talent_at_level(tmp_path):
-    path=stage(tmp_path)
-    with sqlite3.connect(path) as db:
-        db.execute('INSERT INTO verified_talent_granted_action_facts '
-                   '(class_key,spell_id,action_json,source_url,captured_at,capture_id) '
-                   'VALUES (?,?,?,?,?,?)',('druid',417157,
-                   json.dumps({'spell_id':417157,'required_level':20}),
-                   'https://www.wowhead.com/forever/spell=417157','fixture','test'))
-    with ability_source_scope(path):
-        ir=build_game_ir_slice(class_key='druid',level=20,ability_db_path=path)
-        r=action_frontier(ir,class_key='druid',level=20,db_path=path)
-    row=next(x for x in r['records'] if x.get('spell_id')==417157)
-    assert row['verified_talent_grant_exact_id_and_level'] is True
-    assert row['eligibility']=='POTENTIALLY_LEGAL_RANK_ACQUISITION_UNRESOLVED'
 
 def test_rune_named_ordinary_trinkets_are_not_equipment_engravings():
     # Item names are not an acceptable proxy for rune acquisition; the two

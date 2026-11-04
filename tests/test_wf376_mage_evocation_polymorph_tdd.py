@@ -2,18 +2,16 @@
 import pytest
 
 from src.game.data.forever.mage import build_source_slice
-from src.game.data.forever.source_checkpoint_l0 import _ir_proxy
 from src.game.model import (ActionDefinition,ActorDefinition,ControlEffect,DamageEffect,
                             IncomingAttackDefinition,ResourceDefinition)
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 
 
-def test_4_spirit_ticks_enter_source_l0_resource_gain_with_actor_cap_left_to_runtime():
+def test_evocation_source_cast_and_cooldown_metadata():
     ir=build_source_slice(30)
     evo=next(a for a in ir.actions if a.family_key=='evocation')
     assert evo.cooldown_s == 480
     assert evo.cast_time_s == 8
-    assert _ir_proxy(evo)['features']['resource_gain'] == pytest.approx(4 * 16 * (12.5 + 60/4))
 
 
 def test_mage_polymorph_source_action_has_measured_cast_cost_and_control():
@@ -24,7 +22,6 @@ def test_mage_polymorph_source_action_has_measured_cast_cost_and_control():
     assert poly.metadata['range_yards']==pytest.approx(30)
     assert [(c.resource_id,c.amount) for c in poly.costs]==[('mana',60.)]
     assert any(isinstance(e,ControlEffect) and e.duration_s==pytest.approx(20) for e in poly.effects)
-    assert _ir_proxy(poly)['effect_roles']==['control']
 
 
 def test_incapacitated_enemy_cannot_hit_player_until_control_expires():

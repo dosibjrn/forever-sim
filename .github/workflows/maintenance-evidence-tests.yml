@@ -92,9 +92,7 @@ jobs:
           tests/gates/test_wf_gate_runtime_authority.py
           tests/test_level_legality_p00c.py
           tests/test_wf272_source_ranked_periodic_finisher.py
-          tests/gates/test_wf327_checkpoint_action_l0.py
           tests/test_wf328_mode_joint_prefix_admission.py
-          tests/gates/test_wf329_checkpoint_context_proxies.py
           tests/test_wf330_queued_swing_source_runtime.py
           tests/test_wf331_druid20_source_web_l0.py
           tests/test_wf332_runes_default_off.py
