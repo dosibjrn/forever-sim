@@ -186,7 +186,8 @@ def test_source_budgeted_search_measures_naked_policy_without_named_gear_roles(m
         max_evaluations=3, initial_search=1, search_per_gear=1,
         max_gear_states=1, probe_stats=('intellect',),
         probe_deltas=(5.0,))
-    assert result['status'] == 'EVALUATED_BOUNDED'
+    assert result['status'] == 'EVALUATED_NAKED_ONLY_NO_GEAR_ROLES'
     assert result['sensitivity_history'][0]['values']['intellect'] == 1.0
     assert result['named_gear_states_evaluated'] == 0
+    assert result['gear_role_search_skipped'] is True
     assert result['winner']['stage'] == 'source_naked'
