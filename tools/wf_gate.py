@@ -167,6 +167,7 @@ def main(argv=None) -> int:
                     "sampled_source_fights", "saved_source_iterations",
                     "native_first_duration_s", "world_first_duration_s",
                     "source_replay_Tfirst_Tsecond", "source_replay_T30_T300",
+                    "source_replay_300s_nonregression",
                     "source_replay_T30_s_per_mob", "source_replay_T300_s_per_mob",
                     "selected_paid_winners", "source_replay_numeric_saturation",
                     "joint_cold_world_dps", "joint_cold_native_dps",
