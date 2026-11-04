@@ -219,6 +219,8 @@ def main(argv=None) -> int:
                     key: native_pair[key]
                     for key in ("status", "paid_attempts", "swap",
                                 "comparison", "evaluations",
+                                "native_slot_evaluations", "native_slots_paid",
+                                "native_slots_valid", "native_slot_attempt_cap",
                                 "actor_checkpoint_verified", "promotion")
                     if key in native_pair
                 }
