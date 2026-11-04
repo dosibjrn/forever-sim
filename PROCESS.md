@@ -5,7 +5,7 @@
 ## Authority and scope
 
 - Exactly **148 checkpoints × nine active gates P3–P6, P7.1–P7.5 = 1,332 gate pairs**. P1/P2 are retired; no new P1/P2 records or replacement GameIR validation.
-- A checkpoint is certified only when all nine gates have genuine mutually compatible PASSes. Preserve existing accepted compatible evidence; an unrelated SHA change does not demand a rerun. A new, weaker contract does **not** automatically PASS an unexecuted gate.
+- **Exactly nine genuine active gate PASSes certify a checkpoint.** Each gate evaluates its own source, runtime and scenario. No cross-gate `compatibility_id`, identity certificate or tenth acceptance condition. Unrelated SHAs do not invalidate existing PASSes; contract updates do not invent unexecuted PASSes.
 - Owner approval is required to change OVERALL_PLAN, PROCESS, agent role instructions or gate predicates. `WORK_PRIORITY.md` and issues control mutable dispatch only. No extra implicit gate or auxiliary proof is permitted.
 - **M1 remains the existing partial-inclusive diagnostic**: `(active PASS + Σ comparable verified/applicable PARTIAL) / 1332`. Only Merge's real production recorder writes `docs/planning/M1_PASSES.tsv`. PARTIAL never certifies a gate; unknown/incomparable denominator earns no invented fraction. Certified PASS count and 148-checkpoint count remain separate.
 
