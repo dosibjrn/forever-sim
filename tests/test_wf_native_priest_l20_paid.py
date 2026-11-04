@@ -833,3 +833,64 @@ def test_priest_native_persistent_target_count_is_bounded(tmp_path, target_count
     with pytest.raises(ValueError, match="P4_P5_NATIVE_PERSISTENT_TARGET_COUNT_INVALID"):
         score_source_priest_l20_candidates(
             "/native", tmp_path, persistent_target_count=target_count)
+
+
+@pytest.mark.parametrize(
+    ("source_events", "expected_error"),
+    [(0, "PRIEST_L20_PERSISTENT_NATIVE_SOURCE_ACTIONS_MISSING"),
+     (3, None),
+     (-1, "PRIEST_L20_PERSISTENT_NATIVE_SOURCE_ACTION_RECEIPT_INVALID")],
+)
+def test_priest_100_target_persistent_world_carries_native_source_action_windows(
+        tmp_path, monkeypatch, source_events, expected_error):
+    """A paid 100-target screen keeps per-kill native action evidence intact."""
+    import subprocess
+    from tools.wf_native_priest_l20_paid import couple_source_priest_l20_persistent_world
+
+    source = _request()
+    source["encounter"]["targets"][0]["stats"] = [0] * 41
+    source["encounter"]["targets"][0]["stats"][32] = 484
+    request = tmp_path / "source.json"
+    request.write_text(json.dumps(source), encoding="utf-8")
+
+    def native_prepare(args, **kwargs):
+        assert args[1] == "prepare"
+        Path(args[5]).write_text(json.dumps({
+            "player": {"class": "ClassPriest", "level": 20},
+            "request_sha256": "c" * 64,
+        }), encoding="utf-8")
+        return subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(subprocess, "run", native_prepare)
+
+    def world_run(binary, prepared, *, mob_health, target_count, rng_mode):
+        assert target_count == 100
+        assert mob_health == 484.
+        assert rng_mode == "balanced"
+        return {
+            "continuous_native_actor": True,
+            "actual_2d_ack": True,
+            "world_targets_killed": 100,
+            "native_windows": [
+                {"index": index, "source_action_counts":
+                    ({"spellId:585": source_events} if index == 19 else {})}
+                for index in range(100)
+            ],
+            "world_ticks": 600,
+            "paid_recovery": False,
+        }
+
+    if expected_error:
+        with pytest.raises(RuntimeError, match=expected_error):
+            couple_source_priest_l20_persistent_world(
+                "/selected/native", request, target_count=100, world_run=world_run)
+    else:
+        receipt = couple_source_priest_l20_persistent_world(
+            "/selected/native", request, target_count=100, world_run=world_run)
+        assert receipt["native_2d_persistent_source_action_events"] == 3
+        windows = receipt["native_2d_persistent_source_action_counts_by_target"]
+        assert len(windows) == 100
+        assert windows[19] == {"spellId:585": 3}
+        assert all(not counts for index, counts in enumerate(windows) if index != 19)
+        assert receipt["native_2d_persistent_paid_recovery"] is False
+        assert receipt["native_2d_screen_complete"] is False
