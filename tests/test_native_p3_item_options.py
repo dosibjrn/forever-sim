@@ -168,15 +168,16 @@ def test_native_p3_live_gate_fails_closed_without_binary(
     }
 
 
-def test_m1_recorder_builds_exact_native_binary_for_verified_p3_targets_only():
+def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
-    assert "p3_native_needed=false" in workflow
+    assert "native_options_needed=false" in workflow
     assert 'IFS=: read -r class level spec gate <<< "$entry"' in workflow
     assert 'if [[ "$gate" == P3 ]]; then' in workflow
     assert 'if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||' in workflow
     assert '[[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then' in workflow
-    assert "p3_native_needed=true" in workflow
-    assert "if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
+    assert 'elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then' in workflow
+    assert "native_options_needed=true" in workflow
+    assert "if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.native_options_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
     assert 'git submodule update --init --depth 1 "$engine"' in workflow
     assert 'git ls-tree HEAD -- "$engine"' in workflow
     assert "RUST_FORK_SUBMODULE_PIN_MISMATCH" in workflow
