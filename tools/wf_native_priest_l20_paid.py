@@ -620,6 +620,7 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
     # successful native evaluations or making Python equipment decisions.
     # Prefix/suffix variants explore different native options; MythicSim alone
     # accepts/refuses each complete equipment request. A refusal remains free.
+    dense_builds_proposed = 0
     if len(selected) >= max_paid_builds and max_paid_builds > 1:
         width = min(len(selected), max_paid_builds + 1)
         dense_variants = [selected[:width]]
@@ -628,10 +629,12 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
         if len(selected) > 2 * width:
             dense_variants.append(selected[:2 * width])
         dense_variants = dense_variants[:max_paid_builds - 1]
-        requests = [
+        requests = ([
             (items, items[-1][0], items[-1][1])
             for items in dense_variants
-        ] + requests
+        ] + requests)[:proposal_limit]
+        dense_builds_proposed = len(dense_variants)
+    alternative_builds_proposed = 0
     for item_id, slot in alternates:
         if len(requests) >= proposal_limit:
             break
@@ -642,6 +645,7 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
             for selected_id, selected_slot in selected
         ]
         requests.append((replacement, item_id, slot))
+        alternative_builds_proposed += 1
 
     with TemporaryDirectory(prefix="native-priest-l20-options-") as directory:
         folder = Path(directory)
@@ -663,6 +667,7 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
         **receipt,
         "native_item_options_proposed": len(requests),
         "native_item_option_source_slots_proposed": [slot for _, _, slot in requests],
-        "native_item_option_alternative_builds_proposed": len(requests) - len(selected),
+        "native_item_option_alternative_builds_proposed": alternative_builds_proposed,
+        "native_item_option_dense_builds_proposed": dense_builds_proposed,
         "native_candidate_provenance": "MYTHICSIM_ITEM_OPTIONS_AND_SOURCE_L20_REQUEST",
     }
