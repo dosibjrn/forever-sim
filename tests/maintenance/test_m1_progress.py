@@ -361,3 +361,17 @@ def test_p75_partial_requires_accepted_prior_and_frozen_holdout():
     assert proximity["dps_objective_actual"] == pytest.approx(820.0)
     assert proximity["dps_objective_required"] == pytest.approx(790.5)
     assert not proximity["dps_objective_gate_pass"]
+
+
+def test_materially_invalidated_partial_receipt_can_be_removed(monkeypatch, tmp_path):
+    """Merge may remove a PARTIAL only after verifying material incompatibility."""
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    path = tmp_path / "passes.tsv"
+    assert m1.record_partial(
+        class_key="mage", level=30, spec="unrestricted", gate="P3",
+        report=_behavior_partial(46, 160), path=path)
+    assert m1.scoreboard(path)["measured_gate_equivalents"] == pytest.approx(46 / 160)
+    assert m1.main(["--ledger", str(path), "--invalidate",
+                    "mage", "30", "unrestricted", "P3"]) == 0
+    assert m1._rows(path) == {}
+    assert m1.scoreboard(path)["measured_gate_equivalents"] == 0
