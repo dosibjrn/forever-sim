@@ -207,7 +207,7 @@ def test_cold_opt_in_uses_one_real_producer_and_does_not_grant_gate_pass(
     assert result["status"] == "FAIL"
     assert result["paid_candidates"] == 4
     assert result["screen_complete_candidates"] == 3
-    assert "P4_P5_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED" in result["reasons"]
+    assert "P4_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED" in result["reasons"]
     assert "P4_FROZEN_WINNER_REAL_100MOB_RECEIPT_INCOMPLETE" in result["reasons"]
 
 
@@ -610,8 +610,10 @@ def test_priest_native_p6_reuses_real_frozen_100mob_receipts_without_replay():
         "native_2d_persistent_world_targets_killed"] = 99
     assert native_cold_p6_verdict(changed)["status"] == "FAIL"
     changed = copy.deepcopy(cold)
-    changed["native_cold_final_300"]["source_build"]["encounter"]["duration"] = 60
-    changed["native_cold_300s_paid_selection"]["source_build"]["encounter"]["duration"] = 60
+    other_source = copy.deepcopy(changed["native_cold_final_300"]["source_build"])
+    other_source["encounter"]["duration"] = 60
+    changed["native_cold_final_300"]["source_build"] = other_source
+    changed["native_cold_300s_paid_selection"]["source_build"] = other_source
     assert "P6_NATIVE_COLD_INCOMPARABLE_SOURCE_SCENARIO" in (
         native_cold_p6_verdict(changed)["reasons"])
     changed = copy.deepcopy(cold)
