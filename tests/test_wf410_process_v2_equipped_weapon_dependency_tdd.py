@@ -170,7 +170,8 @@ def test_source_budgeted_search_measures_naked_policy_without_named_gear_roles(m
                 'guarded_conditions': [],
             },
             'runner_up': None, 'seed_count': 1,
-            'seed_skipped_by_budget': 0, 'best_vs_budget': [],
+            'seed_skipped_by_budget': 0,
+            'best_vs_budget': [{'attempt': 1, 'best_s_per_mob': 98.0, 'status': 'evaluated'}],
             'context_sha256': 'unit-test-source-context',
         })
     monkeypatch.setattr(
