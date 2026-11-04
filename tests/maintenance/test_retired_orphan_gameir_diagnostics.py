@@ -97,6 +97,10 @@ RETIRED_TOOLS = (
     "tools/wf_feral01b_source_damage_probe.py",
     "tools/wf_feral01c2c_replay.py",
     "tools/wf_feral01c2d1_replay.py",
+    # WF325 scratch-path-only replay drivers and WF347 fixed-policy HP5 probe.
+    "tools/wf325_druid_l20_blind_joint.py",
+    "tools/wf325_druid_l20_paid_persistent_replay.py",
+    "tools/wf347_hp5_persistent_probe.py",
     # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
     "evidence/wf438/run300.py",
     # Standalone Hunter/pet partial replay has no consumers; shared companion search stays covered.
@@ -200,6 +204,9 @@ RETIRED_IMPORT_NAMES = (
     "wf_feral01b_source_damage_probe",
     "wf_feral01c2c_replay",
     "wf_feral01c2d1_replay",
+    "wf325_druid_l20_blind_joint",
+    "wf325_druid_l20_paid_persistent_replay",
+    "wf347_hp5_persistent_probe",
     "test_held_out_legacy_feral_replay_is_actually_scored_on_same_five_gears",
     "test_held_out_feral_and_wrath_both_replayed_on_source_melee_gear",
     "test_wf357_source_between_pull_recovery",
@@ -342,6 +349,10 @@ RETAINED_HISTORICAL_EVIDENCE = (
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
+    # Preserve the original measured results; retire only the one-off producers.
+    "evidence/wf325/WF325_BLIND_JOINT.json",
+    "evidence/wf325/WF325_REPLAYED_BUDGETED_L2_AND_100MOB.json",
+    "evidence/wf347/WF347_FIXED_POLICY_HP5_100MOB.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
     "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
     "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",
