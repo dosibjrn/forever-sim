@@ -176,6 +176,7 @@ def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     assert 'IFS=: read -r class level spec gate <<< "$entry"' in workflow
     assert 'if [[ "$gate" == P3 ]]; then' in workflow
     assert 'if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||' in workflow
+    assert '[[ "$level" == 20 && "$class" == shaman && "$spec" == unrestricted ]] ||' in workflow
     assert '[[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then' in workflow
     assert 'elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then' in workflow
     assert "native_options_needed=true" in workflow
