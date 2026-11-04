@@ -3,6 +3,9 @@ from pathlib import Path
 
 def test_m1_invalidation_workflow_is_merge_owned_and_provenance_scoped():
     workflow = Path(".github/workflows/m1-invalidate.yml").read_text()
+    recorder = Path(".github/workflows/m1-on-demand-record.yml").read_text()
+    assert "startsWith(github.event.comment.body, '/m1-run ')" in recorder
+    assert "m1-invalidate" not in recorder
     assert "issue_comment:" in workflow
     assert "github.actor == 'dosibjrn'" in workflow
     assert "github.event.issue.pull_request" in workflow
