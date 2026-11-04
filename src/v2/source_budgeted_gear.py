@@ -101,8 +101,9 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     ir = ir_slice if ir_slice is not None else build_game_ir_slice(class_key=class_key, level=level)
     if ir is None or str(ir.actor.metadata.get('class_key','')).lower() != class_key.lower() or int(ir.actor.metadata.get('level',-1)) != level:
         raise ValueError('Game IR source class/level mismatch')
-    if not available_gear_roles(class_key):
-        raise ValueError('no canonical named gear role for requested class')
+    # Named gear-role proposals are optional; the naked source search and
+    # paid stat sensitivities remain meaningful without a named role catalogue.
+    # The later proposal loop naturally skips gear selection when no roles exist.
     ir = remove_combat_policy_seeds_preserve_maintenance(ir)  # never trust a historical priority winner
     context = sha256(dumps({'ir':ir.as_dict(),'software':SOFTWARE_VERSION,
                            'objective':'real_incoming_combat_recovery',
