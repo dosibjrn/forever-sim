@@ -42,6 +42,8 @@ RETIRED_TOOLS = (
     "tools/wf362_warrior_l30_p2_acceptance.py",
     "tools/wf_druid_p2_probe.py",
     "tests/test_wf_druid_p2_probe.py",
+    "tools/wf300_nine_class_continuity_canary.py",
+    "tools/wf353_l30_current_context.py",
     "tools/wf360_l30_p4_worker.py",
     "tools/wf360_l30_checkpoint_deadline.py",
     "tools/wf360_l30_p6_replay.py",
@@ -241,6 +243,9 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
     for relative in RETIRED_TOOLS:
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
+    # The retired WF353 generator must not take its historical measured inputs with it.
+    assert (ROOT / "evidence/wf353/WF353_L30_DISCOVERED_STAGES.json").is_file()
+    assert (ROOT / "evidence/wf353/WF353_L30_DISCOVERY_CONTEXT.json").is_file()
     assert not (ROOT / "src/v2/source_budgeted_level_route.py").exists()
     assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
 
