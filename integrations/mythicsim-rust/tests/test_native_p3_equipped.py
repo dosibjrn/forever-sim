@@ -1,5 +1,6 @@
 """Forever-owned request mutation and native outcome mapping (not game rules)."""
 import copy
+import json
 import sys
 from pathlib import Path
 import pytest
@@ -7,7 +8,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from native_matrix import NativeCandidateRefusal
-from native_p3_equipped import compare_equipped_native, first_equipped_proposal
+from native_p3_equipped import (compare_equipped_native, first_equipped_proposal,
+                                prepared_native_actor)
 
 
 def _reference():
@@ -17,6 +19,11 @@ def _reference():
         "equipment": {"items": [{"id": 100 + index} for index in range(17)]},
     }]}]}, "encounter": {"duration": 30},
         "simOptions": {"iterations": 1, "randomSeed": "42"}}
+
+
+def _prepared_actor(_binary, _reference):
+    return {"status": "PREPARED", "actor_class": "ClassRogue",
+            "actor_level": 20, "engine_revision": "selected-test-engine"}
 
 
 def _selection():
@@ -49,7 +56,7 @@ def test_native_p3_pays_both_unmodified_baseline_and_equipped_with_identical_con
         return score, {"result": {}}, 0.02, "request-sha-" + str(len(calls))
 
     receipt = compare_equipped_native("pinned-native", reference, _selection(),
-                                      evaluator=fake_native)
+                                      evaluator=fake_native, preparer=_prepared_actor)
     assert reference == original
     assert len(calls) == 2
     assert calls[0] == reference
@@ -61,6 +68,7 @@ def test_native_p3_pays_both_unmodified_baseline_and_equipped_with_identical_con
     assert receipt["evaluations"][1]["status"] == "VALID"
     assert receipt["actor_checkpoint_verified"] is True
     assert receipt["actor_requested_level"] == 20
+    assert receipt["native_prepared_actor"]["actor_level"] == 20
     assert receipt["promotion"] == "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE"
 
 
@@ -94,7 +102,7 @@ def test_native_p3_preserves_native_refusal_and_does_not_fake_delta():
         return 100.0, {}, 0.01, "baseline-sha"
 
     receipt = compare_equipped_native("pinned-native", _reference(), _selection(),
-                                      evaluator=refusal)
+                                      evaluator=refusal, preparer=_prepared_actor)
     assert receipt["status"] == "PAID_NATIVE_REFUSAL"
     assert receipt["paid_attempts"] == 2
     assert receipt["evaluations"][1]["status"] == "UNSUPPORTED"
@@ -153,3 +161,50 @@ def test_native_p3_skips_missing_ranged_slot_in_16_entry_request():
                     "chest": {"selected_ids": [812]}})
     assert swap["slot"] == "chest"
     assert candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][4] == {"id": 812}
+
+
+def test_native_p3_uses_prepared_actor_not_request_level_for_paid_decision():
+    """An L20 request backed by an L60 actor must never earn P3 credit."""
+    receipt = compare_equipped_native(
+        "pinned-native", _reference(), _selection(),
+        preparer=lambda *_: {"status": "PREPARED",
+                             "actor_class": "ClassRogue", "actor_level": 60},
+        evaluator=lambda *a, **k: pytest.fail("Must not score a native L60 proxy"))
+    assert receipt["status"] == "NATIVE_ACTOR_CHECKPOINT_MISMATCH"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["actor_checkpoint_verified"] is False
+    assert receipt["native_prepared_actor"]["actor_level"] == 60
+
+
+def test_native_p3_propagates_selected_prepare_refusal_without_paid_attempts():
+    receipt = compare_equipped_native(
+        "pinned-native", _reference(), _selection(),
+        preparer=lambda *_: {"status": "NATIVE_PREPARE_REFUSED",
+                             "reason": "source native actor unavailable"},
+        evaluator=lambda *a, **k: pytest.fail("Must not score refused native actor"))
+    assert receipt["status"] == "NATIVE_PREPARE_REFUSED"
+    assert receipt["reason"] == "source native actor unavailable"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["actor_checkpoint_verified"] is False
+
+
+def test_native_p3_reads_prepared_actor_from_the_selected_binary():
+    calls = []
+
+    class Completed:
+        returncode = 0
+        stdout = json.dumps({"player": {"class": "ClassRogue", "level": 60},
+                             "reference": {"engine_revision": "native-sha"},
+                             "request_sha256": "source-sha"})
+        stderr = ""
+
+    def runner(command, **kwargs):
+        calls.append(command)
+        assert kwargs["check"] is False
+        return Completed()
+
+    actor = prepared_native_actor("pinned-native", _reference(), runner=runner)
+    assert calls[0][1:3] == ["prepare", "--request"]
+    assert actor == {"status": "PREPARED", "actor_class": "ClassRogue",
+                     "actor_level": 60, "engine_revision": "native-sha",
+                     "prepared_request_sha256": "source-sha"}
