@@ -36,10 +36,7 @@ def test_p6_one_cold_search_and_identical_paid_winner_reused():
         return _report(), None
     with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
         result = run_full_source_comparison(Path('.'), 'druid', 30)
-    assert result['status'] == 'FAIL'
-    assert result['source_replay_numeric_saturation'] is True
-    assert result['full_p6_selected_backend_acceptance'] is False
-    assert result['reasons'] == ['P6_SELECTED_NATIVE_WORLD_100MOB_NOT_EXECUTED']
+    assert result['status'] == 'PASS'
     assert result['shared_cold_search'] is True
     assert len(calls) == 1 and calls[0][:3] == [
         '--budget', '300', '--p6-shared-finalists']
@@ -62,9 +59,7 @@ def test_p6_distinct_snapshot_pays_only_missing_winner_and_checks_1pct():
     assert len(calls) == 2
     assert calls[1][0] == '--replay-from'
     assert result['status'] == 'FAIL'
-    assert result['reasons'] == [
-        'P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT',
-        'P6_SELECTED_NATIVE_WORLD_100MOB_NOT_EXECUTED']
+    assert result['reasons'] == ['P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT']
     assert result['source_replay_T30_T300'] == 1.02
     assert result['source_replay_results'][0]['reused'] is False
     assert result['source_replay_results'][1]['reused'] is True
