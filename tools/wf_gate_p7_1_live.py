@@ -99,10 +99,27 @@ def _source_native_world_parity(
             live.get("source_request_raw_sha256") != expected_raw_sha):
         return "P7_1_LIVE_SOURCE_REQUEST_IDENTITY_DIVERGED"
 
+    if native is not None:
+        identity_keys = (
+            "execution_request_raw_sha256",
+            "source_request_proto_sha256",
+        )
+        native_identity = [native.get(key) for key in identity_keys]
+        live_identity = [live.get(key) for key in identity_keys]
+        if any(value is not None for value in native_identity + live_identity):
+            if any(not isinstance(value, str) or len(value) != 64
+                   or any(ch not in "0123456789abcdef" for ch in value)
+                   for value in native_identity + live_identity):
+                return "P7_1_NATIVE_WORLD_EXECUTION_REQUEST_IDENTITY_INVALID"
+            if native_identity != live_identity:
+                return "P7_1_NATIVE_WORLD_EXECUTION_REQUEST_IDENTITY_DIVERGED"
+
     target_lethal = []
+    health_presence = []
     try:
         for row in samples:
             health_keys = (
+                "world_target_health_start",
                 "world_target_health_remaining",
                 "world_target_max_health",
                 "world_target_lethal",
@@ -110,13 +127,17 @@ def _source_native_world_parity(
             present = [key in row for key in health_keys]
             if any(present) and not all(present):
                 return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INCOMPLETE"
+            health_presence.append(all(present))
             if not any(present):
                 target_lethal.append(False)
                 continue
+            start = row["world_target_health_start"]
             health = row["world_target_health_remaining"]
             maximum = row["world_target_max_health"]
             lethal = row["world_target_lethal"]
-            if (type(health) not in (int, float)
+            if (type(start) not in (int, float)
+                    or not math.isfinite(start) or start <= 0
+                    or type(health) not in (int, float)
                     or not math.isfinite(health) or health < 0
                     or type(maximum) not in (int, float)
                     or not math.isfinite(maximum) or maximum <= 0
@@ -125,6 +146,29 @@ def _source_native_world_parity(
                     or lethal != (health <= 0.0)):
                 return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INVALID"
             target_lethal.append(lethal)
+        if any(health_presence) and not all(health_presence):
+            return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INCOMPLETE"
+        if any(health_presence):
+            source_health = live.get("source_target_health")
+            if (type(source_health) not in (int, float)
+                    or not math.isfinite(source_health) or source_health <= 0):
+                return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INVALID"
+            for row in samples:
+                if (not math.isclose(
+                        row["world_target_health_start"], source_health,
+                        rel_tol=1e-9, abs_tol=1e-6)
+                        or not math.isclose(
+                            row["world_target_max_health"], source_health,
+                            rel_tol=1e-9, abs_tol=1e-6)):
+                    return "P7_1_WORLD_TARGET_HEALTH_RESET_DIVERGED"
+            lethal_count = sum(1 for lethal in target_lethal if lethal)
+            if (type(live.get("world_target_lethal_fights")) is not int
+                    or type(live.get("world_target_survived_fights")) is not int
+                    or live["world_target_lethal_fights"] != lethal_count
+                    or live["world_target_survived_fights"] != iterations - lethal_count):
+                return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INVALID"
+        else:
+            target_lethal = [False] * iterations
     except (KeyError, TypeError, ValueError, OverflowError):
         return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INCOMPLETE"
     world_lethal = any(target_lethal)
