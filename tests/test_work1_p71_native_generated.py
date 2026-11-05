@@ -159,8 +159,7 @@ def test_native_prepared_level_is_authority_without_proto_level_hint(
     calls, _ = _native_stubs(monkeypatch)
     source = _request(tmp_path)
     document = json.loads(source.read_text())
-    del document["raid"]["parties"][0]["players"][0]["level"]
-    source.write_text(json.dumps(document))
+    assert "level" not in document["raid"]["parties"][0]["players"][0]
     result = reference.produce_reference(
         tmp_path, "druid", 20, "unrestricted", source)
     assert result["status"] == "REFERENCE_GENERATED"
@@ -170,8 +169,7 @@ def test_native_prepared_level_is_authority_without_proto_level_hint(
     another.mkdir()
     other_source = _request(another)
     other_document = json.loads(other_source.read_text())
-    del other_document["raid"]["parties"][0]["players"][0]["level"]
-    other_source.write_text(json.dumps(other_document))
+    assert "level" not in other_document["raid"]["parties"][0]["players"][0]
     _native_stubs(monkeypatch, native_level=60)
     rejected = reference.produce_reference(
         another, "druid", 20, "unrestricted", other_source)
