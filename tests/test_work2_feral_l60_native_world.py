@@ -43,6 +43,7 @@ def test_feral_l60_uses_native_prepared_source_and_same_world_actor(tmp_path):
 
     def prepare(argv, **kwargs):
         assert argv[1:3] == ["prepare", "--request"]
+        assert "--go-rules" in argv
         request = json.loads(open(argv[3], encoding="utf-8").read())
         observed.append(request)
         prepared_path = argv[argv.index("--outfile") + 1]
