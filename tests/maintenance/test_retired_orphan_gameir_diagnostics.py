@@ -694,13 +694,11 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
         encoding="utf-8"
     )
     workflow_triggers = workflow.split("permissions:", 1)[0]
-    assert "      - 'tools/wf300_continuous_100_mob_acceptance.py'" in workflow_triggers
-    assert "      - 'tools/wf356_export_legacy_druid30.py'" in workflow_triggers
-    assert "      - 'tests/test_wf356_export_legacy_druid30.py'" in workflow_triggers
-    assert "      - 'tools/wf252_companion_replay.py'" in workflow_triggers
-    assert "      - 'tools/wf242_validate.py'" in workflow_triggers
-    assert "      - 'tools/wf328_geared_comparison.py'" in workflow_triggers
-    assert "      - 'tests/test_wf328_geared_reference_replay.py'" in workflow_triggers
+    # Live maintenance regression edits still trigger this workflow. Retired
+    # one-off generators have been deleted, so requiring their old path filters
+    # would keep obsolete CI configuration forever.
+    assert "      - 'tests/maintenance/**'" in workflow_triggers
+    assert "      - '.github/workflows/maintenance-evidence-tests.yml'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative
