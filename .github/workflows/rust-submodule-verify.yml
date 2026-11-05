@@ -58,6 +58,43 @@ jobs:
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
+      - name: Probe unified get_options JSON on two class/level pairs
+        working-directory: integrations/mythicsim-rust/engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pair in "mage 20" "warrior 60"; do
+            read -r class level <<< "$pair"
+            output="$RUNNER_TEMP/${class}-${level}-unified-options.json"
+            target/debug/forever-engine options --class "$class" --level "$level" > "$output"
+            python3 - "$class" "$level" "$output" <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          class_name, level, filename = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          payload = json.loads(Path(filename).read_text(encoding="utf-8"))
+          assert payload["schema_version"] == 1
+          assert (payload["class"], payload["level"]) == (class_name, level)
+          assert payload["source_revision"]
+          assert isinstance(payload["spells"], list)
+          assert isinstance(payload["items"], list)
+          assert payload["talents"]["status"] == "ok"
+          coverage = payload["coverage"]
+          assert coverage["spell_learnability_complete"] is False
+          assert coverage["talent_prerequisites_complete"] is True
+          assert isinstance(coverage["notes"], list)
+          if class_name == "warrior":
+              assert coverage["item_eligibility_complete"] is False
+              assert coverage["native_item_status"] == "proficiency_unverified"
+              assert all(row["eligibility"] == "proficiency_unverified" for row in payload["items"])
+          else:
+              assert all(row["eligibility"] == "native_eligible" for row in payload["items"])
+          print("UNIFIED_OPTIONS_JSON", class_name, level,
+                "spells", len(payload["spells"]), "items", len(payload["items"]),
+                "coverage", coverage, flush=True)
+          PY
+          done
+
       - name: Probe Feral L60 P3 on selected native engine (no record)
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
