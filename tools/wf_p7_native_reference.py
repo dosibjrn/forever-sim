@@ -81,10 +81,11 @@ def _checkpoint_source(raw: bytes, class_key: str, level: int) -> tuple[dict, di
     """Only check request identity/shape; native decides all Warcraft legality."""
     request = json.loads(raw)
     player = request["raid"]["parties"][0]["players"][0]
-    # Go proto.Player has no level field. Native --actor-level owns the context;
-    # actual native PREPARE establishes the actor, never a Python level hint.
-    if (player.get("class") != "Class" + class_key.capitalize()
-            or "level" in player):
+    # Rust accepts its native-only Player.level extension (field 1001).
+    # Forward that field unchanged: the selected engine must judge conflicts
+    # with --actor-level, while PREPARE establishes the actual checkpoint actor.
+    # Forever checks only the requested class identity here.
+    if player.get("class") != "Class" + class_key.capitalize():
         raise ValueError("P7_1_REQUEST_ACTOR_CHECKPOINT_MISMATCH")
     targets = request["encounter"]["targets"]
     if (len(targets) != 1 or type(targets[0].get("level")) is not int
