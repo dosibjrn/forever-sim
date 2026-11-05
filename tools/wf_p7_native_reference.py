@@ -97,7 +97,7 @@ def _prepare_actor(binary: Path, request_path: Path) -> dict:
             "level": player.get("level")}
 
 
-def _native_score(production, binary: Path, path: Path) -> float:
+def _native_score(production, binary: Path, path: Path) -> dict:
     native = production.native_source_control(
         binary, path, P7_FINAL_STOCHASTIC_ITERATIONS, rng_mode="stochastic")
     value = native.get("native_dps") if isinstance(native, dict) else None
