@@ -196,3 +196,65 @@ def test_feral_l60_100_mob_objective_refuses_incomplete_paid_receipts(
             "/native", path, target_count=100,
             prepare_run=_prepared_feral,
             world_run=lambda *args, **kwargs: receipt)
+
+
+def test_feral_l60_forwards_paid_native_recovery_candidate(tmp_path):
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()), encoding="utf-8")
+    seen = {}
+
+    def world(binary, prepared, **kwargs):
+        seen.update(kwargs)
+        return _paid_100_receipt()
+
+    result = run_feral_l60_world(
+        "/native", path, target_count=100, recovery_seconds=24,
+        prepare_run=_prepared_feral, world_run=world)
+    assert seen["native_recovery_seconds"] == 24
+    assert seen["rng_mode"] == "balanced"
+    assert result["requested_native_recovery_seconds"] == 24
+    assert result["objective_100_mobs"]["targets"] == 100
+
+
+@pytest.mark.parametrize("bad", [0, 121, -1, True, 2.5, "24"])
+def test_feral_l60_rejects_invalid_rest_choice_before_native(tmp_path, bad):
+    with pytest.raises(ValueError, match="FERAL_L60_WORLD_RECOVERY_SECONDS_INVALID"):
+        run_feral_l60_world(
+            "/native", tmp_path / "absent.json",
+            recovery_seconds=bad,
+            world_run=lambda *args, **kwargs: None)
+
+
+def test_native_paid_recovery_argv_and_first_dead_receipt():
+    import sys
+    from pathlib import Path
+    integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+    sys.path.insert(0, str(integration))
+    from live_two_world_pulls import _native_world_pulls_argv, _native_survival_min_health
+
+    binary, prepared = Path("/bin/forever-engine"), Path("/tmp/prepared.json")
+    default = _native_world_pulls_argv(binary, prepared, 100, "balanced", None)
+    assert default[-2:] == ["--rng-mode", "balanced"]
+    candidate = _native_world_pulls_argv(binary, prepared, 100, "balanced", 36)
+    assert candidate == default + ["--recovery-seconds", "36"]
+    with pytest.raises(ValueError, match="RUST_WORLD_RECOVERY_SECONDS_INVALID"):
+        _native_world_pulls_argv(binary, prepared, 100, "balanced", 0)
+
+    windows = [
+        {"index": 0, "actor_health": 150., "actor_mana": 100.,
+         "native_health_damage_taken": 20., "native_passive_recovery_ns": 0,
+         "native_passive_recovery_ticks": 0},
+        {"index": 1, "actor_health": 40., "actor_mana": 70.,
+         "native_health_damage_taken": 110., "native_passive_recovery_ns": 12000000000,
+         "native_passive_recovery_ticks": 6},
+        {"index": 2, "actor_health": 0., "actor_mana": 50.,
+         "native_health_damage_taken": 80., "native_passive_recovery_ns": 12000000000,
+         "native_passive_recovery_ticks": 6},
+    ]
+    with pytest.raises(AssertionError) as failure:
+        _native_survival_min_health(windows, 3)
+    message = str(failure.value)
+    assert "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=2" in message
+    assert '"actor_health": 40.0' in message
+    assert '"actor_health": 0.0' in message
+    assert '"native_health_damage_taken": 80.0' in message
