@@ -531,7 +531,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                 **({"independent_enchants": True} if full_search else {}))
             enchant_pools = (source.source_enchant_pools(validator, pools)
                              if full_search else None)
-        distance = source.player(base)["distanceFromTarget"]
+        # Stationary native P7 has no world-distance requirement. The saved
+        # Feral request has no distanceFromTarget; never invent one.
+        distance = (source.player(base).get("distanceFromTarget") if native_only
+                    else source.player(base)["distanceFromTarget"])
         while True:
             elapsed = time.monotonic() - search_start if full_search else 0.0
             if (full_search and elapsed >= 300.0
