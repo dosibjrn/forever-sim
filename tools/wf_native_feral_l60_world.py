@@ -30,6 +30,7 @@ FERAL_SOURCE = ROOT / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json
 def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_SOURCE,
                         *, target_count: int = 2,
                         scenario_min_base_damage: float = 100.,
+                        recovery_seconds: int | None = None,
                         world_run=None, prepare_run=None) -> dict:
     """Execute consecutive world kills on one prepared Feral actor.
 
@@ -43,6 +44,10 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
             or not math.isfinite(scenario_min_base_damage)
             or scenario_min_base_damage < 0):
         raise ValueError("FERAL_L60_WORLD_SCENARIO_DAMAGE_INVALID")
+    if recovery_seconds is not None and (
+            type(recovery_seconds) is not int
+            or not 1 <= recovery_seconds <= 120):
+        raise ValueError("FERAL_L60_WORLD_RECOVERY_SECONDS_INVALID")
     path = Path(source_request).resolve()
     raw = path.read_bytes()
     request = json.loads(raw)
@@ -103,10 +108,15 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
                 or not isinstance(native_sha, str)
                 or len(native_sha) != 64):
             raise RuntimeError("FERAL_L60_NATIVE_PREPARED_ACTOR_INVALID")
-        proof = world_run(
-            binary, prepared_path, classic_mob_level=60,
-            target_count=target_count, rng_mode="balanced",
-            require_native_moving=True)
+        world_kwargs = {
+            "classic_mob_level": 60,
+            "target_count": target_count,
+            "rng_mode": "balanced",
+            "require_native_moving": True,
+        }
+        if recovery_seconds is not None:
+            world_kwargs["native_recovery_seconds"] = recovery_seconds
+        proof = world_run(binary, prepared_path, **world_kwargs)
     if (not isinstance(proof, dict)
             or proof.get("continuous_native_actor") is not True
             or proof.get("actual_2d_ack") is not True
@@ -178,6 +188,7 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
         "world_target_scenario": "Classic-proxy-L60",
         "world_target_hp": representative_hp(60),
         "scenario_min_base_damage": float(scenario_min_base_damage),
+        "requested_native_recovery_seconds": recovery_seconds,
         "native_world": proof,
         "objective_100_mobs": objective_100,
         "p4_p5_p6_certified": False,
@@ -189,9 +200,12 @@ def main() -> None:
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--source-request", type=Path, default=FERAL_SOURCE)
     parser.add_argument("--targets", type=int, choices=(2, 100), default=2)
+    parser.add_argument("--recovery-seconds", type=int, default=None,
+                        help="native-paid between-pull recovery 1..120s (default selected engine)")
     args = parser.parse_args()
     result = run_feral_l60_world(
-        args.binary, args.source_request, target_count=args.targets)
+        args.binary, args.source_request, target_count=args.targets,
+        recovery_seconds=args.recovery_seconds)
     proof = result["native_world"]
     print(json.dumps({
         "source_request_raw_sha256": result["source_request_raw_sha256"],
@@ -201,6 +215,7 @@ def main() -> None:
         "continuous_native_actor": proof["continuous_native_actor"],
         "actual_2d_ack": proof["actual_2d_ack"],
         "paid_recovery": proof["paid_recovery"],
+        "requested_native_recovery_seconds": result["requested_native_recovery_seconds"],
         "world_elapsed_seconds": proof.get("world_elapsed_seconds"),
         "objective_100_mobs": result["objective_100_mobs"],
         "p4_p5_p6_certified": False,
