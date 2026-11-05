@@ -117,7 +117,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                             evaluator=run, seconds: float = 90.0,
                             preparer=prepared_native_actor, max_paid_attempts: int = 2,
                             class_key: str = "rogue", level: int = 20,
-                            go_rules: bool = False):
+                            go_rules: bool = False, objective: str = "DPS"):
     """Pay for both original and equipped build, with identical non-gear inputs.
 
     Any native INVALID/UNSUPPORTED/UNSCORED/ERROR is reported verbatim and
@@ -126,7 +126,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     and level before a paid comparison can become gate evidence.
     """
     if (type(iterations) is not int or iterations < 1 or seconds <= 0
-            or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44):
+            or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44
+            or objective not in ("DPS", "TPS")):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
     expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid",
                       "mage": "ClassMage", "paladin": "ClassPaladin"}.get(class_key)
@@ -188,7 +189,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         try:
             score, _output, elapsed, payload_sha = evaluator(
                 binary, copy.deepcopy(request), iterations, seed,
-                "balanced", deadline, objective="DPS",
+                "balanced", deadline, objective=objective,
                 **({"go_rules": True} if go_rules else {}))
             if not math.isfinite(score):
                 raise ValueError("P3_NATIVE_EQUIPPED_NONFINITE_SCORE")
@@ -245,8 +246,11 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     delta = selected["score"] - rows[0]["score"] if paired else None
     native_slot_evaluations = [
         {"swap": row["swap"], "status": row["status"], "score": row["score"],
+         "delta_score": (row["score"] - rows[0]["score"]
+                         if row["status"] == "VALID" and baseline_valid else None),
          "delta_dps": (row["score"] - rows[0]["score"]
-                       if row["status"] == "VALID" and baseline_valid else None),
+                       if objective == "DPS" and row["status"] == "VALID"
+                       and baseline_valid else None),
          **({"reason": row["reason"]} if "reason" in row else {}),
          **({"request_sha256": row["request_sha256"]}
             if "request_sha256" in row else {})}
@@ -268,10 +272,15 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     return {
         "status": ("PAID_NATIVE_DIFFERENCE" if paired and delta != 0
                    else "PAID_NATIVE_EQUAL" if paired else "PAID_NATIVE_REFUSAL"),
+        "objective": objective,
         "paid_attempts": len(rows), "swap": selected["swap"] if paired else swap,
         "evaluations": rows,
-        "comparison": ({"delta_dps": delta, "baseline_dps": rows[0]["score"],
-                        "equipped_dps": selected["score"]} if paired else None),
+        "comparison": ({
+            "objective": objective, "delta_score": delta,
+            "baseline_score": rows[0]["score"], "equipped_score": selected["score"],
+            **({"delta_dps": delta, "baseline_dps": rows[0]["score"],
+                "equipped_dps": selected["score"]} if objective == "DPS" else {}),
+        } if paired else None),
         "iterations": iterations, "seed": seed,
         "native_slot_evaluations": native_slot_evaluations,
         "native_slots_paid": len(native_slot_evaluations),
@@ -305,7 +314,7 @@ def main():
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
     parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire", "mage/frost",
-                                                           "paladin/retribution"))
+                                                           "paladin/retribution", "paladin/protection"))
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
@@ -319,7 +328,8 @@ def main():
             args.current_client_profile, reference)
     result = compare_equipped_native(
         args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts,
-        class_key=args.class_key, level=args.level, go_rules=args.go_rules)
+        class_key=args.class_key, level=args.level, go_rules=args.go_rules,
+        objective=("TPS" if args.current_client_profile == "paladin/protection" else "DPS"))
     print(json.dumps(result, sort_keys=True))
 
 
