@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
+from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report, select_profile_inventory
 from native_joint_two_class import objective_for_profile
 from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
@@ -44,6 +44,16 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual("HPS", rows[1]["objective"])
         self.assertEqual("HPS", rows[2]["objective"])
         self.assertEqual("TPS", rows[3]["objective"])
+
+    def test_single_profile_selector_limits_paid_scope_without_mutating_inventory(self):
+        rows = inventory()
+        selected = select_profile_inventory(rows, "druid/feral_cat")
+        self.assertEqual(1, len(selected))
+        self.assertEqual("druid/feral_cat", selected[0][0]["profile_id"])
+        self.assertEqual(28, len(rows))
+        self.assertIs(select_profile_inventory(rows, None), rows)
+        with self.assertRaisesRegex(ValueError, "Unknown or duplicate L60 profile"):
+            select_profile_inventory(rows, "unknown/spec")
 
     def test_missing_source_is_isolated_without_running_scorer(self):
         rows = inventory()
