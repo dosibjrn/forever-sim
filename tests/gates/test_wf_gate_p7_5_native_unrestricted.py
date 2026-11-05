@@ -200,6 +200,9 @@ def test_feral_p75_native_paid_search_uses_go_rules_and_rust_gear_options(
         monkeypatch, tmp_path):
     calls, preflights, unchanged, base = _setup_paid_unrestricted(
         monkeypatch, tmp_path, holdout=730.0)
+    # The authentic saved Feral request omits the 2D world distance field.
+    _player(base).pop("distanceFromTarget")
+    unchanged = copy.deepcopy(base)
     original_loader = p75._source_module
     rust_pool_calls = []
     native_go_rules = []
