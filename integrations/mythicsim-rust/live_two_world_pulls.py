@@ -165,9 +165,18 @@ def _native_survival_min_health(windows: list[dict], target_count: int) -> float
         health = window.get("actor_health")
         if (type(health) not in (int, float) or not isfinite(health)
                 or health <= 0):
+            adjacent = [{
+                "index": item.get("index"),
+                "actor_health": item.get("actor_health"),
+                "actor_mana": item.get("actor_mana"),
+                "native_health_damage_taken": item.get("native_health_damage_taken"),
+                "native_passive_recovery_ns": item.get("native_passive_recovery_ns"),
+                "native_passive_recovery_ticks": item.get("native_passive_recovery_ticks"),
+            } for item in windows[max(0, index - 1):index + 2]]
             raise AssertionError(
-                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE"
-                f":index={index}:actor_health={health!r}")
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:"
+                f"first_index={index}:"
+                f"adjacent_native_windows={json.dumps(adjacent, sort_keys=True)}")
         health_values.append(float(health))
     return min(health_values)
 
@@ -404,13 +413,46 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
+def _native_recovery_choice_ack(native_result: dict,
+                                requested_seconds: int | None) -> int | None:
+    """Require native to acknowledge the exact paid-rest search candidate.
+
+    Forwarding a CLI flag alone is not evidence that the pinned native engine
+    used it; silently scoring its default would corrupt P4–P6 comparisons.
+    Older pins without an explicit choice remain valid when no choice was made.
+    """
+    observed = native_result.get("recovery_seconds_per_gap")
+    if requested_seconds is None:
+        return observed if type(observed) is int else None
+    if type(observed) is not int or observed != requested_seconds:
+        raise AssertionError(
+            "RUST_WORLD_NATIVE_RECOVERY_CHOICE_NOT_ACKED:"
+            f"requested={requested_seconds}:native={observed!r}")
+    return observed
+
+
+def _native_world_pulls_argv(binary: Path, prepared: Path,
+                             target_count: int, rng_mode: str,
+                             recovery_seconds: int | None) -> list[str]:
+    """Forward requested paid-rest seconds to Rust; do not emulate healing."""
+    args = [str(binary.resolve()), "native-world-pulls", "--infile",
+            str(prepared.resolve()), "--targets", str(target_count),
+            "--rng-mode", rng_mode]
+    if recovery_seconds is not None:
+        if type(recovery_seconds) is not int or not 1 <= recovery_seconds <= 120:
+            raise ValueError("RUST_WORLD_RECOVERY_SECONDS_INVALID")
+        args.extend(["--recovery-seconds", str(recovery_seconds)])
+    return args
+
+
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False,
-        rng_mode: str = "stochastic") -> dict:
+        rng_mode: str = "stochastic",
+        native_recovery_seconds: int | None = None) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
@@ -467,9 +509,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_report = None
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1")
     proc = subprocess.Popen(
-        [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", rng_mode],
+        _native_world_pulls_argv(
+            binary, prepared, target_count, rng_mode, native_recovery_seconds),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -594,6 +635,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                        for a, b in zip(result["windows"], result["windows"][1:]))
                 or native_report["checkpoint_certified"]):
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
+        native_recovery_choice = _native_recovery_choice_ack(
+            result, native_recovery_seconds)
         if [k["target_id"] for k in kills] != list(targets):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
         # Rust is the health authority; no invented gsim player damage.
@@ -619,6 +662,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "world_target_provenance": target_metadata,
             "native_windows": result["windows"], "world_kills": kills,
             "minimum_native_actor_health": min_native_health,
+            "native_recovery_seconds_per_gap": native_recovery_choice,
             **native_mana,
             **recovery,
             "native_health_damage": native_health_damage,
