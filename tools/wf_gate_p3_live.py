@@ -87,6 +87,7 @@ def native_item_options_required(
         or (key == "rogue" and level == 20 and profile == "unrestricted")
         or (key == "druid" and level == 60 and profile == "feral")
         or (key == "mage" and level == 60 and profile in ("arcane", "fire", "frost"))
+        or (key == "paladin" and level == 60 and profile == "retribution")
     )
 
 
@@ -363,6 +364,12 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                         "mage_frost_l60": "frost"}[checkpoint]
         request_path = str(root / "integrations/mythicsim-rust/engine"
                            / f"fixtures/mage/prepared-v2/{mage_profile}-reference.request.json")
+    elif checkpoint == "paladin_retribution_l60":
+        # The L60 matrix identifies this exact pinned Rust smoke source;
+        # only native prepare can establish whether its actor is executable.
+        request_path = str(root / "integrations/mythicsim-rust/engine"
+                           / "validation/2026-10-06-multi-target-paladin-druid-references"
+                           / "retribution-paladin-2-targets.request.json")
     else:
         request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
     if not request_path:
@@ -386,6 +393,9 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                         "mage_frost_l60": "frost"}[checkpoint]
         command.extend(("--class-key", "mage", "--level", "60",
                         "--current-client-profile", f"mage/{mage_profile}"))
+    elif checkpoint == "paladin_retribution_l60":
+        command.extend(("--class-key", "paladin", "--level", "60",
+                        "--current-client-profile", "paladin/retribution"))
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -417,6 +427,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     # Only occupied positions in the actual Mage request need P3 paid scores.
     # The full native options domain may include absent offhand/ranged fields.
     is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60")
+    is_paladin_l60 = checkpoint == "paladin_retribution_l60"
     occupied = receipt.get("source_occupied_slots")
     occupancy_verified = (
         isinstance(occupied, list) and bool(occupied)
@@ -425,7 +436,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         and len(occupied) <= 17
     )
     statuses = ({slot: [] for slot in occupied}
-                if is_mage_l60 and occupancy_verified
+                if (is_mage_l60 or is_paladin_l60) and occupancy_verified
                 else {slot: [] for slot in proposals})
     for row in alternatives:
         if isinstance(row, dict):
@@ -439,7 +450,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     request_sha = baseline.get("request_sha256")
     paid = receipt.get("paid_attempts", 0)
     reasons = []
-    if is_mage_l60 and not occupancy_verified:
+    if (is_mage_l60 or is_paladin_l60) and not occupancy_verified:
         reasons.append("P3_NATIVE_OCCUPIED_SLOT_RECEIPT_MISSING")
     if type(paid) is not int or not 1 <= paid <= 44:
         reasons.append("P3_NATIVE_PAID_ATTEMPTS_INVALID")
@@ -449,7 +460,8 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
     expected_class, expected_level = (
         ("ClassDruid", 60) if checkpoint == "feral_l60" else
-        ("ClassMage", 60) if is_mage_l60 else ("ClassRogue", 20))
+        ("ClassMage", 60) if is_mage_l60 else
+        ("ClassPaladin", 60) if is_paladin_l60 else ("ClassRogue", 20))
     if (receipt.get("actor_checkpoint_verified") is not True
             or prepared.get("actor_class") != expected_class
             or prepared.get("actor_level") != expected_level):
@@ -521,14 +533,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                        and str(spec).lower() == "feral")
     is_mage_native = (str(class_key).lower() == "mage" and int(level) == 60
                       and str(spec).lower() in ("arcane", "fire", "frost"))
-    if is_rogue_native or is_feral_native or is_mage_native:
+    is_paladin_native = (str(class_key).lower() == "paladin" and int(level) == 60
+                         and str(spec).lower() == "retribution")
+    if is_rogue_native or is_feral_native or is_mage_native or is_paladin_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
         # until the exact pinned native engine can supply legal options.
         from src.game.native_p3_item_options import (
             NativeItemOptionsError, query_native_p3_item_options)
         try:
-            if is_mage_native:
+            if is_mage_native or is_paladin_native:
                 native_options = _query_native_unified_p3_items(
                     root, native_binary, class_key, level)
             else:
@@ -553,6 +567,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
         selection = _native_p3_equipped_slot_proposals(native_options)
         checkpoint = ("feral_l60" if is_feral_native else
+                      "paladin_retribution_l60" if is_paladin_native else
                       {"arcane": "mage_l60", "fire": "mage_fire_l60",
                         "frost": "mage_frost_l60"}[str(spec).lower()]
                        if is_mage_native else "rogue_l20")

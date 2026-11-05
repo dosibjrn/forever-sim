@@ -47,7 +47,7 @@ def first_equipped_proposal(reference: dict, selection: dict, *, expected_class=
         raise ValueError("P3_NATIVE_EQUIPPED_CLASS_MISMATCH")
     equipment = player.get("equipment")
     entries = equipment.get("items") if isinstance(equipment, dict) else None
-    if not isinstance(entries, list) or len(entries) not in (15, 16, 17):
+    if not isinstance(entries, list) or len(entries) not in (14, 15, 16, 17):
         raise ValueError("P3_NATIVE_EQUIPPED_REQUEST_SHAPE_UNAVAILABLE")
     for slot, index in NATIVE_SLOT_POSITIONS:
         if index >= len(entries):
@@ -128,7 +128,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     if (type(iterations) is not int or iterations < 1 or seconds <= 0
             or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
-    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid", "mage": "ClassMage"}.get(class_key)
+    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid",
+                      "mage": "ClassMage", "paladin": "ClassPaladin"}.get(class_key)
     if expected_class is None or type(level) is not int or level < 1:
         raise ValueError("P3_NATIVE_EQUIPPED_CHECKPOINT_INVALID")
     candidate, swap = first_equipped_proposal(
@@ -300,10 +301,11 @@ def main():
     parser.add_argument("--binary", required=True)
     parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--max-paid-attempts", type=int, default=2)
-    parser.add_argument("--class-key", choices=("rogue", "druid", "mage"), default="rogue")
+    parser.add_argument("--class-key", choices=("rogue", "druid", "mage", "paladin"), default="rogue")
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
-    parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire", "mage/frost"))
+    parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire", "mage/frost",
+                                                           "paladin/retribution"))
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
