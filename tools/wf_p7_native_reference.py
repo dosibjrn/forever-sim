@@ -42,14 +42,31 @@ def _native(root: Path):
 
 
 def _binary_and_pin(root: Path) -> tuple[Path, str] | None:
+    # Default to the checkout recorded by this repository's 160000 gitlink.
+    # An explicit binary override is allowed only when its checkout HEAD
+    # matches that same pin; never run a floating sibling fork by default.
     binary = Path(os.environ.get("FOREVER_MYTHICSIM_RUST_BIN", str(
-        root.parent / "upstream/target/release/forever-engine"))).resolve()
+        root / "integrations/mythicsim-rust/engine/target/release/forever-engine"))).resolve()
     if not binary.is_file():
         return None
     selected = _selected_rust_submodule(root, binary.parents[2])
     if selected is None:
         return None
     return binary, selected
+
+
+def _native_reference_request(root: Path, class_key: str,
+                              level: int, spec: str) -> Path | None:
+    """Use source request bytes owned by the exact selected native submodule.
+
+    This is an input asset, not a Python game-rules database. Do not build a
+    lower-level reference from the historical level-60 Balance request.
+    """
+    if (class_key, level, spec) != ("druid", 20, "unrestricted"):
+        return None
+    path = (root / "integrations/mythicsim-rust/engine"
+            / "fixtures/references/druid-l20-p71.request.json")
+    return path if path.is_file() else None
 
 
 def _checkpoint_source(raw: bytes, class_key: str, level: int) -> tuple[dict, dict]:
@@ -121,7 +138,7 @@ def _native_score(production, binary: Path, path: Path, level: int) -> dict:
 
 
 def produce_reference(root: Path, class_key: str, level: int, spec: str,
-                      source_path: Path, destination: Path | None = None) -> dict:
+                      source_path: Path | None = None, destination: Path | None = None) -> dict:
     """Pay native once, then freeze exact source bytes and measured reference.
 
     The source is a level-specific request assembled from native-provided build
@@ -137,10 +154,16 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
     if selected is None:
         return _blocked("P7_1_PINNED_RUST_BINARY_OR_GITLINK_MISSING")
     binary, revision = selected
-    raw = source_path.read_bytes()
+    # Explicit requests remain supported for independent source-backed builds.
+    # The default path is a reviewed, pinned Rust-owned executable input.
+    chosen = source_path if source_path is not None else _native_reference_request(
+        root, class_key, level, spec)
+    if chosen is None or not chosen.is_file():
+        return _blocked("P7_1_NATIVE_SOURCE_REQUEST_NOT_AVAILABLE")
     try:
+        raw = chosen.read_bytes()
         source, _ = _checkpoint_source(raw, class_key, level)
-    except (KeyError, IndexError, TypeError, ValueError) as exc:
+    except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
         return _blocked(str(exc))
     with tempfile.TemporaryDirectory(prefix="p71_generated_") as temporary:
         path = Path(temporary) / "native-reference.json"
@@ -276,7 +299,8 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-request", type=Path, required=True)
+    parser.add_argument("--source-request", type=Path,
+                        help="Native-authored request (defaults to selected Druid L20 Rust fixture)")
     parser.add_argument("--class", dest="class_key", default="druid")
     parser.add_argument("--level", type=int, required=True)
     parser.add_argument("--spec", default="unrestricted")
