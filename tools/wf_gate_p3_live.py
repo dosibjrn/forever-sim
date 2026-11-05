@@ -360,7 +360,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                 "paid_attempts": 0, "error": str(exc)[-500:]}
 
 
-def _native_rogue_p3_verdict(options: dict, receipt: dict) -> dict:
+def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
+                             checkpoint: str = "rogue_l20") -> dict:
     """P3 is native paid gear scoring, not legacy naked-policy discovery."""
     import json
     source_sha = sha256(json.dumps(
@@ -388,7 +389,11 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict) -> dict:
             type(baseline.get("score")) not in (int, float)
             or not isfinite(baseline["score"])):
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
-    if receipt.get("actor_checkpoint_verified") is not True:
+    expected_class, expected_level = (
+        ("ClassDruid", 60) if checkpoint == "feral_l60" else ("ClassRogue", 20))
+    if (receipt.get("actor_checkpoint_verified") is not True
+            or prepared.get("actor_class") != expected_class
+            or prepared.get("actor_level") != expected_level):
         reasons.append("P3_NATIVE_EQUIPPED_SCORE_UNVERIFIED:"
                        + str(receipt.get("status")))
     if not statuses:
@@ -486,7 +491,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 root, native_binary, selection, 44, checkpoint="feral_l60")
         else:
             receipt = _paid_native_equipped_probe(root, native_binary, selection, 44)
-        return _native_rogue_p3_verdict(native_options, receipt)
+        return _native_rogue_p3_verdict(
+            native_options, receipt,
+            checkpoint="feral_l60" if is_feral_native else "rogue_l20")
 
     rogue_native_preflight = None
     from src.game.data.forever.registry import build_game_ir_slice
