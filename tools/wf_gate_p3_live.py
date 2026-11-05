@@ -86,7 +86,7 @@ def native_item_options_required(
         or (key == "mage" and level == 30 and profile == "unrestricted")
         or (key == "rogue" and level == 20 and profile == "unrestricted")
         or (key == "druid" and level == 60 and profile == "feral")
-        or (key == "mage" and level == 60 and profile in ("arcane", "fire"))
+        or (key == "mage" and level == 60 and profile in ("arcane", "fire", "frost"))
     )
 
 
@@ -356,10 +356,11 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     """
     if checkpoint == "feral_l60":
         request_path = str(root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
-    elif checkpoint in ("mage_l60", "mage_fire_l60"):
+    elif checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60"):
         # Shared selected-native Mage source fixtures; never invent a build
-        # from Python class rules or reuse Arcane's actor for Fire.
-        mage_profile = "fire" if checkpoint == "mage_fire_l60" else "arcane"
+        # from Python class rules or reuse another spec's actor.
+        mage_profile = {"mage_l60": "arcane", "mage_fire_l60": "fire",
+                        "mage_frost_l60": "frost"}[checkpoint]
         request_path = str(root / "integrations/mythicsim-rust/engine"
                            / f"fixtures/mage/prepared-v2/{mage_profile}-reference.request.json")
     else:
@@ -380,8 +381,9 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                "--max-paid-attempts", str(min(remaining, 44))]
     if checkpoint == "feral_l60":
         command.extend(("--class-key", "druid", "--level", "60", "--go-rules"))
-    elif checkpoint in ("mage_l60", "mage_fire_l60"):
-        mage_profile = "fire" if checkpoint == "mage_fire_l60" else "arcane"
+    elif checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60"):
+        mage_profile = {"mage_l60": "arcane", "mage_fire_l60": "fire",
+                        "mage_frost_l60": "frost"}[checkpoint]
         command.extend(("--class-key", "mage", "--level", "60",
                         "--current-client-profile", f"mage/{mage_profile}"))
     try:
@@ -414,7 +416,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     proposals = _native_p3_equipped_slot_proposals(options)["slots"]
     # Only occupied positions in the actual Mage request need P3 paid scores.
     # The full native options domain may include absent offhand/ranged fields.
-    is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60")
+    is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60")
     occupied = receipt.get("source_occupied_slots")
     occupancy_verified = (
         isinstance(occupied, list) and bool(occupied)
@@ -518,7 +520,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     is_feral_native = (str(class_key).lower() == "druid" and int(level) == 60
                        and str(spec).lower() == "feral")
     is_mage_native = (str(class_key).lower() == "mage" and int(level) == 60
-                      and str(spec).lower() in ("arcane", "fire"))
+                      and str(spec).lower() in ("arcane", "fire", "frost"))
     if is_rogue_native or is_feral_native or is_mage_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
@@ -551,8 +553,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
         selection = _native_p3_equipped_slot_proposals(native_options)
         checkpoint = ("feral_l60" if is_feral_native else
-                      "mage_fire_l60" if is_mage_native and str(spec).lower() == "fire"
-                      else "mage_l60" if is_mage_native else "rogue_l20")
+                      {"arcane": "mage_l60", "fire": "mage_fire_l60",
+                        "frost": "mage_frost_l60"}[str(spec).lower()]
+                       if is_mage_native else "rogue_l20")
         if is_rogue_native:
             receipt = _paid_native_equipped_probe(root, native_binary, selection, 44)
         else:

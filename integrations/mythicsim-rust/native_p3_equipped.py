@@ -303,7 +303,7 @@ def main():
     parser.add_argument("--class-key", choices=("rogue", "druid", "mage"), default="rogue")
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
-    parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire"))
+    parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire", "mage/frost"))
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
