@@ -224,6 +224,10 @@ def _source_native_world_parity(
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
+    if (class_key, level, spec) == ("druid", 20, "unrestricted"):
+        from tools.wf_p7_native_reference import run_native_generated_p71
+        return run_native_generated_p71(root, spec)
+
     if ((class_key, level) != ("druid", 60)
             or spec not in ("balance", "unrestricted", "feral")):
         return _blocked("P7_1_SAVED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
