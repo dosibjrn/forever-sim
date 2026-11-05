@@ -3,12 +3,15 @@ import importlib.util
 import json
 import subprocess
 import unittest
+import sys
 from pathlib import Path
 
 MODULE = Path(__file__).resolve().parents[1] / "native_options.py"
 spec = importlib.util.spec_from_file_location("native_options_tested", MODULE)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+sys.path.insert(0, str(MODULE.parent))
+from native_gear_adapter import NativeGearAdapter
 
 
 def source():
@@ -60,6 +63,25 @@ class NativeOptionsTests(unittest.TestCase):
             return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(forged))
         with self.assertRaisesRegex(module.NativeOptionsError, "UNVERIFIED_AS_NATIVE"):
             module.query_native_options("binary", "mage", 60, runner=runner)
+
+    def test_native_candidates_enter_real_joint_gear_adapter(self):
+        ref = {
+            "raid": {"parties": [{"players": [{
+                "class": "ClassMage", "equipment": {"items": [{"id": 100}]},
+                "talentsString": "51",
+                "rotation": {"priorityList": [{"action": {"wait": {}}}]},
+            }]}]},
+            "simOptions": {"iterations": 3, "randomSeed": "47"},
+        }
+        adapter = NativeGearAdapter("mage", ref, [ref], native_options=source())
+        self.assertEqual(adapter.native_option_candidate_count, 1)
+        self.assertEqual(adapter.mutable_indices, (0,))
+        self.assertIn({"id": 101}, adapter.variants[0])
+        self.assertNotIn({"id": 300}, adapter.variants[0])
+        import random
+        candidate, audit = adapter.mutate_one(random.Random(1))
+        self.assertEqual(candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0], {"id": 101})
+        self.assertEqual(audit["to_id"], 101)
 
     def test_rejects_incomplete_talent_source(self):
         invalid = source()
