@@ -203,12 +203,16 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         if not isinstance(ids, list):
             continue
         alternatives = []
-        for item_id in ids[:2]:
+        # A native option may already be equipped in the reference. Skip it
+        # without consuming one of P3's two *distinct* item alternatives.
+        for item_id in ids:
             alternative, item_swap = first_equipped_proposal(
                 reference, {slot: {"selected_ids": [item_id]}})
             if (alternative is not None and item_swap["to_id"] not in [
                     swap_row["to_id"] for _, swap_row in alternatives]):
                 alternatives.append((alternative, item_swap))
+                if len(alternatives) == 2:
+                    break
         if not alternatives:
             continue
         requested_slots.append(slot)
