@@ -263,10 +263,55 @@ def _source_actor_context_summary(ir) -> dict:
 
 def _native_equipped_p3_reservation(
         class_key: str, level: int, spec: str, native_binary: str | None) -> int:
-    """Reserve two paid attempts only for the selected Rogue native request."""
-    return (2 if native_binary and str(class_key).lower() == "rogue"
+    """Reserve one baseline and up to 17 native slot alternatives for Rogue L20."""
+    return (44 if native_binary and str(class_key).lower() == "rogue"
             and int(level) == 20 and str(spec).lower() == "unrestricted"
             and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
+
+
+def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
+    """Project Rust-supplied option IDs onto the native request's slot names.
+
+    This is equipment-request serialization, not a Python legality check or
+    weighted scorer. The selected Rust engine still accepts/refuses every
+    fully equipped candidate and measures its DPS.
+    """
+    # Native ItemSparse categories and request equipment positions have
+    # different names for hands, fingers and trinkets. No class/item rules.
+    slot_aliases = {
+        "one_hand": ("weapon",), "main_hand": ("weapon",),
+        "two_hand": ("weapon",), "off_hand": ("offhand",),
+        "finger": ("ring1", "ring2"),
+        "trinket": ("trinket1", "trinket2"),
+        "thrown": ("ranged",),
+    }
+    native_slots = {
+        "weapon", "offhand", "ranged", "head", "neck", "shoulder",
+        "back", "chest", "wrist", "hands", "waist", "legs", "feet",
+        "ring1", "ring2", "trinket1", "trinket2",
+    }
+    grouped = {}
+    for option in native_options.get("items", ()):
+        slot = option.get("slot")
+        item_id = option.get("item_id")
+        if type(item_id) is not int or item_id <= 0:
+            continue
+        destinations = slot_aliases.get(slot, (slot,))
+        for destination in destinations:
+            if destination in native_slots:
+                grouped.setdefault(destination, []).append(option)
+    proposals = {}
+    for slot, items in grouped.items():
+        ordered = sorted(
+            items, key=lambda row: (
+                -(row.get("item_level") if type(row.get("item_level")) is int else -1),
+                row["item_id"]))
+        # Forward one spare Rust proposal: the first may already be worn,
+        # leaving two genuinely distinct native candidates to evaluate.
+        selected_ids = list(dict.fromkeys(row["item_id"] for row in ordered))[:3]
+        if selected_ids:
+            proposals[slot] = {"selected_ids": selected_ids}
+    return {"slots": proposals}
 
 
 def _paid_native_equipped_probe(root: Path, native_binary: str | None,
@@ -288,7 +333,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
 
     script = root / "integrations/mythicsim-rust/native_p3_equipped.py"
     command = [sys.executable, str(script), "--binary", str(native_binary),
-               "--request", str(request_path)]
+               "--request", str(request_path),
+               "--max-paid-attempts", str(min(remaining, 44))]
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -299,12 +345,91 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
         receipt = json.loads(completed.stdout)
         if (not isinstance(receipt, dict)
                 or type(receipt.get("paid_attempts")) is not int
-                or not 0 <= receipt["paid_attempts"] <= 2):
+                or not 0 <= receipt["paid_attempts"] <= min(remaining, 44)):
             raise ValueError("P3_NATIVE_EQUIPPED_INVALID_RECEIPT")
         return receipt
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         return {"status": "NATIVE_EQUIPPED_PROBE_ERROR",
                 "paid_attempts": 0, "error": str(exc)[-500:]}
+
+
+def _native_rogue_p3_verdict(options: dict, receipt: dict) -> dict:
+    """P3 is native paid gear scoring, not legacy naked-policy discovery."""
+    import json
+    source_sha = sha256(json.dumps(
+        options, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    receipt = receipt if isinstance(receipt, dict) else {}
+    rows = receipt.get("evaluations") or []
+    alternatives = receipt.get("native_slot_evaluations") or []
+    proposals = _native_p3_equipped_slot_proposals(options)["slots"]
+    statuses = {slot: [] for slot in proposals}
+    for row in alternatives:
+        if isinstance(row, dict):
+            slot = (row.get("swap") or {}).get("slot")
+            if slot in statuses:
+                statuses[slot].append(row.get("status"))
+    verified = sum("VALID" in outcomes for outcomes in statuses.values())
+    baseline = rows[0] if rows and isinstance(rows[0], dict) else {}
+    prepared = receipt.get("native_prepared_actor") or {}
+    revision = prepared.get("engine_revision")
+    request_sha = baseline.get("request_sha256")
+    paid = receipt.get("paid_attempts", 0)
+    reasons = []
+    if type(paid) is not int or not 1 <= paid <= 44:
+        reasons.append("P3_NATIVE_PAID_ATTEMPTS_INVALID")
+    if baseline.get("status") != "VALID" or (
+            type(baseline.get("score")) not in (int, float)
+            or not isfinite(baseline["score"])):
+        reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
+    if receipt.get("actor_checkpoint_verified") is not True:
+        reasons.append("P3_NATIVE_L20_EQUIPPED_SCORE_UNVERIFIED:"
+                       + str(receipt.get("status")))
+    if not statuses:
+        reasons.append("P3_NATIVE_REPRESENTATIVE_SLOTS_UNAVAILABLE")
+    for slot, outcomes in statuses.items():
+        if "VALID" not in outcomes:
+            reasons.append("P3_NATIVE_SLOT_UNSCORED:" + slot + ":"
+                           + (str(outcomes[-1]) if outcomes else "NOT_ATTEMPTED"))
+    if not any(
+            isinstance(row, dict) and row.get("status") == "VALID"
+            and type(row.get("delta_dps")) in (int, float)
+            and isfinite(row["delta_dps"]) and row["delta_dps"] != 0
+            for row in alternatives):
+        reasons.append("P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED")
+    if not isinstance(revision, str) or not revision:
+        reasons.append("P3_NATIVE_ENGINE_REVISION_UNAVAILABLE")
+    if not isinstance(request_sha, str) or not request_sha:
+        reasons.append("P3_NATIVE_PAID_REQUEST_ID_UNAVAILABLE")
+    status = "PASS" if not reasons else "BLOCKED" if not paid else "FAIL"
+    proof = ({"runtime_proof": {
+        "executed": True, "engine_revision": revision,
+        "source_revision": source_sha, "run_id": request_sha}}
+        if status == "PASS" else {})
+    return {
+        "status": status, "reasons": reasons, **proof,
+        "production_component": "integrations/mythicsim-rust/native_p3_equipped.py",
+        "production_engine": "mythicsim_rust",
+        "item_options_source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "native_item_options_status": options.get("status"),
+        "native_item_options_source": options.get("source"),
+        "native_unverified_candidate_count": options.get("unverified_candidate_count", 0),
+        "real_catalogue_legal_items": len(options.get("items") or []),
+        "real_catalogue_slots_scored": verified,
+        "real_native_representative_items_scored": receipt.get("native_slots_valid", 0),
+        "real_selected_item_alternatives_by_slot": proposals,
+        "real_source_search_attempts": 0, "real_source_search_evaluated": 0,
+        "native_equipped_paid_receipt": receipt,
+        "native_equipped_paid_attempts": paid,
+        "p3_shared_budget_attempts": paid,
+        "p3_native_pair_reserved_attempts": 44,
+        "behavior_probes_executed": paid,
+        "reachability_count": len(statuses), "pass_count": verified,
+        "partial_scope": "NATIVE_REPRESENTATIVE_SLOTS_PAID",
+        "coverage_basis": "executed_native_slot_alternatives",
+        "coverage_scope_complete": False,
+        "real_item_score_checked": bool(verified),
+        "source_context_sha256": source_sha,
+    }
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
@@ -338,6 +463,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
 
+    # Native Rogue P3 does not require a Python naked-policy winner.
+    if native_options is not None:
+        if not os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST"):
+            return {"status": "BLOCKED",
+                    "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
+                    "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
+        receipt = _paid_native_equipped_probe(
+            root, native_binary, _native_p3_equipped_slot_proposals(native_options), 44)
+        return _native_rogue_p3_verdict(native_options, receipt)
+
+    rogue_native_preflight = None
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
     from src.v2.source_budgeted_gear import (
@@ -426,9 +562,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "production_component": "src.game.native_p3_player_context",
             }
     max_p3_evaluations = 44
-    # Reserve a real baseline+equipped Rust pair when a native source request
-    # is supplied. Otherwise the earlier 44-budget Python source search can
-    # consume both slots and the selected-native pair never executes.
+    # Reserve the shared budget for one native baseline and representative
+    # per-slot Rust alternatives. Never run these after 44 source+native pays.
     native_pair_reserved = _native_equipped_p3_reservation(
         class_key, level, spec, native_binary)
     source_search_budget = max_p3_evaluations - native_pair_reserved
@@ -501,7 +636,19 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             } if naked else None),
             "source_naked_diagnostics": (
                 naked.get("source_search_diagnostics") if naked else None),
-            "source_actor_context": _source_actor_context_summary(ir)}
+            "source_actor_context": _source_actor_context_summary(ir),
+            # A bounded/unavailable legacy policy winner is not permission to
+            # discard already paid, source-native Rogue equipment scoring.
+            "native_equipped_paid_receipt": rogue_native_preflight,
+            "native_equipped_paid_attempts": (
+                rogue_native_preflight.get("paid_attempts", 0)
+                if rogue_native_preflight else 0),
+            "p3_shared_budget_attempts": (
+                int(result.get("attempted", 0))
+                + (rogue_native_preflight.get("paid_attempts", 0)
+                   if rogue_native_preflight else 0)),
+            "p3_native_pair_reserved_attempts": native_pair_reserved,
+        }
     record = naked["winner"]
     native_spell_action_ids = {
         str(row.get("action_id")) for row in native_spell_coefficients_applied
@@ -652,12 +799,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             native_options_binary=native_binary,
             native_options_response=native_options)
     native_equipped_receipt = (
+        rogue_native_preflight if rogue_native_preflight is not None else
         _paid_native_equipped_probe(
             root, native_binary, item_check,
             max(0, max_p3_evaluations
                 - int(result.get("attempted", 0)) - extra_evaluations))
         if rogue_l20_native else None)
     reasons = list(item_check["blockers"])
+    # The native slot sweep is measured separately; it does not erase any
+    # unresolved P3 source-policy stat assertion or award an automatic PASS.
     # An item-options source snapshot and Python weighted score alone cannot
     # certify an actual selected-Rust equipped L20 actor. The native pair
     # receipt remains explicit until the authoritative actor matches L20.
