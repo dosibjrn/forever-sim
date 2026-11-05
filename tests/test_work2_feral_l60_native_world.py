@@ -71,6 +71,7 @@ def test_feral_l60_uses_native_prepared_source_and_same_world_actor(tmp_path):
     assert json.loads(source_path.read_text()) == source
     assert result["source_request_raw_sha256"] == hashlib.sha256(raw).hexdigest()
     assert result["native_world"]["world_targets_killed"] == 2
+    assert result["objective_100_mobs"] is None
     assert result["p4_p5_p6_certified"] is False
 
 
@@ -119,3 +120,67 @@ def test_feral_l60_propagates_native_prepare_refusal(tmp_path):
             "MythicSim UNSUPPORTED: source build refusal")):
         run_feral_l60_world("/native", path, prepare_run=refused,
                             world_run=lambda *a, **k: None)
+
+
+def _prepared_feral(argv, **kwargs):
+    with open(argv[argv.index("--outfile") + 1], "w", encoding="utf-8") as out:
+        json.dump({"player": {"class": "ClassDruid", "level": 60},
+                   "request_sha256": "c" * 64}, out)
+
+
+def _paid_100_receipt():
+    receipt = _world_receipt(100)
+    receipt.update({
+        "world_elapsed_seconds": 1100.0,
+        "gsim_route_paid_movement_s": 297.0,
+        "gsim_route_paid_receipts": [
+            {"target_id": f"m{i}"} for i in range(1, 100)],
+        "native_passive_recovery_observed": True,
+        "native_passive_recovery_ns_by_target": [0] + [2_000_000_000] * 99,
+        "minimum_native_actor_health": 123.0,
+    })
+    return receipt
+
+
+def test_feral_l60_100_mob_objective_uses_paid_native_world_receipts(tmp_path):
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()), encoding="utf-8")
+
+    def world(binary, prepared, **kwargs):
+        assert kwargs["target_count"] == 100
+        assert kwargs["rng_mode"] == "balanced"
+        assert kwargs["require_native_moving"] is True
+        return _paid_100_receipt()
+
+    result = run_feral_l60_world(
+        "/native", path, target_count=100,
+        prepare_run=_prepared_feral, world_run=world)
+    objective = result["objective_100_mobs"]
+    assert objective == {
+        "targets": 100,
+        "mean_seconds_per_mob": 11.0,
+        "total_elapsed_seconds": 1100.0,
+        "paid_world_movement_seconds": 297.0,
+        "native_passive_recovery_seconds": 198.0,
+        "minimum_native_actor_health": 123.0,
+    }
+    assert result["p4_p5_p6_certified"] is False
+
+
+@pytest.mark.parametrize("missing", [
+    "paid_recovery", "native_passive_recovery_observed",
+    "native_passive_recovery_ns_by_target",
+    "gsim_route_paid_receipts", "gsim_route_paid_movement_s",
+    "minimum_native_actor_health", "world_elapsed_seconds",
+])
+def test_feral_l60_100_mob_objective_refuses_incomplete_paid_receipts(
+        tmp_path, missing):
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()), encoding="utf-8")
+    receipt = _paid_100_receipt()
+    receipt.pop(missing)
+    with pytest.raises(RuntimeError, match="FERAL_L60_100_MOB_PAID_OBJECTIVE_INCOMPLETE"):
+        run_feral_l60_world(
+            "/native", path, target_count=100,
+            prepare_run=_prepared_feral,
+            world_run=lambda *args, **kwargs: receipt)
