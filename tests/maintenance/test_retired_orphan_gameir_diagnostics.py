@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Uncalled fixed-allocation Python talent-rules/scorer CLI; native engine owns game rules.
+    "tools/check_cross_class.py",
     # Retired one-shot Python source/SQLite ingesters; native engine owns game facts.
     "tools/ingest_armor_conversions_sqlite.py",
     "tools/ingest_stat_conversions_sqlite.py",
@@ -275,6 +277,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "check_cross_class",
     "ingest_armor_conversions_sqlite",
     "ingest_stat_conversions_sqlite",
     "ingest_source_ability_semantics_sqlite",
