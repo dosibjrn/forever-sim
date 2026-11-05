@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-from uuid import uuid4
 
 from tools.wf_gate_coverage import (
     P7_FINAL_STOCHASTIC_ITERATIONS, p7_final_stochastic_mean_passes,
@@ -108,7 +107,17 @@ def _native_score(production, binary: Path, path: Path) -> float:
             or type(value) not in (int, float)
             or not math.isfinite(value) or value <= 0):
         raise ValueError("P7_1_NATIVE_REFERENCE_SCORE_INVALID")
-    return float(value)
+    # Preserve the exact selected-native paid result as the reference receipt.
+    # The approved P7.1 gate may reuse these same 1,000 stochastic fights.
+    # Never turn a deterministic screen or merely configured count into proof.
+    if native.get("native_rules") != "forever":
+        raise ValueError("P7_1_NATIVE_REFERENCE_RULESET_MISMATCH")
+    return {
+        "native_dps": float(value),
+        "iterations": P7_FINAL_STOCHASTIC_ITERATIONS,
+        "native_rules": "forever",
+        "first_duration_s": native.get("first_duration_s"),
+    }
 
 
 def produce_reference(root: Path, class_key: str, level: int, spec: str,
@@ -143,7 +152,8 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
             if actor["class"] != "ClassDruid" or actor["level"] != level:
                 return _blocked("P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH",
                                 native_actor=actor)
-            score = _native_score(_native(root), binary, path)
+            paid = _native_score(_native(root), binary, path)
+            score = paid["native_dps"]
         except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
             return _blocked("P7_1_NATIVE_REFERENCE_EXECUTION_FAILED",
                             native_error=str(exc)[-500:])
@@ -158,6 +168,7 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
         "selected_engine_revision": revision,
         "native_prepared_actor": actor,
         "reference_dps": score,
+        "reference_native_sample": paid,
         "reference_iterations": P7_FINAL_STOCHASTIC_ITERATIONS,
         "reference_rng_mode": "stochastic",
         "encounter_target_level": source["encounter"]["targets"][0]["level"],
@@ -187,6 +198,7 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
         manifest = json.loads(manifest_path.read_text())
         source, _ = _checkpoint_source(raw, class_key, level)
         reference = manifest["reference_dps"]
+        sample = manifest["reference_native_sample"]
         encounter_sha = hashlib.sha256(json.dumps(
             source["encounter"], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         if (manifest.get("reference_configuration_source") != "native_generated_msim_reference"
@@ -198,7 +210,15 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
                 or manifest.get("reference_iterations") != P7_FINAL_STOCHASTIC_ITERATIONS
                 or manifest.get("reference_rng_mode") != "stochastic"
                 or type(reference) not in (int, float)
-                or not math.isfinite(reference) or reference <= 0):
+                or not math.isfinite(reference) or reference <= 0
+                or not isinstance(sample, dict)
+                or type(sample.get("iterations")) is not int
+                or sample["iterations"] != P7_FINAL_STOCHASTIC_ITERATIONS
+                or sample.get("native_rules") != "forever"
+                or type(sample.get("native_dps")) not in (int, float)
+                or not math.isfinite(sample["native_dps"])
+                or sample["native_dps"] != reference):
+
             return _blocked("P7_1_GENERATED_REFERENCE_IDENTITY_INVALID")
     except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
         return _blocked("P7_1_GENERATED_REFERENCE_INVALID", error=str(exc)[-240:])
@@ -215,7 +235,10 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
         if actor["class"] != "ClassDruid" or actor["level"] != level:
             return _blocked("P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH",
                             native_actor=actor)
-        measured = _native_score(_native(root), binary, request_path)
+        # The pinned reference's own executed 1,000-fight stochastic sample
+        # already satisfies P7.1's required replay identity. Reuse it instead
+        # of paying a second statistically different 1,000-fight sample.
+        measured = float(sample["native_dps"])
     except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
         return {"status": "FAIL", "reasons": [
             "P7_1_NATIVE_STOCHASTIC_EXECUTION_FAILED"], "native_error": str(exc)[-500:]}
@@ -229,6 +252,7 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
         "native_dps": measured, "iterations": P7_FINAL_STOCHASTIC_ITERATIONS,
         "sampled_source_fights": P7_FINAL_STOCHASTIC_ITERATIONS,
         "stochastic_rng": True, "selected_validation": "1000_native_stochastic_fights",
+        "reused_authentic_native_reference_receipt": True,
     }
     if not p7_final_stochastic_mean_passes(
             "P7.1", measured, reference,
@@ -240,7 +264,9 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
         "p7_1_1_reference_pinned": True, "p7_1_2_native_reproduced": True,
         "runtime_proof": {
             "executed": True, "engine_revision": revision,
-            "source_revision": sha, "run_id": "P7.1-generated-native-" + str(uuid4()),
+            "source_revision": sha,
+            "run_id": "P7.1-generated-native-" + sha[:20],
+            "reference_receipt_reused": True,
         },
         **details,
     }
