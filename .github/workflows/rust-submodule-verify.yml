@@ -49,6 +49,12 @@ jobs:
           python-version: "3.11"
       - name: Install the existing P3 source-search dependency
         run: python -m pip install --disable-pip-version-check "beautifulsoup4==4.13.4"
+      - name: Run focused Forever-owned native P3 adapter regressions
+        run: |
+          python -m pip install --disable-pip-version-check "pytest==8.3.5"
+          python -m pytest -q \
+            integrations/mythicsim-rust/tests/test_native_p3_equipped.py \
+            tests/test_work1_rogue_native_p3_preflight.py
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
