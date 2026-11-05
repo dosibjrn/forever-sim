@@ -9,6 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired P7-only world/2D diagnostics; stationary P7 is selected-native, not a world-parity gate.
+    "tools/diagnostics/p7_frozen_winner_parity.py",
+    "tools/diagnostics/replay_stage5_candidate_2d.py",
     # Old WF678 P7.5 axis ablation pins a dead engine SHA and revalidates Warcraft gear/talents in Python.
     "tools/diagnostics/replay_historical_wf678_winner.py",
     # WF321: obsolete GameIR/SQLite control-fact observation importer.
@@ -294,6 +297,8 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "p7_frozen_winner_parity",
+    "replay_stage5_candidate_2d",
     "replay_historical_wf678_winner",
     "wf321_ingest_control_observations",
     "source_persistent_policy_neighborhood",
@@ -688,6 +693,11 @@ RETAINED_SEARCH_TESTS = (
 
 
 def test_orphan_gameir_diagnostic_clis_stay_retired():
+    for relative in (
+        ".github/workflows/work1-p74-frozen-winner-parity-diagnostic.yml",
+        ".github/workflows/work1-stage5-candidate-2d-replay.yml",
+    ):
+        assert not (ROOT / relative).exists(), relative
     for relative in RETIRED_TOOLS:
         assert not (ROOT / relative).exists(), relative
     for relative in RETIRED_SOURCE_MODULES:
