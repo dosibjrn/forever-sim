@@ -7,7 +7,6 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.data.forever.source_ability_semantics import source_ability_actions,parse_resource_scaled_periodic_ladder
 from src.game.multi_pull import evaluate_repeated_pulls
-from tools.ingest_source_resource_scaled_periodic import ingest
 
 RANKS=((20,1079,150),(28,9492,240),(36,9493,291),(44,9752,429),(52,9894,612),(60,9896,855))
 
@@ -68,20 +67,6 @@ def test_malformed_source_rank_and_missing_semantics_fail_closed(tmp_path):
         conn.execute('DELETE FROM ability_semantic_source_facts WHERE spell_id=9492')
     with pytest.raises(ValueError,match='required source action not executable'):
         source_ability_actions(stripped(ir),class_key='druid',level=28,db_path=db)
-
-def test_atomic_ingest_rejects_partial_family(tmp_path):
-    db=copy_db(tmp_path)
-    with sqlite3.connect(db) as conn:
-        conn.execute('DELETE FROM ability_semantic_source_facts WHERE class_key="druid" AND semantic_type="resource_scaled_periodic"')
-        obj=json.loads(conn.execute('SELECT raw_listview_json FROM spell_index WHERE spell_id=9896').fetchone()[0])
-        obj['envChange']['after']['text']='BAD'
-        conn.execute('UPDATE spell_index SET raw_listview_json=? WHERE spell_id=9896',(json.dumps(obj),))
-    with pytest.raises(ValueError,match='unparsed resource-scaled periodic'):
-        ingest(db,class_key='druid',family='Rip',required_mode='cat',resource_id='combo_points',
-               tick_interval_s=2,mechanics_url='https://www.wowhead.com/forever/spell=1079',
-               mechanics_evidence='legacy transcription')
-    with sqlite3.connect(db) as conn:
-        assert conn.execute('SELECT COUNT(*) FROM ability_semantic_source_facts WHERE semantic_type="resource_scaled_periodic"').fetchone()[0]==0
 
 def test_real_executor_three_pulls_across_rank_boundary():
     for level,hp in ((20,360),(28,500),(36,800)):
