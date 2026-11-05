@@ -64,10 +64,10 @@ class MaintenanceTestLayout(unittest.TestCase):
         self.assertFalse(old.exists(), f"stale root-level fixture: {old}")
         self.assertTrue(new.is_file(), f"missing immutable test fixture: {new}")
         self.assertFalse((ROOT / "tools" / "wf243_joint_multi_pull_replay.py").exists())
+        self.assertFalse((ROOT / "tools" / "wf282_source_role_heldout_benchmark.py").exists())
         source_module = (ROOT / "src" / "v2" / "source_multi_pull_joint.py").read_text()
         self.assertIn("def policy_from_record(", source_module)
         policy_consumers = (
-            ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
         )
@@ -75,7 +75,6 @@ class MaintenanceTestLayout(unittest.TestCase):
             source = consumer.read_text()
             self.assertIn("from src.v2.source_multi_pull_joint import policy_from_record", source)
         fixture_consumers = (
-            ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
         )
