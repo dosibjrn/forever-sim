@@ -117,6 +117,40 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
             or len({k.get("target_id") for k in proof["world_kills"]})
                != target_count):
         raise RuntimeError("FERAL_L60_NATIVE_WORLD_RECEIPT_INCOMPLETE")
+
+    # P4–P6 score elapsed time, not single-target DPS. Only expose a
+    # comparable 100-mob objective after native/world has really completed
+    # all kills, paid inter-pull recovery and executed the 99 spatial legs.
+    # This does NOT certify P4/P5/P6: the cold 30s/300s search is separate.
+    objective_100 = None
+    if target_count == 100:
+        elapsed = proof.get("world_elapsed_seconds")
+        movement = proof.get("gsim_route_paid_movement_s")
+        recovery_ns = proof.get("native_passive_recovery_ns_by_target")
+        legs = proof.get("gsim_route_paid_receipts")
+        min_health = proof.get("minimum_native_actor_health")
+        if (proof.get("paid_recovery") is not True
+                or proof.get("native_passive_recovery_observed") is not True
+                or type(elapsed) not in (int, float)
+                or not math.isfinite(elapsed) or elapsed <= 0
+                or type(movement) not in (int, float)
+                or not math.isfinite(movement) or movement <= 0
+                or not isinstance(legs, list) or len(legs) != 99
+                or not isinstance(recovery_ns, list)
+                or len(recovery_ns) != 100
+                or any(type(ns) is not int or ns < 0 for ns in recovery_ns)
+                or not any(ns > 0 for ns in recovery_ns[1:])
+                or type(min_health) not in (int, float)
+                or not math.isfinite(min_health) or min_health <= 0):
+            raise RuntimeError("FERAL_L60_100_MOB_PAID_OBJECTIVE_INCOMPLETE")
+        objective_100 = {
+            "targets": 100,
+            "mean_seconds_per_mob": float(elapsed) / 100,
+            "total_elapsed_seconds": float(elapsed),
+            "paid_world_movement_seconds": float(movement),
+            "native_passive_recovery_seconds": sum(recovery_ns) / 1e9,
+            "minimum_native_actor_health": float(min_health),
+        }
     return {
         "source_request_raw_sha256": hashlib.sha256(raw).hexdigest(),
         "native_prepared_request_sha256": native_sha,
@@ -125,6 +159,7 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
         "world_target_hp": representative_hp(60),
         "scenario_min_base_damage": float(scenario_min_base_damage),
         "native_world": proof,
+        "objective_100_mobs": objective_100,
         "p4_p5_p6_certified": False,
     }
 
@@ -147,6 +182,7 @@ def main() -> None:
         "actual_2d_ack": proof["actual_2d_ack"],
         "paid_recovery": proof["paid_recovery"],
         "world_elapsed_seconds": proof.get("world_elapsed_seconds"),
+        "objective_100_mobs": result["objective_100_mobs"],
         "p4_p5_p6_certified": False,
     }, sort_keys=True))
 
