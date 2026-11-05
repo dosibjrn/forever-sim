@@ -18,9 +18,12 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 
-from src.scenarios.leveling_targets import representative_hp
-
 ROOT = Path(__file__).resolve().parents[1]
+# Direct `python tools/...` execution puts tools/, not the repo root, on sys.path.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.scenarios.leveling_targets import representative_hp
 FERAL_SOURCE = ROOT / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json"
 
 
