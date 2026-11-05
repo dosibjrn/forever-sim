@@ -27,7 +27,7 @@ def _request(root: Path, *, level: int = 20):
     return source
 
 
-def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20):
+def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20, expected_level=20):
     revision = "a" * 40
     binary = Path("/selected/pinned/target/release/forever-engine")
     calls = []
@@ -35,7 +35,7 @@ def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20):
     def pay(_binary, path, iterations, *, rng_mode, actor_level):
         assert _binary == binary
         assert rng_mode == "stochastic"
-        assert actor_level == 20
+        assert actor_level == expected_level
         assert iterations == 1000
         calls.append(iterations)
         return {"iterations": iterations, "native_dps": paid_dps,
@@ -347,3 +347,63 @@ def test_reference_direct_cli_imports_without_pythonpath(tmp_path):
     )
     assert completed.returncode == 0, completed.stderr
     assert "--verify" in completed.stdout
+
+
+def test_native_l30_default_fixture_executes_at_own_level_without_l20_donor(
+        monkeypatch, tmp_path):
+    """L30 only uses its selected Rust request and native-prepared actor."""
+    calls, revision = _native_stubs(
+        monkeypatch, paid_dps=41.25, native_level=30, expected_level=30)
+    source = _request(tmp_path, level=30)
+    chosen = (tmp_path / "integrations/mythicsim-rust/engine"
+              / "fixtures/references/druid-l30-p71.request.json")
+    chosen.parent.mkdir(parents=True)
+    chosen.write_bytes(source.read_bytes())
+
+    result = reference.produce_reference(tmp_path, "druid", 30, "unrestricted")
+    assert result["status"] == "REFERENCE_GENERATED"
+    assert result["native_prepared_actor"]["level"] == 30
+    assert result["selected_engine_revision"] == revision
+    assert result["reference_dps"] == 41.25
+    frozen = reference._reference_directory(tmp_path, "druid", 30, "unrestricted")
+    assert (frozen / "request.json").read_bytes() == chosen.read_bytes()
+    assert reference.run_generated_p71(
+        tmp_path, "druid", 30, "unrestricted")["status"] == "PASS"
+    assert calls == [1000]  # Reuse native sample; never pay twice.
+    assert not reference._reference_directory(
+        tmp_path, "druid", 20, "unrestricted").exists()
+
+
+def test_l30_absent_native_fixture_does_not_borrow_l20(
+        monkeypatch, tmp_path):
+    calls, _ = _native_stubs(
+        monkeypatch, native_level=30, expected_level=30)
+    source = _request(tmp_path, level=20)
+    donor = (tmp_path / "integrations/mythicsim-rust/engine"
+             / "fixtures/references/druid-l20-p71.request.json")
+    donor.parent.mkdir(parents=True)
+    donor.write_bytes(source.read_bytes())
+
+    result = reference.produce_reference(
+        tmp_path, "druid", 30, "unrestricted")
+    assert result == {"status": "BLOCKED",
+                      "reasons": ["P7_1_NATIVE_SOURCE_REQUEST_NOT_AVAILABLE"]}
+    assert calls == []
+
+
+def test_l30_native_refusal_prevents_stochastic_charge(
+        monkeypatch, tmp_path):
+    calls, _ = _native_stubs(
+        monkeypatch, native_level=30, expected_level=30)
+    source = _request(tmp_path, level=30)
+    monkeypatch.setattr(reference, "_prepare_actor",
+                        lambda binary, path, level: {
+                            "status": "REFUSED", "code": "UNSUPPORTED_LEVEL",
+                            "reason": "native actor level not available"})
+    result = reference.produce_reference(
+        tmp_path, "druid", 30, "unrestricted", source)
+    assert result["reasons"] == ["P7_1_NATIVE_PREPARE_REFUSED"]
+    assert result["native_refusal"]["code"] == "UNSUPPORTED_LEVEL"
+    assert calls == []
+    assert not reference._reference_directory(
+        tmp_path, "druid", 30, "unrestricted").exists()
