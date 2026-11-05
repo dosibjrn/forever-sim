@@ -11,6 +11,8 @@ import hashlib
 import json
 import random
 
+from native_options import native_equipment_proposals
+
 
 class GearRejected(ValueError):
     def __init__(self, category: str, detail: str):
@@ -52,6 +54,7 @@ class NativeGearAdapter:
     def __init__(
         self, class_key: str, reference: dict, fixtures: list[dict],
         items: dict[int, dict] | None = None,
+        native_options: dict | None = None,
     ):
         self.class_key = class_key
         self.reference = copy.deepcopy(reference)
@@ -85,7 +88,21 @@ class NativeGearAdapter:
                 variants = self.variants.setdefault(index, [])
                 if entry not in variants:
                     variants.append(copy.deepcopy(entry))
-        # Full observed item entries, not just item IDs, define mutable gear.
+        # Extend proposal domain from native source only. Matching uses the
+        # existing equipped item's Rust slot; ambiguous/empty slots are skipped.
+        # Full-build validity is still decided by the paid native evaluator.
+        self.native_option_candidate_count = 0
+        if native_options is not None:
+            if native_options.get("class") != class_key.lower():
+                raise GearRejected("NATIVE_OPTIONS_CLASS", "Source belongs to another class")
+            for index, entries in native_equipment_proposals(native_options, self.base).items():
+                for entry in entries:
+                    variants = self.variants.setdefault(index, [])
+                    if entry not in variants:
+                        variants.append(copy.deepcopy(entry))
+                        self.pools.setdefault(index, {})[entry["id"]] = copy.deepcopy(entry)
+                        self.native_option_candidate_count += 1
+        # Full observed item entries and native candidates define mutable gear.
         self.mutable_indices = tuple(sorted(
             i for i, variants in self.variants.items()
             if any(entry != self.base[i] for entry in variants)
@@ -117,10 +134,10 @@ class NativeGearAdapter:
                 if entry != self.base[i]:
                     raise GearRejected("EMPTY_SLOT_CHANGED", f"Position {i}")
                 continue
-            # A source-observed entry is only a proposal. Even native DB
+            # A source-observed or native-proposed entry is only a proposal. Even native DB
             # identity and slot/type compatibility are decided by Rust.
             if entry != self.base[i] and entry not in self.variants.get(i, []):
-                raise GearRejected("SOURCE_SLOT", f"{iid} entry not observed at position {i}")
+                raise GearRejected("SOURCE_SLOT", f"{iid} entry not proposed at position {i}")
         # Native Rust decides item identity/type, slot fit, armor, class,
         # level, hand, uniqueness and all other equipment legality.
 
@@ -159,7 +176,7 @@ class NativeGearAdapter:
                 return out, {
                     "source_slot_index": i, "from_id": old_id, "to_id": iid,
                     "to_variant_sha256": _variant_sha256(entry),
-                    "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_POSITION",
+                    "restriction_scope": "SOURCE_FIXTURE_OR_NATIVE_OPTIONS_SAME_SLOT",
                 }
         raise GearRejected(
             "NO_SOURCE_OBSERVED_SWAP", "No further source-observed gear proposal"
