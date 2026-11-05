@@ -20,7 +20,7 @@ from pathlib import Path
 
 from apl_mutation import mutate_apl
 from native_gear_adapter import GearRejected, NativeGearAdapter
-from native_options import NativeOptionsError, query_native_options
+from native_options import NativeOptionsError, query_native_options, native_joint_request_proposals
 from native_joint_composition import (
     MISSING_TALENT_STRING, CandidateAxis, JointCandidateAdapter, search_joint,
 )
@@ -1171,6 +1171,15 @@ def execute(profile_id: str, inventory: list, *,
         row["native_options_spell_learnability_complete"] = native_options["coverage"]["spell_learnability_complete"]
     same_class = [req for entry, req in inventory if req is not None
                   and entry["profile_id"].split("/", 1)[0] == cls]
+    if native_options is not None:
+        # These are genuinely native-sourced SEARCH PROPOSALS, not learned
+        # spells or already approved talent builds. The selected Rust scorer
+        # alone may accept, reject or report unsupported complete requests.
+        option_proposals, option_counts = native_joint_request_proposals(
+            native_options, reference,
+        )
+        same_class.extend(option_proposals)
+        row.update(option_counts)
     outdir.mkdir(parents=True, exist_ok=True)
     paid_dir = outdir / "paid"
     paid_dir.mkdir(exist_ok=True)
