@@ -27,6 +27,8 @@ RETIRED_TOOLS = (
     "tools/wf255_ingest_command.py",
     "tools/wf256_ingest_seals.py",
     # One-off Python SQLite unique-equip migration; no runtime or gate callers.
+    # Obsolete P3 class-item source-attestation stager; selected native item options own active P3.
+    "tools/wf388_stage_class_item_capture.py",
     "tools/wf345_ingest_equipped_group.py",
     # Historical Warrior L30 SQLite/GameIR staging; current P3 uses selected
     # native item options and selected scorer, not staged Python item facts.
@@ -289,6 +291,7 @@ RETIRED_IMPORT_NAMES = (
     "wf253_ingest_seal",
     "wf255_ingest_command",
     "wf256_ingest_seals",
+    "wf388_stage_class_item_capture",
     "wf345_ingest_equipped_group",
     "wf368_warrior_l30_gear_runtime_bridge",
     "wf370_warrior_l30_source_bis_stage",
