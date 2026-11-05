@@ -127,7 +127,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     """
     if (type(iterations) is not int or iterations < 1 or seconds <= 0
             or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44
-            or objective not in ("DPS", "TPS")):
+            or objective not in ("DPS", "TPS", "HPS")):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
     expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid",
                       "mage": "ClassMage", "paladin": "ClassPaladin"}.get(class_key)
@@ -314,7 +314,7 @@ def main():
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
     parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire", "mage/frost",
-                                                           "paladin/retribution", "paladin/protection"))
+                                                           "paladin/retribution", "paladin/protection", "paladin/holy"))
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
@@ -329,7 +329,8 @@ def main():
     result = compare_equipped_native(
         args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts,
         class_key=args.class_key, level=args.level, go_rules=args.go_rules,
-        objective=("TPS" if args.current_client_profile == "paladin/protection" else "DPS"))
+        objective=("HPS" if args.current_client_profile == "paladin/holy" else
+                   "TPS" if args.current_client_profile == "paladin/protection" else "DPS"))
     print(json.dumps(result, sort_keys=True))
 
 
