@@ -270,7 +270,7 @@ def _raise_structured_native_outcome(raw, *, returncode, stdout, stderr,
         )
 
 
-def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS"):
+def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *, go_rules=False):
     objective = _objective_name(objective)
     objective_metric_path(objective)  # validate the requested output path before invoking native
     remaining = deadline - time.monotonic()
@@ -285,9 +285,12 @@ def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS"):
         out = Path(directory) / "out.json"
         inp.write_text(json.dumps(payload, separators=(",", ":")))
         started = time.monotonic()
+        command = [str(binary), "sim", "--request", str(inp), "--outfile", str(out),
+                   "--gate", "--rng-mode", rng_mode]
+        if go_rules:
+            command.append("--go-rules")
         res = subprocess.run(
-            [str(binary), "sim", "--request", str(inp), "--outfile", str(out),
-             "--gate", "--rng-mode", rng_mode],
+            command,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
             timeout=max(0.001, deadline - time.monotonic()),
         )
