@@ -83,6 +83,36 @@ class NativeOptionsTests(unittest.TestCase):
         self.assertEqual(candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0], {"id": 101})
         self.assertEqual(audit["to_id"], 101)
 
+    def test_paid_gear_sweep_entrypoint_reuses_real_native_source(self):
+        from native_gear_search import native_source_adapter
+        from unittest.mock import patch
+        ref = {
+            "raid": {"parties": [{"players": [{
+                "class": "ClassMage", "equipment": {"items": [{"id": 100}]},
+                "talentsString": "51",
+                "rotation": {"priorityList": [{"action": {"wait": {}}}]},
+            }]}]},
+            "simOptions": {"iterations": 3, "randomSeed": "47"},
+        }
+        cache = {}
+        binary = Path("/selected/rust/forever-engine")
+        with patch("native_gear_search.query_native_options", return_value=source()) as cli:
+            first = native_source_adapter("mage", binary, ref, [ref], {}, cache)
+            second = native_source_adapter("mage", binary, ref, [ref], {}, cache)
+        cli.assert_called_once_with(binary, "mage", 60)
+        self.assertEqual(first.native_option_candidate_count, 1)
+        self.assertEqual(second.mutable_indices, (0,))
+        self.assertEqual(second.variants[0], [{"id": 100}, {"id": 101}])
+        self.assertNotIn({"id": 300}, second.variants[0])
+
+    def test_paid_gear_sweep_entrypoint_fails_closed_without_native_source(self):
+        from native_gear_search import native_source_adapter
+        from unittest.mock import patch
+        with patch("native_gear_search.query_native_options",
+                   side_effect=module.NativeOptionsError("NATIVE_OPTIONS_INVALID_COVERAGE")):
+            with self.assertRaisesRegex(module.NativeOptionsError, "INVALID_COVERAGE"):
+                native_source_adapter("mage", Path("/binary"), {}, [], {}, {})
+
     def test_rejects_incomplete_talent_source(self):
         invalid = source()
         invalid["coverage"]["talent_prerequisites_complete"] = False
