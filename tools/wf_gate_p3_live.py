@@ -86,6 +86,7 @@ def native_item_options_required(
         or (key == "mage" and level == 30 and profile == "unrestricted")
         or (key == "rogue" and level == 20 and profile == "unrestricted")
         or (key == "druid" and level == 60 and profile == "feral")
+        or (key == "mage" and level == 60 and profile == "arcane")
     )
 
 
@@ -315,6 +316,37 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
     return {"slots": proposals}
 
 
+def _query_native_unified_p3_items(root: Path, native_binary: str,
+                                   class_key: str, level: int) -> dict:
+    """Project confirmed Rust get_options items, never Python equip legality.
+
+    A native_eligible row has a Rust-provided structural slot. Unverified
+    proficiency has no confirmed equipment position and earns no P3 credit.
+    Every proposed full build still goes through selected native prepare/score.
+    """
+    import importlib.util
+
+    path = root / "integrations/mythicsim-rust/native_options.py"
+    spec = importlib.util.spec_from_file_location("selected_native_p3_options", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("P3_NATIVE_UNIFIED_OPTIONS_MODULE_UNAVAILABLE")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    source = module.query_native_options(native_binary, class_key, level)
+    confirmed = [dict(row["native"]) for row in source["items"]
+                 if row["eligibility"] == "native_eligible"]
+    unverified = sum(row["eligibility"] == "proficiency_unverified"
+                     for row in source["items"])
+    return {
+        "status": "ok" if confirmed else "empty",
+        "transport": "MYTHICSIM_NATIVE_GET_OPTIONS",
+        "source": source["source_revision"],
+        "coverage": source["coverage"],
+        "unverified_candidate_count": unverified,
+        "items": confirmed,
+    }
+
+
 def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                                 item_check: dict, remaining: int, *,
                                 checkpoint: str = "rogue_l20"):
@@ -324,6 +356,9 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     """
     if checkpoint == "feral_l60":
         request_path = str(root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
+    elif checkpoint == "mage_l60":
+        request_path = str(root / "integrations/mythicsim-rust/engine"
+                           "/fixtures/mage/prepared-v2/arcane-reference.request.json")
     else:
         request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
     if not request_path:
@@ -342,6 +377,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                "--max-paid-attempts", str(min(remaining, 44))]
     if checkpoint == "feral_l60":
         command.extend(("--class-key", "druid", "--level", "60", "--go-rules"))
+    elif checkpoint == "mage_l60":
+        command.extend(("--class-key", "mage", "--level", "60"))
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -390,7 +427,8 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
             or not isfinite(baseline["score"])):
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
     expected_class, expected_level = (
-        ("ClassDruid", 60) if checkpoint == "feral_l60" else ("ClassRogue", 20))
+        ("ClassDruid", 60) if checkpoint == "feral_l60" else
+        ("ClassMage", 60) if checkpoint == "mage_l60" else ("ClassRogue", 20))
     if (receipt.get("actor_checkpoint_verified") is not True
             or prepared.get("actor_class") != expected_class
             or prepared.get("actor_level") != expected_level):
@@ -421,7 +459,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         "status": status, "reasons": reasons, **proof,
         "production_component": "integrations/mythicsim-rust/native_p3_equipped.py",
         "production_engine": "mythicsim_rust",
-        "item_options_source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "item_options_source": options.get("transport", "MYTHICSIM_NATIVE_ITEM_OPTIONS"),
         "native_item_options_status": options.get("status"),
         "native_item_options_source": options.get("source"),
         "native_unverified_candidate_count": options.get("unverified_candidate_count", 0),
@@ -459,17 +497,23 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                        and str(spec).lower() == "unrestricted")
     is_feral_native = (str(class_key).lower() == "druid" and int(level) == 60
                        and str(spec).lower() == "feral")
-    if is_rogue_native or is_feral_native:
+    is_mage_native = (str(class_key).lower() == "mage" and int(level) == 60
+                      and str(spec).lower() == "arcane")
+    if is_rogue_native or is_feral_native or is_mage_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
         # until the exact pinned native engine can supply legal options.
         from src.game.native_p3_item_options import (
             NativeItemOptionsError, query_native_p3_item_options)
         try:
-            native_options = query_native_p3_item_options(
-                native_binary, class_key, level,
-                spec=("unrestricted" if is_feral_native else spec), slot="all")
-        except NativeItemOptionsError as exc:
+            if is_mage_native:
+                native_options = _query_native_unified_p3_items(
+                    root, native_binary, class_key, level)
+            else:
+                native_options = query_native_p3_item_options(
+                    native_binary, class_key, level,
+                    spec=("unrestricted" if is_feral_native else spec), slot="all")
+        except (NativeItemOptionsError, ValueError) as exc:
             return {'status': 'BLOCKED', 'reasons': [str(exc)],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
@@ -486,14 +530,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
         selection = _native_p3_equipped_slot_proposals(native_options)
-        if is_feral_native:
-            receipt = _paid_native_equipped_probe(
-                root, native_binary, selection, 44, checkpoint="feral_l60")
-        else:
+        checkpoint = ("feral_l60" if is_feral_native else
+                      "mage_l60" if is_mage_native else "rogue_l20")
+        if is_rogue_native:
             receipt = _paid_native_equipped_probe(root, native_binary, selection, 44)
+        else:
+            receipt = _paid_native_equipped_probe(
+                root, native_binary, selection, 44, checkpoint=checkpoint)
         return _native_rogue_p3_verdict(
-            native_options, receipt,
-            checkpoint="feral_l60" if is_feral_native else "rogue_l20")
+            native_options, receipt, checkpoint=checkpoint)
 
     rogue_native_preflight = None
     from src.game.data.forever.registry import build_game_ir_slice
