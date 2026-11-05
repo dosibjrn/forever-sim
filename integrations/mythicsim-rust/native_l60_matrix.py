@@ -70,6 +70,7 @@ SOURCES = {
 # talent string with a pinned upstream UI preset or native test build. These
 # remain composed smoke fixtures, never saved ranking references.
 CURRENT_CLIENT_BUILD = "1.60.1.70707"
+# Historic source-fixture provenance ONLY, never an evaluator-pin requirement.
 CURRENT_ENGINE_PIN = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
 CURRENT_CLIENT_TALENT_OVERRIDES = {
     "druid/feral_cat": {
@@ -407,21 +408,11 @@ def current_client_talent_donor_fixtures(inventory):
 def create_inventory(registry_path, engine_src):
     # Do not parse items.jsonl or preflight item identities here. Source
     # equipment requests go to MythicSim; Rust owns identity and equip outcomes.
-    if CURRENT_CLIENT_TALENT_OVERRIDES:
-        try:
-            engine_pin = subprocess.check_output(
-                ["git", "-C", str(engine_src), "rev-parse", "HEAD"],
-                text=True, stderr=subprocess.DEVNULL,
-            ).strip()
-        except (OSError, subprocess.CalledProcessError) as exc:
-            raise ValueError(
-                "Cannot verify the selected Rust pin required by current-client talent presets"
-            ) from exc
-        if engine_pin != CURRENT_ENGINE_PIN:
-            raise ValueError(
-                "Current-client talent presets require Rust pin "
-                f"{CURRENT_ENGINE_PIN}; selected engine is {engine_pin}"
-            )
+    # Historical client talent presets are source-only smoke proposals,
+    # not a claim that the current selected engine must equal the historical
+    # source snapshot. The runner verifies the exact selected Rust gitlink;
+    # MythicSim prepare/evaluate accepts/refuses the submitted request.
+    # An old SHA veto here prevents a newly tested native pin from running.
     registry = json.loads(registry_path.read_text())
     profiles = enumerate_l60_profiles(registry)
     if len(profiles) != 28 or len({cl for cl, _ in profiles}) != 9:
