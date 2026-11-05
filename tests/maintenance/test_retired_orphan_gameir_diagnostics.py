@@ -9,6 +9,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired one-shot Python source/SQLite ingesters; native engine owns game facts.
+    "tools/ingest_secondary_talent_ranks_sqlite.py",
+    "tools/ingest_talent_rank_curves_sqlite.py",
+    "tools/ingest_equipped_weapon_mode_sqlite.py",
+    "tools/ingest_source_stat_aura_candidates_sqlite.py",
+    "tools/ingest_source_talents_sqlite.py",
+    "tools/wf470_ingest_available_observations.py",
     # Historical Paladin SQLite/GameIR source mechanics ingesters; active gates use MythicSim.
     "tools/wf253_ingest_seal.py",
     "tools/wf255_ingest_command.py",
@@ -262,6 +269,10 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "ingest_secondary_talent_ranks_sqlite",
+    "ingest_talent_rank_curves_sqlite",
+    "test_wf_coverage235_secondary_rank_batch",
+    "test_wf_feral01c2a_rank_curves",
     "wf253_ingest_seal",
     "wf255_ingest_command",
     "wf256_ingest_seals",
@@ -481,6 +492,9 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Exclusive retired Python GameIR talent-rank import/legality/runtime tests.
+    "tests/test_wf_coverage235_secondary_rank_batch.py",
+    "tests/test_wf_feral01c2a_rank_curves.py",
     # Exclusive source-ingest/Paladin GameIR mechanics tests, not native-gate regressions.
     "tests/test_wf253_seal_judgement_vertical.py",
     "tests/test_wf255_paladin_command_weapon.py",
