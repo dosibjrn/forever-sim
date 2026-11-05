@@ -129,20 +129,40 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
         recovery_ns = proof.get("native_passive_recovery_ns_by_target")
         legs = proof.get("gsim_route_paid_receipts")
         min_health = proof.get("minimum_native_actor_health")
-        if (proof.get("paid_recovery") is not True
-                or proof.get("native_passive_recovery_observed") is not True
-                or type(elapsed) not in (int, float)
-                or not math.isfinite(elapsed) or elapsed <= 0
-                or type(movement) not in (int, float)
-                or not math.isfinite(movement) or movement <= 0
-                or not isinstance(legs, list) or len(legs) != 99
-                or not isinstance(recovery_ns, list)
+        # On a genuine 100-target native/world completion, preserve the
+        # precise missing *receipt*, not a guessed engine failure. This
+        # diagnostic is bounded and contains no untrusted Warcraft rules.
+        missing = []
+        if proof.get("paid_recovery") is not True:
+            missing.append("native_paid_recovery_flag")
+        if proof.get("native_passive_recovery_observed") is not True:
+            missing.append("native_passive_recovery_unobserved")
+        if (type(elapsed) not in (int, float)
+                or not math.isfinite(elapsed) or elapsed <= 0):
+            missing.append("world_elapsed_seconds")
+        if (type(movement) not in (int, float)
+                or not math.isfinite(movement) or movement <= 0):
+            missing.append("world_paid_movement")
+        if not isinstance(legs, list) or len(legs) != 99:
+            missing.append("world_route_legs")
+        if (not isinstance(recovery_ns, list)
                 or len(recovery_ns) != 100
-                or any(type(ns) is not int or ns < 0 for ns in recovery_ns)
-                or not any(ns > 0 for ns in recovery_ns[1:])
-                or type(min_health) not in (int, float)
+                or any(type(ns) is not int or ns < 0 for ns in recovery_ns)):
+            missing.append("native_recovery_windows")
+        elif not any(ns > 0 for ns in recovery_ns[1:]):
+            missing.append("native_recovery_never_paid")
+        if (type(min_health) not in (int, float)
                 or not math.isfinite(min_health) or min_health <= 0):
-            raise RuntimeError("FERAL_L60_100_MOB_PAID_OBJECTIVE_INCOMPLETE")
+            missing.append("native_actor_survival")
+        if missing:
+            raise RuntimeError(
+                "FERAL_L60_100_MOB_PAID_OBJECTIVE_INCOMPLETE:"
+                + ",".join(missing)
+                + ":world_elapsed=" + str(elapsed)
+                + ":world_movement=" + str(movement)
+                + ":native_recovery_positive_gaps="
+                + str(sum(ns > 0 for ns in recovery_ns[1:])
+                      if isinstance(recovery_ns, list) else "unknown"))
         objective_100 = {
             "targets": 100,
             "mean_seconds_per_mob": float(elapsed) / 100,
