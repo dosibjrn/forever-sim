@@ -199,4 +199,4 @@ jobs:
           python tools/wf_native_feral_l60_world.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
-            --targets 100
+            --targets 100 --recovery-seconds 24
