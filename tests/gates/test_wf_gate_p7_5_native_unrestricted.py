@@ -277,3 +277,26 @@ def test_feral_joint_generator_uses_native_proposals_not_balance_talent_rules(
     assert _player(paid)["talentsString"] == "paid-native-proposal"
     assert observed[-1]["preserve_source_conditions"] is True
     assert _player(base)["talentsString"] == "saved-balance"
+
+
+def test_feral_cold_rank_explorer_uses_independent_sparse_then_broad_draws():
+    import random
+    from src.engine_client.native_talent_proposals import (
+        ColdRankLadderExplorer, cold_talent_string)
+
+    template = "050022-55000032021032212051-053"
+    original_budget = sum(int(c) for c in template if c.isdigit())
+    explorer = ColdRankLadderExplorer()
+    samples = [explorer.cold_talent_string(template, random.Random(100 + i))
+               for i in range(5)]
+    for sample, ceiling in zip(samples, (1, 2, 3, 5, 9)):
+        assert [len(tree) for tree in sample.split("-")] == [6, 20, 3]
+        digits = [int(c) for c in sample if c.isdigit()]
+        assert max(digits) <= ceiling
+        assert sum(digits) == min(original_budget, 29 * ceiling)
+        assert sample != template or ceiling > 1  # never seed from source
+    assert max(int(c) for c in samples[0] if c.isdigit()) == 1
+    assert explorer.cold_draws == 5
+    import pytest
+    with pytest.raises(ValueError, match="RANK_CEILING_INVALID"):
+        cold_talent_string(template, random.Random(7), rank_ceiling=0)
