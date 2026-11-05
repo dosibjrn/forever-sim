@@ -195,14 +195,93 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
     }
 
 
+
+def search_feral_native_recovery(binary: str | Path,
+                                 source_request: str | Path = FERAL_SOURCE,
+                                 *, recovery_candidates: tuple[int, ...],
+                                 world_run=None, prepare_run=None) -> dict:
+    """Compare genuinely paid source-native 100-mob rest candidates.
+
+    A candidate that kills its retained native player is rejected, not scored.
+    The first lethal index and actual adjacent Rust receipts stay visible in
+    the rejection. This is a bounded one-axis producer probe, NOT the eventual
+    cold gear/talent/APL 30s/300s P4-P6 optimizer or a gate certificate.
+    """
+    if (not isinstance(recovery_candidates, tuple)
+            or not 1 <= len(recovery_candidates) <= 4
+            or any(type(seconds) is not int or not 1 <= seconds <= 120
+                   for seconds in recovery_candidates)
+            or len(set(recovery_candidates)) != len(recovery_candidates)):
+        raise ValueError("FERAL_L60_RECOVERY_CANDIDATES_INVALID")
+    attempts = []
+    fastest = None
+    for seconds in recovery_candidates:
+        try:
+            result = run_feral_l60_world(
+                binary, source_request, target_count=100,
+                recovery_seconds=seconds, world_run=world_run,
+                prepare_run=prepare_run)
+        except AssertionError as exc:
+            # Only the actual selected-native survival refusal is a rejected
+            # search candidate. Propagate all other clock/ACK/transport errors.
+            detail = str(exc)
+            prefix = "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index="
+            if not detail.startswith(prefix):
+                raise
+            index = detail[len(prefix):].split(":", 1)[0]
+            if not index.isdecimal() or not 0 <= int(index) < 100:
+                raise
+            attempts.append({
+                "recovery_seconds": seconds, "native_survived": False,
+                "first_native_death_index": int(index),
+                "native_failure": detail,
+            })
+            continue
+        objective = result["objective_100_mobs"]
+        if objective is None:
+            raise AssertionError("FERAL_L60_SURVIVAL_SEARCH_NO_PAID_OBJECTIVE")
+        attempt = {
+            "recovery_seconds": seconds, "native_survived": True,
+            "mean_seconds_per_mob": objective["mean_seconds_per_mob"],
+            "minimum_native_actor_health": objective["minimum_native_actor_health"],
+        }
+        attempts.append(attempt)
+        if (fastest is None
+                or attempt["mean_seconds_per_mob"] < fastest["mean_seconds_per_mob"]):
+            fastest = attempt
+    if fastest is None:
+        raise RuntimeError(
+            "FERAL_L60_NO_SURVIVING_NATIVE_RECOVERY_CANDIDATE:"
+            + json.dumps(attempts, sort_keys=True))
+    return {
+        "best_surviving_candidate": fastest,
+        "paid_native_attempts": attempts,
+        "p4_p5_p6_certified": False,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--source-request", type=Path, default=FERAL_SOURCE)
     parser.add_argument("--targets", type=int, choices=(2, 100), default=2)
-    parser.add_argument("--recovery-seconds", type=int, default=None,
-                        help="native-paid between-pull recovery 1..120s (default selected engine)")
+    rest = parser.add_mutually_exclusive_group()
+    rest.add_argument("--recovery-seconds", type=int, default=None,
+                      help="native-paid between-pull recovery 1..120s (default selected engine)")
+    rest.add_argument("--recovery-candidates", type=str, default=None,
+                      help="comma-separated 1..4 genuine native-paid rest choices for 100-mob selection")
     args = parser.parse_args()
+    if args.recovery_candidates is not None:
+        if args.targets != 100:
+            parser.error("--recovery-candidates requires --targets 100")
+        try:
+            candidates = tuple(int(piece) for piece in args.recovery_candidates.split(","))
+        except ValueError:
+            parser.error("--recovery-candidates must contain only integer seconds")
+        result = search_feral_native_recovery(
+            args.binary, args.source_request, recovery_candidates=candidates)
+        print(json.dumps(result, sort_keys=True))
+        return
     result = run_feral_l60_world(
         args.binary, args.source_request, target_count=args.targets,
         recovery_seconds=args.recovery_seconds)
