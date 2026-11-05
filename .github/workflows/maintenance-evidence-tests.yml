@@ -20,7 +20,7 @@ on:
       - 'tests/gates/test_wf384_generic_checkpoint_pipeline.py'
       - 'tests/test_wf390_generic_talent_execution_pipeline.py'
       - 'tests/test_wf429_process_v2_p3_preflight_tdd.py'
-      - 'tools/wf260_run_budgeted_joint.py'
+      - 'tools/wf400_paid_joint_with_journal.py'\n      - 'tools/wf260_run_budgeted_joint.py'
       - 'tests/generic/search/test_wf260_budgeted_joint_talents.py'
       - 'tools/wf_combat232_weapon_evidence.py'
       - 'tools/wf_combat233_source_armor_replay.py'
