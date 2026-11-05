@@ -37,7 +37,6 @@ def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20):
         assert rng_mode == "stochastic"
         assert actor_level == 20
         assert iterations == 1000
-        assert "level" not in json.loads(path.read_text())["raid"]["parties"][0]["players"][0]
         calls.append(iterations)
         return {"iterations": iterations, "native_dps": paid_dps,
                 "native_rules": "forever", "first_duration_s": 120.0}
@@ -85,10 +84,17 @@ def test_reference_refuses_l60_copy_or_incompatible_native_actor(
         monkeypatch, tmp_path):
     calls, _ = _native_stubs(monkeypatch)
     source = _request(tmp_path, level=60)
+    # Rust, not Forever, must decide whether its native Player.level
+    # extension conflicts with the explicitly selected CLI actor level.
+    monkeypatch.setattr(reference, "_prepare_actor",
+                        lambda binary, path, level: {
+                            "status": "REFUSED", "code": "LEVEL_CONTEXT_CONFLICT",
+                            "reason": "native request/CLI level conflict"})
     wrong = reference.produce_reference(
         tmp_path, "druid", 20, "unrestricted", source)
     assert wrong["status"] == "BLOCKED"
-    assert wrong["reasons"] == ["P7_1_REQUEST_ACTOR_CHECKPOINT_MISMATCH"]
+    assert wrong["reasons"] == ["P7_1_NATIVE_PREPARE_REFUSED"]
+    assert wrong["native_refusal"]["code"] == "LEVEL_CONTEXT_CONFLICT"
     assert not calls
 
     source = _request(tmp_path, level=20)
@@ -178,6 +184,35 @@ def test_native_prepared_level_is_authority_without_proto_level_hint(
         another, "druid", 20, "unrestricted", other_source)
     assert rejected["status"] == "BLOCKED"
     assert rejected["reasons"] == ["P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH"]
+
+
+def test_native_player_level_extension_reaches_pinned_prepare_and_paid_scorer(
+        monkeypatch, tmp_path):
+    """Do not pre-veto Rust field 1001: native preparation is authoritative."""
+    calls, revision = _native_stubs(monkeypatch)
+    source = _request(tmp_path)
+    request = json.loads(source.read_text())
+    request["raid"]["parties"][0]["players"][0]["level"] = 20
+    source.write_text(json.dumps(request))
+    original = source.read_bytes()
+    prepared = []
+
+    def prepare(_binary, path, level):
+        prepared.append((level, path.read_bytes()))
+        return {"status": "PREPARED", "class": "ClassDruid", "level": 20}
+
+    monkeypatch.setattr(reference, "_prepare_actor", prepare)
+    result = reference.produce_reference(
+        tmp_path, "druid", 20, "unrestricted", source)
+    assert result["status"] == "REFERENCE_GENERATED"
+    assert result["selected_engine_revision"] == revision
+    assert prepared == [(20, original)]
+    assert calls == [1000]
+    saved = reference._reference_directory(tmp_path, "druid", 20, "unrestricted")
+    assert (saved / "request.json").read_bytes() == original
+    assert reference.run_generated_p71(
+        tmp_path, "druid", 20, "unrestricted")["status"] == "PASS"
+    assert calls == [1000]
 
 
 def test_native_source_control_forwards_actor_level_without_proto_mutation(
