@@ -261,6 +261,8 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Orphaned WF412 GameIR 100-mob stat/recovery reoptimizer; no native P3 caller.
+    "src/v2/source_reoptimized_stat_sensitivity.py",
     # Unused Mage-v2 per-level multiprocessing and path scorer (test-only callers).
     "src/v2/parallel_search.py",
     "src/v2/path_score.py",
@@ -286,6 +288,8 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "source_reoptimized_stat_sensitivity",
+    "reoptimized_stat_sensitivity",
     "run_source_joint_discovery",
     "build_forever_item_catalogue",
     "wf420_druid20_independent_full_replay",
@@ -518,6 +522,8 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # WF412 Python GameIR stat-positivity witness is not an active P3 requirement.
+    "tests/test_wf412_reoptimized_stat_sensitivity_tdd.py",
     "tests/generic/search/test_wf_gen03a1_joint_grid.py",
     # WF420-WF425 exclusively exercised that frozen Python GameIR replay and
     # duplicated Warcraft crit/hit/stat semantics rather than active native gates.
