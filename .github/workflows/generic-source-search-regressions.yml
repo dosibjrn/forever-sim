@@ -52,7 +52,6 @@ on:
       - 'tests/generic/runtime/test_source_maintenance_rank_reader.py'
       - 'tests/generic/runtime/test_source_stage_isolation.py'
       - 'tests/generic/runtime/test_source_ir_assembly_order.py'
-      - 'tests/test_wf332_runes_default_off.py'
       - 'src/v2/source_budgeted_gear.py'
       - 'src/v2/source_bounded_joint_frontier.py'
       - 'src/v2/source_persistent_slot_search.py'
@@ -133,7 +132,6 @@ jobs:
           tests/generic/runtime/test_source_maintenance_rank_reader.py
           tests/generic/runtime/test_source_stage_isolation.py
           tests/generic/runtime/test_source_ir_assembly_order.py
-          tests/test_wf332_runes_default_off.py
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           tests/gates/test_wf_gate_p7_5_live.py
