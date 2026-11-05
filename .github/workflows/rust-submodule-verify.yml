@@ -15,6 +15,7 @@ on:
       - src/game/native_p3_player_context.py
       - tests/gates/test_wf_gate_class_cli.py
       - tests/test_native_p3_item_options.py
+      - tests/test_work2_mage_native_p3.py
       - tests/test_work1_rogue_native_p3_preflight.py
       - tests/test_work2_paladin_native_context.py
       - tests/test_prio_p3_source_policy_sp.py
@@ -54,7 +55,8 @@ jobs:
           python -m pip install --disable-pip-version-check "pytest==8.3.5"
           python -m pytest -q \
             integrations/mythicsim-rust/tests/test_native_p3_equipped.py \
-            tests/test_work1_rogue_native_p3_preflight.py
+            tests/test_work1_rogue_native_p3_preflight.py \
+            tests/test_work2_mage_native_p3.py
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
@@ -142,6 +144,43 @@ jobs:
                 "gate", gate["status"], "reasons", gate["results"][0].get("reasons"),
                 "paid", gate["results"][0].get("native_equipped_paid_attempts", 0),
                 flush=True)
+          PY
+
+      - name: Run Mage Arcane L60 unified-options native P3 (no record)
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/mage-arcane-l60-p3.json"
+          rc=0
+          timeout 300s python tools/wf_gate.py --class mage --level 60 \
+            --spec arcane --gate P3 --out "$report" || rc=$?
+          python - "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          gate = json.loads(Path(sys.argv[1]).read_text())
+          rc = int(sys.argv[2])
+          assert (gate["class"], gate["level"], gate["spec"], gate["gate"]) == (
+              "mage", 60, "arcane", "P3"), gate
+          assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
+          assert rc == (0 if gate["status"] == "PASS" else 1), (rc, gate)
+          row = gate["results"][0]
+          receipt = row.get("native_equipped_paid_receipt") or {}
+          if row.get("item_options_source") == "MYTHICSIM_NATIVE_GET_OPTIONS":
+              assert row["real_source_search_evaluated"] == 0, gate
+              assert 0 <= row.get("native_equipped_paid_attempts", 0) <= 44, gate
+              assert receipt.get("paid_attempts") == row["native_equipped_paid_attempts"], gate
+          print("MAGE_L60_ARCANE_P3_NO_RECORD", json.dumps({
+              "gate_status": gate["status"], "reasons": row.get("reasons"),
+              "source": row.get("item_options_source"),
+              "native_options_status": row.get("native_item_options_status"),
+              "native_unverified": row.get("native_unverified_candidate_count"),
+              "native_paid": row.get("native_equipped_paid_attempts"),
+              "receipt_status": receipt.get("status"),
+              "prepared_actor": receipt.get("native_prepared_actor"),
+              "slot_evaluations": receipt.get("native_slot_evaluations"),
+          }, default=str), flush=True)
           PY
 
       - name: Run no-record Rogue L20 P3 native capability and gate receipt

@@ -47,7 +47,7 @@ def first_equipped_proposal(reference: dict, selection: dict, *, expected_class=
         raise ValueError("P3_NATIVE_EQUIPPED_CLASS_MISMATCH")
     equipment = player.get("equipment")
     entries = equipment.get("items") if isinstance(equipment, dict) else None
-    if not isinstance(entries, list) or len(entries) not in (16, 17):
+    if not isinstance(entries, list) or len(entries) not in (15, 16, 17):
         raise ValueError("P3_NATIVE_EQUIPPED_REQUEST_SHAPE_UNAVAILABLE")
     for slot, index in NATIVE_SLOT_POSITIONS:
         if index >= len(entries):
@@ -122,13 +122,13 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
 
     Any native INVALID/UNSUPPORTED/UNSCORED/ERROR is reported verbatim and
     debited, never substituted with a Python score or awarded gate credit.
-    The same selected binary's prepared actor must match the actual Rogue L20
-    checkpoint before a paid comparison can become gate evidence.
+    The same selected binary's prepared actor must match the requested class
+    and level before a paid comparison can become gate evidence.
     """
     if (type(iterations) is not int or iterations < 1 or seconds <= 0
             or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
-    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid"}.get(class_key)
+    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid", "mage": "ClassMage"}.get(class_key)
     if expected_class is None or type(level) is not int or level < 1:
         raise ValueError("P3_NATIVE_EQUIPPED_CHECKPOINT_INVALID")
     candidate, swap = first_equipped_proposal(
@@ -140,10 +140,9 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # and then mislabel its DPS as Rogue L20 checkpoint evidence. The source
     # request must carry the exact L20 actor; native decides if it is runnable.
     requested_level = _first_player(reference).get("level")
-    # The accepted Feral L60 source request omits player.level; the selected
-    # native prepare response must independently establish the L60 actor.
-    if requested_level != level and not (
-            class_key == "druid" and level == 60 and requested_level is None):
+    # Source L60 fixtures may omit player.level; only the selected native
+    # prepare response can establish the actual actor level (never a proxy).
+    if requested_level != level and not (level == 60 and requested_level is None):
         return {
             "status": "NATIVE_REQUEST_CHECKPOINT_MISMATCH",
             "paid_attempts": 0, "comparison": None, "swap": swap,
@@ -254,6 +253,17 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     verified_slots = {row["swap"]["slot"] for row in rows[1:]
                       if row["status"] == "VALID"}
     attempted_slots = {row["swap"]["slot"] for row in rows[1:]}
+    # Request occupancy is structural, NOT independent Warcraft gear legality.
+    # A fifteen-entry Mage fixture has neither offhand nor ranged; those
+    # unrepresented positions must not be invented as P3 obligations.
+    original_items = _first_player(reference)["equipment"]["items"]
+    source_occupied_slots = [
+        slot for slot, index in NATIVE_SLOT_POSITIONS
+        if index < len(original_items)
+        and isinstance(original_items[index], dict)
+        and type(original_items[index].get("id")) is int
+        and original_items[index]["id"] > 0
+    ]
     return {
         "status": ("PAID_NATIVE_DIFFERENCE" if paired and delta != 0
                    else "PAID_NATIVE_EQUAL" if paired else "PAID_NATIVE_REFUSAL"),
@@ -272,6 +282,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         "native_slots_unattempted": [slot for slot in requested_slots
                                      if slot not in attempted_slots],
         "native_slot_attempt_cap": max_paid_attempts,
+        "source_occupied_slots": source_occupied_slots,
         "actor_requested_level": requested_level,
         "actor_checkpoint_verified": bool(actor_matched and paired),
         "native_prepared_actor": prepared,
@@ -289,12 +300,21 @@ def main():
     parser.add_argument("--binary", required=True)
     parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--max-paid-attempts", type=int, default=2)
-    parser.add_argument("--class-key", choices=("rogue", "druid"), default="rogue")
+    parser.add_argument("--class-key", choices=("rogue", "druid", "mage"), default="rogue")
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
+    parser.add_argument("--current-client-profile", choices=("mage/arcane",))
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
+    if args.current_client_profile:
+        # Reuse the selected, source-pinned client preset already used by
+        # native_l60_matrix; never decode or validate talent rules in Python.
+        from native_l60_matrix import (apply_current_client_talent_override,
+                                       verify_current_client_engine_pin)
+        verify_current_client_engine_pin(Path(__file__).resolve().parent / "engine")
+        reference, _source_preset = apply_current_client_talent_override(
+            args.current_client_profile, reference)
     result = compare_equipped_native(
         args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts,
         class_key=args.class_key, level=args.level, go_rules=args.go_rules)
