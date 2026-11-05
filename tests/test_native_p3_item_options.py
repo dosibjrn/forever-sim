@@ -320,6 +320,8 @@ def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     assert '[[ "$class" == druid && "$level" == 60 && "$spec" == feral ]]' in p3_rules
     assert '[[ "$class" == mage && "$level" == 60 && ' in p3_rules
     assert '"$spec" == arcane' in p3_rules
+    assert '"$spec" == fire' in p3_rules
+    assert '"$spec" == frost' in p3_rules
     assert 'elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then' in workflow
     assert "native_options_needed=true" in workflow
     assert "if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.native_options_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
