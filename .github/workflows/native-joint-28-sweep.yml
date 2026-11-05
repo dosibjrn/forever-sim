@@ -13,6 +13,7 @@ on:
       - integrations/mythicsim-rust/native_matrix.py
       - integrations/mythicsim-rust/native_joint_composition.py
       - integrations/mythicsim-rust/native_gear_adapter.py
+      - integrations/mythicsim-rust/native_options.py
       - integrations/mythicsim-rust/native_l60_matrix.py
       - integrations/mythicsim-rust/native_executor.py
       - integrations/mythicsim-rust/p73_talent_search_v2.py
@@ -122,6 +123,7 @@ jobs:
           python integrations/mythicsim-rust/tests/test_native_joint_composition.py
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py
           python integrations/mythicsim-rust/tests/test_native_gear_adapter.py
+          python integrations/mythicsim-rust/tests/test_native_options.py
           python integrations/mythicsim-rust/tests/test_native_source_donors.py
           python integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
 
