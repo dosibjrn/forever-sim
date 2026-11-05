@@ -87,7 +87,7 @@ def native_item_options_required(
         or (key == "rogue" and level == 20 and profile == "unrestricted")
         or (key == "druid" and level == 60 and profile == "feral")
         or (key == "mage" and level == 60 and profile in ("arcane", "fire", "frost"))
-        or (key == "paladin" and level == 60 and profile == "retribution")
+        or (key == "paladin" and level == 60 and profile in ("retribution", "protection"))
     )
 
 
@@ -364,12 +364,13 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                         "mage_frost_l60": "frost"}[checkpoint]
         request_path = str(root / "integrations/mythicsim-rust/engine"
                            / f"fixtures/mage/prepared-v2/{mage_profile}-reference.request.json")
-    elif checkpoint == "paladin_retribution_l60":
-        # The L60 matrix identifies this exact pinned Rust smoke source;
-        # only native prepare can establish whether its actor is executable.
+    elif checkpoint in ("paladin_retribution_l60", "paladin_protection_l60"):
+        # Select one existing pinned Rust smoke fixture; the prepared native
+        # actor, never the Python profile, establishes executable class/level.
+        paladin_spec = "protection" if checkpoint == "paladin_protection_l60" else "retribution"
         request_path = str(root / "integrations/mythicsim-rust/engine"
                            / "validation/2026-10-06-multi-target-paladin-druid-references"
-                           / "retribution-paladin-2-targets.request.json")
+                           / f"{paladin_spec}-paladin-2-targets.request.json")
     else:
         request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
     if not request_path:
@@ -393,9 +394,10 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                         "mage_frost_l60": "frost"}[checkpoint]
         command.extend(("--class-key", "mage", "--level", "60",
                         "--current-client-profile", f"mage/{mage_profile}"))
-    elif checkpoint == "paladin_retribution_l60":
+    elif checkpoint in ("paladin_retribution_l60", "paladin_protection_l60"):
+        paladin_spec = "protection" if checkpoint == "paladin_protection_l60" else "retribution"
         command.extend(("--class-key", "paladin", "--level", "60",
-                        "--current-client-profile", "paladin/retribution"))
+                        "--current-client-profile", f"paladin/{paladin_spec}"))
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -427,7 +429,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     # Only occupied positions in the actual Mage request need P3 paid scores.
     # The full native options domain may include absent offhand/ranged fields.
     is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60")
-    is_paladin_l60 = checkpoint == "paladin_retribution_l60"
+    is_paladin_l60 = checkpoint in ("paladin_retribution_l60", "paladin_protection_l60")
     occupied = receipt.get("source_occupied_slots")
     occupancy_verified = (
         isinstance(occupied, list) and bool(occupied)
@@ -473,10 +475,14 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         if "VALID" not in outcomes:
             reasons.append("P3_NATIVE_SLOT_UNSCORED:" + slot + ":"
                            + (str(outcomes[-1]) if outcomes else "NOT_ATTEMPTED"))
+    # Tanks are scored on selected-native threat (TPS), not mislabeled DPS.
+    score_delta_key = "delta_score" if checkpoint == "paladin_protection_l60" else "delta_dps"
+    if checkpoint == "paladin_protection_l60" and receipt.get("objective") != "TPS":
+        reasons.append("P3_NATIVE_OBJECTIVE_MISMATCH")
     if not any(
             isinstance(row, dict) and row.get("status") == "VALID"
-            and type(row.get("delta_dps")) in (int, float)
-            and isfinite(row["delta_dps"]) and row["delta_dps"] != 0
+            and type(row.get(score_delta_key)) in (int, float)
+            and isfinite(row[score_delta_key]) and row[score_delta_key] != 0
             for row in alternatives):
         reasons.append("P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED")
     if not isinstance(revision, str) or not revision:
@@ -534,7 +540,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     is_mage_native = (str(class_key).lower() == "mage" and int(level) == 60
                       and str(spec).lower() in ("arcane", "fire", "frost"))
     is_paladin_native = (str(class_key).lower() == "paladin" and int(level) == 60
-                         and str(spec).lower() == "retribution")
+                         and str(spec).lower() in ("retribution", "protection"))
     if is_rogue_native or is_feral_native or is_mage_native or is_paladin_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
@@ -567,7 +573,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
         selection = _native_p3_equipped_slot_proposals(native_options)
         checkpoint = ("feral_l60" if is_feral_native else
-                      "paladin_retribution_l60" if is_paladin_native else
+                      f"paladin_{str(spec).lower()}_l60" if is_paladin_native else
                       {"arcane": "mage_l60", "fire": "mage_fire_l60",
                         "frost": "mage_frost_l60"}[str(spec).lower()]
                        if is_mage_native else "rogue_l20")
