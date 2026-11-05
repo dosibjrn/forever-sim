@@ -199,7 +199,7 @@ jobs:
   selected-native-p72:
     # One selected-engine read-only changed-axis probe (Feral P7.2/P7.3/P7.4 or
     # unrestricted P7.3); never the Merge-owned M1 recorder.
-    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || startsWith(github.head_ref, 'work/work2-p72-feral-') || startsWith(github.head_ref, 'work/work2-p73-feral-') || startsWith(github.head_ref, 'work/work2-p74-feral-')
+    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || startsWith(github.head_ref, 'work/work2-p72-feral-') || startsWith(github.head_ref, 'work/work2-p73-feral-') || startsWith(github.head_ref, 'work/work2-p74-feral-') || startsWith(github.head_ref, 'work/work2-feral-p75-native-')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -234,7 +234,10 @@ jobs:
         env:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          if [[ "${{ github.head_ref }}" == work/work2-p74-feral-* ]]; then
+          if [[ "${{ github.head_ref }}" == work/work2-feral-p75-native-* ]]; then
+            # Bounded changed-producer diagnostic only; never an M1 recorder.
+            python tools/wf_gate.py --class druid --level 60 --spec feral --gate P7.5
+          elif [[ "${{ github.head_ref }}" == work/work2-p74-feral-* ]]; then
             python tools/wf_gate.py --class druid --level 60 --spec feral --gate P7.4
           elif [[ "${{ github.head_ref }}" == work/work2-p73-feral-* ]]; then
             python tools/wf_gate.py --class druid --level 60 --spec feral --gate P7.3
