@@ -165,7 +165,9 @@ def _native_survival_min_health(windows: list[dict], target_count: int) -> float
         health = window.get("actor_health")
         if (type(health) not in (int, float) or not isfinite(health)
                 or health <= 0):
-            raise AssertionError("RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE")
+            raise AssertionError(
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE"
+                f":index={index}:actor_health={health!r}")
         health_values.append(float(health))
     return min(health_values)
 
