@@ -468,7 +468,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         # Reuse the same cold joint search with native-judged talent strings
         # and opaque Feral APL conditions; never use Balance rank rules.
         source.make_candidate = partial(
-            source.make_candidate, talent_proposals=native_talent_proposals,
+            source.make_candidate,
+            talent_proposals=native_talent_proposals.ColdRankLadderExplorer(),
             preserve_source_conditions=True)
         gear_search = _source_module(integration / "p74_gear_search.py",
                                      "p75_pinned_rust_gear_options")
