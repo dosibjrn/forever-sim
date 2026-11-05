@@ -167,8 +167,20 @@ def test_feral_l60_100_mob_objective_uses_paid_native_world_receipts(tmp_path):
     assert result["p4_p5_p6_certified"] is False
 
 
+def test_feral_l60_100_mob_rejects_unpaid_recovery(tmp_path):
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()), encoding="utf-8")
+    receipt = _paid_100_receipt()
+    receipt["paid_recovery"] = False
+    with pytest.raises(RuntimeError, match="FERAL_L60_100_MOB_PAID_OBJECTIVE_INCOMPLETE"):
+        run_feral_l60_world(
+            "/native", path, target_count=100,
+            prepare_run=_prepared_feral,
+            world_run=lambda *args, **kwargs: receipt)
+
+
 @pytest.mark.parametrize("missing", [
-    "paid_recovery", "native_passive_recovery_observed",
+    "native_passive_recovery_observed",
     "native_passive_recovery_ns_by_target",
     "gsim_route_paid_receipts", "gsim_route_paid_movement_s",
     "minimum_native_actor_health", "world_elapsed_seconds",
