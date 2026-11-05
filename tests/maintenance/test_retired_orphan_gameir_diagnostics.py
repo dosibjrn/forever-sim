@@ -9,6 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired one-shot Python source/SQLite ingesters; native engine owns game facts.
+    "tools/ingest_equipped_weapon_mode_sqlite.py",
+    "tools/ingest_source_stat_aura_candidates_sqlite.py",
+    "tools/ingest_source_talents_sqlite.py",
+    "tools/wf470_ingest_available_observations.py",
     # Historical Paladin SQLite/GameIR source mechanics ingesters; active gates use MythicSim.
     "tools/wf253_ingest_seal.py",
     "tools/wf255_ingest_command.py",
