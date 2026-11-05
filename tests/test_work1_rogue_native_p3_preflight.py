@@ -26,6 +26,17 @@ def test_native_option_proposals_use_rust_ids_and_request_slot_aliases():
     assert "unsupported_request_slot" not in selection
 
 
+def test_native_option_projection_keeps_spare_if_first_item_is_equipped():
+    source = {"items": [
+        {"slot": "chest", "item_id": 104, "item_level": 30},
+        {"slot": "chest", "item_id": 512, "item_level": 20},
+        {"slot": "chest", "item_id": 513, "item_level": 10},
+        {"slot": "chest", "item_id": 514, "item_level": 5},
+    ]}
+    selection = _native_p3_equipped_slot_proposals(source)["slots"]
+    assert selection["chest"]["selected_ids"] == [104, 512, 513]
+
+
 def _paid_receipt(*, delta=29.0, refusal=False):
     slot_rows = [{
         "swap": {"slot": "weapon", "to_id": 24071},
