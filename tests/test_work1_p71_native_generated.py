@@ -217,3 +217,27 @@ def test_native_source_control_forwards_actor_level_without_proto_mutation(
         else:
             raise AssertionError("invalid native actor level was forwarded")
     assert len(commands) == 2
+
+
+def test_default_reference_uses_exact_native_owned_fixture(monkeypatch, tmp_path):
+    calls, revision = _native_stubs(monkeypatch)
+    source = _request(tmp_path)
+    pinned = (tmp_path / "integrations/mythicsim-rust/engine"
+              / "fixtures/references/druid-l20-p71.request.json")
+    pinned.parent.mkdir(parents=True)
+    pinned.write_bytes(source.read_bytes())
+
+    result = reference.produce_reference(tmp_path, "druid", 20, "unrestricted")
+    assert result["status"] == "REFERENCE_GENERATED"
+    assert result["selected_engine_revision"] == revision
+    frozen = reference._reference_directory(tmp_path, "druid", 20, "unrestricted")
+    assert (frozen / "request.json").read_bytes() == pinned.read_bytes()
+    assert calls == [1000]
+
+
+def test_absent_native_owned_fixture_fails_closed_before_payment(monkeypatch, tmp_path):
+    calls, _ = _native_stubs(monkeypatch)
+    result = reference.produce_reference(tmp_path, "druid", 20, "unrestricted")
+    assert result == {"status": "BLOCKED",
+                      "reasons": ["P7_1_NATIVE_SOURCE_REQUEST_NOT_AVAILABLE"]}
+    assert calls == []
