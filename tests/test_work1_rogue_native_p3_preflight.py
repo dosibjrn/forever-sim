@@ -117,3 +117,101 @@ def test_native_rogue_p3_requires_real_score_sensitivity():
     assert result["status"] == "FAIL"
     assert "P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED" in result["reasons"]
     assert "runtime_proof" not in result
+
+
+def test_feral_l60_native_p3_uses_source_actor_and_not_gameir(monkeypatch):
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    options = {"class": "druid", "level": 60, "spec": "unrestricted",
+               "status": "ok", "items": [
+                   {"slot": "two_hand", "item_id": 1001, "item_level": 60}]}
+    receipt = _paid_receipt()
+    receipt["native_prepared_actor"] = {
+        "actor_class": "ClassDruid", "actor_level": 60,
+        "engine_revision": "selected-feral"}
+    calls = []
+
+    def native_probe(_root, binary, selection, remaining, *, checkpoint):
+        calls.append((binary, selection, remaining, checkpoint))
+        return receipt
+
+    def native_options(binary, class_key, level, *, spec, slot):
+        assert (binary, class_key, level, spec, slot) == (
+            "/selected/native", "druid", 60, "unrestricted", "all")
+        return options
+
+    with (
+        patch("src.game.native_p3_item_options.query_native_p3_item_options",
+              side_effect=native_options),
+        patch("src.game.data.forever.registry.build_game_ir_slice",
+              side_effect=AssertionError("No Feral GameIR")),
+        patch("tools.wf_gate_p3_live._paid_native_equipped_probe",
+              side_effect=native_probe),
+    ):
+        result = run_live(Path("."), "druid", 60, spec="feral")
+    assert calls == [("/selected/native", {
+        "slots": {"weapon": {"selected_ids": [1001]}}}, 44, "feral_l60")]
+    assert result["status"] == "PASS"
+    assert result["runtime_proof"]["engine_revision"] == "selected-feral"
+    assert result["real_source_search_evaluated"] == 0
+
+
+def test_feral_l60_native_options_refusal_stays_blocked_without_paid_sim(monkeypatch):
+    from src.game.native_p3_item_options import NativeItemOptionsError
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    with (
+        patch("src.game.native_p3_item_options.query_native_p3_item_options",
+              side_effect=NativeItemOptionsError(
+                  "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS")),
+        patch("tools.wf_gate_p3_live._paid_native_equipped_probe",
+              side_effect=AssertionError("Refusal must not be paid")),
+    ):
+        result = run_live(Path("."), "druid", 60, spec="feral")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == [
+        "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"]
+    assert result["real_source_search_evaluated"] == 0
+
+
+def test_feral_p3_rejects_mismatched_native_receipt_actor():
+    from tools.wf_gate_p3_live import _native_rogue_p3_verdict
+    options = {"status": "ok", "items": [
+        {"slot": "two_hand", "item_id": 1001, "item_level": 60}]}
+    result = _native_rogue_p3_verdict(
+        options, _paid_receipt(), checkpoint="feral_l60")
+    assert result["status"] == "FAIL"
+    assert any(reason.startswith("P3_NATIVE_EQUIPPED_SCORE_UNVERIFIED")
+               for reason in result["reasons"])
+
+
+def test_feral_p3_offhand_native_scores_required_and_refusals_not_waived():
+    """The paired offhand fix must produce a paid slot, not a cosmetic P3 PASS."""
+    from tools.wf_gate_p3_live import _native_rogue_p3_verdict
+    options = {"status": "ok", "items": [
+        {"slot": "two_hand", "item_id": 22589, "item_level": 60},
+        {"slot": "off_hand", "item_id": 19366, "item_level": 60},
+    ]}
+    receipt = _paid_receipt()
+    receipt["native_prepared_actor"] = {
+        "actor_class": "ClassDruid", "actor_level": 60,
+        "engine_revision": "selected-feral-native"}
+    receipt["paid_attempts"] = 3
+    receipt["evaluations"].append({
+        "status": "VALID", "score": 6.0,
+        "request_sha256": "feral-offhand-sha"})
+    receipt["native_slot_evaluations"].append({
+        "swap": {"slot": "offhand", "to_id": 19366},
+        "status": "VALID", "score": 6.0, "delta_dps": 2.0})
+    receipt["native_slots_valid"] = 2
+    accepted = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert accepted["status"] == "PASS"
+    assert accepted["pass_count"] == accepted["reachability_count"] == 2
+    assert accepted["runtime_proof"]["engine_revision"] == "selected-feral-native"
+
+    receipt["native_slot_evaluations"][-1].update(
+        status="UNSUPPORTED", score=None, delta_dps=None,
+        reason="native paired item swap not supported")
+    rejected = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert rejected["status"] == "FAIL"
+    assert rejected["pass_count"] == 1
+    assert "P3_NATIVE_SLOT_UNSCORED:offhand:UNSUPPORTED" in rejected["reasons"]
+    assert "runtime_proof" not in rejected

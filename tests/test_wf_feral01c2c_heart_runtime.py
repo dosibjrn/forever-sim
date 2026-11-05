@@ -7,7 +7,6 @@ incoming-attacks in ordinary policy scoring.
 from __future__ import annotations
 
 from dataclasses import replace
-from pathlib import Path
 import shutil
 import sqlite3
 
@@ -20,7 +19,6 @@ from src.game.runtime import ActorState, expected_auto_attack_swing
 from src.game.talent_search import enumerate_legal_talent_allocations
 from src.game.talents import apply_talent_selection, validate_talent_selection
 from src.v2.source_mode_search import evaluate_discovered_mode_search
-from tools.ingest_stat_conversions_sqlite import ingest
 
 
 def _actor(ir):
@@ -125,19 +123,6 @@ def test_missing_stat_conversion_fails_closed_instead_of_stat_only_noop(tmp_path
     assert all(b['reason']=='source_stat_conversion_missing' for b in heart.metadata['unsupported_rank_effects'])
     with pytest.raises(ValueError,match='unsupported talent effect'):
         apply_talent_selection(replace(source,talents=inv.talents),{'heart_of_the_wild':3},level=20)
-
-
-def test_source_ingestion_rejects_missing_authority_without_modifying_sqlite(tmp_path):
-    clone=tmp_path/'clone.sqlite';shutil.copyfile(DEFAULT_DB,clone)
-    import json
-    capture=json.loads(Path('data/forever/source_captures/forever_inherited_stat_conversions_2026-10-10.json').read_text())
-    capture['entries'][0]['source_url']=''
-    path=tmp_path/'bad.json';path.write_text(json.dumps(capture))
-    with pytest.raises(ValueError,match='missing authority'):
-        ingest(clone,path)
-    with sqlite3.connect(clone) as db:
-        assert db.execute('select count(*) from stat_conversion_source_facts').fetchone()[0]==2
-        assert db.execute('pragma integrity_check').fetchone()[0]=='ok'
 
 
 def test_real_source_mode_policy_reports_heart_ap_damage_without_claiming_optimum():

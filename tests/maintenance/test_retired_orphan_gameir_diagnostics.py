@@ -9,7 +9,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Uncalled fixed-allocation Python talent-rules/scorer CLI; native engine owns game rules.
+    "tools/check_cross_class.py",
     # Retired one-shot Python source/SQLite ingesters; native engine owns game facts.
+    "tools/ingest_armor_conversions_sqlite.py",
+    "tools/ingest_stat_conversions_sqlite.py",
+    "tools/ingest_source_ability_semantics_sqlite.py",
+    "tools/ingest_source_resource_scaled_periodic.py",
     "tools/ingest_secondary_talent_ranks_sqlite.py",
     "tools/ingest_talent_rank_curves_sqlite.py",
     "tools/ingest_equipped_weapon_mode_sqlite.py",
@@ -42,6 +48,8 @@ RETIRED_TOOLS = (
     "tools/m47_paladin_l20_selection.py",
     "tools/m47_paladin_l20_adversarial.py",
     # Standalone legacy GameIR talent/gear/policy bounded search CLI; live gates use wf_gate.py.
+    # Retired test-only GameIR/SQLite paid-journal CLI; active cold P4/P5 uses native gate provider.
+    "tools/wf400_paid_joint_with_journal.py",
     "scripts/run_staged_joint_search.py",
     # Retired WF442 P2 source-rank ingester (source captures remain historical).
     "tools/wf442_ingest_source_rank_observations.py",
@@ -269,6 +277,11 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "check_cross_class",
+    "ingest_armor_conversions_sqlite",
+    "ingest_stat_conversions_sqlite",
+    "ingest_source_ability_semantics_sqlite",
+    "ingest_source_resource_scaled_periodic",
     "ingest_secondary_talent_ranks_sqlite",
     "ingest_talent_rank_curves_sqlite",
     "test_wf_coverage235_secondary_rank_batch",
