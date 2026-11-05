@@ -70,10 +70,12 @@ def _native_reference_request(root: Path, class_key: str,
     This is an input asset, not a Python game-rules database. Do not build a
     lower-level reference from the historical level-60 Balance request.
     """
-    if (class_key, level, spec) != ("druid", 20, "unrestricted"):
+    if class_key != "druid" or spec != "unrestricted" or level not in (20, 30, 40):
         return None
+    # Native-owned request assets are keyed by checkpoint. A missing L30/L40
+    # fixture must not silently fall back to the proven but different L20 actor.
     path = (root / "integrations/mythicsim-rust/engine"
-            / "fixtures/references/druid-l20-p71.request.json")
+            / f"fixtures/references/druid-l{level}-p71.request.json")
     return path if path.is_file() else None
 
 
