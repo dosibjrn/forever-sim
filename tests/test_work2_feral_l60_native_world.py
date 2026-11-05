@@ -277,3 +277,77 @@ def test_native_paid_recovery_argv_and_first_dead_receipt():
     assert '"actor_health": 40.0' in message
     assert '"actor_health": 0.0' in message
     assert '"native_health_damage_taken": 80.0' in message
+
+
+def test_paid_survival_search_rejects_real_native_death_and_scores_only_survivors(tmp_path):
+    from tools.wf_native_feral_l60_world import search_feral_native_recovery
+
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()), encoding="utf-8")
+    seen = []
+
+    def world(binary, prepared, **kwargs):
+        seconds = kwargs["native_recovery_seconds"]
+        seen.append(seconds)
+        assert kwargs["target_count"] == 100
+        assert kwargs["rng_mode"] == "balanced"
+        if seconds == 24:
+            raise AssertionError(
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=62:"
+                'adjacent_native_windows=[{"actor_health":284.0},{"actor_health":0.0}]')
+        receipt = _paid_100_receipt()
+        receipt["world_elapsed_seconds"] = 1500.0 if seconds == 48 else 1350.0
+        receipt["minimum_native_actor_health"] = 40.0 if seconds == 48 else 80.0
+        return receipt
+
+    scored = search_feral_native_recovery(
+        "/native", path, recovery_candidates=(24, 48, 72),
+        world_run=world, prepare_run=_prepared_feral)
+    assert seen == [24, 48, 72]
+    assert scored["p4_p5_p6_certified"] is False
+    assert scored["paid_native_attempts"][0]["native_survived"] is False
+    assert scored["paid_native_attempts"][0]["first_native_death_index"] == 62
+    assert '"actor_health":0.0' in scored["paid_native_attempts"][0]["native_failure"]
+    assert scored["best_surviving_candidate"] == {
+        "recovery_seconds": 72, "native_survived": True,
+        "mean_seconds_per_mob": 13.5,
+        "minimum_native_actor_health": 80.0,
+    }
+
+
+def test_paid_survival_search_propagates_transport_failure_and_refuses_all_dead(tmp_path):
+    from tools.wf_native_feral_l60_world import search_feral_native_recovery
+
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()), encoding="utf-8")
+
+    def dead(binary, prepared, **kwargs):
+        raise AssertionError(
+            "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=62:"
+            "adjacent_native_windows=[]")
+
+    with pytest.raises(RuntimeError, match=(
+            "FERAL_L60_NO_SURVIVING_NATIVE_RECOVERY_CANDIDATE:")) as failure:
+        search_feral_native_recovery(
+            "/native", path, recovery_candidates=(48,),
+            world_run=dead, prepare_run=_prepared_feral)
+    assert '"first_native_death_index": 62' in str(failure.value)
+
+    def broken(binary, prepared, **kwargs):
+        raise AssertionError("RUST_TWO_WORLD_KILL_CLOCK_NOT_CAUSAL")
+    with pytest.raises(AssertionError, match="RUST_TWO_WORLD_KILL_CLOCK_NOT_CAUSAL"):
+        search_feral_native_recovery(
+            "/native", path, recovery_candidates=(48,),
+            world_run=broken, prepare_run=_prepared_feral)
+
+
+@pytest.mark.parametrize("candidates", [
+    (), (0,), (121,), (24, 24), (True,), ("24",), (24, 48, 72, 96, 120),
+])
+def test_paid_survival_search_invalid_budget_before_prepare(tmp_path, candidates):
+    from tools.wf_native_feral_l60_world import search_feral_native_recovery
+
+    with pytest.raises(ValueError, match="FERAL_L60_RECOVERY_CANDIDATES_INVALID"):
+        search_feral_native_recovery(
+            "/native", tmp_path / "missing.json",
+            recovery_candidates=candidates)
