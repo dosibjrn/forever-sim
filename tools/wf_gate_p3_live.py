@@ -269,6 +269,49 @@ def _native_equipped_p3_reservation(
             and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
 
 
+def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
+    """Project Rust-supplied option IDs onto the native request's slot names.
+
+    This is equipment-request serialization, not a Python legality check or
+    weighted scorer. The selected Rust engine still accepts/refuses every
+    fully equipped candidate and measures its DPS.
+    """
+    # Native ItemSparse categories and request equipment positions have
+    # different names for hands, fingers and trinkets. No class/item rules.
+    slot_aliases = {
+        "one_hand": ("weapon",), "main_hand": ("weapon",),
+        "two_hand": ("weapon",), "off_hand": ("offhand",),
+        "finger": ("ring1", "ring2"),
+        "trinket": ("trinket1", "trinket2"),
+        "thrown": ("ranged",),
+    }
+    native_slots = {
+        "weapon", "offhand", "ranged", "head", "neck", "shoulder",
+        "back", "chest", "wrist", "hands", "waist", "legs", "feet",
+        "ring1", "ring2", "trinket1", "trinket2",
+    }
+    grouped = {}
+    for option in native_options.get("items", ()):
+        slot = option.get("slot")
+        item_id = option.get("item_id")
+        if type(item_id) is not int or item_id <= 0:
+            continue
+        destinations = slot_aliases.get(slot, (slot,))
+        for destination in destinations:
+            if destination in native_slots:
+                grouped.setdefault(destination, []).append(option)
+    proposals = {}
+    for slot, items in grouped.items():
+        ordered = sorted(
+            items, key=lambda row: (
+                -(row.get("item_level") if type(row.get("item_level")) is int else -1),
+                row["item_id"]))
+        selected_ids = list(dict.fromkeys(row["item_id"] for row in ordered))[:2]
+        if selected_ids:
+            proposals[slot] = {"selected_ids": selected_ids}
+    return {"slots": proposals}
+
+
 def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                                 item_check: dict, remaining: int):
     """Use the existing selected-native sim boundary when an exact source
@@ -338,6 +381,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     'reasons': ['NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES'],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
+
+    # Native Rogue P3 must not be pre-vetoed by the unrelated legacy naked
+    # policy search. Spend the reserved native budget directly on Rust option
+    # proposals, then reuse this exact receipt (never pay twice).
+    rogue_native_preflight = None
+    if (native_options is not None
+            and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")):
+        rogue_native_preflight = _paid_native_equipped_probe(
+            root, native_binary,
+            _native_p3_equipped_slot_proposals(native_options), 18)
 
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
@@ -501,7 +554,19 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             } if naked else None),
             "source_naked_diagnostics": (
                 naked.get("source_search_diagnostics") if naked else None),
-            "source_actor_context": _source_actor_context_summary(ir)}
+            "source_actor_context": _source_actor_context_summary(ir),
+            # A bounded/unavailable legacy policy winner is not permission to
+            # discard already paid, source-native Rogue equipment scoring.
+            "native_equipped_paid_receipt": rogue_native_preflight,
+            "native_equipped_paid_attempts": (
+                rogue_native_preflight.get("paid_attempts", 0)
+                if rogue_native_preflight else 0),
+            "p3_shared_budget_attempts": (
+                int(result.get("attempted", 0))
+                + (rogue_native_preflight.get("paid_attempts", 0)
+                   if rogue_native_preflight else 0)),
+            "p3_native_pair_reserved_attempts": native_pair_reserved,
+        }
     record = naked["winner"]
     native_spell_action_ids = {
         str(row.get("action_id")) for row in native_spell_coefficients_applied
@@ -652,6 +717,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             native_options_binary=native_binary,
             native_options_response=native_options)
     native_equipped_receipt = (
+        rogue_native_preflight if rogue_native_preflight is not None else
         _paid_native_equipped_probe(
             root, native_binary, item_check,
             max(0, max_p3_evaluations
