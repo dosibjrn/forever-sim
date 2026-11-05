@@ -32,7 +32,7 @@ def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20):
         assert _binary == binary
         assert rng_mode == "stochastic"
         assert iterations == 1000
-        assert json.loads(path.read_text())["raid"]["parties"][0]["players"][0]["level"] == 20
+        assert json.loads(path.read_text())["raid"]["parties"][0]["players"][0].get("level") in (None, 20)
         calls.append(iterations)
         return {"iterations": iterations, "native_dps": paid_dps}
 
@@ -134,3 +134,28 @@ def test_absent_native_reference_is_not_an_automatic_gate_pass(tmp_path):
     assert report["status"] == "BLOCKED"
     assert report["reasons"] == ["P7_1_NATIVE_GENERATED_REFERENCE_NOT_PINNED"]
     assert "runtime_proof" not in report
+
+
+def test_native_prepared_level_is_authority_without_proto_level_hint(
+        monkeypatch, tmp_path):
+    calls, _ = _native_stubs(monkeypatch)
+    source = _request(tmp_path)
+    document = json.loads(source.read_text())
+    del document["raid"]["parties"][0]["players"][0]["level"]
+    source.write_text(json.dumps(document))
+    result = reference.produce_reference(
+        tmp_path, "druid", 20, "unrestricted", source)
+    assert result["status"] == "REFERENCE_GENERATED"
+    assert calls == [1000]
+
+    another = tmp_path / "another"
+    another.mkdir()
+    other_source = _request(another)
+    other_document = json.loads(other_source.read_text())
+    del other_document["raid"]["parties"][0]["players"][0]["level"]
+    other_source.write_text(json.dumps(other_document))
+    _native_stubs(monkeypatch, native_level=60)
+    rejected = reference.produce_reference(
+        another, "druid", 20, "unrestricted", other_source)
+    assert rejected["status"] == "BLOCKED"
+    assert rejected["reasons"] == ["P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH"]
