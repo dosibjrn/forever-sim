@@ -241,3 +241,25 @@ def test_absent_native_owned_fixture_fails_closed_before_payment(monkeypatch, tm
     assert result == {"status": "BLOCKED",
                       "reasons": ["P7_1_NATIVE_SOURCE_REQUEST_NOT_AVAILABLE"]}
     assert calls == []
+
+
+def test_selected_submodule_binary_is_default_and_pin_is_enforced(monkeypatch, tmp_path):
+    monkeypatch.delenv("FOREVER_MYTHICSIM_RUST_BIN", raising=False)
+    engine = tmp_path / "integrations/mythicsim-rust/engine"
+    binary = engine / "target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"native-selected-test-executable")
+    selected_calls = []
+
+    def selected(root, upstream):
+        selected_calls.append((root, upstream))
+        return "f" * 40
+
+    monkeypatch.setattr(reference, "_selected_rust_submodule", selected)
+    assert reference._binary_and_pin(tmp_path) == (binary.resolve(), "f" * 40)
+    assert selected_calls == [(tmp_path, engine.resolve())]
+
+    # Even an explicitly supplied executable cannot bypass the gitlink.
+    monkeypatch.setattr(reference, "_selected_rust_submodule",
+                        lambda root, upstream: None)
+    assert reference._binary_and_pin(tmp_path) is None
