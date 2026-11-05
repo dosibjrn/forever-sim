@@ -264,7 +264,7 @@ def _source_actor_context_summary(ir) -> dict:
 def _native_equipped_p3_reservation(
         class_key: str, level: int, spec: str, native_binary: str | None) -> int:
     """Reserve one baseline and up to 17 native slot alternatives for Rogue L20."""
-    return (18 if native_binary and str(class_key).lower() == "rogue"
+    return (44 if native_binary and str(class_key).lower() == "rogue"
             and int(level) == 20 and str(spec).lower() == "unrestricted"
             and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
 
@@ -332,7 +332,7 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     script = root / "integrations/mythicsim-rust/native_p3_equipped.py"
     command = [sys.executable, str(script), "--binary", str(native_binary),
                "--request", str(request_path),
-               "--max-paid-attempts", str(min(remaining, 18))]
+               "--max-paid-attempts", str(min(remaining, 44))]
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -343,12 +343,91 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
         receipt = json.loads(completed.stdout)
         if (not isinstance(receipt, dict)
                 or type(receipt.get("paid_attempts")) is not int
-                or not 0 <= receipt["paid_attempts"] <= min(remaining, 18)):
+                or not 0 <= receipt["paid_attempts"] <= min(remaining, 44)):
             raise ValueError("P3_NATIVE_EQUIPPED_INVALID_RECEIPT")
         return receipt
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         return {"status": "NATIVE_EQUIPPED_PROBE_ERROR",
                 "paid_attempts": 0, "error": str(exc)[-500:]}
+
+
+def _native_rogue_p3_verdict(options: dict, receipt: dict) -> dict:
+    """P3 is native paid gear scoring, not legacy naked-policy discovery."""
+    import json
+    source_sha = sha256(json.dumps(
+        options, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    receipt = receipt if isinstance(receipt, dict) else {}
+    rows = receipt.get("evaluations") or []
+    alternatives = receipt.get("native_slot_evaluations") or []
+    proposals = _native_p3_equipped_slot_proposals(options)["slots"]
+    statuses = {slot: [] for slot in proposals}
+    for row in alternatives:
+        if isinstance(row, dict):
+            slot = (row.get("swap") or {}).get("slot")
+            if slot in statuses:
+                statuses[slot].append(row.get("status"))
+    verified = sum("VALID" in outcomes for outcomes in statuses.values())
+    baseline = rows[0] if rows and isinstance(rows[0], dict) else {}
+    prepared = receipt.get("native_prepared_actor") or {}
+    revision = prepared.get("engine_revision")
+    request_sha = baseline.get("request_sha256")
+    paid = receipt.get("paid_attempts", 0)
+    reasons = []
+    if type(paid) is not int or not 1 <= paid <= 44:
+        reasons.append("P3_NATIVE_PAID_ATTEMPTS_INVALID")
+    if baseline.get("status") != "VALID" or (
+            type(baseline.get("score")) not in (int, float)
+            or not isfinite(baseline["score"])):
+        reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
+    if receipt.get("actor_checkpoint_verified") is not True:
+        reasons.append("P3_NATIVE_L20_EQUIPPED_SCORE_UNVERIFIED:"
+                       + str(receipt.get("status")))
+    if not statuses:
+        reasons.append("P3_NATIVE_REPRESENTATIVE_SLOTS_UNAVAILABLE")
+    for slot, outcomes in statuses.items():
+        if "VALID" not in outcomes:
+            reasons.append("P3_NATIVE_SLOT_UNSCORED:" + slot + ":"
+                           + (str(outcomes[-1]) if outcomes else "NOT_ATTEMPTED"))
+    if not any(
+            isinstance(row, dict) and row.get("status") == "VALID"
+            and type(row.get("delta_dps")) in (int, float)
+            and isfinite(row["delta_dps"]) and row["delta_dps"] != 0
+            for row in alternatives):
+        reasons.append("P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED")
+    if not isinstance(revision, str) or not revision:
+        reasons.append("P3_NATIVE_ENGINE_REVISION_UNAVAILABLE")
+    if not isinstance(request_sha, str) or not request_sha:
+        reasons.append("P3_NATIVE_PAID_REQUEST_ID_UNAVAILABLE")
+    status = "PASS" if not reasons else "BLOCKED" if not paid else "FAIL"
+    proof = ({"runtime_proof": {
+        "executed": True, "engine_revision": revision,
+        "source_revision": source_sha, "run_id": request_sha}}
+        if status == "PASS" else {})
+    return {
+        "status": status, "reasons": reasons, **proof,
+        "production_component": "integrations/mythicsim-rust/native_p3_equipped.py",
+        "production_engine": "mythicsim_rust",
+        "item_options_source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+        "native_item_options_status": options.get("status"),
+        "native_item_options_source": options.get("source"),
+        "native_unverified_candidate_count": options.get("unverified_candidate_count", 0),
+        "real_catalogue_legal_items": len(options.get("items") or []),
+        "real_catalogue_slots_scored": verified,
+        "real_native_representative_items_scored": receipt.get("native_slots_valid", 0),
+        "real_selected_item_alternatives_by_slot": proposals,
+        "real_source_search_attempts": 0, "real_source_search_evaluated": 0,
+        "native_equipped_paid_receipt": receipt,
+        "native_equipped_paid_attempts": paid,
+        "p3_shared_budget_attempts": paid,
+        "p3_native_pair_reserved_attempts": 44,
+        "behavior_probes_executed": paid,
+        "reachability_count": len(statuses), "pass_count": verified,
+        "partial_scope": "NATIVE_REPRESENTATIVE_SLOTS_PAID",
+        "coverage_basis": "executed_native_slot_alternatives",
+        "coverage_scope_complete": False,
+        "real_item_score_checked": bool(verified),
+        "source_context_sha256": source_sha,
+    }
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
@@ -382,16 +461,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
 
-    # Native Rogue P3 must not be pre-vetoed by the unrelated legacy naked
-    # policy search. Spend the reserved native budget directly on Rust option
-    # proposals, then reuse this exact receipt (never pay twice).
-    rogue_native_preflight = None
-    if (native_options is not None
-            and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")):
-        rogue_native_preflight = _paid_native_equipped_probe(
-            root, native_binary,
-            _native_p3_equipped_slot_proposals(native_options), 18)
+    # Native Rogue P3 does not require a Python naked-policy winner.
+    if native_options is not None:
+        if not os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST"):
+            return {"status": "BLOCKED",
+                    "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
+                    "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
+        receipt = _paid_native_equipped_probe(
+            root, native_binary, _native_p3_equipped_slot_proposals(native_options), 44)
+        return _native_rogue_p3_verdict(native_options, receipt)
 
+    rogue_native_preflight = None
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
     from src.v2.source_budgeted_gear import (
