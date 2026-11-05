@@ -34,24 +34,49 @@ def _encode(parts: list[str], digits: list[int]) -> str:
     return "-".join(result)
 
 
-def cold_talent_string(template: str, rng: random.Random) -> str:
-    """Draw a cold rank string within the template's point-search budget.
+def cold_talent_string(template: str, rng: random.Random, *, rank_ceiling: int = 9) -> str:
+    """Draw an independent cold rank string with a configurable search ceiling.
 
-    Points are distributed across every serialized position. No per-position
-    maximum, tree budget, prerequisite, or other game legality is inferred.
-    Values stay single-digit only because that is the request's string format.
+    The ceiling is an exploration parameter, NOT a claim about any talent's
+    legal rank. Native MythicSim still decides whether the resulting build
+    is executable. A sparse draw may intentionally leave points unspent.
     """
     parts, template_digits = _decode(template)
-    budget = sum(template_digits)
+    if type(rank_ceiling) is not int or not 1 <= rank_ceiling <= 9:
+        raise ValueError("TALENT_PROPOSAL_RANK_CEILING_INVALID")
+    budget = min(sum(template_digits), rank_ceiling * len(template_digits))
     if budget <= 0:
         raise ValueError("TALENT_PROPOSAL_SEARCH_BUDGET_EMPTY")
     proposed = [0] * len(template_digits)
     for _ in range(budget):
-        available = [index for index, value in enumerate(proposed) if value < 9]
+        available = [index for index, value in enumerate(proposed)
+                     if value < rank_ceiling]
         if not available:
             raise ValueError("TALENT_PROPOSAL_SEARCH_BUDGET_EXCEEDS_STRING_FORMAT")
         proposed[rng.choice(available)] += 1
     return _encode(parts, proposed)
+
+
+
+class ColdRankLadderExplorer:
+    """Vary cold-search rank density without duplicating native rank rules.
+
+    The selected pinned engine has no talent-options CLI. Native prepare has
+    refused random 3/4-rank proposals in 2/3-rank ladders; try sparse cold
+    allocations first, then broaden the same independent search. These are
+    proposal heuristics, never a legality filter or a saved-build seed.
+    """
+
+    def __init__(self) -> None:
+        self.cold_draws = 0
+
+    def cold_talent_string(self, template: str, rng: random.Random) -> str:
+        ceiling = (1, 2, 3, 5, 9)[self.cold_draws % 5]
+        self.cold_draws += 1
+        return cold_talent_string(template, rng, rank_ceiling=ceiling)
+
+    def mutate_talent_string(self, parent: str, rng: random.Random) -> str:
+        return mutate_talent_string(parent, rng)
 
 
 def mutate_talent_string(parent: str, rng: random.Random) -> str:
