@@ -11,8 +11,7 @@ from tools.wf_native_feral_l60_world import run_feral_l60_world
 def _source():
     return {
         "raid": {"parties": [{"players": [{
-            "class": "ClassDruid", "level": 60,
-            "talents": {"string": "source-owned"},
+            "class": "ClassDruid",  # Original Feral source has no level field.\n            "talents": {"string": "source-owned"},
             "rotation": {"priorityList": [{"action": {"castSpell": {
                 "spellId": {"spellId": 1}}}}]},
             "equipment": {"items": [{"id": 42}]},
