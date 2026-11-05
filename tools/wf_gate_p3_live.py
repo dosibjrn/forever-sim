@@ -408,7 +408,18 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     rows = receipt.get("evaluations") or []
     alternatives = receipt.get("native_slot_evaluations") or []
     proposals = _native_p3_equipped_slot_proposals(options)["slots"]
-    statuses = {slot: [] for slot in proposals}
+    # Only occupied positions in the actual Mage request need P3 paid scores.
+    # The full native options domain may include absent offhand/ranged fields.
+    occupied = receipt.get("source_occupied_slots")
+    occupancy_verified = (
+        isinstance(occupied, list) and bool(occupied)
+        and all(type(slot) is str for slot in occupied)
+        and len(set(occupied)) == len(occupied)
+        and len(occupied) <= 17
+    )
+    statuses = ({slot: [] for slot in occupied}
+                if checkpoint == "mage_l60" and occupancy_verified
+                else {slot: [] for slot in proposals})
     for row in alternatives:
         if isinstance(row, dict):
             slot = (row.get("swap") or {}).get("slot")
@@ -421,6 +432,8 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     request_sha = baseline.get("request_sha256")
     paid = receipt.get("paid_attempts", 0)
     reasons = []
+    if checkpoint == "mage_l60" and not occupancy_verified:
+        reasons.append("P3_NATIVE_OCCUPIED_SLOT_RECEIPT_MISSING")
     if type(paid) is not int or not 1 <= paid <= 44:
         reasons.append("P3_NATIVE_PAID_ATTEMPTS_INVALID")
     if baseline.get("status") != "VALID" or (
@@ -468,6 +481,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         "real_catalogue_slots_scored": verified,
         "real_native_representative_items_scored": receipt.get("native_slots_valid", 0),
         "real_selected_item_alternatives_by_slot": proposals,
+        "source_occupied_slots": occupied if occupancy_verified else None,
         "real_source_search_attempts": 0, "real_source_search_evaluated": 0,
         "native_equipped_paid_receipt": receipt,
         "native_equipped_paid_attempts": paid,
