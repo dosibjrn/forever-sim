@@ -41,13 +41,16 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
 
 
 def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
-                 prior_rows: dict[str, dict] | None = None) -> list[dict]:
-    """Preserve canonical 28 rows. Only injected production run() can pay Rust."""
+                 prior_rows: dict[str, dict] | None = None,
+                 expected_profiles: int = 28) -> list[dict]:
+    """Require all 28 profiles by default; explicitly scoped paid probes use one."""
     if stage not in STAGES:
         raise ValueError("Invalid stage")
     keys = [r["profile_id"] for r, _ in inventory]
-    if len(keys) != 28 or len(set(keys)) != 28:
-        raise ValueError("Expected 28 unique canonical L60 fixed profiles")
+    if len(keys) != expected_profiles or len(set(keys)) != expected_profiles:
+        raise ValueError(
+            f"Expected {expected_profiles} unique canonical L60 fixed profiles"
+        )
     rows = []
     for inv, request in inventory:
         profile = inv["profile_id"]
@@ -327,8 +330,10 @@ def main() -> None:
             use_native_options=True,
         )
 
-    rows = build_matrix(select_profile_inventory(inventory, args.only),
-                        stage=args.stage, run=pay_native, prior_rows=previous)
+    selected_inventory = select_profile_inventory(inventory, args.only)
+    rows = build_matrix(selected_inventory, stage=args.stage, run=pay_native,
+                        prior_rows=previous,
+                        expected_profiles=1 if args.only is not None else 28)
     save_report(args.out, rows, stage=args.stage, binary=args.binary,
                 engine_src=args.engine_src, donor_inventory=donor_inventory)
     print(json.dumps({"stage_seconds": args.stage, "profiles": len(rows),

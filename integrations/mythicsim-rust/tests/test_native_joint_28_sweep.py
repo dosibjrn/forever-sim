@@ -55,6 +55,27 @@ class SweepContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unknown or duplicate L60 profile"):
             select_profile_inventory(rows, "unknown/spec")
 
+        paid = []
+        def run(profile):
+            paid.append(profile)
+            return {"status": "NATIVE_JOINT_PAID",
+                    "baseline_paid": 1, "native_paid": 2,
+                    "three_axis_paid": 1, "replay_matches": True,
+                    "native_errors": 0}
+        # An accidental incomplete default sweep must still fail closed.
+        with self.assertRaisesRegex(ValueError, "Expected 28 unique"):
+            build_matrix(selected, stage=5, run=run)
+        self.assertEqual([], paid)
+        # The CLI's explicit --only path must reach the real matrix runner.
+        result = build_matrix(selected, stage=5, run=run, expected_profiles=1)
+        self.assertEqual(["druid/feral_cat"], paid)
+        self.assertEqual(1, len(result))
+        self.assertEqual("NATIVE_JOINT_PAID", result[0]["status"])
+        self.assertEqual(2, result[0]["native_paid"])
+        with self.assertRaisesRegex(ValueError, "Expected 1 unique"):
+            build_matrix(selected + selected, stage=5, run=run,
+                         expected_profiles=1)
+
     def test_missing_source_is_isolated_without_running_scorer(self):
         rows = inventory()
         rows[0] = ({**rows[0][0], "blocker": "missing exact request"}, None)
