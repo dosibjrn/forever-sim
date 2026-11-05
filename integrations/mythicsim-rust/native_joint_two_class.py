@@ -500,7 +500,13 @@ def source_bounded_adapter(
     ]
     donor_requests = [fixture["request"] for fixture in extra_same_class]
     source_requests = same_class + donor_requests
-    gear = NativeGearAdapter(class_key, reference, source_requests, native_options=native_options)
+    # Preserve the source-only test/compatibility contract when no native
+    # option snapshot was supplied; only the new optimized path adds the arg.
+    if native_options is None:
+        gear = NativeGearAdapter(class_key, reference, source_requests)
+    else:
+        gear = NativeGearAdapter(class_key, reference, source_requests,
+                                 native_options=native_options)
     if not gear.mutable_indices:
         raise ValueError("BLOCKED_GEAR_POOL: no source-observed alternate item")
 
@@ -1038,7 +1044,7 @@ def source_bounded_adapter(
     )
     scope = {
         "gear_mutable_slots": list(gear.mutable_indices),
-        "native_options_gear_candidates": gear.native_option_candidate_count,
+        "native_options_gear_candidates": getattr(gear, "native_option_candidate_count", 0),
         "talent_builds": [talent_label(value) for value in talents],
         "talent_builds_excluded_for_native_objective_witness": [
             talent_label(value) for value in excluded_talents
