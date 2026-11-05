@@ -306,7 +306,9 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
             items, key=lambda row: (
                 -(row.get("item_level") if type(row.get("item_level")) is int else -1),
                 row["item_id"]))
-        selected_ids = list(dict.fromkeys(row["item_id"] for row in ordered))[:2]
+        # Forward one spare Rust proposal: the first may already be worn,
+        # leaving two genuinely distinct native candidates to evaluate.
+        selected_ids = list(dict.fromkeys(row["item_id"] for row in ordered))[:3]
         if selected_ids:
             proposals[slot] = {"selected_ids": selected_ids}
     return {"slots": proposals}
