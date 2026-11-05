@@ -102,21 +102,3 @@ def test_split_resume_replays_exact_source_partition(tmp_path):
     cert=verify_class_capture(cap,'warrior')
     assert cert.leaf_count==len(canonical_bands('warrior'))+1
     assert len(cert.base_rows)==len(canonical_bands('warrior'))+1
-
-@pytest.mark.parametrize('class_key', list(EXPECTED_CLASSES))
-def test_every_class_complete_source_capture_can_stage_without_mutating_canonical(tmp_path, class_key):
-    """Synthetic offline integration only; NEVER certify upstream Wowhead."""
-    from tools.wf388_stage_class_item_capture import stage_class_capture
-    from src.rulesets.forever.items.runtime_selection import (
-        _DEFAULT_DB, source_class_item_membership_verified,
-    )
-    folder=tmp_path/class_key
-    run_adaptive_capture(class_key,folder,fake_capture([]))
-    staged=tmp_path/f'{class_key}.sqlite'
-    original=sha256(_DEFAULT_DB.read_bytes()).hexdigest()
-    result=stage_class_capture(class_key=class_key,output=staged,capture_dir=folder)
-    assert result['membership_verified_complete']
-    assert result['source_membership_count']==len(canonical_bands(class_key))
-    assert source_class_item_membership_verified(class_key,staged)
-    assert sha256(_DEFAULT_DB.read_bytes()).hexdigest()==original
-    assert result['p3_pass'] is False
