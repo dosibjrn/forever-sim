@@ -297,6 +297,31 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
     }
 
 
+def produce_and_verify_reference(root: Path, class_key: str, level: int, spec: str,
+                                 source_path: Path | None = None,
+                                 destination: Path | None = None) -> dict:
+    """Pay a source-native reference once, then run the actual P7.1 gate path.
+
+    This is deliberately a single process/checkout operation: a CI workspace
+    can preserve the frozen native receipt even when the gate does not pass.
+    The P7.1 evaluator reuses the paid sample; it does not draw a second
+    stochastic batch or write the official M1 ledger.
+    """
+    generated = produce_reference(root, class_key, level, spec, source_path, destination)
+    if generated["status"] != "REFERENCE_GENERATED":
+        return {"status": generated["status"], "generation": generated}
+    if destination is not None and destination != _reference_directory(root, class_key, level, spec):
+        # run_generated_p71 reads the canonical reference directory. A custom
+        # destination is an export only, never a reason to grade a different
+        # reference that may already exist on disk.
+        return {"status": "REFERENCE_GENERATED", "generation": generated,
+                "verification": {"status": "NOT_RUN",
+                                 "reasons": ["P7_1_CUSTOM_OUTPUT_DIR_NOT_CANONICAL"]}}
+    verified = run_generated_p71(root, class_key, level, spec)
+    return {"status": verified["status"], "generation": generated,
+            "verification": verified}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-request", type=Path,
@@ -305,12 +330,18 @@ def main() -> None:
     parser.add_argument("--level", type=int, required=True)
     parser.add_argument("--spec", default="unrestricted")
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--verify", action="store_true",
+                        help="Evaluate the generated receipt through real P7.1 (no M1 write)")
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
-    result = produce_reference(root, args.class_key, args.level, args.spec,
-                               args.source_request, args.output_dir)
+    if args.verify:
+        result = produce_and_verify_reference(root, args.class_key, args.level, args.spec,
+                                              args.source_request, args.output_dir)
+    else:
+        result = produce_reference(root, args.class_key, args.level, args.spec,
+                                   args.source_request, args.output_dir)
     print(json.dumps(result, sort_keys=True))
-    if result["status"] != "REFERENCE_GENERATED":
+    if result["status"] != ("PASS" if args.verify else "REFERENCE_GENERATED"):
         raise SystemExit(1)
 
 
