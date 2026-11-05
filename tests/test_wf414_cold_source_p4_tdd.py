@@ -38,26 +38,6 @@ def test_cold_start_produces_a_real_paid_combat_candidate():
     assert result['events']>0
 
 
-def test_paid_journal_search_can_start_cold_without_previous_stage(tmp_path):
-    from tools.wf400_paid_joint_with_journal import run
-    root=Path(__file__).resolve().parents[1]
-    result=run(class_key='druid',level=20,
-        ability_db=root/'data/forever/catalogue/forever_abilities.sqlite',
-        seed_stage=None,cold_start_gear_role='druid_feral',
-        output=tmp_path/'cold.json',progress=tmp_path/'cold.progress.json',
-        budget_s=8.,pack_size=1,max_talents=4,max_gear_moves=2,
-        max_policies=6,max_recovery_policies=2,max_paid_builds=10,
-        max_finalists=2,per_candidate_s=2.,proposal_strategy='diagonal')
-    assert result['paid_candidates']>=2
-    assert result['unique_full_builds']>=2
-    assert result['events']>0
-    assert result['seed_origin']=='COLD_SQLITE_SOURCE_NO_PREVIOUS_WINNER'
-    assert result['talented_enabled'] is True
-    assert result['talent_point_budget']==16
-    assert (tmp_path/'cold.progress.json').exists()
-    assert (tmp_path/'cold.json').exists()
-
-
 def test_cold_start_is_generic_for_mage_l30_with_source_equipment():
     root=Path(__file__).resolve().parents[1]
     ir=build_game_ir_slice(class_key='mage',level=30,
@@ -68,20 +48,3 @@ def test_cold_start_is_generic_for_mage_l30_with_source_equipment():
     assert 'wand' in gear['slots']
     assert len(gear['slots'])>=12
     assert audit_named_gear_source(class_key='mage',level=30,gear=gear)['equipment_legality_complete']
-
-
-def test_paid_search_allows_larger_screen_budget_without_skipping_real_finalists(tmp_path):
-    from tools.wf400_paid_joint_with_journal import run
-    root=Path(__file__).resolve().parents[1]
-    result=run(class_key='druid',level=20,
-        ability_db=root/'data/forever/catalogue/forever_abilities.sqlite',
-        seed_stage=None,cold_start_gear_role='druid_feral',
-        output=tmp_path/'long_screen.json',progress=tmp_path/'long_screen.progress.json',
-        budget_s=14.,pack_size=1,max_talents=4,max_gear_moves=2,
-        max_policies=6,max_recovery_policies=2,max_paid_builds=120,
-        max_finalists=1,per_candidate_s=3.,proposal_strategy='diagonal',
-        screen_budget_fraction=.75)
-    assert result['screen_budget_fraction']==.75
-    assert result['screen_phase_wall_s']>=5.0
-    assert result['full_evaluated_candidates']>=1
-    assert result['complete_100mob_candidates']>=1

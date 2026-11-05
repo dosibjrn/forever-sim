@@ -42,6 +42,8 @@ RETIRED_TOOLS = (
     "tools/m47_paladin_l20_selection.py",
     "tools/m47_paladin_l20_adversarial.py",
     # Standalone legacy GameIR talent/gear/policy bounded search CLI; live gates use wf_gate.py.
+    # Retired test-only GameIR/SQLite paid-journal CLI; active cold P4/P5 uses native gate provider.
+    "tools/wf400_paid_joint_with_journal.py",
     "scripts/run_staged_joint_search.py",
     # Retired WF442 P2 source-rank ingester (source captures remain historical).
     "tools/wf442_ingest_source_rank_observations.py",
