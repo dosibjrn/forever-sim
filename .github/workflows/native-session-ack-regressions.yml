@@ -25,6 +25,10 @@ on:
       - 'tests/integration/backend/test_wf_go_native_world_damage_ack.py'
       - '.github/workflows/native-session-ack-regressions.yml'
 
+concurrency:
+  group: native-session-ack-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read
@@ -199,4 +203,4 @@ jobs:
           python tools/wf_native_feral_l60_world.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
-            --targets 100 --recovery-seconds 24
+            --targets 100 --recovery-candidates 48
