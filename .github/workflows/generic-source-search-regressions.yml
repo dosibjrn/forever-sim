@@ -40,6 +40,8 @@ on:
       - 'integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py'
       - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'tests/test_work1_p7_1_live_entry.py'
+      - 'tests/test_work1_p71_native_generated.py'
+      - 'tools/wf_p7_native_reference.py'
       - 'tools/wf_gate_p7_1_live.py'
       - 'tests/test_work2_p71_feral_native.py'
       - 'integrations/mythicsim-rust/live_world_probe.py'
@@ -158,6 +160,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
           tests/test_work1_p7_1_live_entry.py
+          tests/test_work1_p71_native_generated.py
           tests/test_work2_p71_feral_native.py
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_native_ledger_retains_replayable_request_and_rng_provenance
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_screen_survives_failed_balanced_probe
