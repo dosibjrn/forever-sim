@@ -7,12 +7,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
 from native_joint_two_class import objective_for_profile
 from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
-    SOURCES, apply_current_client_talent_override,
+    SOURCES, create_inventory, apply_current_client_talent_override,
     CURRENT_CLIENT_TALENT_DONOR_PRESETS, current_client_talent_donor_fixtures,
     fingerprint,
 )
@@ -171,6 +172,28 @@ class CandidateDomainBlockerClassification(unittest.TestCase):
             "INVESTIGATE_CANDIDATE_DOMAIN": 2,
         }, categories)
 
+
+
+class CurrentClientPinMigrationContracts(unittest.TestCase):
+    def test_historical_talent_source_does_not_veto_new_selected_native_pin(self):
+        # A future selected exact Rust gitlink can evaluate historical preset
+        # proposals. Source requests missing from this scratch tree remain
+        # independently unavailable; the inventory itself must not reject
+        # the current engine for an unrelated historical SHA.
+        with tempfile.TemporaryDirectory() as scratch:
+            registry = Path(scratch) / "registry.json"
+            registry.write_text("{}")
+            engine = Path(scratch) / "selected-native-engine"
+            engine.mkdir()
+            profiles = [tuple(profile.split("/", 1)) for profile in SOURCES]
+            with patch("native_l60_matrix.enumerate_l60_profiles",
+                       return_value=profiles):
+                rows = create_inventory(registry, engine)
+            self.assertEqual(len(rows), 28)
+            self.assertEqual({r[0]["profile_id"] for r in rows}, set(SOURCES))
+            self.assertTrue(all(request is None for _, request in rows))
+            self.assertTrue(all(r["blocker"].startswith("NO_NATIVE_REQUEST")
+                                for r, _ in rows))
 
 
 class CurrentClientTalentOverrideContracts(unittest.TestCase):
