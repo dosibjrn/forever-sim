@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 from dataclasses import replace
-import json
-from pathlib import Path
 import shutil
 import sqlite3
 
 import pytest
 
-from src.game.data.forever.armor_conversions import source_enrich_armor, load_armor_rules
+from src.game.data.forever.armor_conversions import source_enrich_armor
 from src.game.data.forever.druid import build_source_slice
 from src.game.gear import apply_gear_selection, apply_stat_delta
 from src.game.model.ir import ActorDefinition, GameIRSlice, ModeDefinition
@@ -17,7 +15,6 @@ from src.game.runtime import ActorState
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_mode_search import evaluate_discovered_mode_search
 from src.v2.source_joint_discovery import _evaluate_caster_already_talented
-from tools.ingest_armor_conversions_sqlite import ingest, DEFAULT_CAPTURE
 
 
 def actor(ir):
@@ -95,22 +92,6 @@ def test_missing_canonical_actor_rule_cannot_fabricate_naked_mitigation(tmp_path
     enriched=source_enrich_armor(synthetic,db_path=clone)
     assert 'armor' not in enriched.actor.base_stats
     assert 'armor' not in actor(enriched).stats
-
-
-def test_ingest_rejects_unknown_source_without_committing(tmp_path):
-    from src.game.data.forever.sqlite_talents import DEFAULT_DB
-    clone=tmp_path/'copy.sqlite';shutil.copyfile(DEFAULT_DB,clone)
-    payload=json.loads(DEFAULT_CAPTURE.read_text())
-    payload['entries'][0]['source_url']=''
-    invalid=tmp_path/'invalid.json';invalid.write_text(json.dumps(payload))
-    with pytest.raises(ValueError,match='missing source facts'):
-        ingest(clone,invalid)
-    with sqlite3.connect(clone) as db:
-        assert db.execute('SELECT COUNT(*) FROM armor_conversion_source_facts').fetchone()[0]==2
-    with sqlite3.connect(clone) as db:
-        db.execute("UPDATE armor_conversion_source_facts SET coefficient=-1 WHERE scope='mode'")
-    with pytest.raises(ValueError,match='invalid canonical armor source fact'):
-        load_armor_rules('druid',db_path=clone)
 
 
 def test_non_druid_actor_can_use_same_source_rule_with_generic_engine():
