@@ -199,7 +199,7 @@ jobs:
   selected-native-p72:
     # One selected-engine read-only changed-axis probe (Feral P7.2/P7.3/P7.4 or
     # unrestricted P7.3); never the Merge-owned M1 recorder.
-    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || startsWith(github.head_ref, 'work/work2-p72-feral-') || startsWith(github.head_ref, 'work/work2-p73-feral-') || startsWith(github.head_ref, 'work/work2-p74-feral-') || startsWith(github.head_ref, 'work/work2-feral-p75-native-')
+    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || startsWith(github.head_ref, 'work/work2-p72-feral-') || startsWith(github.head_ref, 'work/work2-p73-feral-') || startsWith(github.head_ref, 'work/work2-p74-feral-')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -288,9 +288,10 @@ jobs:
           python tools/wf_gate.py --class druid --level 60 --spec "${{ startsWith(github.head_ref, 'work/work2-p71-native-stochastic-feral-') && 'feral' || 'unrestricted' }}" --gate P7.1
 
   selected-native-p75:
-    # Pay exactly one changed-HEAD unrestricted P7.5 300s native cold search
-    # and 1000-fight stochastic holdout. No --record-pass or M1 mutation.
-    if: startsWith(github.head_ref, 'work/work2-p75-unrestricted-native-')
+    # One changed-HEAD unrestricted/Feral P7.5 300s cold search and
+    # 1000-fight stochastic holdout, only after a bounded paid-native probe.
+    # Never the Merge-owned M1 recorder.
+    if: startsWith(github.head_ref, 'work/work2-p75-unrestricted-native-') || startsWith(github.head_ref, 'work/work2-feral-p75-native-')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -326,4 +327,4 @@ jobs:
           FOREVER_P7_FULL_SOURCE_SEARCH: '1'
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.5 --out "${{ runner.temp }}/p75-native-result.json"
+          python tools/wf_gate.py --class druid --level 60 --spec "${{ startsWith(github.head_ref, 'work/work2-feral-p75-native-') && 'feral' || 'unrestricted' }}" --gate P7.5 --out "${{ runner.temp }}/p75-native-result.json"
