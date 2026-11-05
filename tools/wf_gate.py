@@ -221,6 +221,7 @@ def main(argv=None) -> int:
                                 "comparison", "evaluations",
                                 "native_slot_evaluations", "native_slots_paid",
                                 "native_slots_valid", "native_slot_attempt_cap",
+                                "source_occupied_slots",
                                 "actor_checkpoint_verified", "promotion")
                     if key in native_pair
                 }
