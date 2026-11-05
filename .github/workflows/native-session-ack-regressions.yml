@@ -11,6 +11,8 @@ on:
       - 'integrations/mythicsim-rust/engine'
       - 'integrations/mythicsim-rust/live_world_probe.py'
       - 'tools/wf_native_priest_l20_paid.py'
+      - 'tools/wf_native_feral_l60_world.py'
+      - 'tests/test_work2_feral_l60_native_world.py'
       - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gsim_go_live_range_probe.py'
       - 'tests/test_wf_native_priest_l20_paid.py'
@@ -39,7 +41,7 @@ jobs:
       - name: Install bounded test dependency
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify native clock and real gsim world lethal ACK (not gate)
-        run: python -m pytest -q tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
+        run: python -m pytest -q tests/test_work2_feral_l60_native_world.py tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
 
   source-health-world:
     # One bounded real selected-Rust ↔ gsim 2D source-HP smoke; not P4–P6.
@@ -161,4 +163,9 @@ jobs:
           print("PRIEST_L20_REAL_PAID_RUST_GSIM2D_ACK_PASS_NOT_100MOB_NOT_GATE",
                 flush=True)
           PY
-
+      - name: Feral L60 source build through two consecutive native/world targets (not P4-P6)
+        run: |
+          python tools/wf_native_feral_l60_world.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
+            --targets 2
