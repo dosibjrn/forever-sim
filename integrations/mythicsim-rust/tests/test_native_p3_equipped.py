@@ -382,3 +382,97 @@ def test_native_p3_refusal_does_not_bypass_attempt_cap():
     assert receipt["native_slots_verified"] == 0
     assert receipt["native_slots_unscored"] == ["chest"]
     assert receipt["status"] == "PAID_NATIVE_REFUSAL"
+
+
+def test_feral_l60_native_equipped_uses_prepared_actor_and_go_reference_rules():
+    """The saved source omits level; only native prepare can verify level 60."""
+    reference = _reference()
+    player = reference["raid"]["parties"][0]["players"][0]
+    player["class"] = "ClassDruid"
+    del player["level"]
+    player["equipment"]["items"].pop()  # Real saved Feral request has 16 entries.
+    unchanged = copy.deepcopy(reference)
+    seen = []
+
+    def prepare(_binary, request, *, go_rules):
+        assert go_rules is True
+        assert request == unchanged
+        return {"status": "PREPARED", "actor_class": "ClassDruid",
+                "actor_level": 60, "engine_revision": "selected-feral"}
+
+    def score(_binary, request, _iterations, _seed, mode, _deadline, **kwargs):
+        assert kwargs == {"objective": "DPS", "go_rules": True}
+        assert mode == "balanced"
+        item = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][14]["id"]
+        seen.append(item)
+        return (100.0 if item == 114 else 120.0), {}, 0.01, "sha-" + str(item)
+
+    receipt = compare_equipped_native(
+        "selected", reference, {"weapon": {"selected_ids": [900]}},
+        class_key="druid", level=60, go_rules=True,
+        evaluator=score, preparer=prepare)
+    assert reference == unchanged
+    assert seen == [114, 900]
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["actor_checkpoint_verified"] is True
+    assert receipt["native_prepared_actor"]["actor_level"] == 60
+    assert receipt["comparison"]["delta_dps"] == 20.0
+
+
+def test_feral_l60_refuses_wrong_prepared_actor_without_paid_scoring():
+    reference = _reference()
+    player = reference["raid"]["parties"][0]["players"][0]
+    player["class"] = "ClassDruid"
+    del player["level"]
+    result = compare_equipped_native(
+        "selected", reference, {"weapon": {"selected_ids": [900]}},
+        class_key="druid", level=60, go_rules=True,
+        preparer=lambda *_args, **_kwargs: {
+            "status": "PREPARED", "actor_class": "ClassDruid", "actor_level": 40},
+        evaluator=lambda *_args, **_kwargs: pytest.fail("No paid wrong-level sim"))
+    assert result["status"] == "NATIVE_ACTOR_CHECKPOINT_MISMATCH"
+    assert result["paid_attempts"] == 0
+
+
+def test_feral_native_prepare_forwards_go_rules_to_selected_binary():
+    reference = _reference()
+    calls = []
+
+    class Completed:
+        returncode = 0
+        stdout = json.dumps({"player": {"class": "ClassDruid", "level": 60},
+                             "reference": {"engine_revision": "selected"},
+                             "request_sha256": "source"})
+        stderr = ""
+
+    def runner(command, **_kwargs):
+        calls.append(command)
+        return Completed()
+
+    actor = prepared_native_actor("selected", reference, runner=runner, go_rules=True)
+    assert calls[0][-1] == "--go-rules"
+    assert actor["actor_class"] == "ClassDruid"
+    assert actor["actor_level"] == 60
+
+
+def test_native_executor_forwards_go_rules_and_preserves_real_refusal(monkeypatch):
+    import time
+    from native_executor import run
+
+    calls = []
+
+    class Refused:
+        returncode = 3
+        stdout = json.dumps({"supported": False, "reasons": ["native refusal"]})
+        stderr = ""
+
+    def runner(command, **_kwargs):
+        calls.append(command)
+        return Refused()
+
+    monkeypatch.setattr("native_executor.subprocess.run", runner)
+    with pytest.raises(NativeCandidateRefusal, match="native refusal"):
+        run("selected", _reference(), 5, 914, "balanced",
+            time.monotonic() + 30, go_rules=True)
+    assert calls[0][-1] == "--go-rules"
+    assert "--rng-mode" in calls[0]

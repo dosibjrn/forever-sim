@@ -40,10 +40,10 @@ def _first_player(request):
         raise ValueError("P3_NATIVE_EQUIPPED_REQUEST_PLAYER_MISSING") from exc
 
 
-def first_equipped_proposal(reference: dict, selection: dict):
+def first_equipped_proposal(reference: dict, selection: dict, *, expected_class="ClassRogue"):
     """Select one *different* native-supplied item without Python equip rules."""
     player = _first_player(reference)
-    if player.get("class") != "ClassRogue":
+    if player.get("class") != expected_class:
         raise ValueError("P3_NATIVE_EQUIPPED_CLASS_MISMATCH")
     equipment = player.get("equipment")
     entries = equipment.get("items") if isinstance(equipment, dict) else None
@@ -74,19 +74,21 @@ def first_equipped_proposal(reference: dict, selection: dict):
     return None, None
 
 
-def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run):
+def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run, go_rules=False):
     """Read the *executed engine's* prepared actor, not the request's level hint.
 
     A source request may say level 20 while an older Rust build still creates
     its player at level 60. Never spend the two paid P3 attempts on that proxy.
     """
     with tempfile.TemporaryDirectory() as directory:
-        path = Path(directory) / "rogue-p3-request.json"
+        path = Path(directory) / "native-p3-request.json"
         path.write_text(json.dumps(reference, separators=(",", ":")), encoding="utf-8")
+        command = [str(binary), "prepare", "--request", str(path)]
+        if go_rules:
+            command.append("--go-rules")
         try:
             completed = runner(
-                [str(binary), "prepare", "--request", str(path)],
-                capture_output=True, text=True, timeout=60, check=False)
+                command, capture_output=True, text=True, timeout=60, check=False)
         except (OSError, subprocess.TimeoutExpired) as exc:
             return {"status": "NATIVE_PREPARE_ERROR", "reason": str(exc)[-500:]}
     try:
@@ -113,7 +115,9 @@ def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run):
 def compare_equipped_native(binary, reference: dict, selection: dict, *,
                             iterations: int = 5, seed: int = 914,
                             evaluator=run, seconds: float = 90.0,
-                            preparer=prepared_native_actor, max_paid_attempts: int = 2):
+                            preparer=prepared_native_actor, max_paid_attempts: int = 2,
+                            class_key: str = "rogue", level: int = 20,
+                            go_rules: bool = False):
     """Pay for both original and equipped build, with identical non-gear inputs.
 
     Any native INVALID/UNSUPPORTED/UNSCORED/ERROR is reported verbatim and
@@ -124,7 +128,11 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     if (type(iterations) is not int or iterations < 1 or seconds <= 0
             or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
-    candidate, swap = first_equipped_proposal(reference, selection)
+    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid"}.get(class_key)
+    if expected_class is None or type(level) is not int or level < 1:
+        raise ValueError("P3_NATIVE_EQUIPPED_CHECKPOINT_INVALID")
+    candidate, swap = first_equipped_proposal(
+        reference, selection, expected_class=expected_class)
     if candidate is None:
         return {"status": "NO_DISTINCT_NATIVE_EQUIPPED_ALTERNATIVE",
                 "paid_attempts": 0, "comparison": None, "swap": None}
@@ -132,7 +140,10 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # and then mislabel its DPS as Rogue L20 checkpoint evidence. The source
     # request must carry the exact L20 actor; native decides if it is runnable.
     requested_level = _first_player(reference).get("level")
-    if type(requested_level) is not int or requested_level != 20:
+    # The accepted Feral L60 source request omits player.level; the selected
+    # native prepare response must independently establish the L60 actor.
+    if requested_level != level and not (
+            class_key == "druid" and level == 60 and requested_level is None):
         return {
             "status": "NATIVE_REQUEST_CHECKPOINT_MISMATCH",
             "paid_attempts": 0, "comparison": None, "swap": swap,
@@ -143,7 +154,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # The request's level field is only a hint: the selected Rust engine can
     # prepare an L60 actor even from a level-20 request. Read the actual
     # prepared actor from that same binary before consuming paid evaluations.
-    prepared = preparer(binary, copy.deepcopy(reference))
+    prepared = (preparer(binary, copy.deepcopy(reference), go_rules=True)
+                if go_rules else preparer(binary, copy.deepcopy(reference)))
     if not isinstance(prepared, dict) or prepared.get("status") != "PREPARED":
         return {
             "status": (prepared.get("status", "NATIVE_PREPARE_ERROR")
@@ -155,9 +167,9 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             "actor_checkpoint_verified": False,
             "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
         }
-    actor_matched = (prepared.get("actor_class") == "ClassRogue"
+    actor_matched = (prepared.get("actor_class") == expected_class
                      and type(prepared.get("actor_level")) is int
-                     and prepared["actor_level"] == requested_level)
+                     and prepared["actor_level"] == level)
     if not actor_matched:
         return {
             "status": "NATIVE_ACTOR_CHECKPOINT_MISMATCH",
@@ -176,7 +188,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         try:
             score, _output, elapsed, payload_sha = evaluator(
                 binary, copy.deepcopy(request), iterations, seed,
-                "balanced", deadline, objective="DPS")
+                "balanced", deadline, objective="DPS",
+                **({"go_rules": True} if go_rules else {}))
             if not math.isfinite(score):
                 raise ValueError("P3_NATIVE_EQUIPPED_NONFINITE_SCORE")
             row.update(status="VALID", score=score, native_elapsed_s=elapsed,
@@ -207,7 +220,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         # without consuming one of P3's two *distinct* item alternatives.
         for item_id in ids:
             alternative, item_swap = first_equipped_proposal(
-                reference, {slot: {"selected_ids": [item_id]}})
+                reference, {slot: {"selected_ids": [item_id]}},
+                expected_class=expected_class)
             if (alternative is not None and item_swap["to_id"] not in [
                     swap_row["to_id"] for _, swap_row in alternatives]):
                 alternatives.append((alternative, item_swap))
@@ -262,9 +276,10 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         "actor_checkpoint_verified": bool(actor_matched and paired),
         "native_prepared_actor": prepared,
         "promotion": (
-            "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE" if paired and delta != 0
-            else "MATCHED_ROGUE_L20_NATIVE_EQUAL" if paired
-            else "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR"),
+            f"MATCHED_{class_key.upper()}_L{level}_NATIVE_SCORED_DIFFERENCE"
+            if paired and delta != 0
+            else f"MATCHED_{class_key.upper()}_L{level}_NATIVE_EQUAL" if paired
+            else f"NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_{class_key.upper()}_L{level}_ACTOR"),
     }
 
 
@@ -274,11 +289,15 @@ def main():
     parser.add_argument("--binary", required=True)
     parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--max-paid-attempts", type=int, default=2)
+    parser.add_argument("--class-key", choices=("rogue", "druid"), default="rogue")
+    parser.add_argument("--level", type=int, default=20)
+    parser.add_argument("--go-rules", action="store_true")
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
     result = compare_equipped_native(
-        args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts)
+        args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts,
+        class_key=args.class_key, level=args.level, go_rules=args.go_rules)
     print(json.dumps(result, sort_keys=True))
 
 

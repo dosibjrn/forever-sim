@@ -85,6 +85,7 @@ def native_item_options_required(
         or (key == "paladin" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
         or (key == "rogue" and level == 20 and profile == "unrestricted")
+        or (key == "druid" and level == 60 and profile == "feral")
     )
 
 
@@ -315,12 +316,16 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
 
 
 def _paid_native_equipped_probe(root: Path, native_binary: str | None,
-                                item_check: dict, remaining: int):
+                                item_check: dict, remaining: int, *,
+                                checkpoint: str = "rogue_l20"):
     """Use the existing selected-native sim boundary when an exact source
     request is supplied. Do not convert a level-60 fixture into a claimed
     level-20 actor or spend outside the shared P3 evaluation cap.
     """
-    request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
+    if checkpoint == "feral_l60":
+        request_path = str(root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
+    else:
+        request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
     if not request_path:
         return None
     if remaining < 2:
@@ -335,6 +340,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     command = [sys.executable, str(script), "--binary", str(native_binary),
                "--request", str(request_path),
                "--max-paid-attempts", str(min(remaining, 44))]
+    if checkpoint == "feral_l60":
+        command.extend(("--class-key", "druid", "--level", "60", "--go-rules"))
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
@@ -353,7 +360,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                 "paid_attempts": 0, "error": str(exc)[-500:]}
 
 
-def _native_rogue_p3_verdict(options: dict, receipt: dict) -> dict:
+def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
+                             checkpoint: str = "rogue_l20") -> dict:
     """P3 is native paid gear scoring, not legacy naked-policy discovery."""
     import json
     source_sha = sha256(json.dumps(
@@ -381,8 +389,12 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict) -> dict:
             type(baseline.get("score")) not in (int, float)
             or not isfinite(baseline["score"])):
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
-    if receipt.get("actor_checkpoint_verified") is not True:
-        reasons.append("P3_NATIVE_L20_EQUIPPED_SCORE_UNVERIFIED:"
+    expected_class, expected_level = (
+        ("ClassDruid", 60) if checkpoint == "feral_l60" else ("ClassRogue", 20))
+    if (receipt.get("actor_checkpoint_verified") is not True
+            or prepared.get("actor_class") != expected_class
+            or prepared.get("actor_level") != expected_level):
+        reasons.append("P3_NATIVE_EQUIPPED_SCORE_UNVERIFIED:"
                        + str(receipt.get("status")))
     if not statuses:
         reasons.append("P3_NATIVE_REPRESENTATIVE_SLOTS_UNAVAILABLE")
@@ -443,8 +455,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
                 'production_component': 'src.game.native_p3_item_options'}
     native_options = None
-    if (str(class_key).lower() == "rogue" and int(level) == 20
-            and str(spec).lower() == "unrestricted"):
+    is_rogue_native = (str(class_key).lower() == "rogue" and int(level) == 20
+                       and str(spec).lower() == "unrestricted")
+    is_feral_native = (str(class_key).lower() == "druid" and int(level) == 60
+                       and str(spec).lower() == "feral")
+    if is_rogue_native or is_feral_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
         # until the exact pinned native engine can supply legal options.
@@ -452,7 +467,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             NativeItemOptionsError, query_native_p3_item_options)
         try:
             native_options = query_native_p3_item_options(
-                native_binary, class_key, level, spec=spec, slot="all")
+                native_binary, class_key, level,
+                spec=("unrestricted" if is_feral_native else spec), slot="all")
         except NativeItemOptionsError as exc:
             return {'status': 'BLOCKED', 'reasons': [str(exc)],
                     'production_component': 'src.game.native_p3_item_options',
@@ -463,15 +479,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
 
-    # Native Rogue P3 does not require a Python naked-policy winner.
+    # Native P3 scores the source actor directly; no GameIR or policy fallback.
     if native_options is not None:
-        if not os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST"):
+        if is_rogue_native and not os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST"):
             return {"status": "BLOCKED",
                     "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
-        receipt = _paid_native_equipped_probe(
-            root, native_binary, _native_p3_equipped_slot_proposals(native_options), 44)
-        return _native_rogue_p3_verdict(native_options, receipt)
+        selection = _native_p3_equipped_slot_proposals(native_options)
+        if is_feral_native:
+            receipt = _paid_native_equipped_probe(
+                root, native_binary, selection, 44, checkpoint="feral_l60")
+        else:
+            receipt = _paid_native_equipped_probe(root, native_binary, selection, 44)
+        return _native_rogue_p3_verdict(
+            native_options, receipt,
+            checkpoint="feral_l60" if is_feral_native else "rogue_l20")
 
     rogue_native_preflight = None
     from src.game.data.forever.registry import build_game_ir_slice
