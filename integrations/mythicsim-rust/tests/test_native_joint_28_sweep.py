@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
 from native_joint_two_class import objective_for_profile
@@ -14,7 +15,7 @@ from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
     SOURCES, apply_current_client_talent_override,
     CURRENT_CLIENT_TALENT_DONOR_PRESETS, current_client_talent_donor_fixtures,
-    fingerprint,
+    fingerprint, verify_current_client_engine_pin,
 )
 
 
@@ -171,6 +172,50 @@ class CandidateDomainBlockerClassification(unittest.TestCase):
             "INVESTIGATE_CANDIDATE_DOMAIN": 2,
         }, categories)
 
+
+
+class CurrentClientPresetEnginePinContracts(unittest.TestCase):
+    def test_checked_out_engine_must_match_parent_gitlink_and_preset_revision(self):
+        path = Path("/tmp/test-selected-engine")
+        gitlink = (
+            "160000 commit " + CURRENT_ENGINE_PIN +
+            "\\tintegrations/mythicsim-rust/engine\\n"
+        )
+        with patch(
+            "native_l60_matrix.subprocess.check_output",
+            side_effect=[gitlink, CURRENT_ENGINE_PIN + "\\n"],
+        ) as checked:
+            self.assertEqual(CURRENT_ENGINE_PIN, verify_current_client_engine_pin(path))
+        self.assertEqual(2, checked.call_count)
+        self.assertIn("ls-tree", checked.call_args_list[0].args[0])
+        self.assertIn("rev-parse", checked.call_args_list[1].args[0])
+
+    def test_uncommitted_engine_checkout_is_rejected_not_silently_rebased(self):
+        gitlink = (
+            "160000 commit " + CURRENT_ENGINE_PIN +
+            "\\tintegrations/mythicsim-rust/engine\\n"
+        )
+        with patch("native_l60_matrix.subprocess.check_output", side_effect=[
+            gitlink, "deb366e986dbc156e2242ddac3ac8c4ac854c107\\n",
+        ]):
+            with self.assertRaisesRegex(ValueError, "parent-committed Rust pin"):
+                verify_current_client_engine_pin(Path("/tmp/stale-engine"))
+
+    def test_unapproved_preset_engine_is_rejected_even_with_matching_gitlink(self):
+        other = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
+        gitlink = "160000 commit " + other + "\\tintegrations/mythicsim-rust/engine\\n"
+        with patch("native_l60_matrix.subprocess.check_output", side_effect=[
+            gitlink, other + "\\n",
+        ]):
+            with self.assertRaisesRegex(ValueError, "Current-client talent presets require Rust pin"):
+                verify_current_client_engine_pin(Path("/tmp/unapproved-engine"))
+
+    def test_missing_committed_gitlink_fails_closed(self):
+        with patch("native_l60_matrix.subprocess.check_output", side_effect=[
+            "", CURRENT_ENGINE_PIN + "\\n",
+        ]):
+            with self.assertRaisesRegex(ValueError, "committed Rust submodule gitlink"):
+                verify_current_client_engine_pin(Path("/tmp/untracked-engine"))
 
 
 class CurrentClientTalentOverrideContracts(unittest.TestCase):
