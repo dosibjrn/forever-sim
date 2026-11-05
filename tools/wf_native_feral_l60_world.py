@@ -80,7 +80,10 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
         prepared_path = Path(folder) / "prepared.json"
         request_path.write_text(json.dumps(leveling, sort_keys=True),
                                 encoding="utf-8")
-        # This pinned Feral source uses native Go-reference rules; never\n        # reinterpret its talent ranks in Python.\n        try:\n            prepare_run(
+        # This pinned Feral source uses native Go-reference rules; never
+        # reinterpret its talent ranks in Python.
+        try:
+            prepare_run(
                 [str(binary), "prepare", "--request", str(request_path),
                  "--outfile", str(prepared_path), "--go-rules"],
                 check=True, capture_output=True, text=True, timeout=25)
