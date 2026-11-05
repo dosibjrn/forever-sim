@@ -291,9 +291,18 @@ def main():
     parser.add_argument("--class-key", choices=("rogue", "druid", "mage"), default="rogue")
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
+    parser.add_argument("--current-client-profile", choices=("mage/arcane",))
     args = parser.parse_args()
     selection = json.load(sys.stdin)
     reference = json.loads(args.request.read_text(encoding="utf-8"))
+    if args.current_client_profile:
+        # Reuse the selected, source-pinned client preset already used by
+        # native_l60_matrix; never decode or validate talent rules in Python.
+        from native_l60_matrix import (apply_current_client_talent_override,
+                                       verify_current_client_engine_pin)
+        verify_current_client_engine_pin(Path(__file__).resolve().parent / "engine")
+        reference, _source_preset = apply_current_client_talent_override(
+            args.current_client_profile, reference)
     result = compare_equipped_native(
         args.binary, reference, selection, max_paid_attempts=args.max_paid_attempts,
         class_key=args.class_key, level=args.level, go_rules=args.go_rules)
