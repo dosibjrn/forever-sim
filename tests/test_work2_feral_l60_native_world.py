@@ -102,3 +102,19 @@ def test_feral_l60_rejects_invalid_target_count_without_work(tmp_path):
     with pytest.raises(ValueError, match="FERAL_L60_WORLD_TARGET_COUNT_INVALID"):
         run_feral_l60_world("/native", tmp_path / "not-read.json",
                             target_count=1)
+
+def test_feral_l60_propagates_native_prepare_refusal(tmp_path):
+    import subprocess
+
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(_source()))
+
+    def refused(argv, **kwargs):
+        raise subprocess.CalledProcessError(
+            5, argv, stderr="MythicSim UNSUPPORTED: source build refusal")
+
+    with pytest.raises(RuntimeError, match=(
+            "FERAL_L60_NATIVE_PREPARE_REFUSED:exit=5:"
+            "MythicSim UNSUPPORTED: source build refusal")):
+        run_feral_l60_world("/native", path, prepare_run=refused,
+                            world_run=lambda *a, **k: None)
