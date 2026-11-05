@@ -181,3 +181,37 @@ def test_feral_p3_rejects_mismatched_native_receipt_actor():
     assert result["status"] == "FAIL"
     assert any(reason.startswith("P3_NATIVE_EQUIPPED_SCORE_UNVERIFIED")
                for reason in result["reasons"])
+
+
+def test_feral_p3_offhand_native_scores_required_and_refusals_not_waived():
+    """The paired offhand fix must produce a paid slot, not a cosmetic P3 PASS."""
+    from tools.wf_gate_p3_live import _native_rogue_p3_verdict
+    options = {"status": "ok", "items": [
+        {"slot": "two_hand", "item_id": 22589, "item_level": 60},
+        {"slot": "off_hand", "item_id": 19366, "item_level": 60},
+    ]}
+    receipt = _paid_receipt()
+    receipt["native_prepared_actor"] = {
+        "actor_class": "ClassDruid", "actor_level": 60,
+        "engine_revision": "selected-feral-native"}
+    receipt["paid_attempts"] = 3
+    receipt["evaluations"].append({
+        "status": "VALID", "score": 6.0,
+        "request_sha256": "feral-offhand-sha"})
+    receipt["native_slot_evaluations"].append({
+        "swap": {"slot": "offhand", "to_id": 19366},
+        "status": "VALID", "score": 6.0, "delta_dps": 2.0})
+    receipt["native_slots_valid"] = 2
+    accepted = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert accepted["status"] == "PASS"
+    assert accepted["pass_count"] == accepted["reachability_count"] == 2
+    assert accepted["runtime_proof"]["engine_revision"] == "selected-feral-native"
+
+    receipt["native_slot_evaluations"][-1].update(
+        status="UNSUPPORTED", score=None, delta_dps=None,
+        reason="native paired item swap not supported")
+    rejected = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert rejected["status"] == "FAIL"
+    assert rejected["pass_count"] == 1
+    assert "P3_NATIVE_SLOT_UNSCORED:offhand:UNSUPPORTED" in rejected["reasons"]
+    assert "runtime_proof" not in rejected
