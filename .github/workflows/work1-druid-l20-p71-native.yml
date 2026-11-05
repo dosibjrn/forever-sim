@@ -1,0 +1,110 @@
+name: Work1 Druid L20 native P7.1 frozen-reference (no M1)
+
+on:
+  push:
+    branches:
+      - work/work1-l20-p71-native-reference-20261105
+    paths:
+      - .github/workflows/work1-druid-l20-p71-native.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work1-druid-l20-reference-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-l20-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONHASHSEED: "0"
+      FOREVER_MYTHICSIM_RUST_BIN: integrations/mythicsim-rust/engine/target/release/forever-engine
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+    steps:
+      - name: Checkout exact Work1 HEAD and selected Rust gitlink
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+          fetch-depth: 1
+
+      - name: Verify selected source commit and native fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$recorded" == "$actual" ]] || {
+            echo "NATIVE_ENGINE_GITLINK_DIVERGED recorded=$recorded actual=$actual" >&2
+            exit 1
+          }
+          test -s "$engine/fixtures/references/druid-l20-p71.request.json"
+          echo "Work1 exact HEAD: $(git rev-parse HEAD)"
+          echo "Selected native SHA: $actual"
+          echo "### Exact native source" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Forever HEAD: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Rust selected gitlink: $actual" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install focused Forever test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+
+      - name: Verify receipt reuse and native-actor refusal transport
+        run: >-
+          python -m pytest -q tests/test_work1_p71_native_generated.py
+          tests/test_work1_p7_1_live_entry.py
+
+      - name: Build exactly pinned native executable
+        working-directory: integrations/mythicsim-rust/engine
+        run: cargo build --locked --release --bin forever-engine
+
+      - name: Get genuine source-native Druid L20 options
+        run: |
+          set -euo pipefail
+          "$FOREVER_MYTHICSIM_RUST_BIN" options --class druid --level 20 > "$RUNNER_TEMP/druid-l20-options.json"
+          python - "$RUNNER_TEMP/druid-l20-options.json" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1]))
+          print("NATIVE_DRUID_L20_OPTIONS_RESPONSE", json.dumps(data, sort_keys=True)[:2000])
+          PY
+
+      - name: Pay one actual 1000-stochastic L20 native reference and verify P7.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/wf_p7_native_reference.py \
+            --class druid --level 20 --spec unrestricted --verify \
+            | tee druid-l20-reference-producer.json
+
+      - name: Execute official P7.1 provider without recording M1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/wf_gate.py \
+            --class druid --level 20 --spec unrestricted --gate P7.1 \
+            --out druid-l20-p71-gate.json \
+            | tee druid-l20-p71-gate-stdout.json
+          cat druid-l20-p71-gate.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve authentic native request, sample and gate result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work1-druid-l20-p71-native-no-record
+          path: |
+            docs/evidence/native-references/druid-l20-unrestricted/request.json
+            docs/evidence/native-references/druid-l20-unrestricted/reference.json
+            druid-l20-reference-producer.json
+            druid-l20-p71-gate.json
+            druid-l20-p71-gate-stdout.json
+          if-no-files-found: warn
+          retention-days: 30
