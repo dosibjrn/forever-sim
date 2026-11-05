@@ -133,7 +133,8 @@ jobs:
                  [[ "$level" == 20 && "$class" == rogue && "$spec" == unrestricted ]] ||
                  [[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]] ||
                  [[ "$class" == druid && "$level" == 60 && "$spec" == feral ]] ||
-                 [[ "$class" == mage && "$level" == 60 && ( "$spec" == arcane || "$spec" == fire || "$spec" == frost ) ]]; then
+                 [[ "$class" == mage && "$level" == 60 && ( "$spec" == arcane || "$spec" == fire || "$spec" == frost ) ]] ||
+                 [[ "$class" == paladin && "$level" == 60 && "$spec" == retribution ]]; then
                 native_options_needed=true
               fi
             elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then
