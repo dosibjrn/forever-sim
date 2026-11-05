@@ -203,6 +203,20 @@ def test_native_lethal_world_kill_cannot_mask_dead_or_unobserved_player(health):
         validate(windows, 2)
 
 
+
+def test_native_survival_failure_names_first_dead_window_and_real_health():
+    validate = _world_module()._native_survival_min_health
+    windows = [
+        {"index": 0, "actor_health": 500.0},
+        {"index": 1, "actor_health": 120.0},
+        {"index": 2, "actor_health": 0.0},
+        {"index": 3, "actor_health": -50.0},
+    ]
+    with pytest.raises(AssertionError, match=(
+            r"RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:index=2:actor_health=0\\.0")):
+        validate(windows, 4)
+
+
 def test_native_survival_refuses_skipped_or_missing_target_receipts():
     validate = _world_module()._native_survival_min_health
     for windows, count in (
