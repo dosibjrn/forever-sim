@@ -12,6 +12,8 @@ RETIRED_TOOLS = (
     # Retired one-shot Python source/SQLite ingesters; native engine owns game facts.
     "tools/ingest_armor_conversions_sqlite.py",
     "tools/ingest_stat_conversions_sqlite.py",
+    "tools/ingest_source_ability_semantics_sqlite.py",
+    "tools/ingest_source_resource_scaled_periodic.py",
     "tools/ingest_secondary_talent_ranks_sqlite.py",
     "tools/ingest_talent_rank_curves_sqlite.py",
     "tools/ingest_equipped_weapon_mode_sqlite.py",
@@ -275,6 +277,8 @@ RETIRED_SOURCE_MODULES = (
 RETIRED_IMPORT_NAMES = (
     "ingest_armor_conversions_sqlite",
     "ingest_stat_conversions_sqlite",
+    "ingest_source_ability_semantics_sqlite",
+    "ingest_source_resource_scaled_periodic",
     "ingest_secondary_talent_ranks_sqlite",
     "ingest_talent_rank_curves_sqlite",
     "test_wf_coverage235_secondary_rank_batch",

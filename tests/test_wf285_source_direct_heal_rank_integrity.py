@@ -1,5 +1,4 @@
 """WF285: Forever public-page crosschecked direct heals and exact-rank integrity."""
-from pathlib import Path
 import json
 import sqlite3
 
@@ -10,10 +9,6 @@ from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.model.ir import HealEffect
 from src.game.runtime import ActorState, TargetState, execute_action
 from src.game.recovery import recover_actor_to_full
-from tools.ingest_source_ability_semantics_sqlite import ingest
-
-CAPTURE = Path(__file__).resolve().parents[1] / 'data/forever/source_captures/WF285_FOREVER_HEALING_TOUCH_20261012.json'
-
 
 def _source_ranks(ir):
     return {a.provenance[0]['source_spell_id']: a for a in ir.actions
@@ -81,22 +76,3 @@ def test_data_only_heal_change_and_missing_source_row_fail_closed(tmp_path):
     blocked=build_game_ir_slice(class_key='druid',level=20,ability_db_path=db)
     assert 5186 not in _source_ranks(blocked)
     assert blocked.provenance['indexed_ability_coverage']['unrepresented_rank_count']==110
-
-
-def test_ingest_rejects_current_public_page_index_drift_and_rolls_back(tmp_path):
-    db=tmp_path/'stage.sqlite'
-    with sqlite3.connect(DEFAULT_DB) as src,sqlite3.connect(db) as dest:src.backup(dest)
-    with sqlite3.connect(db) as conn:
-        conn.execute('DELETE FROM ability_semantic_source_facts WHERE class_key="druid" AND spell_id IN (5186,5187)')
-    data=json.loads(CAPTURE.read_text())
-    data['entries'][1]['public_page_observation']['cost']='185 Mana'  # stale vs current mismatch
-    capture=tmp_path/'bad.json';capture.write_text(json.dumps(data))
-    with pytest.raises(ValueError,match='public page/index drift'):
-        ingest(db,capture)
-    with sqlite3.connect(db) as conn:
-        assert conn.execute('SELECT count(*) FROM ability_semantic_source_facts WHERE spell_id IN (5186,5187)').fetchone()[0]==0
-    data['entries']=data['entries'][:1]
-    data['entries'][0]['public_page_observation']['spell_power_coefficient']=0.999
-    capture.write_text(json.dumps(data))
-    with pytest.raises(ValueError,match='coefficient mismatch'):
-        ingest(db,capture)
