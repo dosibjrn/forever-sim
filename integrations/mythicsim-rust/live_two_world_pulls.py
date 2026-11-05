@@ -165,7 +165,18 @@ def _native_survival_min_health(windows: list[dict], target_count: int) -> float
         health = window.get("actor_health")
         if (type(health) not in (int, float) or not isfinite(health)
                 or health <= 0):
-            raise AssertionError("RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE")
+            adjacent = [{
+                "index": item.get("index"),
+                "actor_health": item.get("actor_health"),
+                "actor_mana": item.get("actor_mana"),
+                "native_health_damage_taken": item.get("native_health_damage_taken"),
+                "native_passive_recovery_ns": item.get("native_passive_recovery_ns"),
+                "native_passive_recovery_ticks": item.get("native_passive_recovery_ticks"),
+            } for item in windows[max(0, index - 1):index + 2]]
+            raise AssertionError(
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:"
+                f"first_index={index}:"
+                f"adjacent_native_windows={json.dumps(adjacent, sort_keys=True)}")
         health_values.append(float(health))
     return min(health_values)
 
@@ -402,13 +413,28 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
+def _native_world_pulls_argv(binary: Path, prepared: Path,
+                             target_count: int, rng_mode: str,
+                             recovery_seconds: int | None) -> list[str]:
+    """Forward requested paid-rest seconds to Rust; do not emulate healing."""
+    args = [str(binary.resolve()), "native-world-pulls", "--infile",
+            str(prepared.resolve()), "--targets", str(target_count),
+            "--rng-mode", rng_mode]
+    if recovery_seconds is not None:
+        if type(recovery_seconds) is not int or not 1 <= recovery_seconds <= 120:
+            raise ValueError("RUST_WORLD_RECOVERY_SECONDS_INVALID")
+        args.extend(["--recovery-seconds", str(recovery_seconds)])
+    return args
+
+
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False,
-        rng_mode: str = "stochastic") -> dict:
+        rng_mode: str = "stochastic",
+        native_recovery_seconds: int | None = None) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
@@ -465,9 +491,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_report = None
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1")
     proc = subprocess.Popen(
-        [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", rng_mode],
+        _native_world_pulls_argv(
+            binary, prepared, target_count, rng_mode, native_recovery_seconds),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
