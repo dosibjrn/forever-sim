@@ -14,7 +14,15 @@ import math
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
+
+# Direct CLI execution puts tools/ (not the repository root) on sys.path.
+# Match wf_gate.py so the documented python tools/... entry point reaches
+# the real gate modules even without PYTHONPATH or an editable install.
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools.wf_gate_coverage import (
     P7_FINAL_STOCHASTIC_ITERATIONS, p7_final_stochastic_mean_passes,
