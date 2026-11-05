@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Old WF678 P7.5 axis ablation pins a dead engine SHA and revalidates Warcraft gear/talents in Python.
+    "tools/diagnostics/replay_historical_wf678_winner.py",
     # WF321: obsolete GameIR/SQLite control-fact observation importer.
     "tools/wf321_ingest_control_observations.py",
     # Obsolete independent GameIR bounded gear/talent/policy report, not a native P3–P6 gate.
@@ -292,6 +294,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "replay_historical_wf678_winner",
     "wf321_ingest_control_observations",
     "source_persistent_policy_neighborhood",
     "refine_source_policy_persistent",
