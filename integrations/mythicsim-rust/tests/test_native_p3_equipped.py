@@ -102,7 +102,8 @@ def test_native_p3_preserves_native_refusal_and_does_not_fake_delta():
         return 100.0, {}, 0.01, "baseline-sha"
 
     receipt = compare_equipped_native("pinned-native", _reference(), _selection(),
-                                      evaluator=refusal, preparer=_prepared_actor)
+                                      evaluator=refusal, preparer=_prepared_actor,
+                                      max_paid_attempts=3)
     assert receipt["status"] == "PAID_NATIVE_REFUSAL"
     assert receipt["paid_attempts"] == 3
     assert receipt["evaluations"][1]["status"] == "UNSUPPORTED"
