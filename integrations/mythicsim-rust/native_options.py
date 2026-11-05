@@ -73,28 +73,35 @@ def query_native_options(
 
 
 def native_equipment_proposals(source: dict, base_items: list[dict]) -> dict[int, list[dict]]:
-    """Match a native source slot to an existing equipped item's native slot.
+    """Propose Rust-source items without making a Python legality decision.
 
-    Never guess the slot of an empty/unknown item or convert unverified options
-    into proposals. Multi-item/unique/hand restrictions remain native decisions.
-    Native item entries have a valid request shape of `{"id": item_id}`.
+    Verified entries carry a native slot; use it only where a known equipped
+    native item provides the same slot. Unverified entries have *no native
+    slot*. Propose them at every structural equipment position, including
+    empty or unknown anchors, and let the Rust evaluator accept/refuse the
+    complete request. This is intentionally NOT a Python equip rule.
     """
     verified = [entry["native"] for entry in source["items"]
                 if entry["eligibility"] == "native_eligible"]
+    unverified_ids = [entry["item_id"] for entry in source["items"]
+                      if entry["eligibility"] == "proficiency_unverified"]
     by_id = {entry["item_id"]: entry for entry in verified}
     by_slot: dict[str, list[dict]] = {}
     for native in verified:
         by_slot.setdefault(native["slot"], []).append(native)
     proposals: dict[int, list[dict]] = {}
     for index, equipped in enumerate(base_items):
-        if not isinstance(equipped, dict):
-            continue
-        anchor = by_id.get(equipped.get("id"))
-        if anchor is None:
-            continue  # no inferred slot, especially for 0/empty slots
-        options = [{"id": entry["item_id"]}
-                   for entry in by_slot.get(anchor["slot"], [])
-                   if entry["item_id"] != equipped["id"]]
+        if not isinstance(equipped, dict) or type(equipped.get("id")) is not int:
+            continue  # malformed request structure, not a gameplay judgement
+        item_id = equipped["id"]
+        anchor = by_id.get(item_id)
+        verified_ids = ([entry["item_id"] for entry in by_slot[anchor["slot"]]]
+                        if anchor is not None else [])
+        # No proficiency or slot inference for unverified source records.
+        # The native prepare/simulate path is the ONLY equip authority.
+        proposed_ids = dict.fromkeys([*verified_ids, *unverified_ids])
+        options = [{"id": candidate_id} for candidate_id in proposed_ids
+                   if candidate_id != item_id]
         if options:
             proposals[index] = options
     return proposals

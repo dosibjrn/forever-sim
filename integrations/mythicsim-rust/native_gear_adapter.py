@@ -88,13 +88,17 @@ class NativeGearAdapter:
                 variants = self.variants.setdefault(index, [])
                 if entry not in variants:
                     variants.append(copy.deepcopy(entry))
-        # Extend proposal domain from native source only. Matching uses the
-        # existing equipped item's Rust slot; ambiguous/empty slots are skipped.
-        # Full-build validity is still decided by the paid native evaluator.
+        # Native source proposals are not Python-certified legal gear. Verified
+        # slots can use Rust's own slot metadata; unverified source items have
+        # no such claim and are tried at each structural request position.
+        # The paid native evaluator alone accepts/refuses the full build.
         self.native_option_candidate_count = 0
+        self.native_option_unverified_count = 0
         if native_options is not None:
             if native_options.get("class") != class_key.lower():
                 raise GearRejected("NATIVE_OPTIONS_CLASS", "Source belongs to another class")
+            unverified_ids = {entry["item_id"] for entry in native_options["items"]
+                              if entry["eligibility"] == "proficiency_unverified"}
             for index, entries in native_equipment_proposals(native_options, self.base).items():
                 for entry in entries:
                     variants = self.variants.setdefault(index, [])
@@ -102,6 +106,8 @@ class NativeGearAdapter:
                         variants.append(copy.deepcopy(entry))
                         self.pools.setdefault(index, {})[entry["id"]] = copy.deepcopy(entry)
                         self.native_option_candidate_count += 1
+                        if entry["id"] in unverified_ids:
+                            self.native_option_unverified_count += 1
         # Full observed item entries and native candidates define mutable gear.
         self.mutable_indices = tuple(sorted(
             i for i, variants in self.variants.items()

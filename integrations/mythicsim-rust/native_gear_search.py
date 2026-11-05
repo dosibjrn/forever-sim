@@ -129,9 +129,9 @@ def native_source_adapter(class_key: str, binary: Path, reference: dict,
                           cache: dict[str, dict]) -> NativeGearAdapter:
     """Use selected Rust get_options as the real paid search proposal source.
 
-    Query once per class/level during the 28-spec sweep. The native adapter
-    accepts only explicitly eligible items and the Rust scorer decides complete
-    request legality; no Python shadow rule or speculative fallback.
+    Query once per class/level during the 28-spec sweep. Both native-eligible
+    and proficiency-unverified items are proposals; the native Rust scorer
+    decides complete request legality without a Python eligibility veto.
     """
     key = f"{class_key}:60"
     if key not in cache:
@@ -182,11 +182,12 @@ def sweep(*, engine_src: Path, binary: Path, outdir: Path,
                 adapter = native_source_adapter(
                     cls, binary, reference, same_class, items, native_options_cache)
                 row["native_options_source_revision"] = native_options_cache[f"{cls}:60"]["source_revision"]
-                row["native_options_eligible_proposals"] = adapter.native_option_candidate_count
+                row["native_options_total_proposals"] = adapter.native_option_candidate_count
+                row["native_options_unverified_proposals"] = adapter.native_option_unverified_count
                 row["mutable_positions"] = list(adapter.mutable_indices)
                 if not adapter.mutable_indices:
                     raise GearRejected("NO_SOURCE_BOUNDED_ALTERNATIVE",
-                                       "No verified same-class fixture gear swap")
+                                       "No Rust-source or source-observed gear proposal")
                 (rowdir / "source_request.json").write_text(json.dumps(reference, indent=2) + "\n")
                 base_seed = int(reference["simOptions"].get("randomSeed", "42"))
                 baseline, _output, native_s, payload_sha = run(
