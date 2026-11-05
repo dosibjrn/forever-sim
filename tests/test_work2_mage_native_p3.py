@@ -301,3 +301,75 @@ def test_mage_fire_p3_uses_exact_fire_fixture_and_talent_preset(monkeypatch):
     assert command[-6:] == ["--class-key", "mage", "--level", "60",
                             "--current-client-profile", "mage/fire"]
     assert json.loads(kwargs["input"]) == selection["slots"]
+
+
+def test_mage_frost_l60_routes_source_native_and_scores(monkeypatch):
+    """The second L60 Mage spec reuses Arcane's same native paid scorer."""
+    import src.game.data.forever.registry as registry
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "selected-engine")
+    monkeypatch.setattr(registry, "build_game_ir_slice", lambda **_kw: (
+        (_ for _ in ()).throw(AssertionError("No Python GameIR in Mage Frost P3"))))
+    seen = []
+    def native_options(root, binary, cls, level):
+        seen.append(("options", binary, cls, level))
+        return {
+            "status": "ok", "transport": "MYTHICSIM_NATIVE_GET_OPTIONS",
+            "source": "selected-engine-source",
+            "items": [{"slot": "weapon", "item_id": 900, "item_level": 60}],
+        }
+    def native_paid(root, binary, selection, remaining, *, checkpoint):
+        seen.append(("paid", binary, selection, remaining, checkpoint))
+        return {
+            "status": "PAID_NATIVE_DIFFERENCE", "paid_attempts": 2,
+            "actor_checkpoint_verified": True,
+            "native_prepared_actor": {
+                "actor_class": "ClassMage", "actor_level": 60,
+                "engine_revision": "selected-engine",
+            },
+            "source_occupied_slots": ["weapon"],
+            "evaluations": [
+                {"status": "VALID", "score": 100.0, "request_sha256": "paid-base"},
+                {"status": "VALID", "score": 105.0, "request_sha256": "paid-gear"},
+            ],
+            "native_slot_evaluations": [{
+                "swap": {"slot": "weapon", "to_id": 900}, "status": "VALID",
+                "score": 105.0, "delta_dps": 5.0,
+            }],
+            "native_slots_valid": 1,
+        }
+    monkeypatch.setattr(p3, "_query_native_unified_p3_items", native_options)
+    monkeypatch.setattr(p3, "_paid_native_equipped_probe", native_paid)
+    assert p3.native_item_options_required("mage", 60, "frost")
+    result = p3.run_live(ROOT, "mage", 60, spec="frost")
+    assert result["status"] == "PASS", result["reasons"]
+    assert result["reachability_count"] == result["pass_count"] == 1
+    assert result["item_options_source"] == "MYTHICSIM_NATIVE_GET_OPTIONS"
+    assert seen == [
+        ("options", "selected-engine", "mage", 60),
+        ("paid", "selected-engine",
+         {"slots": {"weapon": {"selected_ids": [900]}}}, 44,
+         "mage_frost_l60"),
+    ]
+
+
+def test_mage_frost_p3_uses_exact_frost_fixture_and_talent_preset(monkeypatch):
+    """No Arcane gear/talents are accidentally attributed to Frost."""
+    seen = []
+    def fake_paid(command, **kwargs):
+        seen.append((command, kwargs))
+        return SimpleNamespace(returncode=0, stderr="",
+                               stdout=json.dumps({"status": "PAID_NATIVE_DIFFERENCE",
+                                                  "paid_attempts": 2}))
+    monkeypatch.setattr(subprocess, "run", fake_paid)
+    selection = {"slots": {"head": {"selected_ids": [345]}}}
+    receipt = p3._paid_native_equipped_probe(
+        ROOT, "selected-engine", selection, 44, checkpoint="mage_frost_l60")
+    assert receipt["paid_attempts"] == 2
+    command, kwargs = seen[0]
+    assert "--request" in command
+    assert command[command.index("--request") + 1].endswith(
+        "/fixtures/mage/prepared-v2/frost-reference.request.json")
+    assert command[-6:] == ["--class-key", "mage", "--level", "60",
+                            "--current-client-profile", "mage/frost"]
+    assert json.loads(kwargs["input"]) == selection["slots"]
