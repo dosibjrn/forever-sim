@@ -261,6 +261,8 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Uncalled GameIR-only 2/100-mob policy search; exclusive test retired.
+    "src/v2/source_persistent_policy_neighborhood.py",
     # Orphaned WF412 GameIR 100-mob stat/recovery reoptimizer; no native P3 caller.
     "src/v2/source_reoptimized_stat_sensitivity.py",
     # Unused Mage-v2 per-level multiprocessing and path scorer (test-only callers).
@@ -288,6 +290,8 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "source_persistent_policy_neighborhood",
+    "refine_source_policy_persistent",
     "source_reoptimized_stat_sensitivity",
     "reoptimized_stat_sensitivity",
     "run_source_joint_discovery",
