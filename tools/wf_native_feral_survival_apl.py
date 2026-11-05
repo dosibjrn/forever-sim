@@ -12,8 +12,12 @@ import copy
 import json
 import math
 from pathlib import Path
+import sys
 from tempfile import TemporaryDirectory
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from tools.wf_native_feral_l60_world import FERAL_SOURCE, run_feral_l60_world
 
 
