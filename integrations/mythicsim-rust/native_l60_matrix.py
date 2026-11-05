@@ -70,7 +70,7 @@ SOURCES = {
 # talent string with a pinned upstream UI preset or native test build. These
 # remain composed smoke fixtures, never saved ranking references.
 CURRENT_CLIENT_BUILD = "1.60.1.70707"
-CURRENT_ENGINE_PIN = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
+CURRENT_ENGINE_PIN = "615359059d5d4fcbfd17cd1b4750ba746bbaae53"
 CURRENT_CLIENT_TALENT_OVERRIDES = {
     "druid/feral_cat": {
         "class_name": "ClassDruid",
@@ -404,24 +404,49 @@ def current_client_talent_donor_fixtures(inventory):
     return donors
 
 
+def verify_current_client_engine_pin(engine_src: Path) -> str:
+    """Require both the committed Rust gitlink and the preset-supported engine.
+
+    The selected executable's checkout must not be a floating fork HEAD; the
+    source presets remain explicitly tied to a reviewed engine revision.
+    """
+    submodule_path = "integrations/mythicsim-rust/engine"
+    try:
+        gitlink = subprocess.check_output(
+            ["git", "-C", str(ROOT), "ls-tree", "HEAD", "--", submodule_path],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+        engine_pin = subprocess.check_output(
+            ["git", "-C", str(engine_src), "rev-parse", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError(
+            "Cannot verify the selected Rust submodule required by current-client talent presets"
+        ) from exc
+    fields = gitlink.split(None, 3)
+    if (len(fields) != 4 or fields[0] != "160000"
+            or fields[1] != "commit" or fields[3] != submodule_path):
+        raise ValueError("Current-client talent presets require a committed Rust submodule gitlink")
+    recorded_pin = fields[2]
+    if engine_pin != recorded_pin:
+        raise ValueError(
+            "Current-client talent presets require the parent-committed Rust pin "
+            f"{recorded_pin}; checked-out engine is {engine_pin}"
+        )
+    if engine_pin != CURRENT_ENGINE_PIN:
+        raise ValueError(
+            "Current-client talent presets require Rust pin "
+            f"{CURRENT_ENGINE_PIN}; selected engine is {engine_pin}"
+        )
+    return engine_pin
+
+
 def create_inventory(registry_path, engine_src):
     # Do not parse items.jsonl or preflight item identities here. Source
     # equipment requests go to MythicSim; Rust owns identity and equip outcomes.
     if CURRENT_CLIENT_TALENT_OVERRIDES:
-        try:
-            engine_pin = subprocess.check_output(
-                ["git", "-C", str(engine_src), "rev-parse", "HEAD"],
-                text=True, stderr=subprocess.DEVNULL,
-            ).strip()
-        except (OSError, subprocess.CalledProcessError) as exc:
-            raise ValueError(
-                "Cannot verify the selected Rust pin required by current-client talent presets"
-            ) from exc
-        if engine_pin != CURRENT_ENGINE_PIN:
-            raise ValueError(
-                "Current-client talent presets require Rust pin "
-                f"{CURRENT_ENGINE_PIN}; selected engine is {engine_pin}"
-            )
+        verify_current_client_engine_pin(engine_src)
     registry = json.loads(registry_path.read_text())
     profiles = enumerate_l60_profiles(registry)
     if len(profiles) != 28 or len({cl for cl, _ in profiles}) != 9:

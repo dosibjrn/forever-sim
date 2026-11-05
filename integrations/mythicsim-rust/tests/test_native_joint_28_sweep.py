@@ -7,14 +7,15 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
+from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report, select_profile_inventory
 from native_joint_two_class import objective_for_profile
 from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
     SOURCES, apply_current_client_talent_override,
     CURRENT_CLIENT_TALENT_DONOR_PRESETS, current_client_talent_donor_fixtures,
-    fingerprint,
+    fingerprint, verify_current_client_engine_pin,
 )
 
 
@@ -43,6 +44,37 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual("HPS", rows[1]["objective"])
         self.assertEqual("HPS", rows[2]["objective"])
         self.assertEqual("TPS", rows[3]["objective"])
+
+    def test_single_profile_selector_limits_paid_scope_without_mutating_inventory(self):
+        rows = inventory()
+        selected = select_profile_inventory(rows, "druid/feral_cat")
+        self.assertEqual(1, len(selected))
+        self.assertEqual("druid/feral_cat", selected[0][0]["profile_id"])
+        self.assertEqual(28, len(rows))
+        self.assertIs(select_profile_inventory(rows, None), rows)
+        with self.assertRaisesRegex(ValueError, "Unknown or duplicate L60 profile"):
+            select_profile_inventory(rows, "unknown/spec")
+
+        paid = []
+        def run(profile):
+            paid.append(profile)
+            return {"status": "NATIVE_JOINT_PAID",
+                    "baseline_paid": 1, "native_paid": 2,
+                    "three_axis_paid": 1, "replay_matches": True,
+                    "native_errors": 0}
+        # An accidental incomplete default sweep must still fail closed.
+        with self.assertRaisesRegex(ValueError, "Expected 28 unique"):
+            build_matrix(selected, stage=5, run=run)
+        self.assertEqual([], paid)
+        # The CLI's explicit --only path must reach the real matrix runner.
+        result = build_matrix(selected, stage=5, run=run, expected_profiles=1)
+        self.assertEqual(["druid/feral_cat"], paid)
+        self.assertEqual(1, len(result))
+        self.assertEqual("NATIVE_JOINT_PAID", result[0]["status"])
+        self.assertEqual(2, result[0]["native_paid"])
+        with self.assertRaisesRegex(ValueError, "Expected 1 unique"):
+            build_matrix(selected + selected, stage=5, run=run,
+                         expected_profiles=1)
 
     def test_missing_source_is_isolated_without_running_scorer(self):
         rows = inventory()
@@ -171,6 +203,50 @@ class CandidateDomainBlockerClassification(unittest.TestCase):
             "INVESTIGATE_CANDIDATE_DOMAIN": 2,
         }, categories)
 
+
+
+class CurrentClientPresetEnginePinContracts(unittest.TestCase):
+    def test_checked_out_engine_must_match_parent_gitlink_and_preset_revision(self):
+        path = Path("/tmp/test-selected-engine")
+        gitlink = (
+            "160000 commit " + CURRENT_ENGINE_PIN +
+            "\tintegrations/mythicsim-rust/engine\n"
+        )
+        with patch(
+            "native_l60_matrix.subprocess.check_output",
+            side_effect=[gitlink, CURRENT_ENGINE_PIN + "\n"],
+        ) as checked:
+            self.assertEqual(CURRENT_ENGINE_PIN, verify_current_client_engine_pin(path))
+        self.assertEqual(2, checked.call_count)
+        self.assertIn("ls-tree", checked.call_args_list[0].args[0])
+        self.assertIn("rev-parse", checked.call_args_list[1].args[0])
+
+    def test_uncommitted_engine_checkout_is_rejected_not_silently_rebased(self):
+        gitlink = (
+            "160000 commit " + CURRENT_ENGINE_PIN +
+            "\tintegrations/mythicsim-rust/engine\n"
+        )
+        with patch("native_l60_matrix.subprocess.check_output", side_effect=[
+            gitlink, "deb366e986dbc156e2242ddac3ac8c4ac854c107\n",
+        ]):
+            with self.assertRaisesRegex(ValueError, "parent-committed Rust pin"):
+                verify_current_client_engine_pin(Path("/tmp/stale-engine"))
+
+    def test_unapproved_preset_engine_is_rejected_even_with_matching_gitlink(self):
+        other = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
+        gitlink = "160000 commit " + other + "\tintegrations/mythicsim-rust/engine\n"
+        with patch("native_l60_matrix.subprocess.check_output", side_effect=[
+            gitlink, other + "\n",
+        ]):
+            with self.assertRaisesRegex(ValueError, "Current-client talent presets require Rust pin"):
+                verify_current_client_engine_pin(Path("/tmp/unapproved-engine"))
+
+    def test_missing_committed_gitlink_fails_closed(self):
+        with patch("native_l60_matrix.subprocess.check_output", side_effect=[
+            "", CURRENT_ENGINE_PIN + "\n",
+        ]):
+            with self.assertRaisesRegex(ValueError, "committed Rust submodule gitlink"):
+                verify_current_client_engine_pin(Path("/tmp/untracked-engine"))
 
 
 class CurrentClientTalentOverrideContracts(unittest.TestCase):
