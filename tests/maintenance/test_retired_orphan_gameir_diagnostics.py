@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # WF321: obsolete GameIR/SQLite control-fact observation importer.
+    "tools/wf321_ingest_control_observations.py",
     # Obsolete independent GameIR bounded gear/talent/policy report, not a native P3–P6 gate.
     "tools/run_source_joint_discovery.py",
     # Duplicate one-off Python Wowhead item-catalogue builder; the live item-refresh service
@@ -290,6 +292,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf321_ingest_control_observations",
     "source_persistent_policy_neighborhood",
     "refine_source_policy_persistent",
     "source_reoptimized_stat_sensitivity",
@@ -526,6 +529,9 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Obsolete WF321/WF324 control and 100-mob Python GameIR-only suites.
+    "tests/test_wf321_druid_l20_bash_control_l2.py",
+    "tests/test_wf324_druid20_horizon_consistency.py",
     # WF412 Python GameIR stat-positivity witness is not an active P3 requirement.
     "tests/test_wf412_reoptimized_stat_sensitivity_tdd.py",
     "tests/generic/search/test_wf_gen03a1_joint_grid.py",
