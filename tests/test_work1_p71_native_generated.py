@@ -190,8 +190,8 @@ def test_native_source_control_forwards_actor_level_without_proto_mutation(
         output = Path(command[command.index("--outfile") + 1])
         output.write_text(json.dumps({
             "identity": {"engine": "forever-engine"},
-            "result": {"iterationsDone": 2, "raidMetrics": {"dps": {"avg": 17.0}}},
-            "firstIterationDuration": 120.0,
+            "result": {"iterationsDone": 2, "raidMetrics": {"dps": {"avg": 17.0}},
+                       "firstIterationDuration": 120.0},
         }))
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
