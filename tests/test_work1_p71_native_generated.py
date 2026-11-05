@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
 
 from tools import wf_p7_native_reference as reference
@@ -296,3 +299,16 @@ def test_one_shot_refuses_unprepared_actor_without_paying(monkeypatch, tmp_path)
         "P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH"]
     assert calls == []
     assert "verification" not in result
+
+
+def test_reference_direct_cli_imports_without_pythonpath(tmp_path):
+    """The real workflow invokes the producer by path, not as a module."""
+    entry = Path(reference.__file__).resolve()
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    completed = subprocess.run(
+        [sys.executable, str(entry), "--help"],
+        cwd=tmp_path, env=env, capture_output=True, text=True, check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "--verify" in completed.stdout
