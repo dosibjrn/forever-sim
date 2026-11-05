@@ -203,7 +203,6 @@ def test_native_lethal_world_kill_cannot_mask_dead_or_unobserved_player(health):
         validate(windows, 2)
 
 
-
 def test_native_survival_failure_names_first_dead_window_and_real_health():
     validate = _world_module()._native_survival_min_health
     windows = [
