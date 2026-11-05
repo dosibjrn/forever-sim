@@ -183,6 +183,41 @@ jobs:
           }, default=str), flush=True)
           PY
 
+      - name: Run Mage Fire L60 selected-native P3 (no record)
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/mage-fire-l60-p3.json"
+          rc=0
+          timeout 300s python tools/wf_gate.py --class mage --level 60 \
+            --spec fire --gate P3 --out "$report" || rc=$?
+          python - "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          gate = json.loads(Path(sys.argv[1]).read_text())
+          rc = int(sys.argv[2])
+          assert (gate["class"], gate["level"], gate["spec"], gate["gate"]) == (
+              "mage", 60, "fire", "P3"), gate
+          assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
+          assert rc == (0 if gate["status"] == "PASS" else 1), (rc, gate)
+          row = gate["results"][0]
+          receipt = row.get("native_equipped_paid_receipt") or {}
+          if row.get("item_options_source") == "MYTHICSIM_NATIVE_GET_OPTIONS":
+              assert row.get("real_source_search_evaluated") == 0, gate
+              assert 0 <= row.get("native_equipped_paid_attempts", 0) <= 44, gate
+              assert receipt.get("paid_attempts") == row["native_equipped_paid_attempts"], gate
+          print("MAGE_L60_FIRE_P3_NO_RECORD", json.dumps({
+              "status": gate["status"], "reasons": row.get("reasons"),
+              "source": row.get("item_options_source"),
+              "actor": receipt.get("native_prepared_actor"),
+              "paid": row.get("native_equipped_paid_attempts"),
+              "occupied": row.get("source_occupied_slots"),
+              "slot_evaluations": receipt.get("native_slot_evaluations"),
+          }, default=str), flush=True)
+          PY
+
       - name: Run no-record Rogue L20 P3 native capability and gate receipt
         env:
           GH_TOKEN: ${{ github.token }}
