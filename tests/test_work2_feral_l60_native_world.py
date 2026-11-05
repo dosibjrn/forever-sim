@@ -225,6 +225,25 @@ def test_feral_l60_rejects_invalid_rest_choice_before_native(tmp_path, bad):
             world_run=lambda *args, **kwargs: None)
 
 
+def test_native_paid_rest_candidate_requires_exact_engine_ack():
+    import sys
+    from pathlib import Path
+    integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+    sys.path.insert(0, str(integration))
+    from live_two_world_pulls import _native_recovery_choice_ack
+
+    assert _native_recovery_choice_ack(
+        {"recovery_seconds_per_gap": 24}, 24) == 24
+    assert _native_recovery_choice_ack({}, None) is None  # old native default
+    assert _native_recovery_choice_ack(
+        {"recovery_seconds_per_gap": 12}, None) == 12
+    for actual in (None, 12, "24", True):
+        with pytest.raises(AssertionError, match=(
+                "RUST_WORLD_NATIVE_RECOVERY_CHOICE_NOT_ACKED:requested=24")):
+            _native_recovery_choice_ack(
+                {"recovery_seconds_per_gap": actual}, 24)
+
+
 def test_native_paid_recovery_argv_and_first_dead_receipt():
     import sys
     from pathlib import Path
