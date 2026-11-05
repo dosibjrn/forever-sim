@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
     # Obsolete independent GameIR bounded gear/talent/policy report, not a native P3–P6 gate.
     "tools/run_source_joint_discovery.py",
+    # Duplicate one-off Python Wowhead item-catalogue builder; the live item-refresh service
+    # already imports, builds, and publishes the catalogue without this CLI.
+    "tools/build_forever_item_catalogue.py",
     # WF420: obsolete Python GameIR-scored 100-mob replay, not selected-native P3/P4-P6.
     "tools/wf420_druid20_independent_full_replay.py",
     # Uncalled fixed-allocation Python talent-rules/scorer CLI; native engine owns game rules.
@@ -284,6 +287,7 @@ RETIRED_SOURCE_MODULES = (
 
 RETIRED_IMPORT_NAMES = (
     "run_source_joint_discovery",
+    "build_forever_item_catalogue",
     "wf420_druid20_independent_full_replay",
     "check_cross_class",
     "ingest_armor_conversions_sqlite",
