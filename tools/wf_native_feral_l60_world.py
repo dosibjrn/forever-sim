@@ -80,10 +80,18 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
         prepared_path = Path(folder) / "prepared.json"
         request_path.write_text(json.dumps(leveling, sort_keys=True),
                                 encoding="utf-8")
-        prepare_run(
-            [str(binary), "prepare", "--request", str(request_path),
-             "--outfile", str(prepared_path)],
-            check=True, capture_output=True, text=True, timeout=25)
+        try:
+            prepare_run(
+                [str(binary), "prepare", "--request", str(request_path),
+                 "--outfile", str(prepared_path)],
+                check=True, capture_output=True, text=True, timeout=25)
+        except subprocess.CalledProcessError as exc:
+            # Native Rust is authoritative: retain its *actual* refusal,
+            # not a Python-inferred legality reason or opaque exit code.
+            detail = str(exc.stderr or exc.stdout or "")[-800:]
+            raise RuntimeError(
+                f"FERAL_L60_NATIVE_PREPARE_REFUSED:exit={exc.returncode}:{detail}"
+            ) from exc
         prepared = json.loads(prepared_path.read_text(encoding="utf-8"))
         native_player = prepared.get("player")
         native_sha = prepared.get("request_sha256")
