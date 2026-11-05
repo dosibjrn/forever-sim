@@ -87,7 +87,7 @@ def native_item_options_required(
         or (key == "rogue" and level == 20 and profile == "unrestricted")
         or (key == "druid" and level == 60 and profile == "feral")
         or (key == "mage" and level == 60 and profile in ("arcane", "fire", "frost"))
-        or (key == "paladin" and level == 60 and profile in ("retribution", "protection"))
+        or (key == "paladin" and level == 60 and profile in ("retribution", "protection", "holy"))
     )
 
 
@@ -286,7 +286,7 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
         "two_hand": ("weapon",), "off_hand": ("offhand",),
         "finger": ("ring1", "ring2"),
         "trinket": ("trinket1", "trinket2"),
-        "thrown": ("ranged",),
+        "thrown": ("ranged",), "relic": ("ranged",),
     }
     native_slots = {
         "weapon", "offhand", "ranged", "head", "neck", "shoulder",
@@ -364,13 +364,18 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                         "mage_frost_l60": "frost"}[checkpoint]
         request_path = str(root / "integrations/mythicsim-rust/engine"
                            / f"fixtures/mage/prepared-v2/{mage_profile}-reference.request.json")
-    elif checkpoint in ("paladin_retribution_l60", "paladin_protection_l60"):
+    elif checkpoint in ("paladin_retribution_l60", "paladin_protection_l60", "paladin_holy_l60"):
         # Select one existing pinned Rust smoke fixture; the prepared native
         # actor, never the Python profile, establishes executable class/level.
-        paladin_spec = "protection" if checkpoint == "paladin_protection_l60" else "retribution"
-        request_path = str(root / "integrations/mythicsim-rust/engine"
-                           / "validation/2026-10-06-multi-target-paladin-druid-references"
-                           / f"{paladin_spec}-paladin-2-targets.request.json")
+        paladin_spec = checkpoint.removeprefix("paladin_").removesuffix("_l60")
+        if paladin_spec == "holy":
+            # Use the Holy healing APL/target fixture pinned by native_l60_matrix.
+            request_path = str(root / "integrations/mythicsim-rust/engine"
+                               / "fixtures/mage/prepared-v2/holy-paladin-healing.request.json")
+        else:
+            request_path = str(root / "integrations/mythicsim-rust/engine"
+                               / "validation/2026-10-06-multi-target-paladin-druid-references"
+                               / f"{paladin_spec}-paladin-2-targets.request.json")
     else:
         request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
     if not request_path:
@@ -394,8 +399,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                         "mage_frost_l60": "frost"}[checkpoint]
         command.extend(("--class-key", "mage", "--level", "60",
                         "--current-client-profile", f"mage/{mage_profile}"))
-    elif checkpoint in ("paladin_retribution_l60", "paladin_protection_l60"):
-        paladin_spec = "protection" if checkpoint == "paladin_protection_l60" else "retribution"
+    elif checkpoint in ("paladin_retribution_l60", "paladin_protection_l60", "paladin_holy_l60"):
+        paladin_spec = checkpoint.removeprefix("paladin_").removesuffix("_l60")
         command.extend(("--class-key", "paladin", "--level", "60",
                         "--current-client-profile", f"paladin/{paladin_spec}"))
     try:
@@ -429,7 +434,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     # Only occupied positions in the actual Mage request need P3 paid scores.
     # The full native options domain may include absent offhand/ranged fields.
     is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60")
-    is_paladin_l60 = checkpoint in ("paladin_retribution_l60", "paladin_protection_l60")
+    is_paladin_l60 = checkpoint in ("paladin_retribution_l60", "paladin_protection_l60", "paladin_holy_l60")
     occupied = receipt.get("source_occupied_slots")
     occupancy_verified = (
         isinstance(occupied, list) and bool(occupied)
@@ -475,9 +480,14 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         if "VALID" not in outcomes:
             reasons.append("P3_NATIVE_SLOT_UNSCORED:" + slot + ":"
                            + (str(outcomes[-1]) if outcomes else "NOT_ATTEMPTED"))
-    # Tanks are scored on selected-native threat (TPS), not mislabeled DPS.
-    score_delta_key = "delta_score" if checkpoint == "paladin_protection_l60" else "delta_dps"
-    if checkpoint == "paladin_protection_l60" and receipt.get("objective") != "TPS":
+    # Non-DPS actor objectives come from the selected engine; never
+    # relabel threat or damage as healer HPS.
+    expected_objective = {
+        "paladin_protection_l60": "TPS",
+        "paladin_holy_l60": "HPS",
+    }.get(checkpoint)
+    score_delta_key = "delta_score" if expected_objective else "delta_dps"
+    if expected_objective and receipt.get("objective") != expected_objective:
         reasons.append("P3_NATIVE_OBJECTIVE_MISMATCH")
     if not any(
             isinstance(row, dict) and row.get("status") == "VALID"
@@ -540,7 +550,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     is_mage_native = (str(class_key).lower() == "mage" and int(level) == 60
                       and str(spec).lower() in ("arcane", "fire", "frost"))
     is_paladin_native = (str(class_key).lower() == "paladin" and int(level) == 60
-                         and str(spec).lower() in ("retribution", "protection"))
+                         and str(spec).lower() in ("retribution", "protection", "holy"))
     if is_rogue_native or is_feral_native or is_mage_native or is_paladin_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
