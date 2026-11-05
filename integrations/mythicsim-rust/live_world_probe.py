@@ -474,7 +474,8 @@ def run_range_perturbation_pair(binary: Path, request: Path) -> dict:
 
 
 def native_source_control(binary: Path, request: Path, iterations: int, *,
-                          rng_mode: str, go_rules: bool = False) -> dict:
+                          rng_mode: str, go_rules: bool = False,
+                          actor_level: int | None = None) -> dict:
     """Independent real Rust source engine with only iteration count reduced.
 
     Keeps saved gear, talents, rotation, encounter and RNG seed unchanged.
@@ -484,6 +485,8 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
     """
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_NATIVE_CONTROL_RNG_MODE_INVALID")
+    if actor_level is not None and (type(actor_level) is not int or actor_level <= 0):
+        raise ValueError("RUST_NATIVE_CONTROL_ACTOR_LEVEL_INVALID")
     source = json.loads(request.read_text())
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_NATIVE_CONTROL_ITERATIONS_INVALID")
@@ -496,6 +499,8 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
                    "--outfile", str(output), "--gate", "--rng-mode", rng_mode]
         if go_rules:
             command.append("--go-rules")
+        if actor_level is not None:
+            command.extend(("--actor-level", str(actor_level)))
         completed = subprocess.run(
             command,
             capture_output=True, text=True, timeout=120,
