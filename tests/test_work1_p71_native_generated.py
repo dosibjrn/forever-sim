@@ -13,7 +13,8 @@ def _request(root: Path, *, level: int = 20):
     source = root / "candidate.json"
     source.write_text(json.dumps({
         "raid": {"parties": [{"players": [
-            {"class": "ClassDruid", "level": level, "rotation": {"priorityList": []},
+            {"class": "ClassDruid", **({"level": level} if level != 20 else {}),
+             "rotation": {"priorityList": []},
              "equipment": {"items": []}, "talentsString": ""}
         ]}]},
         "encounter": {"targets": [{"level": 22, "stats": [{"key": "health", "value": 4000}]}],
@@ -28,18 +29,19 @@ def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20):
     binary = Path("/selected/pinned/target/release/forever-engine")
     calls = []
 
-    def pay(_binary, path, iterations, *, rng_mode):
+    def pay(_binary, path, iterations, *, rng_mode, actor_level):
         assert _binary == binary
         assert rng_mode == "stochastic"
+        assert actor_level == 20
         assert iterations == 1000
-        assert json.loads(path.read_text())["raid"]["parties"][0]["players"][0].get("level") in (None, 20)
+        assert "level" not in json.loads(path.read_text())["raid"]["parties"][0]["players"][0]
         calls.append(iterations)
         return {"iterations": iterations, "native_dps": paid_dps,
                 "native_rules": "forever", "first_duration_s": 120.0}
 
     monkeypatch.setattr(reference, "_binary_and_pin", lambda root: (binary, revision))
     monkeypatch.setattr(reference, "_prepare_actor",
-                        lambda binary, path: {
+                        lambda binary, path, level: {
                             "status": "PREPARED", "class": "ClassDruid",
                             "level": native_level})
     monkeypatch.setattr(reference, "_native",
@@ -56,6 +58,7 @@ def test_native_generated_reference_requires_paid_checkpoint_native_score(
     assert generated["status"] == "REFERENCE_GENERATED"
     assert generated["selected_engine_revision"] == revision
     assert generated["reference_dps"] == 75.
+    assert generated["native_actor_level_context"] == 20
     assert generated["reference_configuration_source"] == "native_generated_msim_reference"
     saved = reference._reference_directory(tmp_path, "druid", 20, "unrestricted")
     assert (saved / "request.json").read_bytes() == source.read_bytes()
@@ -87,7 +90,7 @@ def test_reference_refuses_l60_copy_or_incompatible_native_actor(
 
     source = _request(tmp_path, level=20)
     monkeypatch.setattr(reference, "_prepare_actor",
-                        lambda binary, path: {
+                        lambda binary, path, level: {
                             "status": "PREPARED", "class": "ClassDruid", "level": 60})
     mismatch = reference.produce_reference(
         tmp_path, "druid", 20, "unrestricted", source)
