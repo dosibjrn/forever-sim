@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # WF420: obsolete Python GameIR-scored 100-mob replay, not selected-native P3/P4-P6.
+    "tools/wf420_druid20_independent_full_replay.py",
     # Uncalled fixed-allocation Python talent-rules/scorer CLI; native engine owns game rules.
     "tools/check_cross_class.py",
     # Retired one-shot Python source/SQLite ingesters; native engine owns game facts.
@@ -279,6 +281,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf420_druid20_independent_full_replay",
     "check_cross_class",
     "ingest_armor_conversions_sqlite",
     "ingest_stat_conversions_sqlite",
@@ -508,6 +511,13 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # WF420-WF425 exclusively exercised that frozen Python GameIR replay and
+    # duplicated Warcraft crit/hit/stat semantics rather than active native gates.
+    "tests/test_wf420_paid_full_gear_candidate_tdd.py",
+    "tests/test_wf421_source_chance_2d_stat_sensitivity_tdd.py",
+    "tests/test_wf422_p3_pack_context_invariance_tdd.py",
+    "tests/test_wf423_unified_spell_crit_source_tdd.py",
+    "tests/test_wf425_unified_hit_source_paid_100mob_tdd.py",
     # Exclusive retired Python GameIR talent-rank import/legality/runtime tests.
     "tests/test_wf_coverage235_secondary_rank_batch.py",
     "tests/test_wf_feral01c2a_rank_curves.py",
