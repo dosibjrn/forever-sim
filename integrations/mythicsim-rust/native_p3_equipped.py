@@ -192,57 +192,75 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                        request_sha256=getattr(exc, "request_sha256", None))
         return row
 
-    # Pay one common baseline, then source-native single-slot alternatives
-    # under the *same* seed, scenario and shared 44-attempt ceiling. The first
-    # pair remains the legacy P3 witness; extra rows are measurements, not
-    # independently invented stat weights or automatic gate credit.
-    rows = [score_request("baseline", reference),
-            score_request("equipped", candidate, swap)]
-    if max_paid_attempts > 2:
-        for slot, _index in NATIVE_SLOT_POSITIONS:
+    # One shared native baseline. Try the second Rust-supplied item for a
+    # slot only when its first native evaluation was refused or unscored.
+    # Each refusal consumes the same paid budget and remains in the receipt.
+    rows = [score_request("baseline", reference)]
+    requested_slots = []
+    for slot, _index in NATIVE_SLOT_POSITIONS:
+        source = selection.get(slot)
+        ids = source.get("selected_ids") if isinstance(source, dict) else None
+        if not isinstance(ids, list):
+            continue
+        alternatives = []
+        for item_id in ids[:2]:
+            alternative, item_swap = first_equipped_proposal(
+                reference, {slot: {"selected_ids": [item_id]}})
+            if (alternative is not None and item_swap["to_id"] not in [
+                    swap_row["to_id"] for _, swap_row in alternatives]):
+                alternatives.append((alternative, item_swap))
+        if not alternatives:
+            continue
+        requested_slots.append(slot)
+        for alternative, item_swap in alternatives:
             if len(rows) >= max_paid_attempts:
                 break
-            if slot == swap["slot"]:
-                continue
-            alternative, alternative_swap = first_equipped_proposal(
-                reference, {slot: selection.get(slot)})
-            if alternative is not None:
-                rows.append(score_request("equipped", alternative, alternative_swap))
+            row = score_request("equipped", alternative, item_swap)
+            rows.append(row)
+            if row["status"] == "VALID":
+                break
     if reference != original:
         raise AssertionError("Native evaluation modified source reference")
-    paired = all(row["status"] == "VALID" for row in rows[:2])
-    delta = rows[1]["score"] - rows[0]["score"] if paired else None
+    baseline_valid = rows[0]["status"] == "VALID"
+    selected = next((row for row in rows[1:] if row["status"] == "VALID"), None)
+    paired = baseline_valid and selected is not None
+    delta = selected["score"] - rows[0]["score"] if paired else None
     native_slot_evaluations = [
-        {"swap": row["swap"], "status": row["status"],
-         "score": row["score"],
+        {"swap": row["swap"], "status": row["status"], "score": row["score"],
          "delta_dps": (row["score"] - rows[0]["score"]
-                       if row["status"] == "VALID"
-                       and rows[0]["status"] == "VALID" else None)}
-        for row in rows[1:]
-    ]
+                       if row["status"] == "VALID" and baseline_valid else None),
+         **({"reason": row["reason"]} if "reason" in row else {}),
+         **({"request_sha256": row["request_sha256"]}
+            if "request_sha256" in row else {})}
+        for row in rows[1:]]
+    verified_slots = {row["swap"]["slot"] for row in rows[1:]
+                      if row["status"] == "VALID"}
+    attempted_slots = {row["swap"]["slot"] for row in rows[1:]}
     return {
         "status": ("PAID_NATIVE_DIFFERENCE" if paired and delta != 0
                    else "PAID_NATIVE_EQUAL" if paired else "PAID_NATIVE_REFUSAL"),
-        "paid_attempts": len(rows), "swap": swap, "evaluations": rows,
+        "paid_attempts": len(rows), "swap": selected["swap"] if paired else swap,
+        "evaluations": rows,
         "comparison": ({"delta_dps": delta, "baseline_dps": rows[0]["score"],
-                        "equipped_dps": rows[1]["score"]} if paired else None),
+                        "equipped_dps": selected["score"]} if paired else None),
         "iterations": iterations, "seed": seed,
         "native_slot_evaluations": native_slot_evaluations,
         "native_slots_paid": len(native_slot_evaluations),
         "native_slots_valid": sum(row["status"] == "VALID" for row in rows[1:]),
+        "native_slots_requested": len(requested_slots),
+        "native_slots_verified": len(verified_slots),
+        "native_slots_unscored": [slot for slot in requested_slots
+                                  if slot not in verified_slots],
+        "native_slots_unattempted": [slot for slot in requested_slots
+                                     if slot not in attempted_slots],
         "native_slot_attempt_cap": max_paid_attempts,
         "actor_requested_level": requested_level,
-        # Both actual selected-native evaluations must have returned finite
-        # scores for this exact L20 request and its one-item mutation.
-        # This is not by itself a P3 PASS: the caller retains other blockers.
-        "actor_checkpoint_verified": actor_matched and paired,
+        "actor_checkpoint_verified": bool(actor_matched and paired),
         "native_prepared_actor": prepared,
         "promotion": (
-            "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE"
-            if paired and delta != 0 else
-            "MATCHED_ROGUE_L20_NATIVE_EQUAL" if paired else
-            "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR"
-        ),
+            "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE" if paired and delta != 0
+            else "MATCHED_ROGUE_L20_NATIVE_EQUAL" if paired
+            else "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR"),
     }
 
 
