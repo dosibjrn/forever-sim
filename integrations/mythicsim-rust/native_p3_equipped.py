@@ -47,7 +47,7 @@ def first_equipped_proposal(reference: dict, selection: dict, *, expected_class=
         raise ValueError("P3_NATIVE_EQUIPPED_CLASS_MISMATCH")
     equipment = player.get("equipment")
     entries = equipment.get("items") if isinstance(equipment, dict) else None
-    if not isinstance(entries, list) or len(entries) not in (16, 17):
+    if not isinstance(entries, list) or len(entries) not in (15, 16, 17):
         raise ValueError("P3_NATIVE_EQUIPPED_REQUEST_SHAPE_UNAVAILABLE")
     for slot, index in NATIVE_SLOT_POSITIONS:
         if index >= len(entries):
@@ -122,13 +122,13 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
 
     Any native INVALID/UNSUPPORTED/UNSCORED/ERROR is reported verbatim and
     debited, never substituted with a Python score or awarded gate credit.
-    The same selected binary's prepared actor must match the actual Rogue L20
-    checkpoint before a paid comparison can become gate evidence.
+    The same selected binary's prepared actor must match the requested class
+    and level before a paid comparison can become gate evidence.
     """
     if (type(iterations) is not int or iterations < 1 or seconds <= 0
             or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
-    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid"}.get(class_key)
+    expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid", "mage": "ClassMage"}.get(class_key)
     if expected_class is None or type(level) is not int or level < 1:
         raise ValueError("P3_NATIVE_EQUIPPED_CHECKPOINT_INVALID")
     candidate, swap = first_equipped_proposal(
@@ -140,10 +140,9 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # and then mislabel its DPS as Rogue L20 checkpoint evidence. The source
     # request must carry the exact L20 actor; native decides if it is runnable.
     requested_level = _first_player(reference).get("level")
-    # The accepted Feral L60 source request omits player.level; the selected
-    # native prepare response must independently establish the L60 actor.
-    if requested_level != level and not (
-            class_key == "druid" and level == 60 and requested_level is None):
+    # Source L60 fixtures may omit player.level; only the selected native
+    # prepare response can establish the actual actor level (never a proxy).
+    if requested_level != level and not (level == 60 and requested_level is None):
         return {
             "status": "NATIVE_REQUEST_CHECKPOINT_MISMATCH",
             "paid_attempts": 0, "comparison": None, "swap": swap,
@@ -289,7 +288,7 @@ def main():
     parser.add_argument("--binary", required=True)
     parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--max-paid-attempts", type=int, default=2)
-    parser.add_argument("--class-key", choices=("rogue", "druid"), default="rogue")
+    parser.add_argument("--class-key", choices=("rogue", "druid", "mage"), default="rogue")
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
     args = parser.parse_args()
