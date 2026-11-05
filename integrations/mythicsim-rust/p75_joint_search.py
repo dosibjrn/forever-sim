@@ -22,7 +22,8 @@ def pick_gear(pool,rng):
         return rng.choice(pool)
     return pool[min(len(pool)-1,int(rng.expovariate(0.15)))]
 
-def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=None,repair_axes=None):
+def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=None,repair_axes=None,*,
+                   talent_proposals=None,preserve_source_conditions=False):
     """Independent cold generation; later mutations improve one axis at a time.
 
     A gear slot's captured reference enchant is a *per-slot option*, not a
@@ -45,7 +46,8 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
         base=player(elite)
         ids=[item["id"] for item in base["equipment"]["items"]]
         enchants=[item.get("enchant") for item in base["equipment"]["items"]]
-        ranks=parse(base["talentsString"])
+        ranks=(base["talentsString"] if talent_proposals is not None
+               else parse(base["talentsString"]))
         actions=copy.deepcopy(base["rotation"]["priorityList"])
         axes=(repair_axes if repair_axes is not None else
               (rng.choices(("gear","talents","rotation","enchant"),
@@ -61,16 +63,21 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
                     j=rng.randrange(16)
                     ids[j]=pick_gear(pools[j],rng)
             elif axis=="talents":
-                ranks=edit_neighbors(ranks,rng)
+                ranks=(talent_proposals.mutate_talent_string(ranks,rng)
+                       if talent_proposals is not None else edit_neighbors(ranks,rng))
             elif axis=="rotation":
-                actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng)
+                actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng,
+                                   preserve_source_conditions=preserve_source_conditions)
             elif axis=="gear_rebuild":
                 ids=[pick_gear(pools[j],rng) for j in range(16)]
                 enchants=[rng.choice(enchant_choices[i]) for i in range(16)]
             elif axis=="talents_rebuild":
-                ranks=random_build(rng)
+                ranks=(talent_proposals.cold_talent_string(
+                    player(reference)["talentsString"],rng)
+                    if talent_proposals is not None else random_build(rng))
             elif axis=="rotation_rebuild":
-                actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
+                actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True,
+                                   preserve_source_conditions=preserve_source_conditions)
             else:
                 candidates=[i for i,options in enchant_choices.items()
                             if any(e != enchants[i] for e in options)]
@@ -83,8 +90,11 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
         enchants=([rng.choice(enchant_choices[i]) for i in range(16)]
                   if enchant_pools is not None else
                   [e if rng.random()<0.86 else None for e in allowed_enchants])
-        ranks=random_build(rng)
-        actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
+        ranks=(talent_proposals.cold_talent_string(
+            player(reference)["talentsString"],rng)
+            if talent_proposals is not None else random_build(rng))
+        actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True,
+                           preserve_source_conditions=preserve_source_conditions)
     # Duplicate item IDs are forbidden. Equal catalogue display names are
     # NOT a source unique-equipped rule: distinct item ranks/variants may be
     # legal together. GearValidator.validate checks actual source/Rust item
@@ -102,7 +112,7 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
         item["id"]=ids[i]
         if enchants[i] is not None:
             item["enchant"]=enchants[i]
-    p["talentsString"]=encode(ranks)
+    p["talentsString"]=(ranks if talent_proposals is not None else encode(ranks))
     p["rotation"]["priorityList"]=actions
     # Forward generated talents unchanged. Only selected MythicSim Rust
     # prepare/sim --gate decides whether this combination is executable.

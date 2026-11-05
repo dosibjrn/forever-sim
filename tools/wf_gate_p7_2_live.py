@@ -103,7 +103,7 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     # An unrestricted checkpoint may optimize any native-legal Druid build.
     # Reuse the authentic Balance reference encounter without claiming it is
     # an independently measured unrestricted reference; P7.5 is eligible too.
-    feral = spec == "feral" and gate in ("P7.2", "P7.3", "P7.4")
+    feral = spec == "feral" and gate in ("P7.2", "P7.3", "P7.4", "P7.5")
     if ((class_key, level) != ("druid", 60)
             or not (spec == "balance" or feral
                     or (gate in ("P7.2", "P7.3", "P7.4", "P7.5")

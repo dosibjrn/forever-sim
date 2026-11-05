@@ -171,3 +171,132 @@ def test_bounded_unrestricted_native_probe_cannot_claim_pass(
     assert "P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED" in report["reasons"]
     assert len(calls) == 1 and calls[0][0:2] == (3, "balanced")
     assert measured_p7_dps_proximity("P7.5", report) is None
+
+
+def test_feral_p75_preflight_uses_authentic_feral_request_without_balance_witness(
+        tmp_path, monkeypatch):
+    request = tmp_path / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json"
+    request.parent.mkdir(parents=True)
+    base = _base()
+    _player(base)["feralCatDruid"] = {}
+    request.write_text(json.dumps(base))
+    monkeypatch.setattr(preflight, "SAVED_FERAL_RAW_SHA",
+                        hashlib.sha256(request.read_bytes()).hexdigest())
+    monkeypatch.setattr(preflight, "_selected_rust_submodule",
+                        lambda *args: "selected-feral-native-pin")
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("native transport mocked")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    resolved = preflight._pinned_source_runtime(
+        tmp_path, "druid", 60, "feral", "P7.5", require_world=False)
+    assert not isinstance(resolved, dict)
+    assert resolved[1]["selected_reference_profile"] == "feral"
+    assert resolved[1]["reference_dps"] == preflight.FERAL_REFERENCE_DPS
+    assert resolved[1]["source_request_raw_sha256"] == preflight.SAVED_FERAL_RAW_SHA
+
+
+def test_feral_p75_native_paid_search_uses_go_rules_and_rust_gear_options(
+        monkeypatch, tmp_path):
+    calls, preflights, unchanged, base = _setup_paid_unrestricted(
+        monkeypatch, tmp_path, holdout=730.0)
+    # The authentic saved Feral request omits the 2D world distance field.
+    _player(base).pop("distanceFromTarget")
+    unchanged = copy.deepcopy(base)
+    original_loader = p75._source_module
+    rust_pool_calls = []
+    native_go_rules = []
+
+    def load(path, name):
+        if "p74_gear_search" in str(path):
+            def options(items, enchants):
+                rust_pool_calls.append((items.name, enchants.name))
+                return ({0: [11], 1: [21]}, {0: [None], 1: [None]}, {})
+            return SimpleNamespace(pinned_rust_candidate_pool=options)
+        module = original_loader(path, name)
+        if "live_world_probe" in str(path):
+            def native(binary, request, iterations, *, rng_mode, go_rules=False):
+                native_go_rules.append(go_rules)
+                return module.native_source_control(
+                    binary, request, iterations, rng_mode=rng_mode)
+            return SimpleNamespace(native_source_control=native, run=module.run)
+        return module
+
+    monkeypatch.setattr(p75, "_source_module", load)
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    _clock(monkeypatch, [0.0, 0.0, 300.0, 300.0])
+    report = p75.run_live(tmp_path, "druid", 60, spec="feral")
+    assert preflights == [{"require_world": False}]
+    assert rust_pool_calls == [("items.jsonl", "enchants.jsonl")]
+    assert native_go_rules == [True, True]
+    assert [(n, mode) for n, mode, _ in calls] == [
+        (3, "balanced"), (1000, "stochastic")]
+    assert report["status"] == "PASS"  # injected transport, not gate evidence
+    assert report["native_rules"] == "go_reference"
+    assert report["reference_profile"] is None  # mocked preflight has no profile
+    assert report["source_request_raw_sha256"] == p75.SAVED_FERAL_RAW_SHA
+    assert base == unchanged
+
+
+def test_feral_joint_generator_uses_native_proposals_not_balance_talent_rules(
+        monkeypatch):
+    import importlib
+    import random
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    monkeypatch.syspath_prepend(str(root / "integrations/mythicsim-rust"))
+    joint = importlib.import_module("p75_joint_search")
+    base = _base()
+    player = _player(base)
+    player["equipment"]["items"] = [{"id": 100 + i} for i in range(16)]
+    pools = {i: [100 + i, 200 + i] for i in range(16)}
+    monkeypatch.setattr(joint, "random_build", lambda rng: (_ for _ in ()).throw(
+        AssertionError("Balance-only talent generator called")))
+    monkeypatch.setattr(joint, "parse", lambda *args: (_ for _ in ()).throw(
+        AssertionError("Balance-only talent parser called")))
+    monkeypatch.setattr(joint, "encode", lambda *args: (_ for _ in ()).throw(
+        AssertionError("Balance-only talent encoder called")))
+    observed = []
+    def mutate(actions, grammar, rng, **kwargs):
+        observed.append(kwargs)
+        return [3, 2, 1]
+    monkeypatch.setattr(joint, "mutate_apl", mutate)
+    proposals = SimpleNamespace(
+        cold_talent_string=lambda template, rng: "cold-native-proposal",
+        mutate_talent_string=lambda parent, rng: "paid-native-proposal")
+    cold = joint.make_candidate(
+        base, pools, __import__("random").Random(1),
+        talent_proposals=proposals, preserve_source_conditions=True)
+    assert _player(cold)["talentsString"] == "cold-native-proposal"
+    assert observed[-1]["preserve_source_conditions"] is True
+    paid = joint.make_candidate(
+        base, pools, random.Random(2), elite=cold,
+        repair_axes=("talents", "rotation"),
+        talent_proposals=proposals, preserve_source_conditions=True)
+    assert _player(paid)["talentsString"] == "paid-native-proposal"
+    assert observed[-1]["preserve_source_conditions"] is True
+    assert _player(base)["talentsString"] == "saved-balance"
+
+
+def test_feral_cold_rank_explorer_uses_independent_sparse_then_broad_draws():
+    import random
+    from src.engine_client.native_talent_proposals import (
+        ColdRankLadderExplorer, cold_talent_string)
+
+    template = "050022-55000032021032212051-053"
+    original_budget = sum(int(c) for c in template if c.isdigit())
+    explorer = ColdRankLadderExplorer()
+    samples = [explorer.cold_talent_string(template, random.Random(100 + i))
+               for i in range(5)]
+    for sample, ceiling in zip(samples, (1, 2, 3, 5, 9)):
+        assert [len(tree) for tree in sample.split("-")] == [6, 20, 3]
+        digits = [int(c) for c in sample if c.isdigit()]
+        assert max(digits) <= ceiling
+        assert sum(digits) == min(original_budget, 29 * ceiling)
+        assert sample != template or ceiling > 1  # never seed from source
+    assert max(int(c) for c in samples[0] if c.isdigit()) == 1
+    assert explorer.cold_draws == 5
+    import pytest
+    with pytest.raises(ValueError, match="RANK_CEILING_INVALID"):
+        cold_talent_string(template, random.Random(7), rank_ceiling=0)
