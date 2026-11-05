@@ -7,6 +7,9 @@ on:
       - integrations/mythicsim-rust/engine
       - .github/workflows/m1-on-demand-record.yml
       - .github/workflows/rust-submodule-verify.yml
+      - integrations/mythicsim-rust/native_executor.py
+      - integrations/mythicsim-rust/native_p3_equipped.py
+      - integrations/mythicsim-rust/tests/test_native_p3_equipped.py
       - src/game/checkpoint_p3_smoke.py
       - src/game/native_p3_item_options.py
       - src/game/native_p3_player_context.py
@@ -49,6 +52,55 @@ jobs:
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
+      - name: Probe Feral L60 P3 on selected native engine (no record)
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/feral-p3"
+          options="$RUNNER_TEMP/feral-p3/options.json"
+          prepared="$RUNNER_TEMP/feral-p3/prepared.json"
+          report="$RUNNER_TEMP/feral-p3/p3.json"
+          "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" item-options \
+            --class druid --level 60 --spec unrestricted --slot all > "$options"
+          prepare_rc=0
+          "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" prepare \
+            --request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
+            --outfile "$prepared" --go-rules \
+            > "$RUNNER_TEMP/feral-p3/prepare.stdout" \
+            2> "$RUNNER_TEMP/feral-p3/prepare.stderr" || prepare_rc=$?
+          gate_rc=0
+          timeout 300s python tools/wf_gate.py --class druid --level 60 \
+            --spec feral --gate P3 --out "$report" || gate_rc=$?
+          python - "$options" "$prepared" "$report" "$prepare_rc" "$gate_rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          options = json.loads(Path(sys.argv[1]).read_text())
+          prepared_path = Path(sys.argv[2])
+          gate = json.loads(Path(sys.argv[3]).read_text())
+          prepare_rc, gate_rc = map(int, sys.argv[4:6])
+          prepared = json.loads(prepared_path.read_text()) if prepared_path.exists() else {}
+          assert options["class"] == "druid" and options["level"] == 60, options
+          assert gate["class"] == "druid" and gate["level"] == 60, gate
+          assert gate["spec"] == "feral" and gate["gate"] == "P3", gate
+          assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
+          assert gate_rc == (0 if gate["status"] == "PASS" else 1), (gate_rc, gate)
+          if options["status"] == "refused":
+              code = options.get("refusal", {}).get("code")
+              assert gate["status"] == "BLOCKED", gate
+              assert "P3_NATIVE_ITEM_OPTIONS_REFUSED:" + str(code) in gate["results"][0]["reasons"], gate
+          if prepare_rc == 0:
+              actor = prepared.get("player") or {}
+              print("FERAL_PREPARED_ACTOR", actor.get("class"), actor.get("level"))
+          print("FERAL_L60_P3_NO_RECORD", "item_options", options["status"],
+                "native_refusal", options.get("refusal"),
+                "prepare_rc", prepare_rc,
+                "gate", gate["status"], "reasons", gate["results"][0].get("reasons"),
+                "paid", gate["results"][0].get("native_equipped_paid_attempts", 0),
+                flush=True)
+          PY
+
       - name: Run no-record Rogue L20 P3 native capability and gate receipt
         env:
           GH_TOKEN: ${{ github.token }}
