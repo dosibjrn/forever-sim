@@ -206,5 +206,5 @@ def test_paladin_retribution_p3_trusted_dispatch_builds_selected_native_engine()
         encoding="utf-8")
     p3_section = workflow.split('if [[ "$gate" == P3 ]]; then', 1)[1].split(
         'elif [[ ( "$gate" == P4', 1)[0]
-    assert '"$class" == paladin && "$level" == 60 && "$spec" == retribution' in p3_section
+    assert '"$class" == paladin && "$level" == 60 && ( "$spec" == retribution || "$spec" == protection )' in p3_section
     assert "native_options_needed=true" in p3_section
