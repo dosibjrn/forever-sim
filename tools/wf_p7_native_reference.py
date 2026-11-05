@@ -57,9 +57,12 @@ def _checkpoint_source(raw: bytes, class_key: str, level: int) -> tuple[dict, di
     """Only check request identity/shape; native decides all Warcraft legality."""
     request = json.loads(raw)
     player = request["raid"]["parties"][0]["players"][0]
+    # The protobuf request may omit player.level; the selected engine PREPARE
+    # response, never a Python level hint, establishes the actual actor level.
+    # A supplied contradictory hint is still rejected before native payment.
     if (player.get("class") != "Class" + class_key.capitalize()
-            or type(player.get("level")) is not int
-            or player["level"] != level):
+            or (player.get("level") is not None
+                and (type(player["level"]) is not int or player["level"] != level))):
         raise ValueError("P7_1_REQUEST_ACTOR_CHECKPOINT_MISMATCH")
     targets = request["encounter"]["targets"]
     if (len(targets) != 1 or type(targets[0].get("level")) is not int
