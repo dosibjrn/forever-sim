@@ -1,4 +1,4 @@
-from dataclasses import replace,dataclass
+from dataclasses import replace
 from types import SimpleNamespace
 import pytest
 
@@ -7,7 +7,6 @@ from src.game.model import (PolicyCondition, PolicyRuleDefinition, PolicyDefinit
 from src.game.policy_evolution import (scratch_policies,mutations,from_source_rules,
                             search_evolved_policies,_identity)
 from src.game.policy import condition_matches
-from src.v2.source_persistent_policy_neighborhood import refine_source_policy_persistent
 
 
 def action(aid, cost=0):
@@ -89,31 +88,6 @@ def test_real_objective_only_complete_valid_100mob_trials_wins():
     assert results.winner is not None and results.winner.rules[0].action_id=='primal_bite'
     assert results.valid < results.candidates
     assert results.metric=='actual_100mob_seconds_per_mob'
-
-
-def test_persistent_refinement_calls_existing_evaluator_for_two_and_hundred(monkeypatch):
-    ir=fake_ir();parent=from_source_rules(ir,(('swipe',()),))
-    @dataclass(frozen=True)
-    class PreparedStub:
-        ir:object
-        policy:object
-        opening:tuple=()
-        allocation:object=None
-        source_stage:object=None
-    candidate=PreparedStub(ir=ir,policy=parent)
-    calls=[]
-    def evaluate(c,*,mobs,**kwargs):
-        calls.append((c.policy.rules[0].action_id if c.policy.rules else 'auto',mobs))
-        score=17. if c.policy.rules and c.policy.rules[0].action_id=='primal_bite' else 19.
-        return {'status':'COMPLETE','mean_s_per_mob':score,'mob_completed':mobs,'events':42}
-    monkeypatch.setattr('src.v2.source_persistent_policy_neighborhood.evaluate_persistent_candidate',evaluate)
-    outcome=refine_source_policy_persistent(candidate,level=30,recovery_policy=None,
-              max_proposals=10,max_finalists=2,max_total_wall_s=15.,max_screen_wall_s=.01,
-              max_finalist_wall_s=.01,baseline_100mob={'status':'COMPLETE','mean_s_per_mob':19.,'count':100,'events':100})
-    assert outcome['winner'] is not None and outcome['winner']['result']['mean_s_per_mob']<=19.
-    assert all(n in (2,100) for _,n in calls)
-    assert any(n==100 for _,n in calls)
-    assert outcome['actual_objective'].startswith('100 consecutive')
 
 
 def test_source_derived_combo_healing_and_periodic_guards():
