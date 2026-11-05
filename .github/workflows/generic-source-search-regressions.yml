@@ -253,7 +253,7 @@ jobs:
   selected-native-p71:
     # One selected-engine P7.1 native 1000-fight stochastic no-record probe.
     # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
-    if: startsWith(github.head_ref, 'work/work2-p71-native-stochastic-')
+    if: startsWith(github.head_ref, 'work/work2-p71-native-stochastic-') || github.head_ref == 'work/work1-l20-p71-native-reference-20261105'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -288,7 +288,16 @@ jobs:
         env:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          python tools/wf_gate.py --class druid --level 60 --spec "${{ startsWith(github.head_ref, 'work/work2-p71-native-stochastic-feral-') && 'feral' || 'unrestricted' }}" --gate P7.1
+          if [[ "${{ github.head_ref }}" == work/work1-l20-p71-native-reference-20261105 ]]; then
+            # The source lives in the exact Rust submodule gitlink. Native
+            # prepare must accept its real L20 actor; the producer pays the
+            # one genuine 1,000-fight stochastic reference and the gate reuses
+            # that identical frozen receipt, without paying a second sample.
+            python tools/wf_p7_native_reference.py --class druid --level 20 --spec unrestricted
+            python tools/wf_gate.py --class druid --level 20 --spec unrestricted --gate P7.1 --out "${RUNNER_TEMP}/p71-druid-l20-native.json"
+          else
+            python tools/wf_gate.py --class druid --level 60 --spec "${{ startsWith(github.head_ref, 'work/work2-p71-native-stochastic-feral-') && 'feral' || 'unrestricted' }}" --gate P7.1
+          fi
 
   selected-native-p75:
     # One changed-HEAD unrestricted/Feral P7.5 300s cold search and
