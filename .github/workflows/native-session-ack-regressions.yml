@@ -45,7 +45,7 @@ jobs:
       - name: Install bounded test dependency
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify native clock and real gsim world lethal ACK (not gate)
-        run: python -m pytest -q tests/test_work2_feral_l60_native_world.py tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
+        run: python -m pytest -q tests/test_work2_feral_l60_native_world.py tests/test_work2_feral_native_survival_gear.py tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
 
   source-health-world:
     # One bounded real selected-Rust ↔ gsim 2D source-HP smoke; not P4–P6.
@@ -175,7 +175,7 @@ jobs:
             --targets 2
 
   feral-100-world:
-    # One changed-producer real 100-target probe on the Work2-owned PR.
+    # One changed native gear/build 100-target survival probe on Work2's PR.
     # Not a P4/P5/P6 PASS without the separate 30s/300s cold search.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/work2-feral-l60-100-world-20261105'
     runs-on: ubuntu-24.04
@@ -200,7 +200,7 @@ jobs:
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
       - name: Execute one persistent Feral L60 100-mob native/world route (not gate)
         run: |
-          python tools/wf_native_feral_l60_world.py \
+          python tools/wf_native_feral_survival_gear.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
-            --targets 100 --recovery-candidates 48
+            --recovery-seconds 24 --max-candidates 2
