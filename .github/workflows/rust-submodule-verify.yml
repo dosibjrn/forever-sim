@@ -16,6 +16,7 @@ on:
       - tests/gates/test_wf_gate_class_cli.py
       - tests/test_native_p3_item_options.py
       - tests/test_work2_mage_native_p3.py
+      - tests/test_work2_paladin_retribution_native_p3.py
       - tests/test_work1_rogue_native_p3_preflight.py
       - tests/test_work2_paladin_native_context.py
       - tests/test_prio_p3_source_policy_sp.py
@@ -56,7 +57,8 @@ jobs:
           python -m pytest -q \
             integrations/mythicsim-rust/tests/test_native_p3_equipped.py \
             tests/test_work1_rogue_native_p3_preflight.py \
-            tests/test_work2_mage_native_p3.py
+            tests/test_work2_mage_native_p3.py \
+            tests/test_work2_paladin_retribution_native_p3.py
       - name: Build the exact selected engine
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
@@ -252,6 +254,59 @@ jobs:
               "slot_evaluations": receipt.get("native_slot_evaluations"),
           }, default=str), flush=True)
           PY
+
+      - name: Run Paladin Retribution L60 selected-native P3 (no record)
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/paladin-retribution-p3"
+          mkdir -p "$output"
+          source="integrations/mythicsim-rust/engine/validation/2026-10-06-multi-target-paladin-druid-references/retribution-paladin-2-targets.request.json"
+          sha256sum "$source" | tee "$output/source-sha256.txt"
+          git -C integrations/mythicsim-rust/engine rev-parse HEAD | tee "$output/native-engine-sha.txt"
+          report="$output/paladin-retribution-l60-p3.json"
+          rc=0
+          timeout 300s python tools/wf_gate.py --class paladin --level 60 \
+            --spec retribution --gate P3 --out "$report" || rc=$?
+          python - "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = Path(sys.argv[1])
+          rc = int(sys.argv[2])
+          if not report.exists():
+              print("PALADIN_L60_RETRIBUTION_P3_NO_RECORD", "NO_REPORT", "exit", rc,
+                    flush=True)
+              raise SystemExit(1)
+          gate = json.loads(report.read_text())
+          assert (gate["class"], gate["level"], gate["spec"], gate["gate"]) == (
+              "paladin", 60, "retribution", "P3"), gate
+          assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
+          assert rc == (0 if gate["status"] == "PASS" else 1), (rc, gate)
+          row = gate["results"][0]
+          receipt = row.get("native_equipped_paid_receipt") or {}
+          if row.get("item_options_source") == "MYTHICSIM_NATIVE_GET_OPTIONS":
+              assert row.get("real_source_search_evaluated") == 0, gate
+              assert 0 <= row.get("native_equipped_paid_attempts", 0) <= 44, gate
+              assert receipt.get("paid_attempts") == row["native_equipped_paid_attempts"], gate
+          print("PALADIN_L60_RETRIBUTION_P3_NO_RECORD", json.dumps({
+              "status": gate["status"], "reasons": row.get("reasons"),
+              "source": row.get("item_options_source"),
+              "native_options_status": row.get("native_item_options_status"),
+              "actor": receipt.get("native_prepared_actor"),
+              "paid": row.get("native_equipped_paid_attempts"),
+              "occupied": row.get("source_occupied_slots"),
+              "slot_evaluations": receipt.get("native_slot_evaluations"),
+              "baseline": (receipt.get("evaluations") or [None])[0],
+          }, default=str), flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paladin-retribution-l60-native-p3-no-record
+          path: ${{ runner.temp }}/paladin-retribution-p3/
+          if-no-files-found: ignore
 
       - name: Run no-record Rogue L20 P3 native capability and gate receipt
         env:
