@@ -89,22 +89,18 @@ jobs:
               if not native["items"]:
                   assert gate["status"] == "BLOCKED", gate
                   assert row["real_source_search_evaluated"] == 0, gate
-              elif "item_options_source" in row:
+              else:
                   assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS", gate
                   assert row["native_item_options_status"] == status, gate
-                  assert row["real_source_search_evaluated"] > 0, gate
+                  assert row["real_source_search_evaluated"] == 0, gate
                   assert row["reachability_count"] >= row["pass_count"] >= 0, gate
-                  assert row.get("p3_native_pair_reserved_attempts") == 18, gate
-                  assert row.get("p3_shared_budget_attempts", 45) <= 44, gate
-              else:
-                  assert gate["status"] != "PASS", gate
-                  assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", []), gate
-                  # Legacy EVALUATED_BOUNDED is not allowed to pre-veto
-                  # selected-native paid Rogue equipment scoring.
-                  assert row.get("p3_native_pair_reserved_attempts") == 18, gate
+                  assert row.get("p3_native_pair_reserved_attempts") == 44, gate
                   assert row.get("p3_shared_budget_attempts", 45) <= 44, gate
                   assert row.get("native_equipped_paid_attempts", 0) >= 2, gate
                   assert isinstance(row.get("native_equipped_paid_receipt"), dict), gate
+                  if gate["status"] == "PASS":
+                      assert row["pass_count"] == row["reachability_count"], gate
+                      assert row["runtime_proof"]["executed"] is True, gate
           else:
               raise AssertionError(("unknown native status", native))
           print("ROGUE_L20_P3_NO_RECORD", "native_status", status,
