@@ -91,6 +91,7 @@ jobs:
                   assert row["real_source_search_evaluated"] == 0, gate
               else:
                   assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS", gate
+                  assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", []), gate
                   assert row["native_item_options_status"] == status, gate
                   assert row["real_source_search_evaluated"] == 0, gate
                   assert row["reachability_count"] >= row["pass_count"] >= 0, gate
