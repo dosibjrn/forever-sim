@@ -1,4 +1,4 @@
-"""One genuine native-supplied Feral L60 defensive gear search over 100 world kills.
+"""One genuine native-supplied Feral L60 gear-slot survival probe over 100 kills.
 
 Do not infer equipment legality in Forever: Rust item-options proposes items,
 Rust prepare accepts/refuses a complete build, and the native/world actor is
@@ -23,21 +23,36 @@ from src.game.native_p3_item_options import query_native_p3_item_options
 from tools.wf_native_feral_l60_world import FERAL_SOURCE, run_feral_l60_world
 
 
+# Positions in the RaidSimRequest equipment wire array, not item eligibility.
+# The pinned MythicSim item-options endpoint owns which items fit each slot.
+_SURVIVAL_SLOT_INDEX = {"chest": 4, "legs": 8, "head": 0}
+
+
+def _native_survival_profile(item: dict) -> tuple[float, float]:
+    """Only native-returned stat observations used to diversify paid probes."""
+    stats = item["stats"]
+    return (float(stats.get("Stamina", 0.0)),
+            float(stats.get("Armor", 0.0)))
+
+
 def _native_stamina(item: dict) -> float:
     """Search preference from native-supplied stats, NOT an eligibility check."""
     stats = item["stats"]
     return float(stats.get("Stamina", 0.0))
 
 
-def search_feral_native_chest_survival(
+def search_feral_native_gear_survival(
     binary: str | Path,
     source_request: str | Path = FERAL_SOURCE,
     *, recovery_seconds: int = 24,
     max_candidates: int = 2,
+    slot: str = "chest",
     native_options=None,
     world_run=None,
     prepare_run=None,
 ) -> dict:
+    if slot not in _SURVIVAL_SLOT_INDEX:
+        raise ValueError("FERAL_L60_NATIVE_GEAR_SLOT_UNSUPPORTED")
     if type(max_candidates) is not int or not 1 <= max_candidates <= 4:
         raise ValueError("FERAL_L60_NATIVE_GEAR_CANDIDATE_BUDGET_INVALID")
     if type(recovery_seconds) is not int or not 1 <= recovery_seconds <= 120:
@@ -47,7 +62,7 @@ def search_feral_native_chest_survival(
     source = json.loads(source_request.read_bytes())
     try:
         equipped = source["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-        original = equipped[4]["id"]  # Request wire-format chest index, not a legality rule.
+        original = equipped[_SURVIVAL_SLOT_INDEX[slot]]["id"]
     except (KeyError, IndexError, TypeError) as exc:
         raise ValueError("FERAL_L60_SOURCE_EQUIPMENT_INCOMPLETE") from exc
     if type(original) is not int or len(equipped) != 16 and len(equipped) != 17:
@@ -56,34 +71,48 @@ def search_feral_native_chest_survival(
     # Query the selected pinned engine rather than a Forever/SQLite catalogue.
     # The same native engine must subsequently prepare and execute the build.
     native_options = native_options or query_native_p3_item_options
-    options = native_options(binary, "druid", 60, spec="unrestricted", slot="chest")
+    options = native_options(binary, "druid", 60, spec="unrestricted", slot=slot)
     # The native transport already checks each returned item shape and source
     # eligibility. Rank native choices for survival; Rust still judges full
     # build validity (enchants, talents, combined equipment and APL).
-    candidates = sorted(
+    ranked = sorted(
         (item for item in options["items"] if item["item_id"] != original),
-        key=lambda item: (_native_stamina(item),
-                          float(item["stats"].get("Armor", 0.0)),
-                          -item["item_id"]),
+        key=lambda item: (*_native_survival_profile(item), -item["item_id"]),
         reverse=True,
-    )[:max_candidates]
+    )
+    # The previous two chest IDs exposed identical native Stamina and the
+    # same lethal window. This bounded *stat-axis probe* spends no second
+    # 100-mob run on an identical native Stamina/Armor profile. Other effects
+    # remain candidates for the eventual full optimizer, not ruled illegal.
+    candidates = []
+    seen_profiles = set()
+    for item in ranked:
+        profile = _native_survival_profile(item)
+        if profile in seen_profiles:
+            continue
+        seen_profiles.add(profile)
+        candidates.append(item)
+        if len(candidates) >= max_candidates:
+            break
     if not candidates:
-        raise RuntimeError("FERAL_L60_NATIVE_CHEST_OPTIONS_NO_ALTERNATIVE")
+        raise RuntimeError(f"FERAL_L60_NATIVE_{slot.upper()}_OPTIONS_NO_ALTERNATIVE")
 
     attempts = []
     best = None
-    with TemporaryDirectory(prefix="native-feral-chest-") as tmp:
+    with TemporaryDirectory(prefix=f"native-feral-{slot}-") as tmp:
         path = Path(tmp) / "candidate.json"
         for item in candidates:
             candidate = copy.deepcopy(source)
-            candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][4] = {
+            candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][_SURVIVAL_SLOT_INDEX[slot]] = {
                 "id": item["item_id"],
             }
             path.write_text(json.dumps(candidate, sort_keys=True), encoding="utf-8")
             attempt = {
-                "chest_item_id": item["item_id"],
+                f"{slot}_item_id": item["item_id"],
+                "gear_slot": slot,
                 "native_stamina": _native_stamina(item),
-                "source_chest_item_id": original,
+                "native_armor": _native_survival_profile(item)[1],
+                f"source_{slot}_item_id": original,
                 "recovery_seconds": recovery_seconds,
             }
             try:
@@ -123,14 +152,20 @@ def search_feral_native_chest_survival(
             attempts.append(attempt)
     if best is None:
         raise RuntimeError(
-            "FERAL_L60_NO_SURVIVING_NATIVE_CHEST_CANDIDATE:"
+            f"FERAL_L60_NO_SURVIVING_NATIVE_{slot.upper()}_CANDIDATE:"
             + json.dumps(attempts, sort_keys=True))
     return {
         "best_surviving_candidate": best,
         "native_paid_gear_attempts": attempts,
         "source": "selected_native_item_options_and_prepare",
+        "searched_gear_slot": slot,
         "p4_p5_p6_certified": False,
     }
+
+
+def search_feral_native_chest_survival(*args, **kwargs) -> dict:
+    """Keep the existing chest caller while the independent legs lane runs."""
+    return search_feral_native_gear_survival(*args, slot="chest", **kwargs)
 
 
 def main() -> None:
@@ -139,11 +174,12 @@ def main() -> None:
     parser.add_argument("--source-request", type=Path, default=FERAL_SOURCE)
     parser.add_argument("--recovery-seconds", type=int, default=24)
     parser.add_argument("--max-candidates", type=int, default=2)
+    parser.add_argument("--slot", choices=sorted(_SURVIVAL_SLOT_INDEX), default="legs")
     args = parser.parse_args()
-    result = search_feral_native_chest_survival(
+    result = search_feral_native_gear_survival(
         args.binary, args.source_request,
         recovery_seconds=args.recovery_seconds,
-        max_candidates=args.max_candidates,
+        max_candidates=args.max_candidates, slot=args.slot,
     )
     print(json.dumps(result, sort_keys=True))
 

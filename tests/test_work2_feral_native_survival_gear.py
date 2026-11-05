@@ -4,7 +4,9 @@ import subprocess
 
 import pytest
 
-from tools.wf_native_feral_survival_gear import search_feral_native_chest_survival
+from tools.wf_native_feral_survival_gear import (
+    search_feral_native_chest_survival, search_feral_native_gear_survival,
+)
 
 
 def source():
@@ -104,3 +106,45 @@ def test_candidate_budget_rejected_before_native(tmp_path, budget):
     with pytest.raises(ValueError, match="NATIVE_GEAR_CANDIDATE_BUDGET_INVALID"):
         search_feral_native_chest_survival(
             "/native", tmp_path / "absent.json", max_candidates=budget)
+
+
+def test_native_legs_axis_uses_distinct_stat_profiles_and_correct_wire_slot(tmp_path):
+    path = tmp_path / "feral.json"
+    path.write_text(json.dumps(source()))
+    chosen = []
+
+    def native_legs(binary, class_key, level, **kwargs):
+        assert kwargs == {"spec": "unrestricted", "slot": "legs"}
+        return {"items": [
+            {"item_id": 108, "stats": {"Stamina": 15, "Armor": 10}},
+            {"item_id": 501, "stats": {"Stamina": 60, "Armor": 150}},
+            {"item_id": 502, "stats": {"Stamina": 60, "Armor": 150}},
+            {"item_id": 503, "stats": {"Stamina": 53, "Armor": 170}},
+        ]}
+
+    def native_prepare(argv, **kwargs):
+        candidate = json.loads(open(argv[3], encoding="utf-8").read())
+        gear = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        assert gear[4] == {"id": 104}  # Chest and all other source slots retained.
+        assert all(gear[i] == {"id": 100 + i} for i in range(16) if i != 8)
+        chosen.append(gear[8]["id"])
+        with open(argv[argv.index("--outfile") + 1], "w", encoding="utf-8") as f:
+            json.dump({"player": {"class": "ClassDruid", "level": 60},
+                       "request_sha256": "a" * 64,
+                       "selected_item": gear[8]["id"]}, f)
+
+    result = search_feral_native_gear_survival(
+        "/native", path, slot="legs", native_options=native_legs,
+        prepare_run=native_prepare, world_run=paid_world, max_candidates=2)
+    assert chosen == [501, 503]  # Not 501, 502 (same native stat profile).
+    assert [a["legs_item_id"] for a in result["native_paid_gear_attempts"]] == chosen
+    assert result["searched_gear_slot"] == "legs"
+    assert all(a["native_armor"] > 0 for a in result["native_paid_gear_attempts"])
+    assert result["p4_p5_p6_certified"] is False
+    assert json.loads(path.read_text()) == source()
+
+
+def test_native_gear_slot_refused_before_opening_source(tmp_path):
+    with pytest.raises(ValueError, match="NATIVE_GEAR_SLOT_UNSUPPORTED"):
+        search_feral_native_gear_survival(
+            "/native", tmp_path / "absent", slot="unknown")

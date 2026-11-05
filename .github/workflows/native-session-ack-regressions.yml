@@ -175,7 +175,7 @@ jobs:
             --targets 2
 
   feral-100-world:
-    # One changed native gear/build 100-target survival probe on Work2's PR.
+    # One changed native *legs* stat-axis 100-target survival probe on Work2's PR.
     # Not a P4/P5/P6 PASS without the separate 30s/300s cold search.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/work2-feral-l60-100-world-20261105'
     runs-on: ubuntu-24.04
@@ -203,4 +203,4 @@ jobs:
           python tools/wf_native_feral_survival_gear.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
-            --recovery-seconds 24 --max-candidates 2
+            --recovery-seconds 24 --max-candidates 2 --slot legs
