@@ -378,7 +378,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     if checkpoint == "feral_l60":
         command.extend(("--class-key", "druid", "--level", "60", "--go-rules"))
     elif checkpoint == "mage_l60":
-        command.extend(("--class-key", "mage", "--level", "60"))
+        command.extend(("--class-key", "mage", "--level", "60",
+                        "--current-client-profile", "mage/arcane"))
     try:
         completed = subprocess.run(
             command, input=json.dumps(item_check.get("slots", {})),
