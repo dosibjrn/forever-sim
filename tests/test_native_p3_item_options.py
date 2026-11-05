@@ -312,7 +312,14 @@ def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     assert '[[ "$level" == 20 && "$class" == paladin && "$spec" == unrestricted ]] ||' in workflow
     assert '[[ "$level" == 20 && "$class" == rogue && "$spec" == unrestricted ]] ||' in workflow
     assert '[[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]] ||' in workflow
-    assert '[[ "$class" == druid && "$level" == 60 && "$spec" == feral ]]; then' in workflow
+    # Native-option consumers can be extended without moving the last `then`.
+    # Keep asserting actual P3 coverage, not incidental shell-clause position.
+    p3_rules = workflow.split('if [[ "$gate" == P3 ]]; then', 1)[1].split(
+        'native_options_needed=true', 1
+    )[0]
+    assert '[[ "$class" == druid && "$level" == 60 && "$spec" == feral ]]' in p3_rules
+    assert '[[ "$class" == mage && "$level" == 60 && ' in p3_rules
+    assert '"$spec" == arcane' in p3_rules
     assert 'elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then' in workflow
     assert "native_options_needed=true" in workflow
     assert "if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.native_options_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
