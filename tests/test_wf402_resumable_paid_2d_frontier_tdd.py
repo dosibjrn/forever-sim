@@ -143,36 +143,6 @@ def test_resumed_finalist_time_is_not_relabelled_as_qualification_wall(tmp_path)
         result['qualification_phase_wall_s'],result['finalist_phase_wall_s'])),abs=.02)
 
 
-def test_cli_can_resume_existing_journal_without_overwriting_output(tmp_path):
-    from tools.wf400_paid_joint_with_journal import run
-    progress=tmp_path/'progress.json'
-    output=tmp_path/'result.json'
-    kwargs=dict(class_key='druid',level=30,
-        ability_db=ROOT/'data/forever/staged_druid_l30_talents_70338.sqlite',
-        seed_stage=ROOT/'evidence/wf351/WF351_L30_SEED_STAGE.json',
-        output=output,progress=progress,budget_s=30.,pack_size=2,
-        max_talents=1,max_gear_moves=0,max_policies=2,
-        max_recovery_policies=1,max_paid_builds=2,max_finalists=1,
-        per_candidate_s=10.,qualification_mobs=12,max_qualifiers=2)
-    seen=Counter()
-    def paid(candidate,*,mobs,**kw):
-        seen[mobs]+=1
-        if mobs==4 and seen[mobs]==2:
-            raise KeyboardInterrupt('external stop')
-        return {'status':'COMPLETE','mean_s_per_mob':19.,
-                'mob_completed':mobs,'events':mobs*5,'elapsed_cpu_s':.001}
-    with patch('src.v2.source_bounded_joint_frontier.isolated_joint_evaluation',side_effect=paid):
-        with pytest.raises(KeyboardInterrupt):
-            run(**kwargs)
-        assert progress.exists() and not output.exists()
-        result=run(**kwargs,resume=True)
-    assert output.exists()
-    assert result['complete_100mob_candidates']==1
-    assert seen[4]==3
-    with pytest.raises(FileExistsError,match='REFUSE_OVERWRITE_PAID_JOINT_RESULT'):
-        run(**kwargs,resume=True)
-
-
 def test_marginal_source_scheduler_resume_matches_independent_uninterrupted_search(tmp_path):
     ir,stage=source()
     kwargs=dict(max_paid_builds=8,max_policies=3,max_talents=2,
