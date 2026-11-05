@@ -407,3 +407,26 @@ def test_l30_native_refusal_prevents_stochastic_charge(
     assert calls == []
     assert not reference._reference_directory(
         tmp_path, "druid", 30, "unrestricted").exists()
+
+
+def test_frozen_l30_reference_matches_its_selected_rust_fixture():
+    """Real paid L30 receipt stays bound to the selected Rust source bytes.
+
+    This checks Forever's pinned artifact transport, not Warcraft mechanics.
+    """
+    import hashlib
+
+    root = Path(__file__).resolve().parents[1]
+    native_request = (root / "integrations/mythicsim-rust/engine"
+                      / "fixtures/references/druid-l30-p71.request.json")
+    frozen = reference._reference_directory(root, "druid", 30, "unrestricted")
+    raw = native_request.read_bytes()
+    assert (frozen / "request.json").read_bytes() == raw
+    receipt = json.loads((frozen / "reference.json").read_text())
+    assert receipt["source_request_raw_sha256"] == hashlib.sha256(raw).hexdigest()
+    assert receipt["native_prepared_actor"] == {
+        "class": "ClassDruid", "level": 30, "status": "PREPARED"}
+    assert receipt["reference_rng_mode"] == "stochastic"
+    assert receipt["reference_iterations"] == 1000
+    assert receipt["reference_native_sample"]["iterations"] == 1000
+    assert receipt["reference_native_sample"]["native_dps"] == receipt["reference_dps"]
