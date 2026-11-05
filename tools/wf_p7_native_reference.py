@@ -56,12 +56,10 @@ def _checkpoint_source(raw: bytes, class_key: str, level: int) -> tuple[dict, di
     """Only check request identity/shape; native decides all Warcraft legality."""
     request = json.loads(raw)
     player = request["raid"]["parties"][0]["players"][0]
-    # The protobuf request may omit player.level; the selected engine PREPARE
-    # response, never a Python level hint, establishes the actual actor level.
-    # A supplied contradictory hint is still rejected before native payment.
+    # Go proto.Player has no level field. Native --actor-level owns the context;
+    # actual native PREPARE establishes the actor, never a Python level hint.
     if (player.get("class") != "Class" + class_key.capitalize()
-            or (player.get("level") is not None
-                and (type(player["level"]) is not int or player["level"] != level))):
+            or "level" in player):
         raise ValueError("P7_1_REQUEST_ACTOR_CHECKPOINT_MISMATCH")
     targets = request["encounter"]["targets"]
     if (len(targets) != 1 or type(targets[0].get("level")) is not int
@@ -73,10 +71,11 @@ def _checkpoint_source(raw: bytes, class_key: str, level: int) -> tuple[dict, di
     return request, player
 
 
-def _prepare_actor(binary: Path, request_path: Path) -> dict:
+def _prepare_actor(binary: Path, request_path: Path, level: int) -> dict:
     """Read native-prepared class/level, not just the source request hint."""
     completed = subprocess.run(
-        [str(binary), "prepare", "--request", str(request_path)],
+        [str(binary), "prepare", "--request", str(request_path),
+         "--actor-level", str(level)],
         capture_output=True, text=True, timeout=90, check=False,
     )
     try:
@@ -97,9 +96,10 @@ def _prepare_actor(binary: Path, request_path: Path) -> dict:
             "level": player.get("level")}
 
 
-def _native_score(production, binary: Path, path: Path) -> dict:
+def _native_score(production, binary: Path, path: Path, level: int) -> dict:
     native = production.native_source_control(
-        binary, path, P7_FINAL_STOCHASTIC_ITERATIONS, rng_mode="stochastic")
+        binary, path, P7_FINAL_STOCHASTIC_ITERATIONS, rng_mode="stochastic",
+        actor_level=level)
     value = native.get("native_dps") if isinstance(native, dict) else None
     if (not isinstance(native, dict)
             or type(native.get("iterations")) is not int
@@ -146,13 +146,13 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
         path = Path(temporary) / "native-reference.json"
         path.write_bytes(raw)
         try:
-            actor = _prepare_actor(binary, path)
+            actor = _prepare_actor(binary, path, level)
             if actor["status"] != "PREPARED":
                 return _blocked("P7_1_NATIVE_PREPARE_REFUSED", native_refusal=actor)
             if actor["class"] != "ClassDruid" or actor["level"] != level:
                 return _blocked("P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH",
                                 native_actor=actor)
-            paid = _native_score(_native(root), binary, path)
+            paid = _native_score(_native(root), binary, path, level)
             score = paid["native_dps"]
         except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
             return _blocked("P7_1_NATIVE_REFERENCE_EXECUTION_FAILED",
@@ -167,6 +167,7 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
         "encounter_sha256": hashlib.sha256(encounter).hexdigest(),
         "selected_engine_revision": revision,
         "native_prepared_actor": actor,
+        "native_actor_level_context": level,
         "reference_dps": score,
         "reference_native_sample": paid,
         "reference_iterations": P7_FINAL_STOCHASTIC_ITERATIONS,
@@ -207,6 +208,7 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
                 or manifest.get("source_request_raw_sha256") != sha
                 or manifest.get("encounter_sha256") != encounter_sha
                 or manifest.get("encounter_target_level") != source["encounter"]["targets"][0]["level"]
+                or manifest.get("native_actor_level_context") != level
                 or manifest.get("reference_iterations") != P7_FINAL_STOCHASTIC_ITERATIONS
                 or manifest.get("reference_rng_mode") != "stochastic"
                 or type(reference) not in (int, float)
@@ -229,7 +231,7 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
     if manifest.get("selected_engine_revision") != revision:
         return _blocked("P7_1_GENERATED_REFERENCE_ENGINE_CHANGED")
     try:
-        actor = _prepare_actor(binary, request_path)
+        actor = _prepare_actor(binary, request_path, level)
         if actor["status"] != "PREPARED":
             return _blocked("P7_1_NATIVE_PREPARE_REFUSED", native_refusal=actor)
         if actor["class"] != "ClassDruid" or actor["level"] != level:
