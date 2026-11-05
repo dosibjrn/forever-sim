@@ -12,6 +12,7 @@ on:
       - src/game/native_p3_player_context.py
       - tests/gates/test_wf_gate_class_cli.py
       - tests/test_native_p3_item_options.py
+      - tests/test_work1_rogue_native_p3_preflight.py
       - tests/test_work2_paladin_native_context.py
       - tests/test_prio_p3_source_policy_sp.py
       - tools/wf_gate.py
@@ -98,6 +99,12 @@ jobs:
               else:
                   assert gate["status"] != "PASS", gate
                   assert "P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", []), gate
+                  # Legacy EVALUATED_BOUNDED is not allowed to pre-veto
+                  # selected-native paid Rogue equipment scoring.
+                  assert row.get("p3_native_pair_reserved_attempts") == 18, gate
+                  assert row.get("p3_shared_budget_attempts", 45) <= 44, gate
+                  assert row.get("native_equipped_paid_attempts", 0) >= 2, gate
+                  assert isinstance(row.get("native_equipped_paid_receipt"), dict), gate
           else:
               raise AssertionError(("unknown native status", native))
           print("ROGUE_L20_P3_NO_RECORD", "native_status", status,
