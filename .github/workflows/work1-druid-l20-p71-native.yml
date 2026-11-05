@@ -6,6 +6,8 @@ on:
       - work/work1-l20-p71-native-reference-20261105
     paths:
       - .github/workflows/work1-druid-l20-p71-native.yml
+      - integrations/mythicsim-rust/engine
+      - integrations/mythicsim-rust/live_world_probe.py
       - tools/wf_p7_native_reference.py
       - tests/test_work1_p71_native_generated.py
 
