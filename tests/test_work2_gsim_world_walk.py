@@ -212,8 +212,12 @@ def test_native_survival_failure_names_first_dead_window_and_real_health():
         {"index": 3, "actor_health": -50.0},
     ]
     with pytest.raises(AssertionError, match=(
-            r"RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:index=2:actor_health=0[.]0")):
+            r"RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=2:")) as error:
         validate(windows, 4)
+    message = str(error.value)
+    assert '"index": 1' in message and '"actor_health": 120.0' in message
+    assert '"index": 2' in message and '"actor_health": 0.0' in message
+    assert '"index": 3' in message and '"actor_health": -50.0' in message
 
 
 def test_native_survival_refuses_skipped_or_missing_target_receipts():
