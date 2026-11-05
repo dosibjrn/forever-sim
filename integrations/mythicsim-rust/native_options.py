@@ -98,3 +98,114 @@ def native_equipment_proposals(source: dict, base_items: list[dict]) -> dict[int
         if options:
             proposals[index] = options
     return proposals
+
+
+def native_joint_request_proposals(
+    source: dict, reference: dict, *,
+    max_talents: int = 6, max_spells: int = 4,
+) -> tuple[list[dict], dict[str, int]]:
+    """Produce *unverified* class-neutral talent and spell/APL search requests.
+
+    The native get_options tree indexes and spell IDs supply the move domain.
+    One-point transfers are search moves, NOT a Python implementation of tier,
+    prerequisite, acquisition or action legality. Every completed request must
+    reach native prepare/evaluate; native INVALID/UNSUPPORTED remains decisive.
+    """
+    import copy
+
+    player = reference["raid"]["parties"][0]["players"][0]
+    output: list[dict] = []
+    talent_count = 0
+    spell_count = 0
+
+    # A string is only mutated if its three source-native tree lengths align.
+    original = player.get("talentsString")
+    trees = source["talents"]["trees"]
+    if isinstance(original, str) and len(trees) == 3:
+        parts = original.split("-")
+        layouts = [tree.get("talents") for tree in trees]
+        if (len(parts) == 3
+                and all(isinstance(layout, list) for layout in layouts)
+                and all(len(part) <= len(layout)
+                        and all(ch in "0123456789" for ch in part)
+                        for part, layout in zip(parts, layouts))):
+            ranks = [
+                [int(ch) for ch in part.ljust(len(layout), "0")]
+                for part, layout in zip(parts, layouts)
+            ]
+            seen = {original}
+            for tree_index, layout in enumerate(layouts):
+                for source_index, source_rank in enumerate(ranks[tree_index]):
+                    if source_rank <= 0:
+                        continue
+                    # Same-row moves get explored first, but do not make an
+                    # eligibility claim. Native decides every exact build.
+                    targets = sorted(
+                        range(len(layout)),
+                        key=lambda index: (
+                            layout[index].get("row") != layout[source_index].get("row"),
+                            index,
+                        ),
+                    )
+                    for target_index in targets:
+                        if target_index == source_index:
+                            continue
+                        maximum = layout[target_index].get("max_rank")
+                        if (type(maximum) is not int
+                                or ranks[tree_index][target_index] >= maximum):
+                            continue
+                        changed = copy.deepcopy(ranks)
+                        changed[tree_index][source_index] -= 1
+                        changed[tree_index][target_index] += 1
+                        candidate = "-".join(
+                            "".join(map(str, row)).rstrip("0") for row in changed
+                        )
+                        if candidate in seen:
+                            continue
+                        seen.add(candidate)
+                        request = copy.deepcopy(reference)
+                        request["raid"]["parties"][0]["players"][0]["talentsString"] = candidate
+                        output.append(request)
+                        talent_count += 1
+                        if talent_count >= max_talents:
+                            break
+                    if talent_count >= max_talents:
+                        break
+                if talent_count >= max_talents:
+                    break
+
+    # Source class-family rows may be passive, triggered or not learned.
+    # We never mark these as executable; they enter the search proposal
+    # domain only, with the baseline native-positive APL left intact.
+    actions = player.get("rotation", {}).get("priorityList")
+    if isinstance(actions, list) and 0 < len(actions) < 20:
+        known_ids = {
+            cast_id
+            for entry in actions if isinstance(entry, dict)
+            for action in [entry.get("action")]
+            if isinstance(action, dict)
+            for spell in [action.get("castSpell")]
+            if isinstance(spell, dict)
+            for identity in [spell.get("spellId")]
+            if isinstance(identity, dict)
+            for cast_id in [identity.get("spellId")]
+            if type(cast_id) is int
+        }
+        for spell in source["spells"]:
+            spell_id = spell.get("spell_id") if isinstance(spell, dict) else None
+            if type(spell_id) is not int or spell_id <= 0 or spell_id in known_ids:
+                continue
+            known_ids.add(spell_id)
+            request = copy.deepcopy(reference)
+            request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"].append(
+                {"action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+            )
+            output.append(request)
+            spell_count += 1
+            if spell_count >= max_spells:
+                break
+
+    return output, {
+        "native_options_talent_proposals": talent_count,
+        "native_options_unverified_spell_apl_proposals": spell_count,
+    }
