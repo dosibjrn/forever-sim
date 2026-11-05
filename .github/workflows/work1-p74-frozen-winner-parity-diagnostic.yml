@@ -39,7 +39,11 @@ jobs:
           actual="$(git -C "$engine" rev-parse HEAD)"
           [[ -n "$recorded" && "$recorded" == "$actual" ]]
           [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]]
+          # The selected Rust engine already owns typed RNG. Old patching by
+          # source-text substitution is only for historical pins without it.
+          if ! grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"; then
           python integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          fi
           python integrations/mythicsim-rust/wf659_rng_boolean_audit.py "$engine/src"
           grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
           ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"

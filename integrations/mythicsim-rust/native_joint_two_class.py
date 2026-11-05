@@ -20,6 +20,7 @@ from pathlib import Path
 
 from apl_mutation import mutate_apl
 from native_gear_adapter import GearRejected, NativeGearAdapter
+from native_options import NativeOptionsError, query_native_options
 from native_joint_composition import (
     MISSING_TALENT_STRING, CandidateAxis, JointCandidateAdapter, search_joint,
 )
@@ -480,6 +481,7 @@ def source_bounded_adapter(
     native_objective_witnesses_by_talentsString: dict | None = None,
     native_objective_source_apls_by_talentsString: dict | None = None,
     objective: str = "DPS",
+    native_options: dict | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
     """Use same-class source proposals; Rust owns all build legality."""
     objective = str(objective).upper()
@@ -498,7 +500,13 @@ def source_bounded_adapter(
     ]
     donor_requests = [fixture["request"] for fixture in extra_same_class]
     source_requests = same_class + donor_requests
-    gear = NativeGearAdapter(class_key, reference, source_requests)
+    # Preserve the source-only test/compatibility contract when no native
+    # option snapshot was supplied; only the new optimized path adds the arg.
+    if native_options is None:
+        gear = NativeGearAdapter(class_key, reference, source_requests)
+    else:
+        gear = NativeGearAdapter(class_key, reference, source_requests,
+                                 native_options=native_options)
     if not gear.mutable_indices:
         raise ValueError("BLOCKED_GEAR_POOL: no source-observed alternate item")
 
@@ -1036,6 +1044,7 @@ def source_bounded_adapter(
     )
     scope = {
         "gear_mutable_slots": list(gear.mutable_indices),
+        "native_options_gear_candidates": getattr(gear, "native_option_candidate_count", 0),
         "talent_builds": [talent_label(value) for value in talents],
         "talent_builds_excluded_for_native_objective_witness": [
             talent_label(value) for value in excluded_talents
@@ -1108,7 +1117,8 @@ def axis_delta(reference: dict, candidate: dict) -> dict[str, bool]:
 def execute(profile_id: str, inventory: list, *,
             binary: Path, engine_src: Path, seconds: float, iterations: int,
             seed: int, outdir: Path,
-            donor_fixtures: list[dict] | None = None) -> dict:
+            donor_fixtures: list[dict] | None = None,
+            use_native_options: bool = False) -> dict:
     objective = objective_for_profile(profile_id)
     metric_path = objective_metric_path(objective)
     row = {
@@ -1146,6 +1156,19 @@ def execute(profile_id: str, inventory: list, *,
         return row
 
     cls = profile_id.split("/", 1)[0]
+    native_options = None
+    if use_native_options:
+        # This L60 JOINT optimizer consumes the real selected Rust source,
+        # before proposing candidates. No duplicate Python legality model.
+        try:
+            native_options = query_native_options(binary, cls, 60)
+        except NativeOptionsError as exc:
+            row["status"] = "BLOCKED_NATIVE_OPTIONS"
+            row["blocker"] = str(exc)[-500:]
+            return row
+        row["native_options_source_revision"] = native_options["source_revision"]
+        row["native_options_item_eligibility_complete"] = native_options["coverage"]["item_eligibility_complete"]
+        row["native_options_spell_learnability_complete"] = native_options["coverage"]["spell_learnability_complete"]
     same_class = [req for entry, req in inventory if req is not None
                   and entry["profile_id"].split("/", 1)[0] == cls]
     outdir.mkdir(parents=True, exist_ok=True)
@@ -1196,6 +1219,7 @@ def execute(profile_id: str, inventory: list, *,
 
     adapter_kwargs = {
         "donor_fixtures": donor_fixtures,
+        "native_options": native_options,
         "native_objective_witnesses": native_objective_witnesses,
         "objective": objective,
     }
@@ -1438,7 +1462,8 @@ def main() -> None:
             binary=args.binary, engine_src=args.engine_src,
             seconds=args.seconds, iterations=args.iterations,
             seed=args.seed + idx, outdir=outdir,
-            donor_fixtures=donor_fixtures)
+            donor_fixtures=donor_fixtures,
+            use_native_options=True)
         rows.append(row)
         print(json.dumps({"profile":profile, "status":row["status"],
                           "paid":row["native_paid"],

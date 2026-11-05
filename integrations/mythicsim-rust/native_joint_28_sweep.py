@@ -312,6 +312,7 @@ def main() -> None:
                                   if r["profile_id"] == profile),
             outdir=args.out / "profiles" / profile.replace("/", "__"),
             donor_fixtures=donor_fixtures,
+            use_native_options=True,
         )
 
     rows = build_matrix(inventory, stage=args.stage, run=pay_native,

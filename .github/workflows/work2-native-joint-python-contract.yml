@@ -7,6 +7,9 @@ on:
     paths:
       - .github/workflows/work2-native-joint-python-contract.yml
       - integrations/mythicsim-rust/native_joint_two_class.py
+      - integrations/mythicsim-rust/native_options.py
+      - integrations/mythicsim-rust/tests/test_native_options.py
+      - integrations/mythicsim-rust/native_gear_adapter.py
       - integrations/mythicsim-rust/native_l60_matrix.py
       - integrations/mythicsim-rust/native_joint_28_sweep.py
       - integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py
@@ -49,6 +52,7 @@ jobs:
           python integrations/mythicsim-rust/tests/test_native_l20_paid_cast_receipts.py -v
           python integrations/mythicsim-rust/tests/test_native_joint_composition.py -v
           python integrations/mythicsim-rust/tests/test_native_gear_adapter.py -v
+          python integrations/mythicsim-rust/tests/test_native_options.py -v
           python integrations/mythicsim-rust/tests/test_native_source_donors.py -v
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py -v
           python integrations/mythicsim-rust/tests/test_native_matrix_contract.py -v
