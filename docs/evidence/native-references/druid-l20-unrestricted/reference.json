@@ -14,7 +14,7 @@
   "reference_dps": 7.824390138004402,
   "reference_iterations": 1000,
   "reference_native_sample": {
-    "first_duration_s": 120,
+    "first_duration_s": 120.0,
     "iterations": 1000,
     "native_dps": 7.824390138004402,
     "native_rules": "forever"
