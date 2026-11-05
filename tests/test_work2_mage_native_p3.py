@@ -373,3 +373,16 @@ def test_mage_frost_p3_uses_exact_frost_fixture_and_talent_preset(monkeypatch):
     assert command[-6:] == ["--class-key", "mage", "--level", "60",
                             "--current-client-profile", "mage/frost"]
     assert json.loads(kwargs["input"]) == selection["slots"]
+
+
+def test_m1_dispatch_builds_selected_native_engine_for_frost_p3():
+    """Frost's official P3 dispatch must build the same binary as the paid probe."""
+    workflow = (ROOT / ".github/workflows/m1-on-demand-record.yml").read_text(
+        encoding="utf-8")
+    p3_conditions = workflow.split('if [[ "$gate" == P3 ]]; then', 1)[1].split(
+        'elif [[ ( "$gate" == P4', 1)[0]
+    assert '"$class" == mage && "$level" == 60' in p3_conditions
+    assert '"$spec" == arcane' in p3_conditions
+    assert '"$spec" == fire' in p3_conditions
+    assert '"$spec" == frost' in p3_conditions
+    assert "native_options_needed=true" in p3_conditions
