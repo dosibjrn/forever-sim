@@ -177,3 +177,45 @@ def test_native_prepared_level_is_authority_without_proto_level_hint(
         another, "druid", 20, "unrestricted", other_source)
     assert rejected["status"] == "BLOCKED"
     assert rejected["reasons"] == ["P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH"]
+
+
+def test_native_source_control_forwards_actor_level_without_proto_mutation(
+        monkeypatch, tmp_path):
+    """Forever controls native CLI context; Go request stays schema-faithful."""
+    module = reference._native(Path(__file__).resolve().parents[1])
+    request = _request(tmp_path)
+    original = request.read_bytes()
+    commands = []
+
+    def native_run(command, **_kwargs):
+        commands.append(command)
+        output = Path(command[command.index("--outfile") + 1])
+        output.write_text(json.dumps({
+            "identity": {"engine": "forever-engine"},
+            "result": {"iterationsDone": 2, "raidMetrics": {"dps": {"avg": 17.0}}},
+            "firstIterationDuration": 120.0,
+        }))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(module.subprocess, "run", native_run)
+    scored = module.native_source_control(
+        Path("/selected/forever-engine"), request, 2,
+        rng_mode="stochastic", actor_level=20)
+    assert scored["iterations"] == 2
+    assert scored["native_dps"] == 17.0
+    assert commands[0][-2:] == ["--actor-level", "20"]
+    assert "--rng-mode" in commands[0] and "stochastic" in commands[0]
+    assert request.read_bytes() == original
+
+    module.native_source_control(Path("/selected/forever-engine"), request, 2,
+                                 rng_mode="balanced")
+    assert "--actor-level" not in commands[1]
+    for invalid in (0, -1, True, "20"):
+        try:
+            module.native_source_control(Path("/selected/forever-engine"), request, 2,
+                                         rng_mode="stochastic", actor_level=invalid)
+        except ValueError as exc:
+            assert str(exc) == "RUST_NATIVE_CONTROL_ACTOR_LEVEL_INVALID"
+        else:
+            raise AssertionError("invalid native actor level was forwarded")
+    assert len(commands) == 2
