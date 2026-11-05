@@ -179,11 +179,11 @@ class CurrentClientPresetEnginePinContracts(unittest.TestCase):
         path = Path("/tmp/test-selected-engine")
         gitlink = (
             "160000 commit " + CURRENT_ENGINE_PIN +
-            "\\tintegrations/mythicsim-rust/engine\\n"
+            "\tintegrations/mythicsim-rust/engine\n"
         )
         with patch(
             "native_l60_matrix.subprocess.check_output",
-            side_effect=[gitlink, CURRENT_ENGINE_PIN + "\\n"],
+            side_effect=[gitlink, CURRENT_ENGINE_PIN + "\n"],
         ) as checked:
             self.assertEqual(CURRENT_ENGINE_PIN, verify_current_client_engine_pin(path))
         self.assertEqual(2, checked.call_count)
@@ -193,26 +193,26 @@ class CurrentClientPresetEnginePinContracts(unittest.TestCase):
     def test_uncommitted_engine_checkout_is_rejected_not_silently_rebased(self):
         gitlink = (
             "160000 commit " + CURRENT_ENGINE_PIN +
-            "\\tintegrations/mythicsim-rust/engine\\n"
+            "\tintegrations/mythicsim-rust/engine\n"
         )
         with patch("native_l60_matrix.subprocess.check_output", side_effect=[
-            gitlink, "deb366e986dbc156e2242ddac3ac8c4ac854c107\\n",
+            gitlink, "deb366e986dbc156e2242ddac3ac8c4ac854c107\n",
         ]):
             with self.assertRaisesRegex(ValueError, "parent-committed Rust pin"):
                 verify_current_client_engine_pin(Path("/tmp/stale-engine"))
 
     def test_unapproved_preset_engine_is_rejected_even_with_matching_gitlink(self):
         other = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
-        gitlink = "160000 commit " + other + "\\tintegrations/mythicsim-rust/engine\\n"
+        gitlink = "160000 commit " + other + "\tintegrations/mythicsim-rust/engine\n"
         with patch("native_l60_matrix.subprocess.check_output", side_effect=[
-            gitlink, other + "\\n",
+            gitlink, other + "\n",
         ]):
             with self.assertRaisesRegex(ValueError, "Current-client talent presets require Rust pin"):
                 verify_current_client_engine_pin(Path("/tmp/unapproved-engine"))
 
     def test_missing_committed_gitlink_fails_closed(self):
         with patch("native_l60_matrix.subprocess.check_output", side_effect=[
-            "", CURRENT_ENGINE_PIN + "\\n",
+            "", CURRENT_ENGINE_PIN + "\n",
         ]):
             with self.assertRaisesRegex(ValueError, "committed Rust submodule gitlink"):
                 verify_current_client_engine_pin(Path("/tmp/untracked-engine"))
