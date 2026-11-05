@@ -92,5 +92,63 @@ class NativeOptionsTests(unittest.TestCase):
             module.query_native_options("binary", "mage", 60, runner=runner)
 
 
+    def test_native_talent_and_spell_moves_are_unverified_request_proposals(self):
+        native = source()
+        native["talents"]["trees"] = [
+            {"talents": [{"max_rank": 5, "row": 0}, {"max_rank": 5, "row": 0}]},
+            {"talents": [{"max_rank": 5, "row": 0}]},
+            {"talents": []},
+        ]
+        native["spells"] = [
+            {"spell_id": 1, "learning_requirement": "unresolved_trainer_talent_or_trigger"},
+            {"spell_id": 200, "learning_requirement": "unresolved_trainer_talent_or_trigger"},
+        ]
+        reference = {
+            "raid": {"parties": [{"players": [{
+                "class": "ClassMage", "talentsString": "3-2-",
+                "rotation": {"priorityList": [
+                    {"action": {"castSpell": {"spellId": {"spellId": 1}}}}
+                ]},
+            }]}]},
+            "simOptions": {"iterations": 40, "randomSeed": "7"},
+        }
+        requests, counts = module.native_joint_request_proposals(native, reference)
+        self.assertEqual(counts, {
+            "native_options_talent_proposals": 1,
+            "native_options_unverified_spell_apl_proposals": 1,
+        })
+        self.assertEqual(requests[0]["raid"]["parties"][0]["players"][0]["talentsString"], "21-2-")
+        self.assertEqual(requests[1]["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"][-1],
+                         {"action": {"castSpell": {"spellId": {"spellId": 200}}}})
+        self.assertEqual(requests[1]["raid"]["parties"][0]["players"][0]["talentsString"], "3-2-")
+        self.assertEqual(requests[0]["simOptions"], reference["simOptions"])
+        self.assertEqual(reference["raid"]["parties"][0]["players"][0]["talentsString"], "3-2-")
+        self.assertEqual(len(reference["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]), 1)
+
+    def test_unverified_coverage_does_not_invent_spell_legality(self):
+        native = source()
+        native["class"] = "warlock"
+        native["level"] = 20
+        native["coverage"]["item_eligibility_complete"] = False
+        native["talents"]["trees"] = [{"talents": []}] * 3
+        native["spells"] = [{"spell_id": 999,
+                             "learning_requirement": "unresolved_trainer_talent_or_trigger"}]
+        reference = {
+            "raid": {"parties": [{"players": [{
+                "class": "ClassWarlock", "talentsString": "--",
+                "rotation": {"priorityList": [{"action": {"wait": {}}}]},
+            }]}]},
+        }
+        requests, counts = module.native_joint_request_proposals(native, reference)
+        self.assertEqual(counts["native_options_talent_proposals"], 0)
+        self.assertEqual(counts["native_options_unverified_spell_apl_proposals"], 1)
+        self.assertEqual(requests[0]["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"][-1]
+                         ["action"]["castSpell"]["spellId"]["spellId"], 999)
+        # Discovery does not create a VALID verdict or alter the native source.
+        self.assertNotIn("status", requests[0])
+        self.assertFalse(native["coverage"]["item_eligibility_complete"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
