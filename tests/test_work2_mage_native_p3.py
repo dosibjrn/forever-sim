@@ -30,7 +30,7 @@ def _mage_reference():
     }
 
 
-def _unified_payload(*, item_eligible=True):
+def _unified_payload(*, item_eligible=False):
     rows = [
         {"item_id": 900, "eligibility": "native_eligible",
          "native": {"item_id": 900, "slot": "weapon", "item_level": 60},
