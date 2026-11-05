@@ -169,3 +169,34 @@ jobs:
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
             --targets 2
+
+  feral-100-world:
+    # One changed-producer real 100-target probe on the Work2-owned PR.
+    # Not a P4/P5/P6 PASS without the separate 30s/300s cold search.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/work2-feral-l60-100-world-20261105'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing world runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Compile exact selected native engine
+        run: |
+          set -euo pipefail
+          selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
+          actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
+          test "$selected" = "$actual"
+          echo "SELECTED_RUST_SHA=$actual"
+          cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+      - name: Execute one persistent Feral L60 100-mob native/world route (not gate)
+        run: |
+          python tools/wf_native_feral_l60_world.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
+            --targets 100
