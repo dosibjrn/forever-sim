@@ -19,6 +19,7 @@ from pathlib import Path
 
 from native_gear_adapter import GearRejected, NativeGearAdapter
 from native_gear_probe import classify_native_failure
+from native_options import NativeOptionsError, query_native_options
 from native_l60_matrix import (
     HEAL, TANK, ROOT, create_inventory, digest, fingerprint,
     load_native_item_index, player,
@@ -123,6 +124,22 @@ def cold_gear_kernel(adapter, reference, *, evaluate, seconds, iterations,
     return result, paid_trace
 
 
+def native_source_adapter(class_key: str, binary: Path, reference: dict,
+                          fixtures: list[dict], items: dict,
+                          cache: dict[str, dict]) -> NativeGearAdapter:
+    """Use selected Rust get_options as the real paid search proposal source.
+
+    Query once per class/level during the 28-spec sweep. The native adapter
+    accepts only explicitly eligible items and the Rust scorer decides complete
+    request legality; no Python shadow rule or speculative fallback.
+    """
+    key = f"{class_key}:60"
+    if key not in cache:
+        cache[key] = query_native_options(binary, class_key, 60)
+    return NativeGearAdapter(class_key, reference, fixtures, items,
+                             native_options=cache[key])
+
+
 def sweep(*, engine_src: Path, binary: Path, outdir: Path,
           seconds: float, iterations: int, seed: int):
     if not binary.is_file() or not (engine_src / "data/items.jsonl").is_file():
@@ -133,6 +150,7 @@ def sweep(*, engine_src: Path, binary: Path, outdir: Path,
     items = load_native_item_index(engine_src)
     outdir.mkdir(parents=True, exist_ok=True)
     rows = []
+    native_options_cache: dict[str, dict] = {}
     for idx, (inventory, reference) in enumerate(records):
         profile = inventory["profile_id"]
         cls = profile.split("/", 1)[0]
@@ -161,7 +179,10 @@ def sweep(*, engine_src: Path, binary: Path, outdir: Path,
             rowdir = outdir / "profiles" / profile.replace("/", "__")
             rowdir.mkdir(parents=True, exist_ok=True)
             try:
-                adapter = NativeGearAdapter(cls, reference, same_class, items)
+                adapter = native_source_adapter(
+                    cls, binary, reference, same_class, items, native_options_cache)
+                row["native_options_source_revision"] = native_options_cache[f"{cls}:60"]["source_revision"]
+                row["native_options_eligible_proposals"] = adapter.native_option_candidate_count
                 row["mutable_positions"] = list(adapter.mutable_indices)
                 if not adapter.mutable_indices:
                     raise GearRejected("NO_SOURCE_BOUNDED_ALTERNATIVE",
@@ -231,6 +252,8 @@ def sweep(*, engine_src: Path, binary: Path, outdir: Path,
                                blocker="Native candidate errors and incomplete equip legality")
                 else:
                     row.update(status=result["status"], blocker=result["status"])
+            except NativeOptionsError as exc:
+                row.update(status="BLOCKED_NATIVE_OPTIONS", blocker=str(exc)[-900:])
             except GearRejected as exc:
                 row.update(status="BLOCKED_GEAR_POOL", blocker=str(exc))
             except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
