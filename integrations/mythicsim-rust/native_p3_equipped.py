@@ -253,6 +253,17 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     verified_slots = {row["swap"]["slot"] for row in rows[1:]
                       if row["status"] == "VALID"}
     attempted_slots = {row["swap"]["slot"] for row in rows[1:]}
+    # Request occupancy is structural, NOT independent Warcraft gear legality.
+    # A fifteen-entry Mage fixture has neither offhand nor ranged; those
+    # unrepresented positions must not be invented as P3 obligations.
+    original_items = _first_player(reference)["equipment"]["items"]
+    source_occupied_slots = [
+        slot for slot, index in NATIVE_SLOT_POSITIONS
+        if index < len(original_items)
+        and isinstance(original_items[index], dict)
+        and type(original_items[index].get("id")) is int
+        and original_items[index]["id"] > 0
+    ]
     return {
         "status": ("PAID_NATIVE_DIFFERENCE" if paired and delta != 0
                    else "PAID_NATIVE_EQUAL" if paired else "PAID_NATIVE_REFUSAL"),
@@ -271,6 +282,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         "native_slots_unattempted": [slot for slot in requested_slots
                                      if slot not in attempted_slots],
         "native_slot_attempt_cap": max_paid_attempts,
+        "source_occupied_slots": source_occupied_slots,
         "actor_requested_level": requested_level,
         "actor_checkpoint_verified": bool(actor_matched and paired),
         "native_prepared_actor": prepared,
