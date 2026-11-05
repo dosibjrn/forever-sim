@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Obsolete independent GameIR bounded gear/talent/policy report, not a native P3–P6 gate.
+    "tools/run_source_joint_discovery.py",
     # WF420: obsolete Python GameIR-scored 100-mob replay, not selected-native P3/P4-P6.
     "tools/wf420_druid20_independent_full_replay.py",
     # Uncalled fixed-allocation Python talent-rules/scorer CLI; native engine owns game rules.
@@ -281,6 +283,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "run_source_joint_discovery",
     "wf420_druid20_independent_full_replay",
     "check_cross_class",
     "ingest_armor_conversions_sqlite",
@@ -511,6 +514,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/generic/search/test_wf_gen03a1_joint_grid.py",
     # WF420-WF425 exclusively exercised that frozen Python GameIR replay and
     # duplicated Warcraft crit/hit/stat semantics rather than active native gates.
     "tests/test_wf420_paid_full_gear_candidate_tdd.py",
