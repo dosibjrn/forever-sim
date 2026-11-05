@@ -105,8 +105,11 @@ def test_native_p3_preserves_native_refusal_and_does_not_fake_delta():
                                       evaluator=refusal, preparer=_prepared_actor,
                                       max_paid_attempts=3)
     assert receipt["status"] == "PAID_NATIVE_REFUSAL"
+    # The first native ID is the already-equipped chest item (104). Both
+    # distinct Rust alternatives must be attempted, not just the first.
     assert receipt["paid_attempts"] == 3
-    assert receipt["evaluations"][1]["status"] == "UNSUPPORTED"
+    assert [row["swap"]["to_id"] for row in receipt["native_slot_evaluations"]] == [512, 513]
+    assert [row["status"] for row in receipt["native_slot_evaluations"]] == ["UNSUPPORTED", "UNSUPPORTED"]
     assert receipt["evaluations"][1]["request_sha256"] == "refused-sha"
     assert receipt["comparison"] is None
     assert receipt["actor_checkpoint_verified"] is False
