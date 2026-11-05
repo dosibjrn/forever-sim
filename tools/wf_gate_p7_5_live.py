@@ -7,6 +7,7 @@ P7.1–P7.4 winner exists; nor is a bounded 3-fight probe a frozen holdout.
 from __future__ import annotations
 
 import copy
+from functools import partial
 import hashlib
 import json
 import os
@@ -27,7 +28,9 @@ from tools.wf_gate_p7_4_live import (
     _paid_step_has_budget,
     _p74_early_rerank_due, _next_p74_confirmation,
     _next_p74_deep_confirmation)
+from src.engine_client import native_talent_proposals
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+                                      SAVED_FERAL_RAW_SHA,
                                      _executed_p7_runtime_proof,
                                      _source_native_world_parity)
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
@@ -127,7 +130,8 @@ def _p75_paid_rebuild_axes(proposal_index: int):
 
 
 def _paid_p75_balanced_finalist(production, binary, request, distance, *,
-                                seeds=("1955004", "1955047"), native_only=False):
+                                seeds=("1955004", "1955047"), native_only=False,
+                                 go_rules=False):
     """Rank paid P7.5 candidates only with deterministic balanced RNG.
 
     Keep a small, reproducible three-fight screen for each independent seed.
@@ -144,7 +148,8 @@ def _paid_p75_balanced_finalist(production, binary, request, distance, *,
             path = Path(tmp) / "paid-balanced-finalist.json"
             path.write_text(json.dumps(candidate))
             native = production.native_source_control(
-                binary, path, 3, rng_mode="balanced")
+                binary, path, 3, rng_mode="balanced",
+                **({"go_rules": True} if go_rules else {}))
             if native_only:
                 if type(native.get("iterations")) is not int or native["iterations"] != 3:
                     raise ValueError("P75_BALANCED_FINALIST_NATIVE_ITERATIONS_INVALID")
@@ -433,7 +438,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     # Approved P7.5 is a stationary native benchmark, not a world-ACK gate.
     # Keep the old Balance diagnostic path unchanged while migrating the
     # checkpoint-critical unrestricted route to direct selected-native calls.
-    native_only = spec == "unrestricted"
+    feral = spec == "feral"
+    native_only = spec in ("unrestricted", "feral")
     prepared = (_pinned_source_runtime(
         root, class_key, level, spec, "P7.5", require_world=False)
         if native_only else _pinned_source_runtime(root, class_key, level, spec, "P7.5"))
@@ -458,6 +464,14 @@ def run_live(root: Path, class_key: str, level: int, *,
         sys.path.remove(str(integration))
     production = _source_module(integration / "live_world_probe.py",
                                 "p75_production_native_world")
+    if feral:
+        # Reuse the same cold joint search with native-judged talent strings
+        # and opaque Feral APL conditions; never use Balance rank rules.
+        source.make_candidate = partial(
+            source.make_candidate, talent_proposals=native_talent_proposals,
+            preserve_source_conditions=True)
+        gear_search = _source_module(integration / "p74_gear_search.py",
+                                     "p75_pinned_rust_gear_options")
     # WF613 is a selectable producer policy, not a second simulator/gate.
     # Leave the default production search untouched for A/B comparison.
     wf613 = (_source_module(integration / "wf613_strategy.py",
@@ -467,15 +481,21 @@ def run_live(root: Path, class_key: str, level: int, *,
     catalogue = root / "data/forever/catalogue/items_2026-09-29.sqlite"
     items = upstream / "data/items.jsonl"
     enchants = upstream / "data/enchants.jsonl"
-    if any(not x.is_file() for x in (catalogue, items, enchants)):
+    if any(not x.is_file() for x in ((items, enchants) if feral
+                                     else (catalogue, items, enchants))):
         return {"status": "BLOCKED",
                 "reasons": ["P7_5_SOURCE_OR_PINNED_RUST_ITEM_DATA_MISSING"]}
 
-    try:
-        source.GearValidator.require_sqlite_catalogue(catalogue)
-    except ValueError as exc:
-        return {"status": "BLOCKED", "reasons": ["P7_5_" + str(exc)]}
-    validator = source.GearValidator(catalogue, items, enchants, base)
+    if feral:
+        # The selected Rust item/enchant tables supply alternatives; native
+        # sim --gate alone judges complete Feral gear/talent/APL requests.
+        validator = None
+    else:
+        try:
+            source.GearValidator.require_sqlite_catalogue(catalogue)
+        except ValueError as exc:
+            return {"status": "BLOCKED", "reasons": ["P7_5_" + str(exc)]}
+        validator = source.GearValidator(catalogue, items, enchants, base)
     rng = random.Random(670)
     best = None  # three-fight balanced top result, only a diagnostic
     balanced_elites = []  # 24 distinct source-legal paid joint candidates
@@ -502,11 +522,15 @@ def run_live(root: Path, class_key: str, level: int, *,
         # paid winner, use its existing source mutation operator for 4/5 of
         # later proposals and fresh independent cold discovery for 1/5.
         # Enchants and effects remain subject to source verification.
-        pools, _ = source.candidate_pool(
-            validator, limit=None if full_search else 15,
-            **({"independent_enchants": True} if full_search else {}))
-        enchant_pools = (source.source_enchant_pools(validator, pools)
-                         if full_search else None)
+        if feral:
+            pools, enchant_pools, _ = gear_search.pinned_rust_candidate_pool(
+                items, enchants)
+        else:
+            pools, _ = source.candidate_pool(
+                validator, limit=None if full_search else 15,
+                **({"independent_enchants": True} if full_search else {}))
+            enchant_pools = (source.source_enchant_pools(validator, pools)
+                             if full_search else None)
         distance = source.player(base)["distanceFromTarget"]
         while True:
             elapsed = time.monotonic() - search_start if full_search else 0.0
@@ -545,7 +569,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                             production, binary, row[3], distance,
                             seeds=(("1955181", "1955207") if is_deep
                                    else ("1955113", "1955139")),
-                            **({"native_only": True} if native_only else {}))
+                            **({"native_only": True} if native_only else {}),
+                             **({"go_rules": True} if feral else {}))
                         # Initial 6, confirmed 12, deep-confirmed 18
                         # genuine paid balanced fights: weight old 12-fight
                         # mean twice when incorporating the last 6.
@@ -579,7 +604,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         balanced_score, balanced_live = _paid_p75_balanced_finalist(
                             production, binary, candidate, distance,
                             seeds=("1955004", "1955047"),
-                            **({"native_only": True} if native_only else {}))
+                            **({"native_only": True} if native_only else {}),
+                             **({"go_rules": True} if feral else {}))
                         balanced_finalists.append((
                             balanced_score, balanced_live, candidate_sha,
                             candidate, screen_score))
@@ -691,7 +717,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                     # Composite gear+APL candidates reach the selected Rust
                     # --gate without a second Python legality decision.
                     native = production.native_source_control(
-                        binary, path, 3, rng_mode="balanced")
+                        binary, path, 3, rng_mode="balanced",
+                        **({"go_rules": True} if feral else {}))
                     if native_only:
                         if type(native.get("iterations")) is not int or native["iterations"] != 3:
                             raise ValueError("P7_5_NATIVE_SCREEN_ITERATIONS_INVALID")
@@ -723,7 +750,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                     TypeError, AssertionError, subprocess.SubprocessError) as exc:
                 failures.append(type(exc).__name__ + ":" + str(exc)[:180])
     finally:
-        validator.close()
+        if validator is not None:
+            validator.close()
     if full_search and elapsed < 300.0:
         # If a measured paid step cannot fit, complete the original window.
         # No extra clock read when the loop already reached its deadline.
@@ -756,7 +784,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 frozen_sha = hashlib.sha256(frozen_path.read_bytes()).hexdigest()
                 n = P7_FINAL_STOCHASTIC_ITERATIONS
                 native = production.native_source_control(
-                    binary, frozen_path, n, rng_mode="stochastic")
+                    binary, frozen_path, n, rng_mode="stochastic",
+                    **({"go_rules": True} if feral else {}))
                 native_dps = float(native["native_dps"])
                 if native_only:
                     if (type(native.get("iterations")) is not int
@@ -814,7 +843,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     prior = strongest_accepted_prior(
         root, class_key, level, spec,
         engine_revision=meta.get("selected_engine_revision", PINNED_RUST),
-        source_sha256=SAVED_BALANCE_RAW_SHA,
+        source_sha256=meta.get("source_request_raw_sha256",
+                                   SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA),
         reference_dps=float(meta["reference_dps"]))
     prior_dps = prior["dps"] if prior is not None else None
     required = (p7_required_dps(
@@ -868,7 +898,11 @@ def run_live(root: Path, class_key: str, level: int, *,
                               else "pinned_mythicsim_rust_gsim_2d"),
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
-        "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
+        "source_request_raw_sha256": meta.get(
+            "source_request_raw_sha256", SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA),
+        "native_rules": "go_reference" if feral else "forever",
+        "reference_profile": meta.get("selected_reference_profile"),
+        "checkpoint_spec": spec,
         "saved_reference_dps": float(meta["reference_dps"]),
         **({"joint_cold_native_dps": score} if native_only
            else {"joint_cold_world_dps": score}),
