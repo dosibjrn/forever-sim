@@ -34,7 +34,8 @@ def _native_stubs(monkeypatch, *, paid_dps=75., native_level=20):
         assert iterations == 1000
         assert json.loads(path.read_text())["raid"]["parties"][0]["players"][0].get("level") in (None, 20)
         calls.append(iterations)
-        return {"iterations": iterations, "native_dps": paid_dps}
+        return {"iterations": iterations, "native_dps": paid_dps,
+                "native_rules": "forever", "first_duration_s": 120.0}
 
     monkeypatch.setattr(reference, "_binary_and_pin", lambda root: (binary, revision))
     monkeypatch.setattr(reference, "_prepare_actor",
@@ -64,7 +65,11 @@ def test_native_generated_reference_requires_paid_checkpoint_native_score(
     assert receipt["reference_configuration_source"] == "native_generated_msim_reference"
     assert receipt["source_request_raw_sha256"] == generated["source_request_raw_sha256"]
     assert receipt["runtime_proof"]["engine_revision"] == revision
-    assert calls == [1000, 1000]
+    # P7.1 reuses the authentic generator's 1,000 paid stochastic fights.
+    assert calls == [1000]
+    assert receipt["reused_authentic_native_reference_receipt"] is True
+    assert receipt["runtime_proof"]["reference_receipt_reused"] is True
+    assert generated["reference_native_sample"]["native_dps"] == receipt["native_dps"]
     assert reference.produce_reference(
         tmp_path, "druid", 20, "unrestricted", source)["reasons"] == [
             "P7_1_FROZEN_REFERENCE_ALREADY_EXISTS"]
@@ -101,12 +106,22 @@ def test_generated_reference_hash_engine_and_floor_fail_closed(
     assert reference.run_generated_p71(
         tmp_path, "druid", 20, "unrestricted")["reasons"] == [
             "P7_1_GENERATED_REFERENCE_ENGINE_CHANGED"]
-    _native_stubs(monkeypatch, paid_dps=73.5)
+    new_calls, _ = _native_stubs(monkeypatch, paid_dps=73.5)
     result = reference.run_generated_p71(tmp_path, "druid", 20, "unrestricted")
-    assert result["status"] == "FAIL"
-    assert result["reasons"] == ["P7_1_DPS_BELOW_APPROVED_99_PERCENT_FLOOR"]
-    assert result["native_dps"] == 73.5
+    assert result["status"] == "PASS"
+    assert result["native_dps"] == 75.0
+    assert new_calls == []  # no redundant native stochastic replay
+
     saved = reference._reference_directory(tmp_path, "druid", 20, "unrestricted")
+    manifest = saved / "reference.json"
+    document = json.loads(manifest.read_text())
+    document["reference_native_sample"]["native_dps"] = 73.5
+    manifest.write_text(json.dumps(document))
+    assert reference.run_generated_p71(
+        tmp_path, "druid", 20, "unrestricted")["reasons"] == [
+            "P7_1_GENERATED_REFERENCE_IDENTITY_INVALID"]
+    document["reference_native_sample"]["native_dps"] = 75.0
+    manifest.write_text(json.dumps(document))
     with (saved / "request.json").open("ab") as stream:
         stream.write(b" ")
     assert reference.run_generated_p71(
