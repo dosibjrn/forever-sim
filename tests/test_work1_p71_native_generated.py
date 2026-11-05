@@ -263,3 +263,36 @@ def test_selected_submodule_binary_is_default_and_pin_is_enforced(monkeypatch, t
     monkeypatch.setattr(reference, "_selected_rust_submodule",
                         lambda root, upstream: None)
     assert reference._binary_and_pin(tmp_path) is None
+
+
+def test_one_shot_native_reference_generation_and_live_p71(monkeypatch, tmp_path):
+    """A single selected-native paid batch feeds the real P7.1 entrypoint."""
+    calls, revision = _native_stubs(monkeypatch, paid_dps=63.)
+    source = _request(tmp_path)
+    result = reference.produce_and_verify_reference(
+        tmp_path, "druid", 20, "unrestricted", source)
+    assert result["status"] == "PASS"  # mock transport, not M1 evidence
+    assert result["generation"]["selected_engine_revision"] == revision
+    assert result["verification"]["status"] == "PASS"
+    assert result["verification"]["reused_authentic_native_reference_receipt"] is True
+    assert result["verification"]["native_dps"] == 63.
+    assert calls == [1000], "P7.1 must reuse, not re-pay, the reference sample"
+    repeated = reference.produce_and_verify_reference(
+        tmp_path, "druid", 20, "unrestricted", source)
+    assert repeated["status"] == "BLOCKED"
+    assert repeated["generation"]["reasons"] == [
+        "P7_1_FROZEN_REFERENCE_ALREADY_EXISTS"]
+    assert "verification" not in repeated
+    assert calls == [1000]
+
+
+def test_one_shot_refuses_unprepared_actor_without_paying(monkeypatch, tmp_path):
+    calls, _ = _native_stubs(monkeypatch, native_level=60)
+    source = _request(tmp_path)
+    result = reference.produce_and_verify_reference(
+        tmp_path, "druid", 20, "unrestricted", source)
+    assert result["status"] == "BLOCKED"
+    assert result["generation"]["reasons"] == [
+        "P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH"]
+    assert calls == []
+    assert "verification" not in result
