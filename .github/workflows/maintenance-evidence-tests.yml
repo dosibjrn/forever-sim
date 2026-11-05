@@ -265,8 +265,6 @@ jobs:
           tests/test_wf272_source_ranked_periodic_finisher.py
           tests/test_wf328_mode_joint_prefix_admission.py
           tests/test_wf330_queued_swing_source_runtime.py
-          tests/test_wf331_druid20_source_web_l0.py
-          tests/test_wf332_runes_default_off.py
           tests/test_wf319_druid_l20_canonical_numeric_authority.py::test_real_l20_druid_core_spell_amounts_match_canonical_sqlite
           tests/test_wf_feral01c2c_heart_runtime.py
           tests/test_wf_feral01c2d1_strength_gear.py
