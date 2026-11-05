@@ -109,6 +109,7 @@ def test_mage_p3_routes_to_unified_native_without_gameir(monkeypatch):
                 "status": "VALID", "score": 104.0, "delta_dps": 4.0,
             }],
             "native_slots_valid": 1,
+            "source_occupied_slots": ["weapon"],
         }
 
     monkeypatch.setattr(p3, "_paid_native_equipped_probe", paid)
@@ -160,6 +161,9 @@ def test_mage_l60_fifteen_item_source_is_checked_by_native_prepare_and_paid():
     assert result["actor_checkpoint_verified"] is True
     assert result["comparison"]["delta_dps"] == 10.0
     assert result["paid_attempts"] == 2
+    assert len(result["source_occupied_slots"]) == 15
+    assert "offhand" not in result["source_occupied_slots"]
+    assert "ranged" not in result["source_occupied_slots"]
     assert evaluations[0] == reference and reference == original
     assert evaluations[1]["raid"]["parties"][0]["players"][0]["equipment"]["items"][14] == {"id": 900}
 
@@ -178,3 +182,50 @@ def test_mage_l60_refuses_unmatched_native_prepared_actor_without_paid():
     assert result["status"] == "NATIVE_ACTOR_CHECKPOINT_MISMATCH"
     assert result["paid_attempts"] == 0
     assert result["actor_checkpoint_verified"] is False
+
+
+def test_mage_p3_verdict_counts_real_occupied_slots_not_phantom_positions():
+    from native_p3_equipped import NATIVE_SLOT_POSITIONS
+
+    occupied = [slot for slot, index in NATIVE_SLOT_POSITIONS if index < 15]
+    assert len(occupied) == 15
+    options = {
+        "status": "ok", "source": "selected-rust",
+        "items": [{"slot": slot, "item_id": 2000 + index, "item_level": 50}
+                  for index, (slot, _pos) in enumerate(NATIVE_SLOT_POSITIONS)],
+    }
+    evaluations = [{
+        "swap": {"slot": slot, "to_id": 2000 + index},
+        "status": "VALID", "score": 505.0 if index == 0 else 500.0,
+        "delta_dps": 5.0 if index == 0 else 0.0,
+        "request_sha256": f"paid-sha-{index}",
+    } for index, slot in enumerate(occupied)]
+    receipt = {
+        "status": "PAID_NATIVE_DIFFERENCE",
+        "paid_attempts": 16, "actor_checkpoint_verified": True,
+        "source_occupied_slots": occupied,
+        "native_prepared_actor": {
+            "actor_class": "ClassMage", "actor_level": 60,
+            "engine_revision": "pinned-engine",
+        },
+        "evaluations": [{"status": "VALID", "score": 500.0,
+                         "request_sha256": "native-baseline"}],
+        "native_slot_evaluations": evaluations, "native_slots_valid": 15,
+    }
+    result = p3._native_rogue_p3_verdict(options, receipt, checkpoint="mage_l60")
+    assert result["status"] == "PASS", result["reasons"]
+    assert result["pass_count"] == result["reachability_count"] == 15
+    assert "offhand" in result["real_selected_item_alternatives_by_slot"]
+    assert "ranged" in result["real_selected_item_alternatives_by_slot"]
+
+    no_occupancy = copy.deepcopy(receipt)
+    no_occupancy.pop("source_occupied_slots")
+    missing = p3._native_rogue_p3_verdict(options, no_occupancy, checkpoint="mage_l60")
+    assert missing["status"] == "FAIL"
+    assert "P3_NATIVE_OCCUPIED_SLOT_RECEIPT_MISSING" in missing["reasons"]
+
+    one_unpaid = copy.deepcopy(receipt)
+    one_unpaid["native_slot_evaluations"] = evaluations[:-1]
+    not_scored = p3._native_rogue_p3_verdict(options, one_unpaid, checkpoint="mage_l60")
+    assert not_scored["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:trinket2:NOT_ATTEMPTED" in not_scored["reasons"]
