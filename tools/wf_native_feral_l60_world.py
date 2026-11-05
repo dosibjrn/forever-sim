@@ -56,13 +56,12 @@ def run_feral_l60_world(binary: str | Path, source_request: str | Path = FERAL_S
     if (len(players) != 1 or len(targets) != 1
             or not isinstance(player, dict)
             or player.get("class") != "ClassDruid"
-            or type(player.get("level")) is not int or player["level"] != 60
             or not isinstance(target, dict)
             or not isinstance(target.get("stats"), list)
             or len(target["stats"]) <= 32):
         raise ValueError("FERAL_L60_SOURCE_ACTOR_OR_TARGET_INVALID")
 
-    # Explicit scenario transformation, not a new Warcraft legality model:
+    # The saved Feral source omits player.level; native prepare, not a Python\n    # source-level check, determines the actual level-60 actor.\n    # Explicit scenario transformation, not a new Warcraft legality model:
     # leave the Feral source actor/build/APL byte-for-byte equivalent.
     leveling = copy.deepcopy(request)
     mob = leveling["encounter"]["targets"][0]
