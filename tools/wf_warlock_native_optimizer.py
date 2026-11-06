@@ -503,35 +503,53 @@ def main():
         "top10":[{k:v for k,v in row.items() if k not in ("apl", "talent_ranks")}
                  for row in scored[:10]]}),flush=True)
 
-    # Choose diverse finalists: top-paid overall, different talent trees,
-    # different APLs and the saved prior winner, not just one DPS ordering.
+    # Guarantee a real native-paid finalist for EACH available summon option,
+    # then fill remaining places with top-paid diverse pet/talent/APL builds.
+    # Otherwise a top-DPS pet could silently crowd out Voidwalker or Felhunter
+    # before the real 100-mob survival objective is measured.
     selected = []
     selected_keys = set()
     talent_counts = Counter()
     apl_counts = Counter()
-    for row in scored:
-        if len(selected) >= args.max_finalists:
-            break
-        if (talent_counts[row["talents"]] >= 2 or
-                apl_counts[row["apl_label"]] >= 3):
-            continue
-        key = (row["talents"], row["apl_label"])
+    pet_counts = Counter()
+
+    def add_finalist(row):
+        key = (row["pet"], row["talents"], row["apl_label"])
         if key in selected_keys:
-            continue
+            return False
         selected.append(row)
         selected_keys.add(key)
         talent_counts[row["talents"]] += 1
         apl_counts[row["apl_label"]] += 1
-    baseline = next((r for r in scored if r["talents"] == source_build
-                     and r["apl_label"] == "saved_multi_spell"), None)
-    if baseline and (baseline["talents"],baseline["apl_label"]) not in selected_keys:
-        selected[-1:] = [baseline]
+        pet_counts[row["pet"]] += 1
+        return True
+
+    baseline = next((row for row in scored if row["pet"] == "NoSummon"
+                     and row["talents"] == source_build
+                     and row["apl_label"] == "saved_multi_spell"), None)
+    if baseline is not None:
+        add_finalist(baseline)
+    for pet in pet_options:
+        if len(selected) >= args.max_finalists:
+            break
+        first = next((row for row in scored if row["pet"] == pet), None)
+        if first is not None:
+            add_finalist(first)
+    for row in scored:
+        if len(selected) >= args.max_finalists:
+            break
+        if (talent_counts[row["talents"]] >= 3
+                or apl_counts[row["apl_label"]] >= 4
+                or pet_counts[row["pet"]] >= 3):
+            continue
+        add_finalist(row)
 
     chain_results = []
     for index,row in enumerate(selected):
         req = copy.deepcopy(source)
         actor(req)["talentsString"] = row["talents"]
         actor(req)["rotation"]["priorityList"] = copy.deepcopy(row["apl"])
+        set_native_pet(req, row["pet"])
         scenario = profile(req, level=level)
         folder = args.out / ("chain_" + str(index).zfill(2))
         folder.mkdir(exist_ok=True)
@@ -546,9 +564,12 @@ def main():
         try:
             call([binary, "prepare", "--request", scenario_file,
                   "--actor-level", str(level), "--outfile", prepared_file])
-            rust_actor = json.loads(prepared_file.read_text())["player"]
+            prepared_data = json.loads(prepared_file.read_text())
+            rust_actor = prepared_data["player"]
             if rust_actor.get("level") != level or rust_actor.get("class") != "ClassWarlock":
                 raise RuntimeError("wrong prepared Rust actor")
+            result["native_prepared_pets"] = [
+                pet.get("label") for pet in prepared_data.get("pets", [])]
             world = native_world_chain(
                 binary, prepared_file, classic_mob_level=level,
                 target_count=100, rng_mode="balanced")
@@ -593,6 +614,9 @@ def main():
         "mob_level":level, "mob_hp_classic_proxy":representative_hp(level),
         "test_mob_min_base_damage":20,
         "talents_considered":len(talents), "apl_considered":len(apls),
+        "pets_considered":pet_options,
+        "native_pet_smoke":smoke_rows,
+        "paid_by_pet":dict(Counter(r["pet"] for r in scored)),
         "paid_30s_combinations":len(scored),
         "refused_30s_combinations":sum(rejected.values()),
         "screen_top20":[{k:v for k,v in row.items() if k != "apl"} for row in scored[:20]],
@@ -605,7 +629,8 @@ def main():
     (args.out / "optimization_results.json").write_text(
         json.dumps(result,indent=2,allow_nan=False)+"\n")
     print("WARLOCK_TALENT_APL_100MOB_OPTIMIZATION",json.dumps({
-        "talents":len(talents),"apls":len(apls),"paid":len(scored),
+        "talents":len(talents),"apls":len(apls),"pets":pet_options,
+        "paid":len(scored),"paid_by_pet":dict(Counter(r["pet"] for r in scored)),
         "finalists":len(chain_results), "completed":len(winners),
         "winner":result["winner"], "best_partial":result["best_partial"],
         "status":result["status"],
