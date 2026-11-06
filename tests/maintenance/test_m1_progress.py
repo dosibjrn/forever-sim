@@ -329,7 +329,7 @@ def test_p7_discovery_partial_uses_only_frozen_stochastic_mean():
         assert not observed["dps_objective_gate_pass"]
 
 
-def test_p75_partial_requires_accepted_prior_and_frozen_holdout():
+def test_p75_partial_uses_reference_without_optional_prior_but_requires_holdout():
     from tools.wf_gate_coverage import measured_p7_dps_proximity
 
     report = {
@@ -344,8 +344,12 @@ def test_p75_partial_requires_accepted_prior_and_frozen_holdout():
         "frozen_stochastic_world_boundaries": 4000,
         "frozen_stochastic_world_dps": 820.0,
     }
-    # A strong native/world winner is not enough to invent the accepted prior.
-    assert measured_p7_dps_proximity("P7.5", report) is None
+    # Actual frozen stochastic result permits a reference-only diagnostic
+    # when no compatible accepted prior exists; this never certifies PASS.
+    reference_only = measured_p7_dps_proximity("P7.5", report)
+    assert reference_only["dps_objective_required"] == pytest.approx(744.0)
+    assert reference_only["dps_objective_proximity_percent"] == 100.0
+    assert not reference_only["dps_objective_gate_pass"]
     report["strongest_accepted_compatible_prior_dps"] = 850.0
     proximity = measured_p7_dps_proximity("P7.5", report)
     assert proximity["dps_objective_actual"] == pytest.approx(820.0)
