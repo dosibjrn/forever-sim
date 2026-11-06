@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from wf_warlock_rolling_apl import (
     build_rolling_two_target_apl, build_stationary_native_multidot_smoke,
+    prepared_spell_id, replace_cast_spell_id,
 )
 
 
@@ -44,6 +45,30 @@ class RollingAfflictionAPLTests(unittest.TestCase):
         self.assertFalse(meta["pull_at_50_pct_executed"])
         self.assertFalse(meta["world_2d_ack_executed"])
         self.assertTrue(meta["native_two_target_dots_only"])
+
+    def test_active_spell_id_uses_prepared_rust_rank_not_options(self):
+        prepared = {"player": {"spells": [
+            {"class_spell": "drain_life", "action_id": {"spell_id": 709}},
+            {"class_spell": "corruption", "action_id": {"spell_id": 6223}},
+        ]}}
+        self.assertEqual(prepared_spell_id(prepared, "drain_life"), 709)
+        self.assertIsNone(prepared_spell_id(prepared, "fear"))
+        self.assertIsNone(prepared_spell_id(prepared, "health_funnel"))
+        apl = [
+            {"action": {"castSpell": {"spellId": {"spellId": 403686}}}},
+            {"action": {"castSpell": {"spellId": {"spellId": 6223}}}},
+        ]
+        self.assertEqual(replace_cast_spell_id(apl, 403686, 709), 1)
+        self.assertEqual(apl[0]["action"]["castSpell"]["spellId"]["spellId"], 709)
+        self.assertEqual(apl[1]["action"]["castSpell"]["spellId"]["spellId"], 6223)
+
+    def test_multiple_registered_ranks_fail_closed_not_arbitrarily_pick(self):
+        prepared = {"player": {"spells": [
+            {"class_spell": "drain_life", "action_id": {"spell_id": 709}},
+            {"class_spell": "drain_life", "action_id": {"spell_id": 689}},
+        ]}}
+        with self.assertRaisesRegex(ValueError, "Ambiguous"):
+            prepared_spell_id(prepared, "drain_life")
 
     def test_missing_native_spells_fail_closed(self):
         with self.assertRaisesRegex(ValueError, "siphon life"):
