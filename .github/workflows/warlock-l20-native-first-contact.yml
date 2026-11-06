@@ -25,7 +25,8 @@ jobs:
           lfs: true
           persist-credentials: false
       - name: Python contract tests
-        run: python -m unittest discover -s tests -p 'test_warlock_l20_native_first_contact.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_warlock_l20_native_first_contact.py' -v
           python -m unittest discover -s tests -p 'test_warlock_l20_p3_native_routing.py' -v
       - name: Hydrate exactly pinned Rust engine
         shell: bash
