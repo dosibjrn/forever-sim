@@ -149,6 +149,11 @@ jobs:
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
+          tests/test_clean_p3_signed_finite_weights.py
+          tests/test_p3_defensive_zero_applicability.py
+          tests/test_wf407_process_v1_fast_p3_tdd.py
+          tests/test_wf407_p3_source_policy_axis_tdd.py
+          tests/test_wf408_unified_production_item_score_p3_tdd.py
           tests/test_work2_paladin_p3_source_naked.py
           tests/test_work2_paladin_native_context.py
           tests/test_native_p3_item_options.py

@@ -224,7 +224,7 @@ def test_paid_p3_missing_weight_not_reclassified_as_measured_zero():
 
 
 def test_paid_p3_measured_zero_never_triggers_positive_retry():
-    """A measured-zero stat keeps its paid follow-up even in partial receipts."""
+    """A measured-zero stat never causes a positive-only paid retry."""
     from tools.wf_gate_p3_live import _p3_executable_weight_witness_axes
 
     weights = {"spirit": 0.0}

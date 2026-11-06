@@ -29,31 +29,22 @@ def test_real_balance_caster_source_policy_proves_sp_positive():
     assert witness["policy_id"] in {p.id for p in selected.policies}
 
 
-def test_real_p3_balance_uses_paid_sp_witness_not_epsilon():
+def test_real_p3_balance_keeps_measured_zero_without_positive_retry():
     result = run_live(ROOT, "druid", 60, spec="balance")
     assert result["status"] == "PASS", result
     assert result["pass_count"] == result["reachability_count"], result
-    witnesses = result["source_policy_stat_witnesses"]
-    assert any(w["stat"] == "spell_power"
-               and w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
-               and w["weight_s_saved_per_mob_per_unit"] > 0
-               for w in witnesses), result
-    assert result["real_measured_stat_weights"]["spell_power"] > 0
+    assert "spell_power" in result["real_measured_stat_weights"]
+    assert not any(w["stat"] == "spell_power"
+                   for w in result["source_policy_stat_witnesses"]), result
     assert result["behavior_probes_executed"] <= 44
 
-
-def test_real_unrestricted_l40_p3_reuses_baseline_to_measure_spirit():
+def test_real_unrestricted_l40_p3_preserves_paid_neutral_spirit():
     result = run_live(ROOT, "druid", 40, spec="unrestricted")
     assert result["status"] == "PASS", result
-    assert result["real_measured_stat_weights"]["spirit"] > 0, result
-    spirit = next(
-        witness for witness in result["source_policy_stat_witnesses"]
-        if witness["stat"] == "spirit"
-    )
-    assert spirit["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
-    assert spirit["baseline_reused"] is True, result
+    assert result["real_measured_stat_weights"]["spirit"] == 0.0, result
+    assert not any(w["stat"] == "spirit"
+                   for w in result["source_policy_stat_witnesses"]), result
     assert result["behavior_probes_executed"] <= 44, result
-
 
 def test_source_policy_witness_retries_with_opening_prefix_and_caches_it(monkeypatch):
     from types import SimpleNamespace
@@ -190,7 +181,8 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     search_result = {
         "stages": [{"stage": "source_naked", "winner": record}],
         "sensitivity_history": [{"stage": "source_naked",
-                                 "values": {"spell_power": 0.0}}],
+                                 "values": {}}],
+        "stat_probe_axis_selection": {"selected_for_paid_probe": ("spell_power",)},
         "attempted": 43, "evaluated": 43, "status": "EVALUATED_BOUNDED",
         "source_context_sha256": "test-source-context",
     }
@@ -224,7 +216,7 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     def native_smoke(**kwargs):
         smoke_calls.append(kwargs)
         return {
-            "blockers": ["NONPOSITIVE_RELEVANT_WEIGHT:spell_power"],
+            "blockers": ["MISSING_WEIGHT:spell_power"],
             "legal_item_count": 1, "tested_item_count": 1,
             "slot_count": 1, "tested_stat_assertions": 1,
             "verified_stat_assertions": 1,
@@ -329,11 +321,13 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
         "sensitivity_history": [{
             "stage": "source_naked",
             "values": {
-                "agility": 0.0, "attack_power": 0.0, "intellect": 0.0,
-                "mp5": 0.0, "spell_power": 0.0, "spirit": 0.0,
+                # All these axes were genuinely absent from the paid
+                # sensitivity receipt, rather than measured as zero.
             },
         }],
         "attempted": 40, "evaluated": 40, "status": "EVALUATED_BOUNDED",
+        "stat_probe_axis_selection": {"selected_for_paid_probe": (
+            "spell_power", "intellect", "spirit", "mp5", "agility", "attack_power")},
         "source_context_sha256": "test-source-context",
     }
     monkeypatch.setattr(budgeted, "run_source_budgeted_gear",
@@ -358,12 +352,12 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
     )
 
     blockers = [
-        "NONPOSITIVE_RELEVANT_WEIGHT:agility",
-        "NONPOSITIVE_RELEVANT_WEIGHT:attack_power",
-        "NONPOSITIVE_RELEVANT_WEIGHT:intellect",
-        "NONPOSITIVE_RELEVANT_WEIGHT:mp5",
-        "NONPOSITIVE_RELEVANT_WEIGHT:spell_power",
-        "NONPOSITIVE_RELEVANT_WEIGHT:spirit",
+        "MISSING_WEIGHT:agility",
+        "MISSING_WEIGHT:attack_power",
+        "MISSING_WEIGHT:intellect",
+        "MISSING_WEIGHT:mp5",
+        "MISSING_WEIGHT:spell_power",
+        "MISSING_WEIGHT:spirit",
     ]
     monkeypatch.setattr(p3_smoke, "fast_p3_smoke_for_policy", lambda **kwargs: {
         "blockers": blockers,
@@ -404,8 +398,8 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
     monkeypatch.setattr(budgeted, "paid_source_policy_stat_witness", witness)
     result = p3.run_live(ROOT, "mage", 30, spec="unrestricted")
 
-    # Four evaluations remain. The old alphabetical order spent them on
-    # Agility; the selected caster policy must test Spell Power first.
+    # Four paid evaluations remain for genuinely missing executable axes.
+    # A selected caster priority must probe Spell Power ahead of Agility.
     assert witness_calls == [("spell_power", 4, (35.0, 20.0))]
     witness = result["source_policy_stat_witnesses"][0]
     assert witness["probe_delta_sources"] == [
@@ -853,24 +847,14 @@ def _patch_shaman_live_p3(monkeypatch, *, fallback="lightning_bolt:915",
     return p3, record, winner_policy, smoke_calls, witness_calls
 
 
-def test_live_shaman_p3_uses_exact_native_fallback_for_spell_power_witness(monkeypatch):
-    p3, record, winner_policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
+def test_live_shaman_p3_does_not_force_positive_witness_for_measured_zero(monkeypatch):
+    p3, _record, _policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
         monkeypatch, fallback="lightning_bolt:915",
         witness_status="MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
-
     result = p3.run_live(ROOT, "shaman", 20, spec="unrestricted")
-
-    assert len(witness_calls) == 1
-    witness = witness_calls[0]
-    assert witness["stat"] == "spell_power"
-    assert witness["probe_deltas"] == (35.0, 20.0)
-    assert witness["preferred_policy"] is winner_policy
-    assert witness["baseline_record"] is record
-    assert witness["allow_paid_winner_after_nonpositive"] is True
-    assert len(smoke_calls) == 2
-    assert smoke_calls[1]["weights"]["spell_power"] == 0.01
-    assert result["source_policy_stat_witnesses"][0]["status"] == (
-        "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
+    assert witness_calls == []
+    assert len(smoke_calls) == 1
+    assert result["source_policy_stat_witnesses"] == []
     assert result["native_spell_coefficients_applied"] == [{
         "action_id": "lightning_bolt:915",
         "spell_id": 915,
@@ -878,30 +862,23 @@ def test_live_shaman_p3_uses_exact_native_fallback_for_spell_power_witness(monke
     }]
     assert result["native_paid_winner_spell_probe_enabled"] is True
     assert result["native_spell_coefficients_error"] is None
-    assert result["real_measured_stat_weights"]["spell_power"] == 0.01
+    assert result["real_measured_stat_weights"]["spell_power"] == 0.0
     assert result["reachability_count"] == 204
-    assert result["pass_count"] == 67
-    assert result["real_source_search_evaluated"] == 44
+    assert result["pass_count"] == 66
+    assert result["real_source_search_evaluated"] == 43
 
-
-def test_live_shaman_p3_never_uses_paid_winner_without_exact_fallback_action(monkeypatch):
-    p3, _record, _winner_policy, _smoke_calls, witness_calls = _patch_shaman_live_p3(
+def test_live_shaman_p3_non_matching_fallback_never_triggers_positive_probe(monkeypatch):
+    p3, _record, _policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
         monkeypatch, fallback="rockbiter:8019", attempted=40)
-
     result = p3.run_live(ROOT, "shaman", 20, spec="unrestricted")
-
-    assert len(witness_calls) == 1
-    witness = witness_calls[0]
-    assert witness["stat"] == "spell_power"
-    assert witness["preferred_policy"] is None
-    assert witness["baseline_record"] is None
-    assert witness["allow_paid_winner_after_nonpositive"] is False
+    assert witness_calls == []
+    assert len(smoke_calls) == 1
+    assert result["source_policy_stat_witnesses"] == []
     assert result["native_spell_coefficients_applied"][0]["action_id"] == (
         "lightning_bolt:915")
     assert result["native_paid_winner_spell_probe_enabled"] is False
     assert result["pass_count"] == 66
     assert result["reachability_count"] == 204
-
 
 def test_live_shaman_p3_missing_native_coefficient_preserves_66_of_204(monkeypatch):
     p3, _record, _winner_policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
@@ -924,9 +901,8 @@ def test_live_shaman_p3_missing_native_coefficient_preserves_66_of_204(monkeypat
 
 
 
-def test_live_shaman_p3_requires_paid_spell_power_witness_after_positive_sensitivity(
-        monkeypatch):
-    p3, record, winner_policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
+def test_live_shaman_p3_keeps_already_measured_positive_sensitivity(monkeypatch):
+    p3, _record, _policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
         monkeypatch,
         fallback="lightning_bolt:915",
         attempted=33,
@@ -934,27 +910,17 @@ def test_live_shaman_p3_requires_paid_spell_power_witness_after_positive_sensiti
         initial_pass_count=93,
         next_pass_count=94,
         witness_status="MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
-
     result = p3.run_live(ROOT, "shaman", 20, spec="unrestricted")
-
-    assert len(witness_calls) == 1
-    witness = witness_calls[0]
-    assert witness["stat"] == "spell_power"
-    assert witness["preferred_policy"] is winner_policy
-    assert witness["baseline_record"] is record
-    assert witness["allow_paid_winner_after_nonpositive"] is True
-    assert len(smoke_calls) == 2
-    assert smoke_calls[1]["weights"]["spell_power"] == 0.01
-    assert result["source_policy_stat_witnesses"][0]["status"] == (
-        "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
-    assert result["real_measured_stat_weights"]["spell_power"] == 0.01
+    assert witness_calls == []
+    assert len(smoke_calls) == 1
+    assert result["source_policy_stat_witnesses"] == []
+    assert result["real_measured_stat_weights"]["spell_power"] == 0.16382978723404254
     assert result["native_paid_winner_spell_probe_enabled"] is True
     assert result["reachability_count"] == 204
-    assert result["pass_count"] == 94
-    assert result["real_source_search_evaluated"] == 34
+    assert result["pass_count"] == 93
+    assert result["real_source_search_evaluated"] == 33
 
-
-def test_shaman_positive_spell_power_requires_exact_native_fallback(monkeypatch):
+def test_shaman_native_fallback_does_not_reprobe_already_measured_sp(monkeypatch):
     from types import SimpleNamespace
     import src.game.checkpoint_p3_smoke as p3_smoke
     import src.game.data.forever.registry as registry
@@ -1077,18 +1043,12 @@ def test_shaman_positive_spell_power_requires_exact_native_fallback(monkeypatch)
         return result, record, winner_policy, witness_calls, smoke_calls
 
     exact, record, winner_policy, calls, smoke_calls = run_case("lightning_bolt:915")
-    assert len(calls) == 1
-    assert calls[0]["stat"] == "spell_power"
-    assert calls[0]["probe_deltas"] == (20.0,)
-    assert calls[0]["preferred_policy"] is winner_policy
-    assert calls[0]["baseline_record"] is record
-    assert calls[0]["allow_paid_winner_after_nonpositive"] is True
+    assert calls == []
     assert exact["native_paid_winner_spell_probe_enabled"] is True
-    assert exact["source_policy_stat_witnesses"][0]["status"] == (
-        "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
-    assert exact["real_measured_stat_weights"]["spell_power"] == 0.25
-    assert exact["real_source_search_evaluated"] == 42
-    assert len(smoke_calls) == 2
+    assert exact["source_policy_stat_witnesses"] == []
+    assert exact["real_measured_stat_weights"]["spell_power"] == 0.1
+    assert exact["real_source_search_evaluated"] == 41
+    assert len(smoke_calls) == 1
     assert exact["behavior_probes_executed"] <= 44
 
     other, _record, _policy, other_calls, other_smoke_calls = run_case("rockbiter:8019")
