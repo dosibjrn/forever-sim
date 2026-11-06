@@ -571,9 +571,22 @@ def native_level_equipment(binary, source, options, out, *, level):
     }
     pools = {i: [] for i in range(17)}
     item_meta = {}
+    unknown_level_excluded = 0
+    above_level_excluded = 0
     for row in options["items"]:
         native = row.get("native") if row.get("eligibility") == "native_eligible" else None
         if native is None:
+            continue
+        # required_level=0 means source unknown, NOT "wearable at level one".
+        # Prior L30 runs equipped level-60 Tier/ZG rewards because they had
+        # unknown required levels. Only source-confirmed 1..level enters
+        # the paid gear search; the Rust engine still owns all mechanics.
+        required_level = native.get("required_level")
+        if not isinstance(required_level, int) or required_level <= 0:
+            unknown_level_excluded += 1
+            continue
+        if required_level > level:
+            above_level_excluded += 1
             continue
         item_id = row["item_id"]
         item_meta[item_id] = native
@@ -702,8 +715,10 @@ def native_level_equipment(binary, source, options, out, *, level):
     ]
     (out / "native_max_hp_gear_request.json").write_text(
         json.dumps(survival, indent=2) + "\n")
-    audit = {"source":"exact Rust get_options",
+    audit = {"source":"exact Rust get_options; only positive source-confirmed required_level <= actor level",
              "level":level,"class":"warlock",
+             "unknown_level_excluded":unknown_level_excluded,
+             "above_level_excluded":above_level_excluded,
              "native_eligible_item_count":len(item_meta),
              "evaluated_equipment_requests":tried,
              "native_paid_requests":paid_count,
