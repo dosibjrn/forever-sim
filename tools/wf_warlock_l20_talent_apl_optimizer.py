@@ -23,6 +23,7 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "integrations/mythicsim-rust"))
 from live_two_world_pulls import run as native_world_chain
 from src.scenarios.leveling_targets import representative_hp
@@ -109,13 +110,13 @@ def proposals_from_native_talents(options, source_encoded: str, seed: int):
         return serialize(alloc)
 
     for tree_id, tree in enumerate(trees):
-        for k in range(18):
+        for k in range(10):
             item = sample(tree_id, k)
             if item is not None:
                 row = emit(item, "tree_" + tree["name"] + "_" + str(k))
                 if row:
                     yield row
-    for k in range(30):
+    for k in range(12):
         item = sample(None, k)
         if item is not None:
             row = emit(item, "mixed_" + str(k))
@@ -150,7 +151,7 @@ def apl_proposals(options, source, source_module):
         for start in range(len(dots)):
             # Multi-spell lists with native dotIsActive conditions and fallback.
             order = dots[start:] + dots[:start]
-            for count in (1, 2, 3):
+            for count in (2, 3):
                 lead = order[:count]
                 if not lead:
                     continue
@@ -160,7 +161,7 @@ def apl_proposals(options, source, source_module):
                 name = "dots_" + "_".join(n for n, _ in lead) + "__" + fallback_name
                 candidates.append((name, apl))
                 if tap is not None and fallback_name == "shadow_bolt":
-                    for threshold in (10, 20, 30):
+                    for threshold in (10, 20):
                         candidates.append((
                             name + "_tap" + str(threshold),
                             [source_module.mana_conditioned_apl(tap, threshold), *apl]))
@@ -187,7 +188,7 @@ def main():
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--engine-tools", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--max-finalists", type=int, default=9)
+    parser.add_argument("--max-finalists", type=int, default=6)
     parser.add_argument("--seed", type=int, default=10916)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
