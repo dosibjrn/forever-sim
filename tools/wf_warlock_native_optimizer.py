@@ -432,6 +432,7 @@ def main():
         result["candidate"] = index
         result["objective"] = f"100 successive L{level} world kills, min elapsed seconds"
         result["status"] = "INCOMPLETE"
+        result["confirmed_kills"] = 0
         try:
             call([binary, "prepare", "--request", scenario_file,
                   "--actor-level", str(level), "--outfile", prepared_file])
@@ -444,6 +445,7 @@ def main():
             (folder / "native_world.json").write_text(
                 json.dumps(world, indent=2, allow_nan=False)+"\n")
             result.update(status="COMPLETED", kills=world["world_targets_killed"],
+                          confirmed_kills=world["world_targets_killed"],
                           elapsed_s=world["world_elapsed_seconds"],
                           seconds_per_mob=world["world_elapsed_seconds"]/100,
                           min_hp=world["minimum_native_actor_health"],
@@ -455,9 +457,17 @@ def main():
                 subprocess.TimeoutExpired) as exc:
             reason = str(exc)[-3000:]
             result["failure_reason"] = reason
-            # A dead actor at target index N has not survived all 100 mobs.
-            death = re.search(r'RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:index=(\d+)',reason)
+            # Preserve verified actual lethal ACK count even on a failed run.
+            # The native world driver reports len(kills) as tuple element 3.
+            detail = exc.args[0] if isinstance(exc, AssertionError) and exc.args else None
+            if (isinstance(detail, tuple) and len(detail) >= 5
+                    and detail[0] == "RUST_TWO_WORLD_NATIVE_FAILED"
+                    and type(detail[3]) is int):
+                result["confirmed_kills"] = detail[3]
+                result["native_damage_events_before_stop"] = detail[4]
+            death = re.search(r'RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:index=(\d+)', reason)
             if death:
+                result["confirmed_kills"] = max(0, int(death.group(1)) - 1)
                 result["last_live_target_index"] = int(death.group(1))-1
         (folder / "result.json").write_text(json.dumps(result, indent=2)+"\n")
         chain_results.append(result)
@@ -465,6 +475,8 @@ def main():
 
     winners = sorted((r for r in chain_results if r["status"]=="COMPLETED"),
                      key=lambda x:x["elapsed_s"])
+    incomplete = sorted((r for r in chain_results if r["status"] != "COMPLETED"),
+                        key=lambda x:(-x["confirmed_kills"],-x["dps_screen"]))
     result = {
         "source":"Rust get_options + native paid balanced screening + real gsim retained 100 mob",
         "gear_held_fixed_after_native_selection":True, "native_level_gear":gear_audit,
@@ -477,16 +489,20 @@ def main():
         "finalist_results":chain_results,
         "refusal_examples":rejected_samples,
         "winner":winners[0] if winners else None,
+        "best_partial":incomplete[0] if incomplete else None,
+        "status":"COMPLETED_100_MOBS" if winners else "NO_100_MOB_SURVIVOR",
     }
     (args.out / "optimization_results.json").write_text(
         json.dumps(result,indent=2,allow_nan=False)+"\n")
     print("WARLOCK_TALENT_APL_100MOB_OPTIMIZATION",json.dumps({
         "talents":len(talents),"apls":len(apls),"paid":len(scored),
         "finalists":len(chain_results), "completed":len(winners),
-        "winner":result["winner"],
+        "winner":result["winner"], "best_partial":result["best_partial"],
+        "status":result["status"],
     }), flush=True)
-    if not winners:
-        raise SystemExit("No screened talent/APL finalist survived 100 mobs")
+    # A completed optimization run can find NO viable full-chain build.
+    # Preserve that honest outcome without misreporting it as an infrastructure
+    # failure or discarding partial native lethal-ACK counts.
 
 
 if __name__ == "__main__":
