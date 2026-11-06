@@ -600,7 +600,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    baseline_record: dict | None = None,
                                    allow_paid_winner_after_nonpositive: bool = False,
                                    breadth_first_verified_native_winner: bool = False) -> dict:
-    """Find a measured beneficial stat delta on an executable source policy.
+    """Measure a genuinely paid stat delta on an executable source policy.
 
     Keep source-IR policies first. On the Mage L30 native-item path, use the
     exact winning opening prefix as the source-policy baseline attempt; the
@@ -628,6 +628,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     # A real, completed before/after run can establish exactly zero sensitivity.
     # Retain the first such receipt but prefer any later positive source policy.
     zero_receipt = None
+    negative_receipt = None
     opening_action_ids = tuple(str(x) for x in opening_action_ids)
     prefix_options = (
         (opening_action_ids,) if opening_action_ids and preferred_policy is not None
@@ -828,6 +829,22 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'baseline_source': baseline_source,
                     'opening_action_ids': list(active_prefix),
                 }
+            if improvement < -1e-12 and negative_receipt is None:
+                # A slower paid result is a measured negative trade-off, not
+                # missing source evidence or a fabricated neutral weight.
+                negative_receipt = {
+                    'policy_id': str(policy.id),
+                    'policy_source': policy_source,
+                    'baseline_seconds_per_mob': baseline,
+                    'perturbed_seconds_per_mob': paid_seconds,
+                    'delta': float(delta),
+                    'probe_deltas': [float(x) for x in policy_probe_deltas],
+                    'requested_probe_deltas': [float(x) for x in probe_deltas],
+                    'baseline_reused': policy_baseline_reused,
+                    'baseline_source': baseline_source,
+                    'opening_action_ids': list(active_prefix),
+                    'weight_s_saved_per_mob_per_unit': improvement / float(delta),
+                }
             if improvement > 1e-12:
                 return {
                     'status': 'MEASURED_POSITIVE_SOURCE_POLICY_WITNESS',
@@ -855,6 +872,19 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'engine': 'gsim_CombatRuntime',
                     'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
                 }
+    if negative_receipt is not None:
+        return {
+            'status': 'MEASURED_NEGATIVE_SOURCE_POLICY_WITNESS',
+            'stat': stat, **negative_receipt,
+            'paid_evaluations': used,
+            'attempted_policies': attempted_policies,
+            'attempted_policy_sources': attempted_policy_sources,
+            'attempted_policy_opening_action_ids': attempted_policy_opening_action_ids,
+            'baseline_failures': baseline_failures,
+            'source_ir_id': str(ir.id),
+            'engine': 'gsim_CombatRuntime',
+            'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
+        }
     if zero_receipt is not None:
         return {
             'status': 'MEASURED_ZERO_SOURCE_POLICY_WITNESS',

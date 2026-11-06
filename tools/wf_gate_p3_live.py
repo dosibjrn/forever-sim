@@ -133,26 +133,24 @@ def _p3_executable_weight_witness_axes(blockers, weights, executable_axes, prior
 
 
 def _accept_paid_p3_stat_witness(weights: dict, axis: str, witness: dict) -> bool:
-    """Apply only a real paid positive slope or a genuinely measured missing zero.
+    """Keep the finite signed result of a genuine paid before/after probe.
 
-    Exact-zero derivatives may satisfy P3's nonnegative item requirement, but
-    only when a completed paid before/after witness exists. They must not
-    overwrite an existing measured weight, turn a negative effect into zero,
-    or turn an unsupported stat into an assumed zero.
+    Only populate an actually missing coefficient; never overwrite the
+    selected policy's existing paid weight or invent a zero for a refusal.
+    P3 permits positive, zero and negative native-executable trade-offs.
     """
-    status = witness.get("status")
-    if witness.get("stat") != axis:
+    if witness.get("stat") != axis or axis in weights:
         return False
     measured = witness.get("weight_s_saved_per_mob_per_unit")
     if type(measured) not in (int, float) or not isfinite(measured):
         return False
-    if status == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
-        if measured <= 0:
-            return False
-    elif status == "MEASURED_ZERO_SOURCE_POLICY_WITNESS":
-        if measured != 0.0 or axis in weights:
-            return False
-    else:
+    status = witness.get("status")
+    expected_sign = {
+        "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS": measured > 0,
+        "MEASURED_ZERO_SOURCE_POLICY_WITNESS": measured == 0.0,
+        "MEASURED_NEGATIVE_SOURCE_POLICY_WITNESS": measured < 0,
+    }
+    if not expected_sign.get(status, False):
         return False
     weights[axis] = float(measured)
     return True
