@@ -44,4 +44,4 @@ Recovered runtime modules include `p72_cold_search.py`, `p73_cold_search.py`, `p
 - Keep Feral historical Go-hybrid recovery strictly separate from Balance native Rust P7.2 PR #17 and merged governance PR #18.
 - The stronger WF613-reported 853.93055 DPS prior result is used in the non-inferiority computation; reconcile its accepted status and settings against the WF607 845.52195 DPS gate row, **do not** silently substitute the lower value.
 - The user-approved P7 CLOSED decision is preserved, but **formal gate certification remains blocked** until reviewed source, raw WF613 1000-fight holdout, paid candidate trace and per-gate live causal logs are committed and independently inspectable.
-- The archive importer now rejects POSIX absolute paths, Windows drive/UNC paths, backslash member names, and traversal components.
+- The one-shot SHA-pinned ZIP importer used during recovery was retired from the working tree after extraction; Git history retains the importer and its original traversal-safety regression. The recovered evidence and its integrity checks remain in place.
