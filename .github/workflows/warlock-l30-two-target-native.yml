@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 7b7780d51b2bf4c275147d649824ce2dfe43d283
+          ref: ca2f38cd97a1eac28ed87d6b4d56b7850cc4ed1a
           path: engine
       - uses: actions/setup-python@v5
         with:
@@ -29,7 +29,7 @@ jobs:
       - name: Check Python source APL and regressions
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "7b7780d51b2bf4c275147d649824ce2dfe43d283"
+          test "$(git -C engine rev-parse HEAD)" = "ca2f38cd97a1eac28ed87d6b4d56b7850cc4ed1a"
           python3 -m py_compile project/tools/wf_warlock_rolling_apl.py project/tools/wf_warlock_l30_two_target_native_smoke.py
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_rolling_apl.py' -v
       - name: Run exact Rust two-target-identity regression
