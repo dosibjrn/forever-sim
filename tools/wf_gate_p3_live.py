@@ -615,6 +615,43 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
+    if (str(class_key).lower() == "warlock" and int(level) == 20
+            and str(spec).lower() == "unrestricted"):
+        # Warlock L20 must not enter the historical naked-source policy search:
+        # P3 is a native equipped-gear scoring smoke, NOT a kill/survival gate.
+        # Return the genuine selected Rust refusal until native eligibility and
+        # real equipped L20 scoring are both present; never re-label actor_died
+        # or a Python policy winner as proof of gear scoring.
+        from src.game.native_p3_item_options import (
+            NativeItemOptionsError, query_native_p3_item_options,
+        )
+        rust_bin = os.environ.get("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN")
+        if not rust_bin:
+            return {
+                "status": "BLOCKED",
+                "reasons": ["P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"],
+                "production_component": "src.game.native_p3_item_options",
+            }
+        try:
+            options = query_native_p3_item_options(
+                rust_bin, "warlock", 20, spec="unrestricted", slot="all",
+            )
+        except NativeItemOptionsError as exc:
+            return {
+                "status": "BLOCKED", "reasons": [str(exc)],
+                "production_component": "src.game.native_p3_item_options",
+                "real_source_search_attempts": 0,
+                "real_source_search_evaluated": 0,
+            }
+        return {
+            "status": "BLOCKED",
+            "reasons": ["P3_WARLOCK_L20_NATIVE_EQUIPPED_SCORING_NOT_EXECUTED"],
+            "production_component": "integrations/mythicsim-rust/native_p3_equipped.py",
+            "native_item_candidate_count": len(options["items"]),
+            "real_source_search_attempts": 0,
+            "real_source_search_evaluated": 0,
+        }
+
     # Selected P3 class/level paths require authoritative native ItemSparse.
     # Unsupported native queries refuse; never fall back to Python/SQLite gear.
     native_required = native_item_options_required(class_key, level, spec)
