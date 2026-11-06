@@ -136,20 +136,50 @@ def test_native_two_target_survival_selects_one_genuine_100_target_run(tmp_path)
     assert json.loads(path.read_text()) == fixture()
 
 
-def test_no_changed_native_health_or_time_gain_skips_100(tmp_path):
+def test_weaker_two_target_native_policy_can_survive_long_world(tmp_path):
+    """Two-target HP is a sort key, not an invented 50/100-mob veto."""
     path = write_source(tmp_path)
     counts = []
+
     def slow_world(binary, prepared, **kwargs):
         counts.append(kwargs["target_count"])
         result = native_world(binary, prepared, **kwargs)
         if json.loads(prepared.read_text())["policy"] != "source":
             result["minimum_native_actor_health"] = 30.
         return result
-    with pytest.raises(RuntimeError, match="NO_MEASURED_TWO_TARGET_IMPROVEMENT"):
-        search_feral_native_apl_survival(
-            "/native", path, prepare_run=native_prepare, world_run=slow_world,
-        )
-    assert counts == [2, 2, 2]
+
+    result = search_feral_native_apl_survival(
+        "/native", path, prepare_run=native_prepare, world_run=slow_world,
+    )
+    assert counts == [2, 2, 2, 50, 50, 100]
+    assert result["two_target_screens"][0]["minimum_native_actor_health"] == 40.
+    assert result["selected_native_two_target_screen"]["minimum_native_actor_health"] == 30.
+    assert result["native_paid_100_target_objective"]["targets"] == 100
+
+
+def test_dead_source_two_target_screen_does_not_veto_native_survivor(tmp_path):
+    """A failed old APL must not pre-veto an independently viable new APL."""
+    path = write_source(tmp_path)
+    calls = []
+
+    def dead_source(binary, prepared, **kwargs):
+        policy = json.loads(prepared.read_text())["policy"]
+        count = kwargs["target_count"]
+        calls.append((policy, count))
+        if policy == "source" and count == 2:
+            raise AssertionError(
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=1:"
+                "adjacent_native_windows=[]"
+            )
+        return native_world(binary, prepared, **kwargs)
+
+    result = search_feral_native_apl_survival(
+        "/native", path, prepare_run=native_prepare, world_run=dead_source,
+    )
+    assert result["two_target_screens"][0]["status"] == "native_refused_or_dead"
+    assert result["selected_policy"] == "advance_last"
+    assert sum(count == 100 for _, count in calls) == 1
+    assert result["native_paid_100_target_objective"]["targets"] == 100
 
 
 def test_native_refusals_cannot_win_or_trigger_100(tmp_path):
@@ -159,7 +189,7 @@ def test_native_refusals_cannot_win_or_trigger_100(tmp_path):
         if policy_label(request) != "source":
             raise subprocess.CalledProcessError(3, argv, stderr="INVALID: APL")
         native_prepare(argv, **kwargs)
-    with pytest.raises(RuntimeError, match="NO_MEASURED_TWO_TARGET_IMPROVEMENT") as exc:
+    with pytest.raises(RuntimeError, match="NO_EXECUTABLE_TWO_TARGET_ALTERNATIVE") as exc:
         search_feral_native_apl_survival(
             "/native", path, prepare_run=reject_changed, world_run=native_world,
         )
