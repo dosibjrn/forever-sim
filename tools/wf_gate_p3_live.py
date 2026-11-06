@@ -291,6 +291,21 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
         for destination in destinations:
             if destination in native_slots:
                 grouped.setdefault(destination, []).append(option)
+    # Rust can return candidate IDs without a verified slot. Do not treat this
+    # as a Python equip veto: propose a bounded, deterministic sample at each
+    # structural request position, then let selected native prepare/sim decide.
+    # Keep the samples slot-diverse under the existing 44-payment budget.
+    unknown_ids = list(dict.fromkeys(
+        item_id for item_id in native_options.get("unverified_item_ids", ())
+        if type(item_id) is int and item_id > 0))
+    if unknown_ids:
+        for index, slot in enumerate(sorted(native_slots)):
+            start = (3 * index) % len(unknown_ids)
+            for offset in range(min(3, len(unknown_ids))):
+                grouped.setdefault(slot, []).append({
+                    "item_id": unknown_ids[(start + offset) % len(unknown_ids)],
+                    "item_level": None,
+                })
     proposals = {}
     for slot, items in grouped.items():
         ordered = sorted(
@@ -307,11 +322,12 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
 
 def _query_native_unified_p3_items(root: Path, native_binary: str,
                                    class_key: str, level: int) -> dict:
-    """Project confirmed Rust get_options items, never Python equip legality.
+    """Forward Rust get_options item proposals without Python equip legality.
 
-    A native_eligible row has a Rust-provided structural slot. Unverified
-    proficiency has no confirmed equipment position and earns no P3 credit.
-    Every proposed full build still goes through selected native prepare/score.
+    Only native_eligible rows have a Rust-provided slot. For Warlock L20,
+    also carry the exact IDs of proficiency_unverified rows to the paid native
+    evaluator, never asserting that they equip or earn P3 credit. The native
+    engine alone accepts/refuses each candidate request.
     """
     import importlib.util
 
@@ -324,14 +340,19 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
     source = module.query_native_options(native_binary, class_key, level)
     confirmed = [dict(row["native"]) for row in source["items"]
                  if row["eligibility"] == "native_eligible"]
-    unverified = sum(row["eligibility"] == "proficiency_unverified"
-                     for row in source["items"])
+    unverified_ids = [row["item_id"] for row in source["items"]
+                      if row["eligibility"] == "proficiency_unverified"]
+    # This is the owned Warlock P3 adapter's proposal path, not a Warcraft
+    # legality or slot decision. Other existing source-native routes are
+    # unchanged until their real callers adopt unknown-slot proposals.
+    warlock_l20 = str(class_key).lower() == "warlock" and level == 20
     return {
-        "status": "ok" if confirmed else "empty",
+        "status": "ok" if confirmed or (warlock_l20 and unverified_ids) else "empty",
         "transport": "MYTHICSIM_NATIVE_GET_OPTIONS",
         "source": source["source_revision"],
         "coverage": source["coverage"],
-        "unverified_candidate_count": unverified,
+        "unverified_candidate_count": len(unverified_ids),
+        "unverified_item_ids": unverified_ids if warlock_l20 else [],
         "items": confirmed,
     }
 
@@ -586,10 +607,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             return {'status': 'BLOCKED', 'reasons': [str(exc)],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
-        if not native_options['items']:
+        if not native_options['items'] and not (
+                is_warlock_native and native_options.get("unverified_item_ids")):
             return {'status': 'BLOCKED',
-                    'reasons': [('NATIVE_ITEM_OPTIONS_PROFICIENCY_UNVERIFIED'
-                                 if is_warlock_native and native_options.get('unverified_candidate_count', 0)
+                    'reasons': [('NATIVE_ITEM_OPTIONS_NO_SOURCE_CANDIDATES'
+                                 if is_warlock_native
                                  else 'NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
