@@ -532,3 +532,48 @@ def test_warlock_equipped_p3_prefers_rust_verified_item_options(monkeypatch):
     assert slots["weapon"]["selected_ids"] == [8100, 8101]
     assert slots["ranged"]["selected_ids"] == [8200, 8201]
     assert slots["chest"]["selected_ids"] == [8300]
+
+
+def test_old_selected_rust_unsupported_warlock_items_keeps_unknown_proposals(monkeypatch):
+    """Observed old pin can still propose unknown IDs; paid Rust alone decides."""
+    from src.game import native_p3_item_options
+    from src.game.native_p3_item_options import NativeItemOptionsError
+
+    def missing_class(*_args, **_kwargs):
+        raise NativeItemOptionsError(
+            "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS")
+
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        missing_class)
+    payload = {
+        "schema_version": 1, "class": "warlock", "level": 20,
+        "source_revision": "old-native-pin", "spells": [],
+        "coverage": {"spell_learnability_complete": False,
+                     "item_eligibility_complete": False,
+                     "talent_prerequisites_complete": True},
+        "talents": {"status": "ok", "trees": [{}, {}, {}]},
+        "items": [{"item_id": 8300, "eligibility": "proficiency_unverified",
+                   "native": None}],
+    }
+    observed = []
+    def source_cli(cmd, **_kwargs):
+        observed.append(cmd)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+    monkeypatch.setattr(subprocess, "run", source_cli)
+    result = p3._query_native_unified_p3_items(
+        ROOT, "old-pinned-engine", "warlock", 20)
+    assert result["status"] == "ok"
+    assert result["items"] == [] and result["unverified_item_ids"] == [8300]
+    assert result["unverified_candidate_count"] == 1
+    assert observed == [["old-pinned-engine", "options", "--class", "warlock",
+                         "--level", "20"]]
+
+    def corrupt_contract(*_args, **_kwargs):
+        raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_RESPONSE")
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        corrupt_contract)
+    import pytest
+    with pytest.raises(NativeItemOptionsError,
+                       match="P3_NATIVE_ITEM_OPTIONS_INVALID_RESPONSE"):
+        p3._query_native_unified_p3_items(
+            ROOT, "old-pinned-engine", "warlock", 20)
