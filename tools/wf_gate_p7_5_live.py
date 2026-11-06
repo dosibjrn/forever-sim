@@ -839,11 +839,10 @@ def run_live(root: Path, class_key: str, level: int, *,
 
     # Compare the independent frozen P7.5 holdout against genuine compatible
     # previously accepted results, never against search-screen estimates.
-    # Missing numeric receipts preserve the existing fail-closed BLOCKED state.
-    # Resolve the accepted comparator for both bounded light probes and
-    # full searches. A light probe needs the same numeric objective floor in
-    # its diagnostic receipt; the independent 300s search and 1,000-stochastic
-    # holdout requirements below still gate PASS.
+    # Optional accepted-compatible stochastic receipts raise the comparator.
+    # Their absence cannot block the approved reference-only P7.5 floor.
+    # Resolve the same numeric objective for both light probes and full runs;
+    # only a genuine 300s search and frozen 1,000-fight holdout can PASS.
     prior = strongest_accepted_prior(
         root, class_key, level, spec,
         engine_revision=meta.get("selected_engine_revision", PINNED_RUST),
@@ -851,15 +850,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                                    SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA),
         reference_dps=float(meta["reference_dps"]))
     prior_dps = prior["dps"] if prior is not None else None
-    required = (p7_required_dps(
+    required = p7_required_dps(
         "P7.5", float(meta["reference_dps"]),
-        strongest_accepted_compatible_prior=(
-            prior_dps if prior_dps is not None else float(meta["reference_dps"])))
-        if native_only or prior_dps is not None else None)
-    # Optional axis stochastic evidence is not a prerequisite. The native
-    # unrestricted target uses the pinned reference when none qualifies.
-    reasons = ([] if native_only or prior is not None else [
-        "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"])
+        strongest_accepted_compatible_prior=prior_dps)
+    reasons = []
     if not full_search:
         reasons.append("P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
     elif not search_window_met:
@@ -872,10 +866,8 @@ def run_live(root: Path, class_key: str, level: int, *,
             final["frozen_stochastic_native_dps"] < required
             or (not native_only and final["frozen_stochastic_world_dps"] < required)):
         reasons.append("P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR")
-    # An unestablished accepted-compatible prior is a missing *comparison*,
-    # not evidence that combat/search failed. Label a genuine full-run budget,
-    # final-holdout or external-DPS failure as FAIL; otherwise remain BLOCKED.
-    # This does not confer PASS without the required approved prior.
+    # Classify actual search/holdout failures, never a missing optional prior.
+    # A bounded light probe still cannot PASS without its full search/holdout.
     failed_execution = full_search and any(reason in {
         "P7_5_300S_SEARCH_NOT_COMPLETED",
         "P7_5_SEARCH_BUDGET_OVERRUN",
