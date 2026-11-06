@@ -132,6 +132,50 @@ def run():
                     print("RUST_THREE_MOB_FEATURES",json.dumps(item),flush=True)
     probes=[case for case in cases if case["probe"] is not None]
     sessions=[]
+    # Reuse exact, completed 100-mob native truth from the earlier L30 run
+    # ONLY where each first-three-kill Rust clock, HP and mana tuple matches
+    # the new telemetry-enabled Rust actor. No arithmetic extrapolation.
+    historical_file=Path(__file__).resolve().parents[1]/"data"/(
+        "warlock-l30-real-100mob-truth-with-first3-parity.json")
+    historical=json.loads(historical_file.read_text())
+    if (historical["source_three_engine_sha"]!=args.engine_sha
+            or historical["scenario_id"]!=scenario_id):
+        raise RuntimeError("Historical 100-mob truth has another Rust engine/scenario")
+    reused_ids=[]
+    for old_id,old_elapsed,old_windows in historical["rows"]:
+        case=next((x for x in probes if x["result"]["candidate"]==old_id),None)
+        if case is None:
+            raise RuntimeError("Previously 100-mob-completed candidate lacks live 3-mob probe")
+        observed=json.loads((case["folder"]/"three_native_world.json").read_text())
+        windows=observed["native_windows"]
+        match=(len(windows)==len(old_windows)==3 and all(
+            int(actual["native_kill_ns"])==int(old[0])
+            and abs(float(actual["actor_health"])-float(old[1])) < 1e-4
+            and abs(float(actual["actor_mana"])-float(old[2])) < 1e-4
+            for actual,old in zip(windows,old_windows)))
+        if not match:
+            raise RuntimeError("Rust three-kill telemetry parity failed for "+str(old_id))
+        sessions.append({
+            "candidate":old_id,"engine_sha":args.engine_sha,"scenario_id":scenario_id,
+            "source_100_engine_sha":historical["source_100_engine_sha"],
+            "first_three_world_kills_exact_parity":True,
+            "probe":case["probe"],"result":{
+                "status":"COMPLETED","confirmed_kills":100,
+                "elapsed_s":old_elapsed,
+            },
+        })
+        reused_ids.append(old_id)
+    prefit=train_supervised(
+        sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    (args.out/"historical_parity_and_surrogate.json").write_text(
+        json.dumps({"reused_real_100_labels":len(reused_ids),
+                    "parity_checked_candidates":reused_ids,
+                    "label_source_engine":historical["source_100_engine_sha"],
+                    "model":prefit},indent=2,allow_nan=False)+"\n")
+    print("RUST_REAL_100_HISTORICAL_PARITY",json.dumps({
+        "candidates":reused_ids,"trained":prefit["time_model"] is not None,
+        "loo_mae_elapsed_s":prefit["loo_mae_elapsed_s"],
+    }),flush=True)
     # Broad source-native bootstrap, not 30-second DPS ordering:
     # both talent families, both pet types, both gear tracks and fillers.
     bootstrap=(0,5,2,7,4,1,8,13,3,6,11,12,15,9,10,14)
@@ -163,7 +207,12 @@ def run():
                             item["error_100"])
             if found:
                 item["confirmed_kills"]=max(0,int(found.group(1))-1)
+        # New native truth supersedes an older parity-checked label for the
+        # same candidate, rather than falsely double-counting training rows.
+        sessions[:]=[row for row in sessions
+                     if row.get("candidate") != item["candidate"]]
         sessions.append({
+            "candidate":item["candidate"],
             "engine_sha":args.engine_sha,"scenario_id":scenario_id,
             "probe":case["probe"],"result":item.copy(),
         })
