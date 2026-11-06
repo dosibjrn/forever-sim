@@ -94,32 +94,21 @@ def search_feral_native_apl_survival(
                 )
                 viable.append((label, request, attempt))
             attempts.append(attempt)
-        baseline = next((a for a in attempts if a["policy"] == "source"), None)
-        if not viable or baseline is None or baseline["status"] != "native_screen_survived":
-            raise RuntimeError(
-                "FERAL_NATIVE_APL_BASELINE_SCREEN_INVALID:" + json.dumps(attempts, sort_keys=True)
-            )
-        # A changed APL must measurably improve true native retained-actor HP,
-        # or attain equal HP faster, to earn the costly 100-target payment.
-        # This ranks native observations, not inferred Warcraft spell effects.
-        baseline_rank = (
-            baseline["minimum_native_actor_health"],
-            -baseline["two_target_elapsed_seconds"],
-        )
+        # The two-target result is a real native paid observation, not a
+        # survival gate: a policy with lower early HP can still sustain 50/100
+        # consecutive kills, and a dead source policy cannot veto a surviving
+        # native-accepted replacement. Rank alternatives to spend less compute,
+        # but decide feasibility only from actual retained-actor world runs.
         changed = [(label, request, attempt) for label, request, attempt in viable
-                   if label != "source" and (
-                       attempt["minimum_native_actor_health"],
-                       -attempt["two_target_elapsed_seconds"]
-                   ) > baseline_rank]
+                   if label != "source"]
         if not changed:
             raise RuntimeError(
-                "FERAL_NATIVE_APL_NO_MEASURED_TWO_TARGET_IMPROVEMENT:"
+                "FERAL_NATIVE_APL_NO_EXECUTABLE_TWO_TARGET_ALTERNATIVE:"
                 + json.dumps(attempts, sort_keys=True)
             )
         # A two-target winner need not survive the persistent world. Screen
-        # remaining genuinely changed, native-scored APLs in descending
-        # two-target order only if the preceding policy dies at 50 targets.
-        # This is bounded candidate fallback, not a Warcraft survival rule.
+        # genuinely changed, native-scored APLs in descending two-target order,
+        # falling back after real 50-target deaths. No Warcraft-rule pre-veto.
         ranked_changed = sorted(
             changed,
             key=lambda triple: (
