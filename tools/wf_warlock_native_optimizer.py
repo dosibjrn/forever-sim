@@ -343,6 +343,10 @@ def main():
     parser.add_argument("--level", type=int, required=True, help="Rust actor and target level")
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--engine-tools", type=Path, required=True)
+    parser.add_argument("--proto-schema", type=Path, required=True,
+                        help="The selected Rust engine's data/proto-schema.json")
+    parser.add_argument("--pet-smoke-only", action="store_true",
+                        help="Paid Rust comparisons of all source summon choices only")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--max-finalists", type=int, default=6)
     parser.add_argument("--seed", type=int, default=10916)
@@ -392,10 +396,46 @@ def main():
     source_build = actor(source)["talentsString"]
     talents = list(proposals_from_native_talents(option_source, source_build, args.seed))
     apls, discovery = apl_proposals(option_source, source, source_search)
+    pet_options = native_pet_candidates(args.proto_schema)
     print("NATIVE_SOURCE_SEARCH_DOMAIN", json.dumps({
         "level":level,"talent_proposals":len(talents),
-        "apl_proposals":len(apls), "talent_points":talent_budget,
+        "apl_proposals":len(apls), "pet_options":pet_options,
+        "talent_points":talent_budget,
         "gear_paid_requests":gear_audit["native_paid_requests"], **discovery}), flush=True)
+
+    # A small direct Rust smoke verifies each existing Warlock summon option.
+    # A source option may be natively refused with this initial talent build;
+    # it is still explored with the other talent allocations below.
+    smoke_rows = []
+    smoke_request = args.out / "pet_smoke_request.json"
+    smoke_prepared = args.out / "pet_smoke_prepared.json"
+    smoke_paid = args.out / "pet_smoke_paid.json"
+    for chosen_pet in pet_options:
+        proposal = copy.deepcopy(source)
+        set_native_pet(proposal, chosen_pet)
+        proposal["simOptions"]["iterations"] = 8
+        proposal["simOptions"]["randomSeed"] = "4242"
+        smoke_request.write_text(json.dumps(proposal))
+        row = {"pet": chosen_pet, "status": "RUST_REFUSED"}
+        try:
+            call([binary, "prepare", "--request", smoke_request,
+                  "--actor-level", str(level), "--outfile", smoke_prepared])
+            prepared_data = json.loads(smoke_prepared.read_text())
+            call([binary, "sim", "--infile", smoke_prepared,
+                  "--rng-mode", "balanced", "--outfile", smoke_paid])
+            paid_data = json.loads(smoke_paid.read_text())["result"]
+            pet_receipt = native_pet_receipt(prepared_data, paid_data, chosen_pet)
+            row.update(status="RUST_PAID",
+                       raid_dps=paid_data["raidMetrics"]["dps"]["avg"],
+                       **pet_receipt)
+        except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+            row["reason"] = str(exc)[-600:]
+        smoke_rows.append(row)
+        print("NATIVE_WARLOCK_PET_SMOKE", json.dumps(row), flush=True)
+    (args.out / "native_pet_smoke.json").write_text(
+        json.dumps(smoke_rows, indent=2) + "\n")
+    if args.pet_smoke_only:
+        return
 
     req_path = args.out / "screen_request.json"
     prep_path = args.out / "screen_prepared.json"
