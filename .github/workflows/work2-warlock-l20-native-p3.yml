@@ -3,6 +3,8 @@ name: Work2 — Warlock L20 source-native P3 (no record)
 on:
   pull_request:
     paths:
+      # A new exact selected Rust gitlink is a real P3 producer change.
+      - integrations/mythicsim-rust/engine
       - .github/workflows/work2-warlock-l20-native-p3.yml
       - integrations/mythicsim-rust/native_p3_equipped.py
       - tools/wf_gate_p3_live.py
