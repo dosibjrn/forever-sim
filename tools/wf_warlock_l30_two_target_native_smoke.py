@@ -133,6 +133,35 @@ def main() -> None:
             casts_by_spell[str(spell_id)] = (
                 casts_by_spell.get(str(spell_id), 0) + target_casts)
 
+    # A source-owned 30%-player-HP predicate is never true in a stationary
+    # fight without incoming damage. Zero conditioned Drain Life casts is
+    # correct here; requiring them would turn a *healthy* Warlock into a
+    # spurious failure. Prove castability separately with a real paid Rust
+    # spell-only APL and the same prepared actor/equipment/pet.
+    direct_request = copy.deepcopy(req)
+    actor(direct_request)["rotation"]["priorityList"] = [
+        {"action": {"castSpell": {"spellId": {"spellId": real_drain}}}}
+    ]
+    direct_src = args.out / "source_native_drain_cast_request.json"
+    direct_prepared = args.out / "prepared_native_drain_cast.json"
+    direct_paid = args.out / "paid_native_drain_cast.json"
+    direct_src.write_text(json.dumps(direct_request, indent=2) + "\n")
+    call([binary, "prepare", "--request", direct_src, "--actor-level", "30",
+          "--outfile", direct_prepared], seconds=120)
+    direct_p = json.loads(direct_prepared.read_text())
+    if prepared_spell_id(direct_p, "drain_life") != real_drain:
+        raise RuntimeError("Native Drain Life cast probe prepared an unexpected spell")
+    call([binary, "sim", "--infile", direct_prepared,
+          "--rng-mode", "balanced", "--outfile", direct_paid], seconds=240)
+    direct_result = json.loads(direct_paid.read_text())
+    direct_metrics = direct_result["result"]["raidMetrics"]["parties"][0]["players"][0]
+    direct_casts = 0
+    for action in direct_metrics.get("actions", []):
+        if (action.get("id") or {}).get("spellId") == real_drain:
+            direct_casts += sum(
+                int(t.get("casts") or 0) for t in action.get("targets", [])
+            )
+
     # The two encounter units must both be actually damaged by native
     # Warlock actions. This is necessary, NOT sufficient, to certify an
     # overlapping world pull, and does not prove all four DoTs landed.
@@ -146,7 +175,9 @@ def main() -> None:
         "native_paid_damage_by_target": damage,
         "native_paid_casts_by_target": casts,
         "native_paid_casts_by_spell_id": casts_by_spell,
-        "native_paid_drain_life_casts": casts_by_spell.get(str(real_drain), 0),
+        "native_paid_drain_life_casts_under_30pct_guard": casts_by_spell.get(str(real_drain), 0),
+        "native_drain_life_unconditional_paid_casts": direct_casts,
+        "low_health_condition_ever_proved_in_this_stationary_test": False,
         "native_paid_dps": metrics.get("dps", {}).get("avg"),
         "native_two_target_damage_observed": all(v > 0 for v in damage),
         "not_a_world_chain_or_target_hp_threshold_test": True,
@@ -154,8 +185,8 @@ def main() -> None:
     (args.out / "two_target_diagnostic.json").write_text(
         json.dumps(result, indent=2, allow_nan=False) + "\n")
     print("NATIVE_WARLOCK_TWO_TARGET_DIAGNOSTIC", json.dumps(result), flush=True)
-    if not result["native_paid_drain_life_casts"]:
-        raise RuntimeError("Native Drain Life still did not execute; source rank mismatch")
+    if not result["native_drain_life_unconditional_paid_casts"]:
+        raise RuntimeError("Verified prepared Drain Life rank failed paid native cast-only probe")
     if not result["native_two_target_damage_observed"]:
         raise RuntimeError(
             "Rust native APL did not damage both targets; see paid_two_target.json")
