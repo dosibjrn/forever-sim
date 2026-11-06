@@ -412,8 +412,16 @@ jobs:
                   assert row["reachability_count"] >= row["pass_count"] >= 0, gate
                   assert row.get("p3_native_pair_reserved_attempts") == 44, gate
                   assert row.get("p3_shared_budget_attempts", 45) <= 44, gate
-                  assert row.get("native_equipped_paid_attempts", 0) >= 2, gate
+                  # Native options alone are not paid P3 evidence. The
+                  # current Rogue reference has 17 empty (id=0) gear slots.
+                  # Filling these is not a paid occupied-slot item alternative.
+                  paid = row.get("native_equipped_paid_attempts", 0)
+                  assert isinstance(paid, int) and 0 <= paid <= 44, gate
                   assert isinstance(row.get("native_equipped_paid_receipt"), dict), gate
+                  if paid == 0:
+                      assert gate["status"] == "BLOCKED", gate
+                      assert any(reason.startswith("P3_NATIVE_EQUIPPED_REFUSAL:")
+                                 for reason in row.get("reasons", [])), gate
                   if gate["status"] == "PASS":
                       assert row["pass_count"] == row["reachability_count"], gate
                       assert row["runtime_proof"]["executed"] is True, gate

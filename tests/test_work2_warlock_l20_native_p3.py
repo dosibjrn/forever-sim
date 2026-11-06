@@ -258,3 +258,60 @@ def test_native_warlock_refused_baseline_does_not_spend_gear_budget():
     assert "P3_NATIVE_BASELINE_NOT_VALID" in gate["reasons"]
     assert "P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED" in gate["reasons"]
     assert "runtime_proof" not in gate
+
+
+def test_warlock_p3_pays_occupied_head_not_empty_weapon_or_wand_slot():
+    """Rust proposals for empty slots must not starve real occupied P3 comparisons."""
+    original = source()
+    items = original["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    items.extend({"id": 0} for _ in range(3))
+    unchanged = copy.deepcopy(original)
+    seen = []
+
+    def evaluator(binary, request, iterations, seed, mode, deadline, **kwargs):
+        assert mode == "balanced" and kwargs["objective"] == "DPS"
+        current = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        seen.append([row["id"] for row in current])
+        assert [row["id"] for row in current[14:]] == [0, 0, 0]
+        return (7.5 if current[0]["id"] == 900 else 7.0), {}, 0.01, f"paid-{len(seen)}"
+
+    receipt = compare_equipped_native(
+        "selected-engine", original,
+        {"weapon": {"selected_ids": [950]},
+         "offhand": {"selected_ids": [951]},
+         "ranged": {"selected_ids": [952]},
+         "head": {"selected_ids": [900]}},
+        class_key="warlock", level=20, objective="DPS",
+        max_paid_attempts=2, evaluator=evaluator, preparer=prepared)
+
+    assert len(seen) == receipt["paid_attempts"] == 2
+    assert seen[0][0] == 100 and seen[1][0] == 900
+    assert receipt["native_slots_requested"] == 1
+    assert receipt["native_slot_evaluations"][0]["swap"]["slot"] == "head"
+    assert receipt["source_occupied_slots"]
+    assert not {"weapon", "offhand", "ranged"}.intersection(receipt["source_occupied_slots"])
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["comparison"]["delta_dps"] == 0.5
+    assert original == unchanged
+
+
+def test_warlock_p3_empty_slot_only_proposals_do_not_run_native():
+    """Adding gear to an empty slot cannot count as an occupied-item P3 swap."""
+    original = source()
+    original["raid"]["parties"][0]["players"][0]["equipment"]["items"].extend(
+        {"id": 0} for _ in range(3))
+
+    def not_called(*args, **kwargs):
+        raise AssertionError("No prepare or paid scoring for unoccupied-only proposals")
+
+    receipt = compare_equipped_native(
+        "selected-engine", original,
+        {"weapon": {"selected_ids": [950]},
+         "offhand": {"selected_ids": [951]},
+         "ranged": {"selected_ids": [952]}},
+        class_key="warlock", level=20, objective="DPS",
+        evaluator=not_called, preparer=not_called)
+
+    assert receipt["status"] == "NO_DISTINCT_NATIVE_EQUIPPED_ALTERNATIVE"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["comparison"] is None
