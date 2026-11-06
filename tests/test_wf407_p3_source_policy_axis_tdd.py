@@ -22,8 +22,20 @@ def test_source_policy_automatically_requires_mean_hit_weight(monkeypatch):
     weapon=ItemRecord(302,'Mace','two_hand',item_level=20,required_level=10,
                       weapon_min_damage=11,weapon_max_damage=19,weapon_dps=6)
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**k:(weapon,))
-    action=SimpleNamespace(id='strike',effects=(SimpleNamespace(effect_type='weapon_damage'),))
-    ir=SimpleNamespace(id='real_source_ir',actions=(action,))
+    # Bind this synthetic strike to a genuine equipped-weapon source fact:
+    # bare weapon_damage without damage_source must still fail closed.
+    action=SimpleNamespace(
+        id='strike', requirements=({'kind':'mode_is','value':'human'},),
+        effects=(SimpleNamespace(effect_type='weapon_damage',
+            damage_source=SimpleNamespace(kind='equipped_weapon',
+                dps_stat_id='weapon_dps', flat_dps=0)),))
+    ir=SimpleNamespace(id='real_source_ir',
+        actor=SimpleNamespace(metadata={'class_key':'druid'}),
+        actions=(action,), auto_attacks=())
+    fact=SimpleNamespace(source_stat='weapon_dps',
+        damage_source_kind='equipped_weapon', weapon_speed_semantics='equipped')
+    monkeypatch.setattr('src.game.gear._weapon_facts_for_ir',
+                        lambda _ir: ((fact,'human'),))
     policy=SimpleNamespace(id='generated',rules=(SimpleNamespace(action_id='strike'),))
     r=fast_p3_smoke_for_policy(class_key='druid',level=20,
         weights={'weapon_dps':1.,'mean_weapon_hit_damage':None},
