@@ -61,6 +61,45 @@ def set_native_pet(request: dict, summon: str) -> None:
     options.pop("pactSacrifice", None)
 
 
+def native_pet_autocast_receipt(prepared: dict, chosen_pet: str) -> list[dict]:
+    """Read the chosen demon's own autonomous spells from Rust-prepared state.
+
+    These are NOT actions in the Warlock player's priorityList. The Rust
+    warlock_pet effect supplies spellbook positions to its independent AI.
+    """
+    if chosen_pet == "NoSummon":
+        return []
+    selected = [
+        pet for pet in prepared.get("pets", [])
+        if pet.get("label", "").casefold().endswith(" - " + chosen_pet.casefold())
+    ]
+    if len(selected) != 1:
+        raise RuntimeError(
+            "Native prepared pet selection is ambiguous: " + chosen_pet)
+    pet = selected[0]
+    effects = [
+        effect for effect in prepared.get("effects", [])
+        if effect.get("kind") == "warlock_pet"
+        and effect.get("pet") == pet["label"]
+    ]
+    if len(effects) != 1:
+        raise RuntimeError(
+            "Native warlock_pet autonomous AI effect missing: " + pet["label"])
+    spellbook = pet.get("spells") or []
+    actions = []
+    for position in effects[0].get("autocast_spells", []):
+        if type(position) is not int or not 0 <= position < len(spellbook):
+            raise RuntimeError(
+                "Native pet autocast points outside exported spellbook: "
+                + repr(position))
+        spell = spellbook[position]
+        actions.append({
+            "class_spell": spell.get("class_spell"),
+            "action_id": spell.get("action_id"),
+        })
+    return actions
+
+
 def native_pet_receipt(prepared: dict, paid: dict, chosen_pet: str) -> dict:
     """Collect explicit Rust prepared/paid pet evidence for every candidate."""
     pets = prepared.get("pets") or []
@@ -87,6 +126,7 @@ def native_pet_receipt(prepared: dict, paid: dict, chosen_pet: str) -> dict:
         "summon": chosen_pet,
         "native_prepared_pets": labels,
         "native_pet_dps": sum(p["dps"] for p in pet_details),
+        "native_pet_autocast_spells": native_pet_autocast_receipt(prepared, chosen_pet),
         "native_pet_metrics": pet_details,
     }
 
@@ -476,6 +516,7 @@ def main():
                         "dps_screen": float(dps), "pet": pet,
                         "native_pet_dps": pet_receipt["native_pet_dps"],
                         "native_pet_labels": pet_receipt["native_prepared_pets"],
+                        "native_pet_autocast_spells": pet_receipt["native_pet_autocast_spells"],
                         "talents": t["talents"], "talent_label": t["label"],
                         "talent_ranks": t["ranks"], "apl_label": a_label,
                         "apl": apl,
@@ -570,6 +611,8 @@ def main():
                 raise RuntimeError("wrong prepared Rust actor")
             result["native_prepared_pets"] = [
                 pet.get("label") for pet in prepared_data.get("pets", [])]
+            result["native_pet_autocast_spells"] = native_pet_autocast_receipt(
+                prepared_data, row["pet"])
             world = native_world_chain(
                 binary, prepared_file, classic_mob_level=level,
                 target_count=100, rng_mode="balanced")
