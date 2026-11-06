@@ -1,0 +1,42 @@
+name: Warlock selected Rust Shoot integration
+
+on:
+  pull_request:
+    paths:
+      - integrations/mythicsim-rust/engine
+      - .github/workflows/warlock-native-shoot-integration.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selected-warlock-shoot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Forever commit and Rust gitlink
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Assert selected Rust gitlink and official source repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          selected="$(git ls-tree HEAD "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$selected" && test "$selected" = "$actual"
+          grep -Fq 'https://github.com/dosibjrn/mythicsim-forever-engine.git' .gitmodules
+          echo "FOREVER_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "SELECTED_RUST_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Exercise selected Rust Warlock wand via real prepare and Shoot APL
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_DEV_DEBUG: "0"
+        run: |
+          cargo test --locked warlock_wand_registers_native_shoot_for_apl_and_combat -- --nocapture
+      - name: Preserve evidence and no fabricated official P3 PASS
+        if: always()
+        run: echo 'Native prepared Shoot regression only; Warlock L20 official P3 requires separately measured equipped results.' >> "$GITHUB_STEP_SUMMARY"
