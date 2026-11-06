@@ -293,15 +293,26 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
         for destination in destinations:
             if destination in native_slots:
                 grouped.setdefault(destination, []).append(option)
+    # Unverified items are still get_options() source proposals, not illegal
+    # items. They have no Rust-confirmed position: try representative IDs
+    # across native *structural* slots and let prepare/simulate decide. Never
+    # infer game proficiency from a Python class/armor/weapon whitelist.
+    unverified_ids = list(dict.fromkeys(
+        item_id for item_id in native_options.get("unverified_item_ids", ())
+        if type(item_id) is int and item_id > 0))
     proposals = {}
-    for slot, items in grouped.items():
-        ordered = sorted(
-            items, key=lambda row: (
-                -(row.get("item_level") if type(row.get("item_level")) is int else -1),
-                row["item_id"]))
-        # Forward one spare Rust proposal: the first may already be worn,
-        # leaving two genuinely distinct native candidates to evaluate.
-        selected_ids = list(dict.fromkeys(row["item_id"] for row in ordered))[:3]
+    for slot_index, slot in enumerate(sorted(native_slots)):
+        items = grouped.get(slot, ())
+        ordered = sorted(items, key=lambda row: (
+            -(row.get("item_level") if type(row.get("item_level")) is int else -1),
+            row["item_id"]))
+        selected_ids = list(dict.fromkeys(row["item_id"] for row in ordered))
+        # Rotate the *proposal* samples by structural request position so the
+        # same arbitrary item is not tested for every occupied slot. No
+        # unverified sample earns P3 credit without a genuine native score.
+        for n in range(min(len(unverified_ids), 3)):
+            selected_ids.append(unverified_ids[(slot_index * 3 + n) % len(unverified_ids)])
+        selected_ids = list(dict.fromkeys(selected_ids))[:3]
         if selected_ids:
             proposals[slot] = {"selected_ids": selected_ids}
     return {"slots": proposals}
@@ -309,11 +320,11 @@ def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
 
 def _query_native_unified_p3_items(root: Path, native_binary: str,
                                    class_key: str, level: int) -> dict:
-    """Project confirmed Rust get_options items, never Python equip legality.
+    """Forward Rust get_options candidates without a Python eligibility veto.
 
-    A native_eligible row has a Rust-provided structural slot. Unverified
-    proficiency has no confirmed equipment position and earns no P3 credit.
-    Every proposed full build still goes through selected native prepare/score.
+    Unverified proficiency is not native legality approval and never earns P3
+    credit on its own. Propose such items to the selected Rust evaluator, which
+    accepts/refuses actual full equipped requests.
     """
     import importlib.util
 
@@ -326,14 +337,15 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
     source = module.query_native_options(native_binary, class_key, level)
     confirmed = [dict(row["native"]) for row in source["items"]
                  if row["eligibility"] == "native_eligible"]
-    unverified = sum(row["eligibility"] == "proficiency_unverified"
-                     for row in source["items"])
+    unverified_ids = [row["item_id"] for row in source["items"]
+                      if row["eligibility"] == "proficiency_unverified"]
     return {
-        "status": "ok" if confirmed else "empty",
+        "status": "ok" if (confirmed or unverified_ids) else "empty",
         "transport": "MYTHICSIM_NATIVE_GET_OPTIONS",
         "source": source["source_revision"],
         "coverage": source["coverage"],
-        "unverified_candidate_count": unverified,
+        "unverified_candidate_count": len(unverified_ids),
+        "unverified_item_ids": unverified_ids,
         "items": confirmed,
     }
 
@@ -588,11 +600,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             return {'status': 'BLOCKED', 'reasons': [str(exc)],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
-        if not native_options['items']:
+        # A source response with unverified candidate IDs is *not* empty.
+        # Rust decides their actual legality on a full equipped request.
+        if not native_options['items'] and not native_options.get("unverified_item_ids"):
             return {'status': 'BLOCKED',
-                    'reasons': [('NATIVE_ITEM_OPTIONS_PROFICIENCY_UNVERIFIED'
-                                 if is_warlock_native and native_options.get('unverified_candidate_count', 0)
-                                 else 'NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')],
+                    'reasons': ['NATIVE_ITEM_OPTIONS_NO_SOURCE_CANDIDATES'],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
 
