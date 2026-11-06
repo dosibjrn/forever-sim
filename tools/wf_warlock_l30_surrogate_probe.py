@@ -248,7 +248,7 @@ def run():
             case["probe"]["features"]["kill_time_slope"],
             case["probe"]["features"]["late_kill_s"],
         ))
-    for case in untested[:max(0,args.full_count-len(sessions))]:
+    for case in untested[:max(0,args.full_count-len(chosen))]:
         pay_full_100(case)
     model=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
