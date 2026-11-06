@@ -137,7 +137,7 @@ def run():
     bootstrap=(0,3,4,7,8,11,12,15,1,5,9,13,2,6,10,14)
     chosen=[case for idx in bootstrap for case in probes
             if case["result"]["candidate"]==idx][:args.full_count]
-    for case in chosen:
+    def pay_full_100(case):
         item=case["result"]
         item["status"]="INCOMPLETE"
         try:
@@ -172,6 +172,35 @@ def run():
         (case["folder"]/"result.json").write_text(json.dumps(item,indent=2)+"\n")
         print("RUST_100_MOB_LABEL",json.dumps(item),flush=True)
 
+    for case in chosen:
+        pay_full_100(case)
+    model=train_supervised(
+        sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    (args.out/"surrogate_model.json").write_text(
+        json.dumps(model,indent=2,allow_nan=False)+"\n")
+    # After a diverse truth-labeled calibration batch, spend the remaining
+    # 100-mob budget where the trained model predicts best *or* where the
+    # native HP/mana/kill-slope receipts are promising if no model is trained.
+    untested=[case for case in probes if case not in chosen]
+    for case in untested:
+        case["result"]["surrogate"]=predict(
+            model,case["probe"],engine_sha=args.engine_sha,scenario_id=scenario_id)
+    if model["time_model"] is not None:
+        untested.sort(key=lambda case: (
+            -(case["result"]["surrogate"]["probability_100_mob_completed"]
+              if case["result"]["surrogate"]["probability_100_mob_completed"] is not None
+              else .5),
+            case["result"]["surrogate"]["estimated_100_mob_elapsed_s"],
+        ))
+    else:
+        untested.sort(key=lambda case: (
+            -case["probe"]["features"]["health_end_fraction"],
+            -case["probe"]["features"]["mana_end_fraction"],
+            case["probe"]["features"]["kill_time_slope"],
+            case["probe"]["features"]["late_kill_s"],
+        ))
+    for case in untested[:max(0,args.full_count-len(sessions))]:
+        pay_full_100(case)
     model=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
     (args.out/"surrogate_model.json").write_text(
