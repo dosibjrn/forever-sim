@@ -1,4 +1,4 @@
-# WoW Forever — PROCESS v2.22 (owner-approved 2026-11-04)
+# WoW Forever — PROCESS v2.23 (owner-approved 2026-11-06)
 
 [OVERALL_PLAN.md](OVERALL_PLAN.md) defines WHAT is delivered. This file governs HOW; **the only normative gate predicates** live in [docs/gates/](docs/gates/README.md). Superseded thresholds and approvals are in Git history, not active competing instructions.
 
@@ -11,6 +11,14 @@
 
 ## Engine and optimization
 
+## Single Warcraft authority — explicit owner decision 2026-11-06
+
+**MythicSim Rust is the single authority for Warcraft game data, item/equipment legality and the effects of candidate builds. The optimizer must submit selected gear/build/rotation candidates to the version-pinned Rust interface, let Rust evaluate them, and use the actual native result, refusal and measured objective. Never independently implement or re-check the same Warcraft rule in Forever.**
+
+- **One-way boundary:** Forever proposes/searches builds, constructs scenarios, calls the pinned native interface and ranks/records real evaluated results. Rust owns item sources, class/level/race equipment proficiency, usable slots, talent/spell mechanics and actual combat evaluation. A native `VALID`/`INVALID`/`UNSUPPORTED` or executable refusal is authoritative. Do not replace it with a Python class whitelist, parallel item legality filter, duplicated formulas, substitute simulated combat, synthetic weights or a Python-derived permission/veto.
+- **No false gates:** Source introspection, naked-character survival, a full source-catalogue proof, spell learnability completeness, actor/pet feature checklists or repeated Rust-validation certificates are **not independent prerequisites** for an existing P3–P7.5 PASS. The only acceptance predicates are the nine approved contracts. In particular **P3 tests genuinely scored native-equipped legal alternatives and meaningful measured score sensitivity, not a naked-kill prerequisite**. If the actual selected Rust API refuses a required candidate or cannot execute an actual selected checkpoint, preserve its precise refusal as execution evidence; do not relabel a historical proxy failure as a gate or force a new readiness gate.
+- **Remove redundant code:** Clean, after live callers are safely migrated to the single native path, deletes duplicated Python GameIR, independent class/item/talent/ability legality rules, legacy fallback gameplay and artificial acceptance guards (see [#357](https://github.com/dosibjrn/forever-sim/issues/357) and [#359](https://github.com/dosibjrn/forever-sim/issues/359)). Delete dead tests with the dead implementation and retain focused integration regressions. This cleanup is code removal, **not** a second migration/validation gate, and must preserve real active acceptance and previously earned PASSes.
+
 - Exact-SHA-pinned **MythicSim Rust** owns Warcraft facts, legal item/enchant/talent/APL choices and mechanics; approved Go execution remains possible. Forever owns scenario, generic gear × talents × policy proposals, paid candidate evaluation and selection. Consume real native VALID/INVALID/UNSUPPORTED; do not clone Warcraft rules in Python, revalidate MythicSim or revive GameIR.
 - **P3:** finite source-legal gear scores and real score sensitivity to mechanically relevant changes, using a bounded representative legal item set. Mechanically irrelevant weights may be zero. No invented positive epsilon, source catalogue audit or global gear optimality claim.
 - **P4/P5:** one real fresh **300s cold whole-build search**, capturing an immutable genuine **30s** best-so-far snapshot. Continue real paid proposals/evaluations beyond 30s; each chosen distinct winner needs its own real **100 consecutive-mob** retained-actor spatial world/native run including combat, movement, recovery, resources and survival. No independent second cold restart, blanket execution of every unlocked action or `N300 >= 2×N30` throughput gate. When unlocks are legal, native-sourced generation can propose them and at least one reachable unlocked action is executed/compared where available.
@@ -20,7 +28,7 @@
 
 ## Delivery and evidence
 
-1. Prioritize the largest credible **total** M1 gain per remaining work, including reuse across genuinely active gates, not merely the next cheap one-off partial. [Prio](docs/planning/agents/PRIO.md) owns that decision; task detail/history live in existing issues/PRs, not `WORK_PRIORITY.md`.
+1. Prioritize the largest credible **total** M1 gain per remaining work, including reuse across genuinely active gates, not merely the next cheap one-off partial. [Prio](docs/planning/agents/PRIO.md) owns that decision; task detail/history live in existing issues/PRs, not `WORK_PRIORITY.md`. **An explicit owner-authorized ordering in `WORK_PRIORITY.md` overrides this default M1 heuristic until the owner changes it; this does not create any new acceptance condition.**
 2. Make the smallest source/production change with a causal route to a real gate improvement; validate changed behavior with focused tests and a meaningful production no-record run. Stop repeating unchanged non-improving proof probes and request reprioritization after a real no-gain result unless a new concrete cause is found.
 3. One real on-demand production execution suffices for a compatible PASS. The real native receipts, config/engine identity and required timing/measurements must remain inspectable in ordinary run history; no second ledger, per-gate MD/JSON proof bundle, MythicSim audit or parallel acceptance implementation.
 4. Merge integrates safe code even before a full PASS, dispatches genuine eligible affected-gate measurements only as justified, and preserves already accepted compatible PASSes. Heavy 300s/1,000-fight measurements do not run hourly or on unrelated changes.
