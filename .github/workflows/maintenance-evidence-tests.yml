@@ -35,7 +35,6 @@ on:
       - 'src/optimization/leveling_score.py'
       - 'src/scenarios/leveling_targets.py'
       - 'tools/audit_feral_p7_holdout.py'
-      - 'tools/import_feral_p7_archives.py'
       - 'tools/wf_gate_coverage.py'
       - 'tests/gates/test_wf34_*acquisition*.py'
       - 'tools/wf_gate_p7_2_live.py'
