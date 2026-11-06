@@ -130,7 +130,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             or objective not in ("DPS", "TPS", "HPS")):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
     expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid",
-                      "mage": "ClassMage", "paladin": "ClassPaladin"}.get(class_key)
+                      "mage": "ClassMage", "paladin": "ClassPaladin",
+                      "warlock": "ClassWarlock"}.get(class_key)
     if expected_class is None or type(level) is not int or level < 1:
         raise ValueError("P3_NATIVE_EQUIPPED_CHECKPOINT_INVALID")
     candidate, swap = first_equipped_proposal(
@@ -310,7 +311,7 @@ def main():
     parser.add_argument("--binary", required=True)
     parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--max-paid-attempts", type=int, default=2)
-    parser.add_argument("--class-key", choices=("rogue", "druid", "mage", "paladin"), default="rogue")
+    parser.add_argument("--class-key", choices=("rogue", "druid", "mage", "paladin", "warlock"), default="rogue")
     parser.add_argument("--level", type=int, default=20)
     parser.add_argument("--go-rules", action="store_true")
     parser.add_argument("--current-client-profile", choices=("mage/arcane", "mage/fire", "mage/frost",
