@@ -337,6 +337,25 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
         raise ValueError("P3_NATIVE_UNIFIED_OPTIONS_MODULE_UNAVAILABLE")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # The native ItemSparse/item-options contract can supply real equipped
+    # Warlock L20 slot alternatives even while the broader get_options
+    # projection still reports proficiency_unverified. Ask that authoritative
+    # endpoint first; never turn its candidates into a Python legality claim.
+    warlock_l20 = str(class_key).lower() == "warlock" and level == 20
+    if warlock_l20:
+        from src.game.native_p3_item_options import query_native_p3_item_options
+        equipped = query_native_p3_item_options(
+            native_binary, "warlock", 20, spec="unrestricted", slot="all")
+        if equipped["items"]:
+            return {
+                "status": equipped["status"],
+                "transport": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+                "source": equipped.get("source_revision"),
+                "coverage": equipped.get("coverage"),
+                "unverified_candidate_count": equipped.get("unverified_candidate_count", 0),
+                "unverified_item_ids": [],
+                "items": equipped["items"],
+            }
     source = module.query_native_options(native_binary, class_key, level)
     confirmed = [dict(row["native"]) for row in source["items"]
                  if row["eligibility"] == "native_eligible"]
@@ -345,7 +364,6 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
     # This is the owned Warlock P3 adapter's proposal path, not a Warcraft
     # legality or slot decision. Other existing source-native routes are
     # unchanged until their real callers adopt unknown-slot proposals.
-    warlock_l20 = str(class_key).lower() == "warlock" and level == 20
     return {
         "status": "ok" if confirmed or (warlock_l20 and unverified_ids) else "empty",
         "transport": "MYTHICSIM_NATIVE_GET_OPTIONS",
