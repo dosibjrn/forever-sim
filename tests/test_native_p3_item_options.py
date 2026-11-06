@@ -165,8 +165,6 @@ def test_native_p3_forwards_paladin_request_and_preserves_source_candidates():
     assert metadata["source"] == source
 
 
-
-
 def test_native_p3_empty_is_distinct_from_refusal():
     assert query_native_p3_item_options("native", "priest", 20, runner=_runner(
         _response(status="empty", items=[])))["items"] == []
