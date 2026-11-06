@@ -475,6 +475,17 @@ def main():
     (args.out / "native_pet_smoke.json").write_text(
         json.dumps(smoke_rows, indent=2) + "\n")
     if args.pet_smoke_only:
+        # The workflow must not go green when every native summon was
+        # refused. In particular, prove Imp's Rust-owned Firebolt autocast
+        # actually contributes paid damage without entering the player APL.
+        imp = next((row for row in smoke_rows if row["pet"] == "Imp"), None)
+        if (imp is None or imp["status"] != "RUST_PAID"
+                or not any(action.get("class_spell") == "imp_firebolt"
+                           for action in imp.get("native_pet_autocast_spells", []))
+                or not imp.get("native_pet_dps", 0) > 0):
+            raise RuntimeError(
+                "Native L40 Imp Firebolt autocast was not paid and observed; "
+                "see native_pet_smoke.json for Rust evidence")
         return
 
     req_path = args.out / "screen_request.json"
