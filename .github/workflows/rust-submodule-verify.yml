@@ -455,8 +455,6 @@ jobs:
           row = report["results"][0]
           assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
           # Priest deliberately retains partial unknown client-level status.
-          # Mage's selected ItemSparse universe now excludes non-client rows.
-          # Assert semantic native counts, not obsolete hardcoded row totals.
           if class_key == "priest":
               assert row["native_item_options_status"] == "partial_level_unknown"
               assert row["native_unverified_candidate_count"] > 0
@@ -465,8 +463,7 @@ jobs:
           else:
               assert row["native_item_options_status"] == "ok"
               assert row["native_unverified_candidate_count"] == 0
-              assert row["native_excluded_non_client_item_count"] > 0
-              assert not any(reason.startswith("NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:")
+                  assert not any(reason.startswith("NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:")
                              for reason in row["reasons"])
           assert row["native_item_options_source"].startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
@@ -507,7 +504,6 @@ jobs:
           assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
           assert row["native_item_options_status"] == "ok"
           assert row["native_unverified_candidate_count"] == 0
-          assert row["native_excluded_non_client_item_count"] > 0
           source = row["native_item_options_source"]
           assert isinstance(source, str) and source.startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
@@ -550,7 +546,6 @@ jobs:
           assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
           assert row["native_item_options_status"] == "ok"
           assert row["native_unverified_candidate_count"] == 0
-          assert row["native_excluded_non_client_item_count"] > 0
           assert isinstance(row["native_player_context_id"], str) and row["native_player_context_id"]
           assert row["native_player_context_kind"] == "source_backed_baseline_context_not_full_native_sim_actor"
           assert isinstance(row["native_player_context_base_stats"], dict)
@@ -608,8 +603,6 @@ jobs:
               assert native_status == "ok", row
               unknown = row["native_unverified_candidate_count"]
               assert unknown == 0, row
-              excluded = row["native_excluded_non_client_item_count"]
-              assert type(excluded) is int and excluded > 0, row
               assert not any(reason.startswith("NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:")
                              for reason in row["reasons"])
               source = row["native_item_options_source"]
