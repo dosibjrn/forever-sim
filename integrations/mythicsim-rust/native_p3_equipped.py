@@ -74,7 +74,8 @@ def first_equipped_proposal(reference: dict, selection: dict, *, expected_class=
     return None, None
 
 
-def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run, go_rules=False):
+def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run, go_rules=False,
+                          actor_level=None):
     """Read the *executed engine's* prepared actor, not the request's level hint.
 
     A source request may say level 20 while an older Rust build still creates
@@ -86,6 +87,8 @@ def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run, go_
         command = [str(binary), "prepare", "--request", str(path)]
         if go_rules:
             command.append("--go-rules")
+        if actor_level is not None:
+            command.extend(("--actor-level", str(actor_level)))
         try:
             completed = runner(
                 command, capture_output=True, text=True, timeout=60, check=False)
@@ -129,6 +132,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             or type(max_paid_attempts) is not int or not 2 <= max_paid_attempts <= 44
             or objective not in ("DPS", "TPS", "HPS")):
         raise ValueError("P3_NATIVE_EQUIPPED_BUDGET_INVALID")
+    is_warlock_l20 = class_key == "warlock" and level == 20
     expected_class = {"rogue": "ClassRogue", "druid": "ClassDruid",
                       "mage": "ClassMage", "paladin": "ClassPaladin",
                       "warlock": "ClassWarlock"}.get(class_key)
@@ -162,7 +166,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     requested_level = _first_player(reference).get("level")
     # Source L60 fixtures may omit player.level; only the selected native
     # prepare response can establish the actual actor level (never a proxy).
-    if requested_level != level and not (level == 60 and requested_level is None):
+    if (requested_level != level and not (level == 60 and requested_level is None)
+            and not (is_warlock_l20 and requested_level is None)):
         return {
             "status": "NATIVE_REQUEST_CHECKPOINT_MISMATCH",
             "paid_attempts": 0, "comparison": None, "swap": swap,
@@ -173,8 +178,14 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # The request's level field is only a hint: the selected Rust engine can
     # prepare an L60 actor even from a level-20 request. Read the actual
     # prepared actor from that same binary before consuming paid evaluations.
-    prepared = (preparer(binary, copy.deepcopy(reference), go_rules=True)
-                if go_rules else preparer(binary, copy.deepcopy(reference)))
+    # The selected Rust CLI owns the real L20 actor. A raw native request may
+    # omit player.level; request L20 explicitly and verify its prepared output.
+    # This applies to both the original actor and every paid gear swap, avoiding
+    # an L60 sim silently scoring a purported L20 candidate.
+    prepare_kwargs = {"actor_level": level} if is_warlock_l20 else {}
+    if go_rules:
+        prepare_kwargs["go_rules"] = True
+    prepared = preparer(binary, copy.deepcopy(reference), **prepare_kwargs)
     if not isinstance(prepared, dict) or prepared.get("status") != "PREPARED":
         return {
             "status": (prepared.get("status", "NATIVE_PREPARE_ERROR")
@@ -208,7 +219,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             score, _output, elapsed, payload_sha = evaluator(
                 binary, copy.deepcopy(request), iterations, seed,
                 "balanced", deadline, objective=objective,
-                **({"go_rules": True} if go_rules else {}))
+                **({"go_rules": True} if go_rules else {}),
+                **({"actor_level": level} if is_warlock_l20 else {}))
             if not math.isfinite(score):
                 raise ValueError("P3_NATIVE_EQUIPPED_NONFINITE_SCORE")
             row.update(status="VALID", score=score, native_elapsed_s=elapsed,
