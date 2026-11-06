@@ -15,7 +15,8 @@ import sys
 from pathlib import Path
 
 from wf_warlock_native_optimizer import (
-    actor, call, native_level_equipment, native_pet_autocast_receipt,
+    actor, apl_proposals, call, native_level_equipment, native_pet_autocast_receipt,
+    proposals_from_native_talents,
     native_sustain_receipt, profile, set_native_pet, set_native_sustain_buffs,
 )
 from wf_warlock_l30_direct_affliction_comparison import (
@@ -35,6 +36,7 @@ def run():
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--engine-sha", required=True)
     parser.add_argument("--full-count", type=int, default=8)
+    parser.add_argument("--extra-candidates", type=int, default=24)
     args = parser.parse_args()
     if not 0 <= args.full_count <= 16:
         parser.error("full-count must be 0..16")
@@ -80,56 +82,85 @@ def run():
         binary,source,options,args.out,level=30)
     scenario_id="L30-world-proxy-2D-balanced-native-12s-gap-v1"
     cases=[]
+    def probe_candidate(gear_name,base,build_name,build,pet,apl,filler):
+        """Pay Rust's actual three-world-kill chain, not a DPS proxy."""
+        index=len(cases)
+        folder=args.out/("candidate_%02d" % index)
+        folder.mkdir(exist_ok=True)
+        request=copy.deepcopy(base)
+        actor(request)["talentsString"]=build
+        set_native_pet(request,pet)
+        actor(request)["rotation"]["priorityList"]=copy.deepcopy(apl)
+        request=profile(request,level=30)
+        source_path=folder/"source_request.json"
+        prepared_path=folder/"prepared.json"
+        source_path.write_text(json.dumps(request,indent=2)+"\n")
+        item={
+            "candidate":index,"gear":gear_name,"talents":build,
+            "build":build_name,"pet":pet,"filler":filler,
+            "status":"PROBE_UNTESTED","confirmed_kills":0,
+        }
+        probe=None
+        try:
+            call([binary,"prepare","--request",source_path,
+                  "--actor-level","30","--outfile",prepared_path])
+            prepared=json.loads(prepared_path.read_text())
+            item["pet_autocasts"]=native_pet_autocast_receipt(prepared,pet)
+            item["sustain"]=native_sustain_receipt(prepared,request)
+            three=native_world_chain(
+                binary,prepared_path,classic_mob_level=30,
+                target_count=3,rng_mode="balanced")
+            (folder/"three_native_world.json").write_text(
+                json.dumps(three,indent=2,allow_nan=False)+"\n")
+            probe=extract_three_mob_features(prepared,three)
+            (folder/"three_features.json").write_text(
+                json.dumps(probe,indent=2,allow_nan=False)+"\n")
+            item.update(status="PROBE_COMPLETED",
+                        three_elapsed_s=three["world_elapsed_seconds"],
+                        features=probe["features"],
+                        cooldowns=probe["cooldowns"])
+        except (RuntimeError,ValueError,KeyError,AssertionError,OSError,
+                subprocess.TimeoutExpired) as exc:
+            item.update(status="PROBE_FAILED",error=str(exc)[-1800:])
+        cases.append({"result":item,"probe":probe,
+                      "prepared":prepared_path,"folder":folder})
+        (folder/"result.json").write_text(json.dumps(item,indent=2)+"\n")
+        print("RUST_THREE_MOB_FEATURES",json.dumps(item),flush=True)
+
+    # Stable first 16 anchor IDs support exact native three-kill parity
+    # with real 100-mob labels from the previous verified workflow.
     for gear_name,base in (("native_dps",dps_gear),("native_max_hp",hp_gear)):
         for build_name,build in (
                 ("user_affliction",USER_AFFLICTION),
                 ("prior_destro",OLD_DESTRO_COMPARATOR)):
             for pet in ("Succubus","Felhunter"):
                 for filler in ("drain life","shadow bolt"):
-                    index=len(cases)
-                    folder=args.out/("candidate_%02d" % index)
-                    folder.mkdir(exist_ok=True)
-                    request=copy.deepcopy(base)
-                    actor(request)["talentsString"]=build
-                    set_native_pet(request,pet)
-                    actor(request)["rotation"]["priorityList"]=make_apl(
-                        search,ids,affliction=build_name=="user_affliction",
-                        filler=filler)
-                    request=profile(request,level=30)
-                    source_path=folder/"source_request.json"
-                    prepared_path=folder/"prepared.json"
-                    source_path.write_text(json.dumps(request,indent=2)+"\n")
-                    item={
-                        "candidate":index,"gear":gear_name,"talents":build,
-                        "build":build_name,"pet":pet,"filler":filler,
-                        "status":"PROBE_UNTESTED","confirmed_kills":0,
-                    }
-                    probe=None
-                    try:
-                        call([binary,"prepare","--request",source_path,
-                              "--actor-level","30","--outfile",prepared_path])
-                        prepared=json.loads(prepared_path.read_text())
-                        item["pet_autocasts"]=native_pet_autocast_receipt(prepared,pet)
-                        item["sustain"]=native_sustain_receipt(prepared,request)
-                        three=native_world_chain(
-                            binary,prepared_path,classic_mob_level=30,
-                            target_count=3,rng_mode="balanced")
-                        (folder/"three_native_world.json").write_text(
-                            json.dumps(three,indent=2,allow_nan=False)+"\n")
-                        probe=extract_three_mob_features(prepared,three)
-                        (folder/"three_features.json").write_text(
-                            json.dumps(probe,indent=2,allow_nan=False)+"\n")
-                        item.update(status="PROBE_COMPLETED",
-                                    three_elapsed_s=three["world_elapsed_seconds"],
-                                    features=probe["features"],
-                                    cooldowns=probe["cooldowns"])
-                    except (RuntimeError,ValueError,KeyError,AssertionError,OSError,
-                            subprocess.TimeoutExpired) as exc:
-                        item.update(status="PROBE_FAILED",error=str(exc)[-1800:])
-                    cases.append({"result":item,"probe":probe,
-                                  "prepared":prepared_path,"folder":folder})
-                    (folder/"result.json").write_text(json.dumps(item,indent=2)+"\n")
-                    print("RUST_THREE_MOB_FEATURES",json.dumps(item),flush=True)
+                    apl=make_apl(
+                        search,ids,affliction=build_name=="user_affliction",filler=filler)
+                    probe_candidate(gear_name,base,build_name,build,pet,apl,filler)
+
+    # Expand beyond the two known user/reference builds: propose talents
+    # and APL entirely from Rust get_options and pay every evaluated candidate
+    # with the *same* three-world-mob retained native actor. No 30s combat
+    # score is ever used to discard an APL, talent or pet configuration.
+    proposals=list(proposals_from_native_talents(options,OLD_DESTRO_COMPARATOR,10916))
+    novel=[x for x in proposals
+           if x["talents"] not in (USER_AFFLICTION,OLD_DESTRO_COMPARATOR)
+           and sum(int(ch) for ch in x["talents"] if ch.isdigit())==21]
+    apl_rows,_=apl_proposals(options,source,search)
+    if not novel or not apl_rows:
+        raise RuntimeError("Rust did not offer extra native talent/APL proposals")
+    pet_choices=("Succubus","Felhunter","Imp","Voidwalker")
+    for k in range(args.extra_candidates):
+        proposed=novel[(k*5)%len(novel)]
+        pet=pet_choices[k%len(pet_choices)]
+        gear_name,base=(
+            ("native_dps",dps_gear) if k//4%2==0
+            else ("native_max_hp",hp_gear))
+        apl_name,apl=apl_rows[(k*7)%len(apl_rows)]
+        probe_candidate(
+            gear_name,base,proposed["label"],proposed["talents"],
+            pet,apl,apl_name)
     probes=[case for case in cases if case["probe"] is not None]
     sessions=[]
     # Reuse exact, completed 100-mob native truth from the earlier L30 run
