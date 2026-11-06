@@ -56,19 +56,119 @@ def test_warlock_l20_native_p3_selection_is_specific():
     assert not p3.native_item_options_required("warlock", 20, "affliction")
 
 
-def test_unverified_native_warlock_equipment_refuses_without_ir(monkeypatch):
+def test_unverified_warlock_source_ids_reach_native_paid_without_ir(monkeypatch):
+    """Unknown proficiency is not a Forever veto or proof of legal equipment."""
+    import src.game.data.forever.registry as registry
+
     monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "selected-engine")
+    monkeypatch.setenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST", "warlock-L20.json")
+    monkeypatch.setattr(registry, "build_game_ir_slice",
+                        lambda **_kw: (_ for _ in ()).throw(
+                            AssertionError("No Python Warcraft source evaluation")))
     monkeypatch.setattr(p3, "_query_native_unified_p3_items",
                         lambda *_args: {
-                            "status": "empty", "items": [],
-                            "unverified_candidate_count": 20})
-    monkeypatch.setattr(p3, "_paid_native_equipped_probe",
-                        lambda *_a, **_kw: (_ for _ in ()).throw(
-                            AssertionError("No native payment for unverified items")))
+                            "status": "ok", "items": [],
+                            "unverified_item_ids": [900, 901, 902, 903, 904],
+                            "unverified_candidate_count": 5})
+    seen = []
+
+    def paid(_root, binary, selection, remaining, *, checkpoint):
+        seen.append((binary, selection, remaining, checkpoint))
+        return {
+            "status": "PAID_NATIVE_REFUSAL", "paid_attempts": 3,
+            "objective": "DPS", "actor_checkpoint_verified": True,
+            "native_prepared_actor": {
+                "actor_class": "ClassWarlock", "actor_level": 20,
+                "engine_revision": "selected-native-source"},
+            "source_occupied_slots": ["head"],
+            "evaluations": [{"status": "VALID", "score": 8.0,
+                             "request_sha256": "base"}],
+            "native_slot_evaluations": [{
+                "swap": {"slot": "head", "to_id": 900},
+                "status": "UNSUPPORTED", "reason": "selected native refusal"}],
+            "native_slots_valid": 0,
+        }
+
+    monkeypatch.setattr(p3, "_paid_native_equipped_probe", paid)
     result = p3.run_live(ROOT, "warlock", 20)
-    assert result["status"] == "BLOCKED"
-    assert result["reasons"] == ["NATIVE_ITEM_OPTIONS_PROFICIENCY_UNVERIFIED"]
-    assert result["real_source_search_evaluated"] == 0
+    assert seen and seen[0][0] == "selected-engine"
+    assert seen[0][2:] == (44, "warlock_l20")
+    assert "head" in seen[0][1]["slots"]
+    assert set(seen[0][1]["slots"]["head"]["selected_ids"]).issubset(
+        {900, 901, 902, 903, 904})
+    assert result["status"] == "FAIL"
+    assert result["native_equipped_paid_attempts"] == 3
+    assert "P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED" in result["reasons"]
+    assert result["real_catalogue_legal_items"] == 0
+    assert result["native_unverified_candidate_count"] == 5
+    assert "runtime_proof" not in result
+
+
+def test_warlock_rust_unverified_item_ids_retained_as_native_proposals(monkeypatch):
+    """Read the actual get_options schema: no slot from Python item type."""
+    payload = {
+        "schema_version": 1, "source_revision": "selected-rust-sha",
+        "class": "warlock", "level": 20, "spells": [],
+        "talents": {"status": "ok", "trees": [{}, {}, {}]},
+        "coverage": {"spell_learnability_complete": False,
+                     "item_eligibility_complete": False,
+                     "talent_prerequisites_complete": True},
+        "items": [
+            {"item_id": 900 + index,
+             "eligibility": "proficiency_unverified", "native": None,
+             "unverified": {"item_type": "ItemTypeUnknown"}}
+            for index in range(60)],
+    }
+    seen = []
+
+    def source_cli(command, **kwargs):
+        seen.append(command)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+
+    monkeypatch.setattr(subprocess, "run", source_cli)
+    options = p3._query_native_unified_p3_items(ROOT, "selected-engine", "warlock", 20)
+    assert seen == [["selected-engine", "options",
+                     "--class", "warlock", "--level", "20"]]
+    assert options["status"] == "ok" and options["items"] == []
+    assert options["unverified_candidate_count"] == 60
+    assert options["unverified_item_ids"] == list(range(900, 960))
+    selection = p3._native_p3_equipped_slot_proposals(options)["slots"]
+    assert len(selection) == 17
+    # Deterministic sampling uses real Rust IDs; no slot/class legality claim.
+    assert all(1 <= len(row["selected_ids"]) <= 3 for row in selection.values())
+    assert all(set(row["selected_ids"]).issubset(set(range(900, 960)))
+               for row in selection.values())
+    assert selection["head"]["selected_ids"] != selection["weapon"]["selected_ids"]
+
+
+def test_unverified_warlock_swap_native_refusal_is_paid_and_preserved():
+    from native_matrix import NativeCandidateRefusal
+
+    original = source()
+    seen = []
+
+    def evaluator(_binary, request, iterations, seed, mode, deadline, **kwargs):
+        assert mode == "balanced" and kwargs["objective"] == "DPS"
+        current = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        seen.append(current[0]["id"])
+        if current[0]["id"] == 100:
+            return 8.0, {}, 0.01, "native-baseline"
+        raise NativeCandidateRefusal(
+            "UNSUPPORTED", reason="native cannot equip this proposal",
+            request_sha256="paid-native-refusal")
+
+    receipt = compare_equipped_native(
+        "selected-engine", original, {"head": {"selected_ids": [900, 901]}},
+        class_key="warlock", level=20, objective="DPS", max_paid_attempts=3,
+        evaluator=evaluator, preparer=prepared)
+    assert seen == [100, 900, 901]
+    assert receipt["paid_attempts"] == 3
+    assert [row["status"] for row in receipt["native_slot_evaluations"]] == [
+        "UNSUPPORTED", "UNSUPPORTED"]
+    assert all(row["reason"] == "native cannot equip this proposal"
+               for row in receipt["native_slot_evaluations"])
+    assert receipt["status"] == "PAID_NATIVE_REFUSAL"
+    assert original == source()
 
 
 def test_missing_native_warlock_actor_request_refuses_without_payment(monkeypatch):
