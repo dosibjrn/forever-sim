@@ -248,11 +248,13 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert report["source_legal_joint_candidates_paid"] == 1
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_external_only_floor_met"] is True
-    assert report["final_required_dps"] is None
-    # Real search and 1000-fight numeric result exist; only the unestablished
-    # accepted-compatible prior prevents the complete gate from proceeding.
-    assert report["status"] == "BLOCKED"
-    assert report["reasons"] == ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"]
+    assert report["final_required_dps"] == 0.93 * 728.19
+    # The absence of an optional compatible prior cannot block an otherwise
+    # complete real 300s search and frozen 1000-fight native/world result.
+    assert report["strongest_accepted_compatible_prior_dps"] is None
+    assert report["status"] == "PASS"  # injected transport; not real M1 evidence
+    assert report["reasons"] == []
+    assert report["runtime_proof"]["executed"] is True
     assert original == unchanged
 
     # Same full production gate route with the strongest accepted, compatible
@@ -440,7 +442,9 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     assert report["joint_cold_world_dps"] == 735.0
     assert report["frozen_stochastic_world_dps"] == 735.0
     assert report["frozen_stochastic_iterations"] == 1000
-    assert report["status"] == "BLOCKED"  # accepted compatible prior not established
+    assert report["status"] == "PASS"  # injected full holdout; no optional prior needed
+    assert report["final_required_dps"] == 0.93 * 728.19
+    assert report["strongest_accepted_compatible_prior_dps"] is None
     assert base == original
 
 
@@ -537,7 +541,8 @@ def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
     assert len(crossover_rngs) == 1  # proposal 13 is the paid gear/talent/APL crossover
     assert crossover_rngs[0] is not candidate_rngs[0]
     assert candidate_rngs[-1].getstate() == candidate_rng_state_at_crossover[0]
-    assert report["status"] == "BLOCKED"  # missing accepted prior, not a gate PASS
+    assert report["status"] == "PASS"  # injected full holdout; no optional prior needed
+    assert report["final_required_dps"] == 0.93 * 728.19
     assert base == original
 
 
