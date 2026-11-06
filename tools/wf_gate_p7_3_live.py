@@ -11,7 +11,6 @@ import copy
 import hashlib
 import json
 import math
-import os
 from pathlib import Path
 import random
 import subprocess
@@ -26,30 +25,19 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import (_source_module, _pinned_source_runtime)
 
 
-def _cold_talents(base: dict, rng: random.Random, proposals, *, elite=None, reference_parent=False):
-    """Propose a cold or paid-parent talent string; native owns legality.
+def _cold_talents(base: dict, rng: random.Random, proposals, *, reference_parent=False):
+    """Propose an independently drawn or source-neighbor talent string.
 
-    The saved request supplies only the string shape/search budget. A paid
-    elite is admissible only after this run measured it through native+2D.
-    No Python talent schema, rank cap, tree budget, or prerequisite check runs.
+    The saved request supplies the proposal shape; only Rust decides whether
+    the resulting ranks are legal. Gear and APL stay fixed.
     """
     candidate = copy.deepcopy(base)
     old = base["raid"]["parties"][0]["players"][0]
     player = candidate["raid"]["parties"][0]["players"][0]
-    if elite is None and reference_parent:
+    if reference_parent:
         selected = proposals.mutate_talent_string(old["talentsString"], rng)
-    elif elite is None:
-        selected = proposals.cold_talent_string(old["talentsString"], rng)
     else:
-        paid = elite["raid"]["parties"][0]["players"][0]
-        if (paid["equipment"] != old["equipment"]
-                or paid["rotation"] != old["rotation"]):
-            raise ValueError("P73_PAID_ELITE_CHANGED_FIXED_DIMENSIONS")
-        # Local mutations and full restarts are proposals only. MythicSim
-        # decides whether the resulting talent string is VALID or refused.
-        selected = (proposals.mutate_talent_string(paid["talentsString"], rng)
-                    if rng.random() < 0.70
-                    else proposals.cold_talent_string(paid["talentsString"], rng))
+        selected = proposals.cold_talent_string(old["talentsString"], rng)
     if not isinstance(selected, str) or not selected:
         raise ValueError("P73_NATIVE_TALENT_PROPOSAL_NOT_STRING")
     player["talentsString"] = selected
@@ -57,13 +45,6 @@ def _cold_talents(base: dict, rng: random.Random, proposals, *, elite=None, refe
             or player["rotation"] != old["rotation"]):
         raise ValueError("TALENT_ONLY_COLD_SEARCH_CHANGED_FIXED_DIMENSIONS")
     return candidate
-
-
-def _paid_elite_choice(elites, rng, proposal_index):
-    """Explore this run's native+2D-paid elites, never the reference."""
-    if proposal_index % 5 == 0 or not elites:
-        return None  # independent source-cold restart
-    return rng.choice(elites[:min(18, len(elites))])[1]
 
 
 def _native_refusal(exc: Exception) -> tuple[str, str]:
@@ -111,11 +92,6 @@ def run_live(root: Path, class_key: str, level: int, *,
     if isinstance(prepared, dict):
         return prepared
     base, meta, binary = prepared
-    search_mode = os.environ.get("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
-    if search_mode not in ("0", "1"):
-        return {"status": "BLOCKED",
-                "reasons": ["P7_3_INVALID_FULL_SOURCE_SEARCH_MODE"]}
-    full_search = search_mode == "1"  # optional diagnostic only, not acceptance
     production = _source_module(
         root / "integrations/mythicsim-rust/live_world_probe.py",
         "p73_selected_native_scorer")
@@ -136,16 +112,15 @@ def run_live(root: Path, class_key: str, level: int, *,
     invalid = unsupported = unscored = errors = executed = proposals = 0
     best = None
     start = time.monotonic()
-    deadline = start + 300.0
-    while (time.monotonic() < deadline if full_search else
-           proposals < len(minimal) + len(transfers) + 8):
+    # P7.3 is a changed-talent axis smoke, never a 300s joint search.
+    while proposals < len(minimal) + len(transfers) + 8:
         proposals += 1
         try:
-            if not full_search and proposals <= len(minimal):
+            if proposals <= len(minimal):
                 candidate = copy.deepcopy(base)
                 candidate["raid"]["parties"][0]["players"][0][
                     "talentsString"] = minimal[proposals - 1]
-            elif not full_search and proposals <= len(minimal) + len(transfers):
+            elif proposals <= len(minimal) + len(transfers):
                 candidate = copy.deepcopy(base)
                 candidate["raid"]["parties"][0]["players"][0][
                     "talentsString"] = transfers[proposals - len(minimal) - 1]
@@ -153,7 +128,6 @@ def run_live(root: Path, class_key: str, level: int, *,
                 candidate = _cold_talents(
                     base, rng, native_talent_proposals,
                     reference_parent=(
-                        not full_search and
                         proposals <= len(minimal) + len(transfers) + 4))
             player = candidate["raid"]["parties"][0]["players"][0]
             # A no-op is not an independently changed talent candidate.
@@ -197,8 +171,7 @@ def run_live(root: Path, class_key: str, level: int, *,
             score = float(score)
             if best is None or score > best[0]:
                 best = (score, sha, candidate)
-            if not full_search:
-                break  # First real, changed native-paid talent is sufficient.
+            break  # First real, changed native-paid talent is sufficient.
         except (ValueError, RuntimeError, OSError, KeyError, TypeError,
                 AssertionError, subprocess.SubprocessError) as exc:
             errors += 1
@@ -229,9 +202,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "native_refusal_samples": refusal_samples[:4],
         "cold_candidate_failures": failures[:4],
         "search_wall_s": elapsed,
-        "independent_300s_search_requested": full_search,
-        "independent_300s_search_completed": (
-            full_search and elapsed >= 300.0),
+        "independent_300s_search_requested": False,
+        "independent_300s_search_completed": False,
         "search_rng_mode": "balanced",
         "selected_validation": "3_native_balanced_fights_per_distinct_talents",
     }

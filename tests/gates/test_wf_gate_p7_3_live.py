@@ -105,11 +105,12 @@ def test_saved_identity_mismatch_fails_closed(tmp_path):
     assert "P7_3_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT" in report["reasons"]
 
 
+@pytest.mark.parametrize("legacy_env", ["0", "1", "maybe"])
 def test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates(
-        monkeypatch, tmp_path):
+        monkeypatch, tmp_path, legacy_env):
     base = _reference()
     base["raid"]["parties"][0]["players"][0].update({"class": "ClassDruid"})
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", legacy_env)
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
         lambda *args, **kwargs: (base, {
@@ -153,123 +154,6 @@ def test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates(
     assert report["source_legal_cold_candidates_paid"] == 1
     assert report["independent_300s_search_completed"] is False
     assert "frozen_stochastic_iterations" not in report
-
-def test_p73_invalid_full_search_flag_blocks_without_running(monkeypatch, tmp_path):
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "maybe")
-    monkeypatch.setattr(
-        gate, "_pinned_source_runtime",
-        lambda *a, **kwargs: (_reference(), {"reference_dps": 728.19},
-                     tmp_path / "binary"))
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert report == {"status": "BLOCKED",
-                      "reasons": ["P7_3_INVALID_FULL_SOURCE_SEARCH_MODE"]}
-
-
-def test_p73_paid_elite_mutates_native_paid_parent_not_saved_reference():
-    """Only a candidate already paid by native+2D can guide local proposals."""
-    base = _reference()
-    original = copy.deepcopy(base)
-    elite = copy.deepcopy(base)
-    elite["raid"]["parties"][0]["players"][0]["talentsString"] = "paid-best"
-    calls = []
-
-    class Proposals:
-        @staticmethod
-        def cold_talent_string(template, rng):
-            calls.append(("cold", template))
-            return "cold-proposal"
-
-        @staticmethod
-        def mutate_talent_string(parent, rng):
-            calls.append(("mutate", parent))
-            return "mutated-proposal"
-
-    cold = gate._cold_talents(base, random.Random(1), Proposals)
-    assert calls == [("cold", "5532220115501351--505")]
-    assert cold["raid"]["parties"][0]["players"][0]["talentsString"] == "cold-proposal"
-    calls.clear()
-    improved = gate._cold_talents(
-        base, random.Random(1), Proposals, elite=elite)
-    assert calls == [("mutate", "paid-best")]
-    assert improved["raid"]["parties"][0]["players"][0]["talentsString"] == "mutated-proposal"
-    assert base == original
-    assert elite["raid"]["parties"][0]["players"][0]["talentsString"] == "paid-best"
-
-
-def test_p73_paid_elite_rejects_fixed_gear_or_apl_change():
-    base = _reference()
-    class Proposals:
-        @staticmethod
-        def cold_talent_string(template, rng):
-            raise AssertionError("must reject altered paid candidate first")
-
-        @staticmethod
-        def mutate_talent_string(parent, rng):
-            raise AssertionError("must reject altered paid candidate first")
-
-    for axis in ("equipment", "rotation"):
-        elite = copy.deepcopy(base)
-        elite["raid"]["parties"][0]["players"][0][axis] = {"illegal": True}
-        with pytest.raises(ValueError, match="P73_PAID_ELITE_CHANGED_FIXED_DIMENSIONS"):
-            gate._cold_talents(base, random.Random(3), Proposals, elite=elite)
-
-
-def test_p73_local_full_draw_uses_paid_target_as_budget_template():
-    base = _reference()
-    elite = copy.deepcopy(base)
-    elite["raid"]["parties"][0]["players"][0]["talentsString"] = "paid-best"
-    calls = []
-
-    class Proposals:
-        @staticmethod
-        def cold_talent_string(template, rng):
-            calls.append(template)
-            return "cold-paid-budget"
-
-        @staticmethod
-        def mutate_talent_string(parent, rng):
-            raise AssertionError("high RNG must choose local full draw")
-
-    class HighRandom(random.Random):
-        def random(self):
-            return 0.99
-
-    result = gate._cold_talents(
-        base, HighRandom(8), Proposals, elite=elite)
-    assert calls == ["paid-best"]
-    assert result["raid"]["parties"][0]["players"][0]["talentsString"] == "cold-paid-budget"
-
-
-def test_p73_paid_elite_archive_can_choose_other_scored_winner():
-    """Reproduced search issue: local mutations must not only see rank #1."""
-    class ChooseLast:
-        @staticmethod
-        def choice(options):
-            return options[-1]
-
-    top = {"source": "paid-best", "talentsString": "a"}
-    other = {"source": "paid-second", "talentsString": "b"}
-    from tools.wf_gate_p7_3_live import _paid_elite_choice
-    # These entries are deliberately already native+2D-paid; caller appends
-    # them only AFTER native/world parity and a valid score.
-    elites = [(900.0, top), (800.0, other)]
-    assert _paid_elite_choice(elites, ChooseLast(), 2) is other
-    assert _paid_elite_choice(elites, ChooseLast(), 5) is None
-    assert _paid_elite_choice([], ChooseLast(), 2) is None
-
-
-def test_p73_paid_elite_archive_caps_native_paid_pool_to_top_18():
-    from tools.wf_gate_p7_3_live import _paid_elite_choice
-
-    class PickLast:
-        @staticmethod
-        def choice(options):
-            assert len(options) == 18
-            return options[-1]
-
-    elites = [(float(100-i), {"rank": i}) for i in range(22)]
-    assert _paid_elite_choice(elites, PickLast(), 1)["rank"] == 17
-
 
 def test_p73_unchanged_talents_never_credit_a_native_gate(monkeypatch, tmp_path):
     base = _reference()
