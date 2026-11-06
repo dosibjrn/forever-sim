@@ -42,6 +42,218 @@ def actor(request):
     return request["raid"]["parties"][0]["players"][0]
 
 
+def native_pet_candidates(proto_schema_path: Path) -> list[str]:
+    """Read the selected MythicSim protobuf summon enum; no shadow pet list."""
+    schema = json.loads(proto_schema_path.read_text())
+    rows = schema["enums"]["proto.WarlockOptions.Summon"]
+    result = [entry["name"] for entry in rows]
+    if "NoSummon" not in result or len(result) < 2:
+        raise RuntimeError("Selected Rust schema exposes no usable Warlock summon options")
+    return result
+
+
+def set_native_pet(request: dict, summon: str) -> None:
+    """Set the existing source-native Warlock option, not a Python pet model."""
+    options = actor(request).setdefault("warlock", {}).setdefault(
+        "options", {}).setdefault("classOptions", {})
+    options["summon"] = summon
+    # A normal active pet must not inherit another build's sacrifice settings.
+    options.pop("pactSacrifice", None)
+    options.pop("sacrificeSummon", None)
+
+
+def talent_has_native_rank(options: dict, encoded: str, field_name: str) -> bool:
+    """Inspect exact get_options tree metadata, not a hard-coded talent index."""
+    for part, tree in zip(encoded.split("-"), options["talents"]["trees"]):
+        for talent in tree["talents"]:
+            if talent["field_name"] == field_name:
+                index = talent["index"]
+                return index < len(part) and part[index].isdigit() and int(part[index]) > 0
+    return False
+
+
+def set_native_sustain_buffs(request: dict) -> None:
+    """Configure existing native-request fields, never implement regen here.
+
+    L40: Demon Armor rank 3; Troll's Blood Elixir item 3826 is a long-
+    duration guardian elixir, not a combat potion. The selected Rust engine
+    decides whether either source effect is represented in combat.
+    """
+    player = actor(request)
+    player.setdefault("warlock", {}).setdefault("options", {}).setdefault(
+        "classOptions", {})["armor"] = "DemonArmor"
+    player.setdefault("consumables", {})["guardianElixirId"] = 3826
+
+
+def native_sustain_receipt(prepared: dict, request: dict) -> dict:
+    """Report native observed sustain coverage; never assume omitted effects.
+
+    This does not simulate healing. Missing source effects are explicitly
+    flagged, so a short DPS result is not misrepresented as a complete
+    Troll/Felhunter health-to-mana sustain measurement.
+    """
+    player = prepared["player"]
+    effects = prepared.get("effects") or []
+    auras = player.get("auras") or []
+    spells = player.get("spells") or []
+    active_armor = any(
+        a.get("label") == "Demon Armor" and a.get("active")
+        for a in auras)
+    rapid_prepared = any(
+        (spell.get("action_id") or {}).get("spell_id") == 1260270
+        for spell in spells)
+    regen_effects = [
+        effect.get("kind") for effect in effects
+        if "regen" in str(effect.get("kind", "")).lower()
+        or "health" in str(effect.get("kind", "")).lower()
+    ]
+    return {
+        "requested_demon_armor": actor(request)["warlock"]["options"][
+            "classOptions"].get("armor") == "DemonArmor",
+        "native_demon_armor_aura": active_armor,
+        "requested_trolls_blood_elixir_id": actor(request).get(
+            "consumables", {}).get("guardianElixirId"),
+        "native_trolls_blood_aura": any(
+            "troll" in str(a.get("label", "")).casefold()
+            and "blood" in str(a.get("label", "")).casefold()
+            for a in auras if a.get("active")),
+        "native_rapid_regeneration_spell": rapid_prepared,
+        "native_regen_effect_kinds": regen_effects,
+        "full_troll_hp_regeneration_verified": False,
+        "note": ("Native prepared evidence only. Passive troll combat HP regen, "
+                 "Rapid Regeneration, Demon Armor HP5, Troll's Blood HP5, "
+                 "and Felhunter sacrifice HP ticks require native Rust "
+                 "effect and combat receipts before ranking as sustain DPS."),
+    }
+
+
+def native_pet_strategies(pets: list[str]) -> list[dict]:
+    """Enumerate request configurations, not a second pet/ability simulator.
+
+    The selected Rust engine validates each candidate and owns effects.
+    """
+    demons = [p for p in pets if p != "NoSummon"]
+    strategies = [
+        {"mode": "active", "pet": pet, "sacrifice": None,
+         "key": "active:" + pet}
+        for pet in pets
+    ]
+    for sacrificed in demons:
+        strategies.append({
+            "mode": "sacrifice", "pet": "NoSummon", "sacrifice": sacrificed,
+            "key": "sacrifice:" + sacrificed,
+        })
+    for pet in demons:
+        for sacrificed in demons:
+            if pet == sacrificed:
+                continue
+            strategies.append({
+                "mode": "pact", "pet": pet, "sacrifice": sacrificed,
+                "key": "pact:" + pet + "+" + sacrificed,
+            })
+    return strategies
+
+
+def set_native_strategy(request: dict, strategy: dict) -> None:
+    """Use native classOptions; pets, sacrifice and regen belong to Rust."""
+    mode = strategy["mode"]
+    sacrificed = strategy["sacrifice"]
+    set_native_pet(request, sacrificed if mode == "sacrifice" else strategy["pet"])
+    class_options = actor(request)["warlock"]["options"]["classOptions"]
+    if mode == "sacrifice":
+        class_options["sacrificeSummon"] = True
+    elif mode == "pact":
+        class_options["pactSacrifice"] = sacrificed
+
+
+def native_sacrifice_receipt(prepared: dict, strategy: dict) -> list[dict]:
+    """Check that Rust actually exports the chosen sacrifice effect.
+
+    In particular, never score an absent Felhunter HP regen as if it existed.
+    """
+    if strategy["mode"] == "active":
+        return []
+    active = [
+        aura for aura in prepared["player"].get("auras", [])
+        if aura.get("label") == "Demonic Sacrifice" and aura.get("active")
+    ]
+    if not active:
+        raise RuntimeError("NATIVE_SACRIFICE_EFFECT_NOT_EXPORTED: "
+                           + strategy["key"])
+    return [{"label": a.get("label"), "action_id": a.get("action_id")}
+            for a in active]
+
+
+def native_pet_autocast_receipt(prepared: dict, chosen_pet: str) -> list[dict]:
+    """Read the chosen demon's own autonomous spells from Rust-prepared state.
+
+    These are NOT actions in the Warlock player's priorityList. The Rust
+    warlock_pet effect supplies spellbook positions to its independent AI.
+    """
+    if chosen_pet == "NoSummon":
+        return []
+    selected = [
+        pet for pet in prepared.get("pets", [])
+        if pet.get("label", "").casefold().endswith(" - " + chosen_pet.casefold())
+    ]
+    if len(selected) != 1:
+        raise RuntimeError(
+            "Native prepared pet selection is ambiguous: " + chosen_pet)
+    pet = selected[0]
+    effects = [
+        effect for effect in prepared.get("effects", [])
+        if effect.get("kind") == "warlock_pet"
+        and effect.get("pet") == pet["label"]
+    ]
+    if len(effects) != 1:
+        raise RuntimeError(
+            "Native warlock_pet autonomous AI effect missing: " + pet["label"])
+    spellbook = pet.get("spells") or []
+    actions = []
+    for position in effects[0].get("autocast_spells", []):
+        if type(position) is not int or not 0 <= position < len(spellbook):
+            raise RuntimeError(
+                "Native pet autocast points outside exported spellbook: "
+                + repr(position))
+        spell = spellbook[position]
+        actions.append({
+            "class_spell": spell.get("class_spell"),
+            "action_id": spell.get("action_id"),
+        })
+    return actions
+
+
+def native_pet_receipt(prepared: dict, paid: dict, chosen_pet: str) -> dict:
+    """Collect explicit Rust prepared/paid pet evidence for every candidate."""
+    pets = prepared.get("pets") or []
+    labels = [p.get("label", "") for p in pets]
+    selected = [
+        p for p in pets
+        if p.get("label", "").casefold().endswith(" - " + chosen_pet.casefold())
+    ]
+    if chosen_pet != "NoSummon" and not selected:
+        raise RuntimeError(
+            "PET_NOT_IN_NATIVE_PREPARED: requested " + chosen_pet +
+            " but Rust exported " + repr(labels))
+    if chosen_pet == "NoSummon" and selected:
+        raise RuntimeError("Native NoSummon unexpectedly exported selected pet")
+    player_metrics = paid["raidMetrics"]["parties"][0]["players"][0]
+    pet_rows = player_metrics.get("pets") or []
+    pet_details = []
+    for row in pet_rows:
+        value = row.get("dps", {}).get("avg", 0) or 0
+        if not isinstance(value, (float, int)) or not math.isfinite(value):
+            raise RuntimeError("Rust returned nonfinite pet DPS")
+        pet_details.append({"name": row.get("name", ""), "dps": float(value)})
+    return {
+        "summon": chosen_pet,
+        "native_prepared_pets": labels,
+        "native_pet_dps": sum(p["dps"] for p in pet_details),
+        "native_pet_autocast_spells": native_pet_autocast_receipt(prepared, chosen_pet),
+        "native_pet_metrics": pet_details,
+    }
+
+
 def proposals_from_native_talents(options, source_encoded: str, seed: int):
     """Generate allocations using *source-returned* tree/tier/parent metadata.
 
@@ -123,6 +335,134 @@ def proposals_from_native_talents(options, source_encoded: str, seed: int):
             if row:
                 yield row
 
+    # Force native-prerequisite Demonology capstone exploration at L40.
+    # Unlike a random 31-point sampler, this reliably reaches Demonic Pact
+    # (requires Soul Link, which requires Demonic Sacrifice).
+    demon_tree = next((i for i, tree in enumerate(trees)
+                       if tree["name"] == "Demonology"), None)
+    if demon_tree is not None:
+        for k in range(8):
+            alloc = [[0] * len(tree["talents"]) for tree in trees]
+            tree = trees[demon_tree]
+            target_fields = ("demonicSacrifice", "soulLink", "demonicPact")
+            for spent in range(budget):
+                choices = []
+                for talent in tree["talents"]:
+                    index = talent["index"]
+                    if alloc[demon_tree][index] >= talent["max_rank"]:
+                        continue
+                    if (talent["minimum_level"] > level or
+                            talent["points_required_in_tree"] > spent):
+                        continue
+                    parent = talent.get("prerequisite") or {}
+                    if parent:
+                        prereq = next((p for p in tree["talents"]
+                                       if p["field_name"] == parent.get("field_name")), None)
+                        if (prereq is None or
+                                alloc[demon_tree][prereq["index"]] < parent["required_rank"]):
+                            continue
+                    choices.append(talent)
+                if not choices:
+                    break
+                forced = next((talent for field in target_fields
+                               for talent in choices
+                               if talent["field_name"] == field), None)
+                picked = forced if forced is not None else rng.choice(choices)
+                alloc[demon_tree][picked["index"]] += 1
+            else:
+                encoded = serialize(alloc)
+                row = emit(encoded, "native_demonology_pact_" + str(k))
+                if row:
+                    yield row
+
+    # Exact native-source L40 Pact proposal for pre-summoned Succubus +
+    # sacrificed Felhunter. Master Summoner is intentionally 0/2: pre-pull
+    # summoning has no 100-kill-clock value. Use the original talent fields
+    # and native rank caps; Rust prepare remains the source of truth.
+    if demon_tree is not None and budget == 31:
+        pact_core = {
+            "demonicEmbrace": 5, "unholyPower": 5,
+            "demonicAegis": 2, "felVitality": 3,
+            "improvedSayaad": 3, "demonicSacrifice": 1,
+            "decimation": 2, "soulLink": 1,
+            "demonicKnowledge": 3, "masterDemonologist": 5,
+            "demonicPact": 1,
+        }
+        native_rows = {t["field_name"]: t for t in trees[demon_tree]["talents"]}
+        if (sum(pact_core.values()) == budget and
+                all(name in native_rows and native_rows[name]["max_rank"] >= points
+                    for name, points in pact_core.items())):
+            alloc = [[0] * len(tree["talents"]) for tree in trees]
+            for name, points in pact_core.items():
+                alloc[demon_tree][native_rows[name]["index"]] = points
+            # Summoning speed remains 0; all points fund active combat.
+            if alloc[demon_tree][native_rows["masterSummoner"]["index"]] != 0:
+                raise RuntimeError("Pact proposal unexpectedly spent Master Summoner")
+            row = emit(serialize(alloc), "native_pact_succubus_felhunter_no_master_summoner")
+            if row:
+                yield row
+
+    # L40 Demonic Pact consumes all 31 talent points, but a pure Felhunter
+    # sacrifice can combine Demonic Sacrifice with 2/2 Improved Life Tap.
+    # Generate legal hybrid proposals directly from source metadata so the
+    # HP -> mana -> damage path is actually explored, not left to luck.
+    aff_tree = next((i for i, tree in enumerate(trees)
+                     if tree["name"] == "Affliction"), None)
+    if demon_tree is not None and aff_tree is not None and budget >= 13:
+        for k in range(8):
+            alloc = [[0] * len(tree["talents"]) for tree in trees]
+            targets = {
+                "demonicSacrifice": (demon_tree, 1),
+                "improvedLifeTap": (aff_tree, 2),
+            }
+            for spent in range(budget):
+                # Unlock 11-point sacrifice first; then improve Life Tap,
+                # then spend the remaining budget using the source tiers.
+                if sum(alloc[demon_tree]) <= 10:
+                    order = [demon_tree]
+                elif sum(alloc[aff_tree]) < 2:
+                    order = [aff_tree]
+                else:
+                    order = [aff_tree, demon_tree]
+                choices = []
+                for t_id in order:
+                    tree = trees[t_id]
+                    points_in_tree = sum(alloc[t_id])
+                    for talent in tree["talents"]:
+                        idx = talent["index"]
+                        if alloc[t_id][idx] >= talent["max_rank"]:
+                            continue
+                        if (talent["minimum_level"] > level
+                                or talent["points_required_in_tree"] > points_in_tree):
+                            continue
+                        parent = talent.get("prerequisite") or {}
+                        if parent:
+                            prereq = next(
+                                (r for r in tree["talents"]
+                                 if r["field_name"] == parent.get("field_name")), None)
+                            if prereq is None or alloc[t_id][prereq["index"]] < parent["required_rank"]:
+                                continue
+                        choices.append((t_id, talent))
+                if not choices:
+                    break
+                desired = next(
+                    ((t_id, row) for field, (target_tree, required) in targets.items()
+                     for t_id, row in choices if t_id == target_tree
+                     and row["field_name"] == field
+                     and alloc[t_id][row["index"]] < required), None)
+                t_id, row = desired if desired is not None else rng.choice(choices)
+                alloc[t_id][row["index"]] += 1
+            else:
+                encoded = serialize(alloc)
+                if (sum(alloc[demon_tree]) >= 11
+                        and next((alloc[demon_tree][t["index"]] for t in trees[demon_tree]["talents"]
+                                  if t["field_name"] == "demonicSacrifice"), 0)
+                        and next((alloc[aff_tree][t["index"]] for t in trees[aff_tree]["talents"]
+                                  if t["field_name"] == "improvedLifeTap"), 0) == 2):
+                    row = emit(encoded, "native_sacrifice_improved_tap_" + str(k))
+                    if row:
+                        yield row
+
 
 def apl_proposals(options, source, source_module):
     """Every considered spell identity originates from Rust's options or
@@ -160,13 +500,36 @@ def apl_proposals(options, source, source_module):
                     [(fallback, None)])
                 name = "dots_" + "_".join(n for n, _ in lead) + "__" + fallback_name
                 candidates.append((name, apl))
-                if tap is not None and fallback_name == "shadow_bolt":
-                    for threshold in (10, 20):
+                if tap is not None and fallback_name in ("shadow_bolt", "drain_life"):
+                    for threshold in (20, 45, 65):
+                        tap_action = source_module.mana_conditioned_apl(tap, threshold)
+                        # Health gating is a native APL condition, not an
+                        # extra Life Tap implementation. Prevent low-health
+                        # self-damage while the engine handles regeneration.
+                        mana_cond = tap_action["action"]["condition"]
+                        tap_action["action"]["condition"] = {"and": {"vals": [
+                            mana_cond,
+                            {"cmp": {"lhs": {"currentHealthPercent": {}},
+                                     "op": "OpGt",
+                                     "rhs": {"const": {"val": "35%"}}}},
+                        ]}}
                         candidates.append((
-                            name + "_tap" + str(threshold),
-                            [source_module.mana_conditioned_apl(tap, threshold), *apl]))
+                            name + "_tap" + str(threshold) + "_hp35",
+                            [tap_action, *apl]))
         candidates.append(("filler_" + fallback_name,
                            source_module.multi_apl([(fallback, None)])))
+        if tap is not None and fallback_name in ("shadow_bolt", "drain_life"):
+            for threshold in (30, 60):
+                tap_action = source_module.mana_conditioned_apl(tap, threshold)
+                tap_action["action"]["condition"] = {"and": {"vals": [
+                    tap_action["action"]["condition"],
+                    {"cmp": {"lhs": {"currentHealthPercent": {}},
+                             "op": "OpGt",
+                             "rhs": {"const": {"val": "35%"}}}},
+                ]}}
+                candidates.append((
+                    "filler_" + fallback_name + "_tap" + str(threshold) + "_hp35",
+                    [tap_action, *source_module.multi_apl([(fallback, None)])]))
     unique = {}
     for label, actions in candidates:
         unique.setdefault(json.dumps(actions, sort_keys=True), (label, actions))
@@ -274,6 +637,71 @@ def native_level_equipment(binary, source, options, out, *, level):
             "name":metadata["name"] if metadata else None,
             "required_level":metadata["required_level"] if metadata else None,
             "native_slot":metadata["slot"] if metadata else None})
+    # The second exploration track is health maximization, NOT a new stat
+    # weight model: source item Stamina/Health only proposes candidates;
+    # Rust prepare determines the actual equipped actor's maximum HP.
+    hp_path = out / "gear_health_request.json"
+    hp_prepared_path = out / "gear_health_prepared.json"
+    hp_count = 0
+    hp_refusals = []
+
+    def paid_native_max_hp(request):
+        nonlocal hp_count
+        hp_count += 1
+        hp_path.write_text(json.dumps(request))
+        try:
+            call([binary, "prepare", "--request", hp_path,
+                  "--actor-level", str(level), "--outfile", hp_prepared_path])
+            unit = json.loads(hp_prepared_path.read_text())["player"]
+            if unit.get("class") != "ClassWarlock" or unit.get("level") != level:
+                raise RuntimeError("Rust prepared wrong actor during native HP gear search")
+            value = unit["stats"]["Health"]
+            if not isinstance(value, (float, int)) or not math.isfinite(value):
+                raise RuntimeError("Invalid native prepared Health")
+            return float(value)
+        except (RuntimeError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
+            if len(hp_refusals) < 25:
+                hp_refusals.append(str(exc)[-400:])
+            return None
+
+    def source_stat(item, stat):
+        value = (item.get("stats") or {}).get(stat, 0)
+        return float(value) if isinstance(value, (int, float)) and math.isfinite(value) else 0.0
+
+    survival = copy.deepcopy(working)
+    hp_baseline = paid_native_max_hp(survival)
+    if hp_baseline is None:
+        raise RuntimeError("Native Rust refused DPS gear during HP search")
+    native_dps_gear_max_hp = hp_baseline
+    for position in range(17):
+        # Include high-Stamina and direct-Health source leads, not just the
+        # highest item levels that the legacy 30s-DPS pass screened.
+        highest_stamina = sorted(
+            pools[position], key=lambda n: (-source_stat(n, "Stamina"), n["item_id"]))[:8]
+        highest_health = sorted(
+            pools[position], key=lambda n: (-source_stat(n, "Health"), n["item_id"]))[:3]
+        seen_ids = set()
+        for native in highest_stamina + highest_health:
+            if native["item_id"] in seen_ids:
+                continue
+            seen_ids.add(native["item_id"])
+            candidate = copy.deepcopy(survival)
+            actor(candidate)["equipment"]["items"][position] = {"id": native["item_id"]}
+            native_hp = paid_native_max_hp(candidate)
+            if native_hp is not None and native_hp > hp_baseline + 1e-8:
+                survival = candidate
+                hp_baseline = native_hp
+        print("NATIVE_MAX_HP_GEAR_SLOT", json.dumps({
+            "level": level, "slot": position, "native_prepared_max_hp": hp_baseline,
+            "item_id": actor(survival)["equipment"]["items"][position]["id"],
+        }), flush=True)
+    hp_gear_items = [
+        {"position": i, "item_id": item["id"],
+         "name": item_meta.get(item["id"], {}).get("name")}
+        for i, item in enumerate(actor(survival)["equipment"]["items"])
+    ]
+    (out / "native_max_hp_gear_request.json").write_text(
+        json.dumps(survival, indent=2) + "\n")
     audit = {"source":"exact Rust get_options",
              "level":level,"class":"warlock",
              "native_eligible_item_count":len(item_meta),
@@ -281,11 +709,16 @@ def native_level_equipment(binary, source, options, out, *, level):
              "native_paid_requests":paid_count,
              "native_refusal_samples":refusals,
              "native_paid_initial_gear_dps":baseline,
+             "native_prepared_dps_gear_max_hp": native_dps_gear_max_hp,
+             "native_prepared_max_hp_gear_max_hp": hp_baseline,
+             "native_max_hp_gear_preparations": hp_count,
+             "native_max_hp_gear_refusals": hp_refusals,
+             "max_hp_equipped": hp_gear_items,
              "equipped":equipped}
     (out/"native_gear.json").write_text(json.dumps(audit,indent=2)+"\n")
     (out/"native_gear_request.json").write_text(json.dumps(working,indent=2)+"\n")
     print("NATIVE_GEAR",json.dumps(audit),flush=True)
-    return working, audit
+    return working, audit, survival
 
 
 def main():
@@ -294,6 +727,10 @@ def main():
     parser.add_argument("--level", type=int, required=True, help="Rust actor and target level")
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--engine-tools", type=Path, required=True)
+    parser.add_argument("--proto-schema", type=Path, required=True,
+                        help="The selected Rust engine's data/proto-schema.json")
+    parser.add_argument("--pet-smoke-only", action="store_true",
+                        help="Paid Rust comparisons of all source summon choices only")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--max-finalists", type=int, default=6)
     parser.add_argument("--seed", type=int, default=10916)
@@ -308,6 +745,7 @@ def main():
     source["encounter"]["targets"][0]["name"] = f"Source-native L{level} combat"
     actor(source)["name"] = f"Warlock L{level} Troll native"
     actor(source)["equipment"]["items"] = [{"id":0} for _ in range(17)]
+    set_native_sustain_buffs(source)
     sys.path.insert(0, str(args.engine_tools.resolve()))
     import warlock_l20_native_search as source_search
     option_source = json.loads(call(
@@ -338,15 +776,73 @@ def main():
     if any(spell_id is None for spell_id, _ in initial):
         raise RuntimeError("Rust spell options missing Corruption/Agony/Shadow Bolt")
     actor(source)["rotation"]["priorityList"] = source_search.multi_apl(initial)
-    source, gear_audit = native_level_equipment(
+    source, gear_audit, survival_gear_source = native_level_equipment(
         binary, source, option_source, args.out, level=level)
     source_build = actor(source)["talentsString"]
     talents = list(proposals_from_native_talents(option_source, source_build, args.seed))
     apls, discovery = apl_proposals(option_source, source, source_search)
+    pet_options = native_pet_candidates(args.proto_schema)
     print("NATIVE_SOURCE_SEARCH_DOMAIN", json.dumps({
         "level":level,"talent_proposals":len(talents),
-        "apl_proposals":len(apls), "talent_points":talent_budget,
+        "apl_proposals":len(apls), "pet_options":pet_options,
+        "talent_points":talent_budget,
         "gear_paid_requests":gear_audit["native_paid_requests"], **discovery}), flush=True)
+
+    # A small direct Rust smoke verifies each existing Warlock summon option.
+    # A source option may be natively refused with this initial talent build;
+    # it is still explored with the other talent allocations below.
+    smoke_rows = []
+    smoke_request = args.out / "pet_smoke_request.json"
+    smoke_prepared = args.out / "pet_smoke_prepared.json"
+    smoke_paid = args.out / "pet_smoke_paid.json"
+    for chosen_pet in pet_options:
+        proposal = copy.deepcopy(source)
+        set_native_pet(proposal, chosen_pet)
+        proposal["simOptions"]["iterations"] = 8
+        proposal["simOptions"]["randomSeed"] = "4242"
+        smoke_request.write_text(json.dumps(proposal))
+        row = {"pet": chosen_pet, "status": "RUST_REFUSED"}
+        try:
+            call([binary, "prepare", "--request", smoke_request,
+                  "--actor-level", str(level), "--outfile", smoke_prepared])
+            prepared_data = json.loads(smoke_prepared.read_text())
+            call([binary, "sim", "--infile", smoke_prepared,
+                  "--rng-mode", "balanced", "--outfile", smoke_paid])
+            paid_data = json.loads(smoke_paid.read_text())["result"]
+            pet_receipt = native_pet_receipt(prepared_data, paid_data, chosen_pet)
+            row["native_sustain"] = native_sustain_receipt(prepared_data, proposal)
+            row.update(status="RUST_PAID",
+                       raid_dps=paid_data["raidMetrics"]["dps"]["avg"],
+                       **pet_receipt)
+        except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+            row["reason"] = str(exc)[-600:]
+        smoke_rows.append(row)
+        print("NATIVE_WARLOCK_PET_SMOKE", json.dumps(row), flush=True)
+    (args.out / "native_pet_smoke.json").write_text(
+        json.dumps(smoke_rows, indent=2) + "\n")
+    if args.pet_smoke_only:
+        # The workflow must not go green when every native summon was
+        # refused. In particular, prove Imp's Rust-owned Firebolt autocast
+        # actually contributes paid damage without entering the player APL.
+        imp = next((row for row in smoke_rows if row["pet"] == "Imp"), None)
+        if (imp is None or imp["status"] != "RUST_PAID"
+                or not any(action.get("class_spell") == "imp_firebolt"
+                           for action in imp.get("native_pet_autocast_spells", []))
+                or not imp.get("native_pet_dps", 0) > 0):
+            raise RuntimeError(
+                "Native L40 Imp Firebolt autocast was not paid and observed; "
+                "see native_pet_smoke.json for Rust evidence")
+        return
+
+    # Use native paid pet smoke to avoid confusing a protobuf enum choice
+    # (e.g. unavailable Felguard) with a prepared, usable L40 demon.
+    supported_pets = [r["pet"] for r in smoke_rows if r["status"] == "RUST_PAID"]
+    strategies = native_pet_strategies(supported_pets)
+    print("NATIVE_WARLOCK_STRATEGIES", json.dumps({
+        "strategies": [s["key"] for s in strategies],
+        "unsupported_native_summons": [r["pet"] for r in smoke_rows
+                                       if r["status"] != "RUST_PAID"],
+    }), flush=True)
 
     req_path = args.out / "screen_request.json"
     prep_path = args.out / "screen_prepared.json"
@@ -354,74 +850,174 @@ def main():
     scored = []
     rejected = Counter()
     rejected_samples = []
-    # Exercise independent talent x APL candidates through actual Rust.
-    for t in talents:
-        for a_label, apl in apls:
-            request = copy.deepcopy(source)
-            actor(request)["talentsString"] = t["talents"]
-            actor(request)["rotation"]["priorityList"] = copy.deepcopy(apl)
-            request["simOptions"]["iterations"] = 8
-            request["simOptions"]["randomSeed"] = "4242"
-            req_path.write_text(json.dumps(request))
-            try:
-                call([binary, "prepare", "--request", req_path, "--actor-level", str(level),
-                      "--outfile", prep_path])
-                prepared = json.loads(prep_path.read_text())["player"]
-                if prepared.get("level") != level or prepared.get("class") != "ClassWarlock":
-                    raise RuntimeError(f"Native prepared actor not Warlock L{level}")
-                call([binary, "sim", "--infile", prep_path, "--rng-mode", "balanced",
-                      "--outfile", sim_path])
-                paid = json.loads(sim_path.read_text())["result"]
-                dps = paid["raidMetrics"]["parties"][0]["players"][0]["dps"]["avg"]
-                if not isinstance(dps, (int, float)) or not math.isfinite(dps):
-                    raise RuntimeError("Rust returned nonfinite paid DPS")
-                scored.append({
-                    "dps_screen": float(dps), "talents": t["talents"],
-                    "talent_label":t["label"], "talent_ranks":t["ranks"],
-                    "apl_label": a_label, "apl": apl,
-                })
-            except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as e:
-                reason = str(e)[-500:]
-                rejected[reason] += 1
-                if len(rejected_samples) < 20:
-                    rejected_samples.append({"talents":t["talents"],
-                                             "apl":a_label,"reason":reason})
+    tried = 0
+    # Search active pet, pure sacrifice, and Demonic Pact + active pet.
+    # Only Rust source talent options decide whether a proposal can carry
+    # the sacrifice and Pact talent; all paid mechanics remain in Rust.
+    for strategy in strategies:
+        strategy_paid, strategy_rejected = 0, 0
+        for t in talents:
+            if (strategy["mode"] != "active" and
+                    not talent_has_native_rank(option_source, t["talents"],
+                                               "demonicSacrifice")):
+                continue
+            if (strategy["mode"] == "pact" and
+                    not talent_has_native_rank(option_source, t["talents"],
+                                               "demonicPact")):
+                continue
+            for a_label, apl in apls:
+                # The HP gear path is deliberately evaluated jointly with
+                # the Felhunter sacrifice + Improved Life Tap APL family.
+                # It does not assume a percent-HP-to-DPS conversion:
+                # every score is from the selected native Rust executor.
+                gear_choices = [("native_dps", source)]
+                if (strategy["sacrifice"] == "Felhunter"
+                        and "_tap" in a_label
+                        and talent_has_native_rank(option_source, t["talents"],
+                                                   "improvedLifeTap")):
+                    gear_choices.append(("native_max_hp", survival_gear_source))
+                for gear_variant, request_source in gear_choices:
+                    tried += 1
+                    request = copy.deepcopy(request_source)
+                    set_native_strategy(request, strategy)
+                    actor(request)["talentsString"] = t["talents"]
+                    actor(request)["rotation"]["priorityList"] = copy.deepcopy(apl)
+                    request["simOptions"]["iterations"] = 8
+                    request["simOptions"]["randomSeed"] = "4242"
+                    req_path.write_text(json.dumps(request))
+                    try:
+                        call([binary, "prepare", "--request", req_path,
+                              "--actor-level", str(level), "--outfile", prep_path])
+                        prepared_all = json.loads(prep_path.read_text())
+                        prepared = prepared_all["player"]
+                        if prepared.get("level") != level or prepared.get("class") != "ClassWarlock":
+                            raise RuntimeError(f"Native prepared actor not Warlock L{level}")
+                        sacrifice_receipt = native_sacrifice_receipt(prepared_all, strategy)
+                        call([binary, "sim", "--infile", prep_path, "--rng-mode", "balanced",
+                              "--outfile", sim_path])
+                        paid = json.loads(sim_path.read_text())["result"]
+                        team_dps = paid["raidMetrics"]["dps"]["avg"]
+                        if not isinstance(team_dps, (int, float)) or not math.isfinite(team_dps):
+                            raise RuntimeError("Rust returned nonfinite team DPS")
+                        pet_receipt = native_pet_receipt(prepared_all, paid, strategy["pet"])
+                        scored.append({
+                            "dps_screen": float(team_dps),
+                            "gear_variant": gear_variant,
+                            "native_prepared_max_hp": prepared["stats"].get("Health"),
+                            "pet": strategy["pet"], "sacrifice": strategy["sacrifice"],
+                            "strategy": strategy["key"], "mode": strategy["mode"],
+                            "native_sacrifice_auras": sacrifice_receipt,
+                            "native_sustain": native_sustain_receipt(prepared_all, request),
+                            "native_pet_dps": pet_receipt["native_pet_dps"],
+                            "native_pet_labels": pet_receipt["native_prepared_pets"],
+                            "native_pet_autocast_spells": pet_receipt["native_pet_autocast_spells"],
+                            "talents": t["talents"], "talent_label": t["label"],
+                            "talent_ranks": t["ranks"], "apl_label": a_label, "apl": apl,
+                        })
+                        strategy_paid += 1
+                    except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                        reason = str(exc)[-500:]
+                        rejected[(strategy["key"], gear_variant, reason)] += 1
+                        strategy_rejected += 1
+                        if len(rejected_samples) < 50:
+                            rejected_samples.append({
+                                "strategy": strategy["key"], "gear_variant": gear_variant,
+                                "talents": t["talents"], "apl": a_label, "reason": reason,
+                            })
+        print("NATIVE_STRATEGY_SEARCH", json.dumps({
+            "strategy": strategy["key"], "paid": strategy_paid,
+            "refused": strategy_rejected,
+            "best_team_dps": max(
+                (row["dps_screen"] for row in scored
+                 if row["strategy"] == strategy["key"]), default=None),
+        }), flush=True)
     scored.sort(key=lambda x:x["dps_screen"], reverse=True)
     print("NATIVE_SCREEN_RESULTS",json.dumps({
-        "tried":len(talents)*len(apls),
+        "tried":tried,
         "paid":len(scored),"refused":sum(rejected.values()),
-        "top5":[{k:v for k,v in r.items() if k not in ("apl", "talent_ranks")}
-                for r in scored[:5]]}),flush=True)
+        "top10":[{k:v for k,v in row.items() if k not in ("apl", "talent_ranks")}
+                 for row in scored[:10]]}),flush=True)
 
-    # Choose diverse finalists: top-paid overall, different talent trees,
-    # different APLs and the saved prior winner, not just one DPS ordering.
+    # Guarantee a real native-paid finalist for EACH available summon option,
+    # then fill remaining places with top-paid diverse pet/talent/APL builds.
+    # Otherwise a top-DPS pet could silently crowd out Voidwalker or Felhunter
+    # before the real 100-mob survival objective is measured.
     selected = []
     selected_keys = set()
     talent_counts = Counter()
     apl_counts = Counter()
-    for row in scored:
-        if len(selected) >= args.max_finalists:
-            break
-        if (talent_counts[row["talents"]] >= 2 or
-                apl_counts[row["apl_label"]] >= 3):
-            continue
-        key = (row["talents"], row["apl_label"])
+    pet_counts = Counter()
+    strategy_counts = Counter()
+
+    def add_finalist(row):
+        key = (row["strategy"], row["gear_variant"], row["talents"], row["apl_label"])
         if key in selected_keys:
-            continue
+            return False
         selected.append(row)
         selected_keys.add(key)
         talent_counts[row["talents"]] += 1
         apl_counts[row["apl_label"]] += 1
-    baseline = next((r for r in scored if r["talents"] == source_build
-                     and r["apl_label"] == "saved_multi_spell"), None)
-    if baseline and (baseline["talents"],baseline["apl_label"]) not in selected_keys:
-        selected[-1:] = [baseline]
+        pet_counts[row["pet"]] += 1
+        strategy_counts[row["strategy"]] += 1
+        return True
+
+    baseline = next((row for row in scored if row["pet"] == "NoSummon"
+                     and row["gear_variant"] == "native_dps"
+                     and row["talents"] == source_build
+                     and row["apl_label"] == "saved_multi_spell"), None)
+    if baseline is not None:
+        add_finalist(baseline)
+    # Comparison-critical finalists FIRST: the earlier successful L40 run
+    # returned active Succubus as winner while 264 native-paid candidates
+    # EACH of Pact Succubus+Imp and Succubus+Voidwalker never reached the
+    # real 100-mob chain due to a 12-finalist order cutoff.
+    # Keep the same active pet with each obtainable sacrifice head-to-head.
+    priority_families = [
+        "active:Succubus",
+        "pact:Succubus+Imp",
+        "pact:Succubus+Voidwalker",
+        "pact:Succubus+Felhunter",
+        "sacrifice:Felhunter",
+        "pact:Imp+Felhunter",
+    ]
+    remaining_families = (
+        ["sacrifice:" + s for s in supported_pets if s != "NoSummon"] +
+        ["active:" + s for s in supported_pets if s != "NoSummon"] +
+        ["pact:" + s["pet"] + "+" + s["sacrifice"]
+         for s in strategies if s["mode"] == "pact"]
+    )
+    family_order = list(dict.fromkeys(priority_families + remaining_families))
+    for family in family_order:
+        if len(selected) >= args.max_finalists:
+            break
+        # Prefer the high-HP variant of the user's proposed Felhunter
+        # Life Tap engine when Rust has genuinely paid for it.
+        first = next((row for row in scored
+                      if row["strategy"] == family
+                      and row["gear_variant"] == "native_max_hp"), None)
+        if first is None:
+            first = next((row for row in scored if row["strategy"] == family), None)
+        if first is not None:
+            add_finalist(first)
+    for row in scored:
+        if len(selected) >= args.max_finalists:
+            break
+        if (talent_counts[row["talents"]] >= 3
+                or apl_counts[row["apl_label"]] >= 4
+                or strategy_counts[row["strategy"]] >= 2):
+            continue
+        add_finalist(row)
 
     chain_results = []
     for index,row in enumerate(selected):
-        req = copy.deepcopy(source)
+        req = copy.deepcopy(survival_gear_source if row["gear_variant"] == "native_max_hp"
+                            else source)
         actor(req)["talentsString"] = row["talents"]
         actor(req)["rotation"]["priorityList"] = copy.deepcopy(row["apl"])
+        set_native_strategy(req, {
+            "mode": row["mode"], "pet": row["pet"],
+            "sacrifice": row["sacrifice"], "key": row["strategy"],
+        })
         scenario = profile(req, level=level)
         folder = args.out / ("chain_" + str(index).zfill(2))
         folder.mkdir(exist_ok=True)
@@ -436,9 +1032,19 @@ def main():
         try:
             call([binary, "prepare", "--request", scenario_file,
                   "--actor-level", str(level), "--outfile", prepared_file])
-            rust_actor = json.loads(prepared_file.read_text())["player"]
+            prepared_data = json.loads(prepared_file.read_text())
+            rust_actor = prepared_data["player"]
             if rust_actor.get("level") != level or rust_actor.get("class") != "ClassWarlock":
                 raise RuntimeError("wrong prepared Rust actor")
+            result["native_prepared_pets"] = [
+                pet.get("label") for pet in prepared_data.get("pets", [])]
+            result["native_sustain"] = native_sustain_receipt(prepared_data, scenario)
+            result["native_sacrifice_auras"] = native_sacrifice_receipt(
+                prepared_data, {
+                    "mode": row["mode"], "key": row["strategy"],
+                })
+            result["native_pet_autocast_spells"] = native_pet_autocast_receipt(
+                prepared_data, row["pet"])
             world = native_world_chain(
                 binary, prepared_file, classic_mob_level=level,
                 target_count=100, rng_mode="balanced")
@@ -479,10 +1085,18 @@ def main():
                         key=lambda x:(-x["confirmed_kills"],-x["dps_screen"]))
     result = {
         "source":"Rust get_options + native paid balanced screening + real gsim retained 100 mob",
-        "gear_held_fixed_after_native_selection":True, "native_level_gear":gear_audit,
+        "gear_held_fixed_after_native_selection":False,
+        "gear_variants_native_prepared": ["native_dps", "native_max_hp"],
+        "native_level_gear":gear_audit,
         "mob_level":level, "mob_hp_classic_proxy":representative_hp(level),
         "test_mob_min_base_damage":20,
         "talents_considered":len(talents), "apl_considered":len(apls),
+        "pets_considered":pet_options,
+        "native_strategies_considered": [s["key"] for s in strategies],
+        "native_pet_smoke":smoke_rows,
+        "paid_by_pet":dict(Counter(r["pet"] for r in scored)),
+        "paid_by_strategy":dict(Counter(r["strategy"] for r in scored)),
+        "paid_by_gear_variant": dict(Counter(r["gear_variant"] for r in scored)),
         "paid_30s_combinations":len(scored),
         "refused_30s_combinations":sum(rejected.values()),
         "screen_top20":[{k:v for k,v in row.items() if k != "apl"} for row in scored[:20]],
@@ -495,7 +1109,8 @@ def main():
     (args.out / "optimization_results.json").write_text(
         json.dumps(result,indent=2,allow_nan=False)+"\n")
     print("WARLOCK_TALENT_APL_100MOB_OPTIMIZATION",json.dumps({
-        "talents":len(talents),"apls":len(apls),"paid":len(scored),
+        "talents":len(talents),"apls":len(apls),"pets":pet_options,
+        "paid":len(scored),"paid_by_pet":dict(Counter(r["pet"] for r in scored)),
         "finalists":len(chain_results), "completed":len(winners),
         "winner":result["winner"], "best_partial":result["best_partial"],
         "status":result["status"],

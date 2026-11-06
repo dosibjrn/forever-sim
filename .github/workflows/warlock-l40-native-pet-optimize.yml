@@ -1,0 +1,79 @@
+name: Warlock L40 native pet x talent x APL optimization
+
+on:
+  push:
+    branches: [feat/warlock-optimize-native-pet-l40-20261106]
+    paths:
+      - tools/wf_warlock_native_optimizer.py
+      - .github/workflows/warlock-l40-native-pet-optimize.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-l40-warlock-pet-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Forever shared optimizer
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout existing Rust pet engine plus source-backed level40 actor
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 701b82d67817dd125cb3ba71eb55f87e10ebd381
+          path: engine
+      - name: Verify native source and optimizer syntax
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "701b82d67817dd125cb3ba71eb55f87e10ebd381"
+          python3 -m py_compile project/tools/wf_warlock_native_optimizer.py
+          echo "Native Rust: $(git -C engine rev-parse HEAD)"
+          echo "Forever optimizer: $(git -C project rev-parse HEAD)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install world bridge dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Build exact selected Rust with source-backed L40 actor and native pets
+        working-directory: engine
+        run: |
+          cargo test --locked --lib warlock_l20_actor_source_tests
+          cargo build --locked --bin forever-engine
+      - name: Rust smoke - actual pets and pet damage on L40 prepared actor
+        working-directory: project
+        run: |
+          set -euo pipefail
+          python3 -u tools/wf_warlock_native_optimizer.py \
+            --binary ../engine/target/debug/forever-engine \
+            --level 40 \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --proto-schema ../engine/data/proto-schema.json \
+            --engine-tools ../engine/tools \
+            --out ../warlock-l40-native-pet-smoke \
+            --pet-smoke-only --seed 10916
+      - name: Native pet x talents x conditional APL paid optimizer and real 100 mob chains
+        working-directory: project
+        run: |
+          set -euo pipefail
+          python3 -u tools/wf_warlock_native_optimizer.py \
+            --binary ../engine/target/debug/forever-engine \
+            --level 40 \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --proto-schema ../engine/data/proto-schema.json \
+            --engine-tools ../engine/tools \
+            --out ../warlock-l40-pet-optimization-results \
+            --max-finalists 12 --seed 10916
+      - name: Preserve all real native pet, talent, APL, and 100-mob receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l40-native-pet-talents-apl-100mob
+          path: |
+            warlock-l40-native-pet-smoke/
+            warlock-l40-pet-optimization-results/
+          if-no-files-found: warn
+          retention-days: 14
