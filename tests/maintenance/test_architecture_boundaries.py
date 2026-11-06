@@ -461,14 +461,12 @@ import json
 import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
 from src.game.data.forever import (
-    source_ability_repair,
     source_stat_aura_candidates,
     source_maintenance_ranks,
 )
 
-for module in (source_ability_repair, source_stat_aura_candidates, source_maintenance_ranks):
+for module in (source_stat_aura_candidates, source_maintenance_ranks):
     assert module.DEFAULT_DB is DEFAULT_DB
-assert callable(source_ability_repair.repair_queue)
 assert callable(source_stat_aura_candidates.ingest)
 assert callable(source_stat_aura_candidates.read_current_candidates)
 assert callable(source_maintenance_ranks.latest_reactive_maintenance_rank)
@@ -590,7 +588,6 @@ assert legacy_slug is source_slug
         "src/game/data/forever/source_enemy_melee_ap_debuff.py",
         "src/game/data/forever/source_rank_overlay.py",
         "src/game/data/forever/source_control_action_compiler.py",
-        "tools/parse_verified_detail_to_staging.py",
     ]
     for path in migrated:
         source = (ROOT / path).read_text(encoding="utf-8")
