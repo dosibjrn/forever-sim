@@ -65,7 +65,7 @@ def native_world(binary, prepared, **kwargs):
               "advance_penultimate": 70.}[label]
     elapsed = {"source": 18., "advance_last": 15.,
                "advance_penultimate": 13.}[label]
-    if count in (50, 100) and label != "advance_last":
+    if count in (50, 100) and label == "source":
         raise AssertionError("Unexpected expensive replay")
     return {
         "continuous_native_actor": True,
@@ -236,7 +236,7 @@ def test_no_native_survivor_at_fifty_never_pays_hundred(tmp_path):
         search_feral_native_apl_survival(
             "/native", path, prepare_run=native_prepare, world_run=lethal_world,
         )
-    assert calls == [2, 2, 2, 50, 50]
+    assert calls == [2, 2, 2, 50, 50, 50, 50]
     assert '"native_actor_died"' in str(exc.value)
 
 
@@ -253,3 +253,47 @@ def test_recovery_screen_does_not_hide_native_ack_transport_failure(tmp_path):
         search_feral_native_apl_survival(
             "/native", path, prepare_run=native_prepare, world_run=broken_world,
         )
+
+
+def test_lethal_two_target_winner_falls_back_to_next_native_apl(tmp_path):
+    """A real 50-mob death cannot veto the next independently paid APL."""
+    path = write_source(tmp_path)
+    calls = []
+
+    def fallback_world(binary, prepared, **kwargs):
+        policy = json.loads(prepared.read_text())["policy"]
+        count = kwargs["target_count"]
+        rest = kwargs["native_recovery_seconds"]
+        calls.append((policy, count, rest))
+        if count == 50 and policy == "advance_last":
+            raise AssertionError(
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=49:"
+                "adjacent_native_windows=[]"
+            )
+        return native_world(binary, prepared, **kwargs)
+
+    result = search_feral_native_apl_survival(
+        "/native", path, prepare_run=native_prepare, world_run=fallback_world,
+    )
+    assert calls == [
+        ("source", 2, 24),
+        ("advance_last", 2, 24),
+        ("advance_penultimate", 2, 24),
+        ("advance_last", 50, 24),
+        ("advance_last", 50, 120),
+        ("advance_penultimate", 50, 24),
+        ("advance_penultimate", 50, 120),
+        ("advance_penultimate", 100, 120),
+    ]
+    assert result["selected_policy"] == "advance_penultimate"
+    assert result["selected_recovery_seconds"] == 120
+    assert result["native_paid_100_target_objective"]["targets"] == 100
+    assert [entry["policy"] for entry in result["recovery_screens"]] == [
+        "advance_last", "advance_last",
+        "advance_penultimate", "advance_penultimate",
+    ]
+    assert [entry["status"] for entry in result["recovery_screens"]] == [
+        "native_actor_died", "native_actor_died",
+        "native_screen_survived", "native_screen_survived",
+    ]
+    assert json.loads(path.read_text()) == fixture()
