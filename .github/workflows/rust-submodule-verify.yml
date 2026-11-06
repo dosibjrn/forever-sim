@@ -463,7 +463,7 @@ jobs:
           else:
               assert row["native_item_options_status"] == "ok"
               assert row["native_unverified_candidate_count"] == 0
-                  assert not any(reason.startswith("NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:")
+              assert not any(reason.startswith("NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:")
                              for reason in row["reasons"])
           assert row["native_item_options_source"].startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
