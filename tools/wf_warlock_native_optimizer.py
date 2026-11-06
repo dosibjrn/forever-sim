@@ -940,15 +940,26 @@ def main():
                      and row["apl_label"] == "saved_multi_spell"), None)
     if baseline is not None:
         add_finalist(baseline)
-    # Keep an active pet baseline, plus examples of *each* sacrifice effect.
-    # A 30-second DPS ranking alone must not drop regeneration strategies.
-    family_order = (
-        ["sacrifice:Felhunter", "pact:Imp+Felhunter"] +
+    # Comparison-critical finalists FIRST: the earlier successful L40 run
+    # returned active Succubus as winner while 264 native-paid candidates
+    # EACH of Pact Succubus+Imp and Succubus+Voidwalker never reached the
+    # real 100-mob chain due to a 12-finalist order cutoff.
+    # Keep the same active pet with each obtainable sacrifice head-to-head.
+    priority_families = [
+        "active:Succubus",
+        "pact:Succubus+Imp",
+        "pact:Succubus+Voidwalker",
+        "pact:Succubus+Felhunter",
+        "sacrifice:Felhunter",
+        "pact:Imp+Felhunter",
+    ]
+    remaining_families = (
         ["sacrifice:" + s for s in supported_pets if s != "NoSummon"] +
         ["active:" + s for s in supported_pets if s != "NoSummon"] +
         ["pact:" + s["pet"] + "+" + s["sacrifice"]
          for s in strategies if s["mode"] == "pact"]
     )
+    family_order = list(dict.fromkeys(priority_families + remaining_families))
     for family in family_order:
         if len(selected) >= args.max_finalists:
             break
