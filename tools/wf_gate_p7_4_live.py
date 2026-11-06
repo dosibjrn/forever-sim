@@ -157,25 +157,6 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
     raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
-def _paid_gear_elite_choice(elites, rng, proposal_index, reranked=()):
-    """Use paid multi-seed Balanced finalists for part of local gear search.
-
-    Every fifth proposal stays a fresh cold draw. Once native+2D has paid for
-    independent finalist screens, alternating local proposals exploit the top
-    four of their more reliable scores instead of continuing exclusively from
-    noisy three-fight leaders. Other proposals retain the top-15 paid archive
-    for diversity. Neither the reference nor stochastic holdout seeds search.
-    """
-    if proposal_index % 5 == 0:
-        return None
-    if reranked and proposal_index % 2 == 0:
-        ranked = sorted(reranked, key=lambda row: row[0], reverse=True)
-        return rng.choice(ranked[:min(4, len(ranked))])[3]
-    if not elites:
-        return None
-    return rng.choice(elites[:min(15, len(elites))])[1]
-
-
 def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
     """Do not launch an indivisible native+2D paid call too near 300s.
 
