@@ -471,6 +471,71 @@ def native_level_equipment(binary, source, options, out, *, level):
             "name":metadata["name"] if metadata else None,
             "required_level":metadata["required_level"] if metadata else None,
             "native_slot":metadata["slot"] if metadata else None})
+    # The second exploration track is health maximization, NOT a new stat
+    # weight model: source item Stamina/Health only proposes candidates;
+    # Rust prepare determines the actual equipped actor's maximum HP.
+    hp_path = out / "gear_health_request.json"
+    hp_prepared_path = out / "gear_health_prepared.json"
+    hp_count = 0
+    hp_refusals = []
+
+    def paid_native_max_hp(request):
+        nonlocal hp_count
+        hp_count += 1
+        hp_path.write_text(json.dumps(request))
+        try:
+            call([binary, "prepare", "--request", hp_path,
+                  "--actor-level", str(level), "--outfile", hp_prepared_path])
+            unit = json.loads(hp_prepared_path.read_text())["player"]
+            if unit.get("class") != "ClassWarlock" or unit.get("level") != level:
+                raise RuntimeError("Rust prepared wrong actor during native HP gear search")
+            value = unit["stats"]["Health"]
+            if not isinstance(value, (float, int)) or not math.isfinite(value):
+                raise RuntimeError("Invalid native prepared Health")
+            return float(value)
+        except (RuntimeError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
+            if len(hp_refusals) < 25:
+                hp_refusals.append(str(exc)[-400:])
+            return None
+
+    def source_stat(item, stat):
+        value = (item.get("stats") or {}).get(stat, 0)
+        return float(value) if isinstance(value, (int, float)) and math.isfinite(value) else 0.0
+
+    survival = copy.deepcopy(working)
+    hp_baseline = paid_native_max_hp(survival)
+    if hp_baseline is None:
+        raise RuntimeError("Native Rust refused DPS gear during HP search")
+    native_dps_gear_max_hp = hp_baseline
+    for position in range(17):
+        # Include high-Stamina and direct-Health source leads, not just the
+        # highest item levels that the legacy 30s-DPS pass screened.
+        highest_stamina = sorted(
+            pools[position], key=lambda n: (-source_stat(n, "Stamina"), n["item_id"]))[:8]
+        highest_health = sorted(
+            pools[position], key=lambda n: (-source_stat(n, "Health"), n["item_id"]))[:3]
+        seen_ids = set()
+        for native in highest_stamina + highest_health:
+            if native["item_id"] in seen_ids:
+                continue
+            seen_ids.add(native["item_id"])
+            candidate = copy.deepcopy(survival)
+            actor(candidate)["equipment"]["items"][position] = {"id": native["item_id"]}
+            native_hp = paid_native_max_hp(candidate)
+            if native_hp is not None and native_hp > hp_baseline + 1e-8:
+                survival = candidate
+                hp_baseline = native_hp
+        print("NATIVE_MAX_HP_GEAR_SLOT", json.dumps({
+            "level": level, "slot": position, "native_prepared_max_hp": hp_baseline,
+            "item_id": actor(survival)["equipment"]["items"][position]["id"],
+        }), flush=True)
+    hp_gear_items = [
+        {"position": i, "item_id": item["id"],
+         "name": item_meta.get(item["id"], {}).get("name")}
+        for i, item in enumerate(actor(survival)["equipment"]["items"])
+    ]
+    (out / "native_max_hp_gear_request.json").write_text(
+        json.dumps(survival, indent=2) + "\n")
     audit = {"source":"exact Rust get_options",
              "level":level,"class":"warlock",
              "native_eligible_item_count":len(item_meta),
@@ -478,11 +543,16 @@ def native_level_equipment(binary, source, options, out, *, level):
              "native_paid_requests":paid_count,
              "native_refusal_samples":refusals,
              "native_paid_initial_gear_dps":baseline,
+             "native_prepared_dps_gear_max_hp": native_dps_gear_max_hp,
+             "native_prepared_max_hp_gear_max_hp": hp_baseline,
+             "native_max_hp_gear_preparations": hp_count,
+             "native_max_hp_gear_refusals": hp_refusals,
+             "max_hp_equipped": hp_gear_items,
              "equipped":equipped}
     (out/"native_gear.json").write_text(json.dumps(audit,indent=2)+"\n")
     (out/"native_gear_request.json").write_text(json.dumps(working,indent=2)+"\n")
     print("NATIVE_GEAR",json.dumps(audit),flush=True)
-    return working, audit
+    return working, audit, survival
 
 
 def main():
@@ -539,7 +609,7 @@ def main():
     if any(spell_id is None for spell_id, _ in initial):
         raise RuntimeError("Rust spell options missing Corruption/Agony/Shadow Bolt")
     actor(source)["rotation"]["priorityList"] = source_search.multi_apl(initial)
-    source, gear_audit = native_level_equipment(
+    source, gear_audit, survival_gear_source = native_level_equipment(
         binary, source, option_source, args.out, level=level)
     source_build = actor(source)["talentsString"]
     talents = list(proposals_from_native_talents(option_source, source_build, args.seed))
