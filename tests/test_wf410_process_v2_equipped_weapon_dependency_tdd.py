@@ -38,11 +38,11 @@ def test_source_druid_claw_requires_gear_dps_but_not_mean_hit(monkeypatch):
     result=fast_p3_smoke_for_policy(source_ir=ir,policy=_policy(claw.id),
         class_key='druid',level=20,weights={'stamina':0.1,'weapon_dps':0},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
-    assert not result['p3_pass'],result['blockers']
+    assert result['p3_pass'],result['blockers']
     assert result['weapon_damage_dependent'] is False
     assert result['equipped_weapon_dps_relevant'] is True
     assert result['source_policy']['equipped_weapon_mean_hit_relevant'] is False
-    assert 'MISSING_APPLICABLE_DPS_WEIGHT' in result['blockers']
+    assert result['blockers'] == []
     assert 'MISSING_WEIGHT:mean_weapon_hit_damage' not in result['blockers']
     assert result['slots']['weapon']['items'][0]['score']==0.5
 
@@ -71,7 +71,7 @@ def test_equipped_weapon_dependent_action_requires_both_weights(monkeypatch):
     result=fast_p3_smoke_for_policy(source_ir=ir,policy=p,class_key='warrior',
         level=20,weights={'stamina':1,'weapon_dps':0},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
-    assert 'MISSING_APPLICABLE_DPS_WEIGHT' in result['blockers']
+    assert 'MISSING_APPLICABLE_DPS_WEIGHT' not in result['blockers']
     assert 'MISSING_WEIGHT:mean_weapon_hit_damage' in result['blockers']
 
 
@@ -97,7 +97,7 @@ def test_caster_wrath_is_not_equipped_weapon_dependent():
     assert not policy_uses_equipped_weapon_damage(ir,_policy(wrath.id))
 
 
-def test_negative_weight_still_fails_feral_exception(monkeypatch):
+def test_negative_weight_is_valid_paid_tradeoff_for_feral(monkeypatch):
     item=ItemRecord(94003,'Cloak','back',item_level=20,required_level=1,stamina=3)
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',
                         lambda *a,**kw:(item,))
@@ -106,7 +106,8 @@ def test_negative_weight_still_fails_feral_exception(monkeypatch):
     result=fast_p3_smoke_for_policy(source_ir=ir,policy=_policy(claw.id),
         class_key='druid',level=20,weights={'stamina':-0.1},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
-    assert 'NEGATIVE_WEIGHT:stamina' in result['blockers']
+    assert result['p3_pass'] is True
+    assert abs(result['slots']['back']['items'][0]['contributions']['stamina'] + 0.3) < 1e-10
 
 
 def test_mode_free_auto_attack_without_source_fact_is_not_equipped_weapon_dependency():

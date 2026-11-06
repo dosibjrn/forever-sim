@@ -22,8 +22,21 @@ def test_source_policy_automatically_requires_mean_hit_weight(monkeypatch):
     weapon=ItemRecord(302,'Mace','two_hand',item_level=20,required_level=10,
                       weapon_min_damage=11,weapon_max_damage=19,weapon_dps=6)
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**k:(weapon,))
-    action=SimpleNamespace(id='strike',effects=(SimpleNamespace(effect_type='weapon_damage'),))
-    ir=SimpleNamespace(id='real_source_ir',actions=(action,))
+    # Use an actual selected equipped-weapon effect/fact rather than a
+    # placeholder lacking a native/source damage channel.
+    action=SimpleNamespace(
+        id='strike', requirements=({'kind': 'mode_is', 'value': 'human'},),
+        effects=(SimpleNamespace(
+            effect_type='weapon_damage',
+            damage_source=SimpleNamespace(kind='equipped_weapon',
+                                          dps_stat_id='weapon_dps', flat_dps=0)),))
+    ir=SimpleNamespace(id='real_source_ir',
+        actor=SimpleNamespace(metadata={'class_key': 'warrior'}),
+        actions=(action,), auto_attacks=())
+    fact=SimpleNamespace(source_stat='weapon_dps',
+        damage_source_kind='equipped_weapon', weapon_speed_semantics='equipped')
+    monkeypatch.setattr('src.game.gear._weapon_facts_for_ir',
+                        lambda _ir: ((fact, 'human'),))
     policy=SimpleNamespace(id='generated',rules=(SimpleNamespace(action_id='strike'),))
     r=fast_p3_smoke_for_policy(class_key='druid',level=20,
         weights={'weapon_dps':1.,'mean_weapon_hit_damage':None},
@@ -40,7 +53,7 @@ def test_unknown_action_cannot_silently_exempt_mean_hit_rule():
         policy_uses_weapon_damage(ir,policy)
 
 
-def test_ordinary_extra_weight_can_be_zero_but_named_stamina_must_be_positive(monkeypatch):
+def test_ordinary_extra_and_named_stat_can_both_be_zero(monkeypatch):
     item=ItemRecord(303,'Cloak','back',item_level=20,required_level=10,
                     stamina=5,extra_stats={'arcres':7})
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**k:(item,))
@@ -54,7 +67,8 @@ def test_ordinary_extra_weight_can_be_zero_but_named_stamina_must_be_positive(mo
                            weights={'stamina':0.0,'resistance_arcane':0.0},
                            weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
                            weapon_damage_dependent=False)
-    assert 'NONPOSITIVE_RELEVANT_WEIGHT:stamina' in negative['blockers']
+    assert negative['p3_pass'] is True
+    assert negative['blockers'] == []
 
 
 def test_source_policy_missing_optional_requirements_keeps_caster_defensive_zero(monkeypatch):
@@ -92,8 +106,8 @@ def test_source_policy_missing_optional_requirements_does_not_exempt_bear(monkey
         source_ir=ir, policy=policy, weights={'armor': 0., 'stamina': 0.},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
     assert report['source_policy']['defensive_positive_required'] is True
-    assert report['p3_pass'] is False
-    assert 'NONPOSITIVE_RELEVANT_WEIGHT:armor' in report['blockers']
+    assert report['p3_pass'] is True
+    assert report['blockers'] == []
 
 
 

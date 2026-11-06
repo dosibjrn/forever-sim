@@ -65,25 +65,27 @@ def test_balance_defensive_zeros_are_counted_not_blocked(minimal_catalogue):
     ("warrior", None),
     ("druid", "bear"),
 ])
-def test_warrior_or_selected_bear_policy_requires_positive_defense(
+def test_warrior_or_selected_bear_does_not_invent_positive_defense(
         minimal_catalogue, class_key, mode):
     result = _run(minimal_catalogue, class_key=class_key, mode=mode)
     assert result["defensive_positive_required"] is True
-    assert result["p3_pass"] is False
-    for axis in DEFENSIVE:
-        assert "NONPOSITIVE_RELEVANT_WEIGHT:" + axis in result["blockers"]
+    assert result["p3_pass"] is True
+    assert result["verified_stat_assertions"] == 6
+    assert result["blockers"] == []
 
 
-def test_negative_defensive_weight_still_fails_for_caster(minimal_catalogue):
+def test_negative_defensive_weight_is_retained_for_caster(minimal_catalogue):
     weights = {**minimal_catalogue, "stamina": -0.5}
     result = _run(weights)
-    assert result["p3_pass"] is False
-    assert "NEGATIVE_WEIGHT:stamina" in result["blockers"]
+    assert result["p3_pass"] is True
+    assert result["slots"]["chest"]["items"][0]["contributions"]["stamina"] == -2.5
+    assert result["blockers"] == []
 
 
-def test_offensive_zero_still_fails_for_caster(minimal_catalogue):
+def test_offensive_zero_is_not_an_extra_gate_for_caster(minimal_catalogue):
     result = _run({**minimal_catalogue, "spell_power": 0.0})
-    assert "NONPOSITIVE_RELEVANT_WEIGHT:spell_power" in result["blockers"]
+    assert result["p3_pass"] is True
+    assert result["slots"]["chest"]["items"][0]["contributions"]["spell_power"] == 0.0
 
 
 def test_missing_defensive_weight_is_not_forgiven(minimal_catalogue):

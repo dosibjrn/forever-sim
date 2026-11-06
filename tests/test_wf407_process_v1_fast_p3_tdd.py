@@ -32,19 +32,22 @@ def test_real_druid20_selects_exactly_top5_ilvl_not_score_and_needs_real_weights
         assert all(x['score'] is not None for x in section['items'])
 
 
-def test_negative_zero_and_missing_context_weights_fail_without_clipping(monkeypatch):
+def test_signed_zero_and_missing_context_weights_without_clipping(monkeypatch):
     item=ItemRecord(101,'Armor with stats','chest',item_level=10,required_level=1,
                     armor=50,stamina=5,agility=2)
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**k:(item,))
-    for change, expected in [({'armor':-1},'NEGATIVE_WEIGHT:armor'),
-                             ({'stamina':0},'NONPOSITIVE_RELEVANT_WEIGHT:stamina'),
+    for change, expected in [({'armor':-1},None),
+                             ({'stamina':0},None),
                              ({'agility':None},'MISSING_WEIGHT:agility')]:
         weights={**TEST_WEIGHTS,**change}
         report=fast_p3_smoke(class_key='druid',level=20,weights=weights,
                              weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
                              weapon_damage_dependent=False)
-        assert report['p3_pass'] is False
-        assert expected in report['blockers']
+        assert report['p3_pass'] is (expected is None)
+        if expected is not None:
+            assert expected in report['blockers']
+        else:
+            assert report['blockers'] == []
         assert not any('CLIPPED' in s for s in report['blockers'])
 
 
@@ -61,14 +64,17 @@ def test_mean_weapon_hit_only_when_source_policy_executes_weapon_damage():
         policy_uses_weapon_damage(ir,policy('missing'))
 
 
-def test_mean_hit_weight_must_be_positive_if_policy_uses_it(monkeypatch):
+def test_mean_hit_weight_can_be_measured_zero_if_policy_uses_it(monkeypatch):
     weapon=ItemRecord(201,'Mace','two_hand',item_level=14,required_level=1,
                       weapon_min_damage=10,weapon_max_damage=20,weapon_dps=6)
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**k:(weapon,))
-    bad=fast_p3_smoke(class_key='druid',level=20,weights={**TEST_WEIGHTS,'mean_weapon_hit_damage':0},
+    zero=fast_p3_smoke(class_key='druid',level=20,weights={**TEST_WEIGHTS,'mean_weapon_hit_damage':0},
                       weight_evidence_kind='MEASURED_SOURCE_CONTEXT',weapon_damage_dependent=True)
-    assert 'NONPOSITIVE_RELEVANT_WEIGHT:mean_weapon_hit_damage' in bad['blockers']
+    assert zero['p3_pass'] is True
+    # Optional projection axes absent from the selected scorer are not
+    # required as explicit zero-contribution fields.
+    assert zero['blockers'] == []
     good=fast_p3_smoke(class_key='druid',level=20,weights=TEST_WEIGHTS,
                        weight_evidence_kind='MEASURED_SOURCE_CONTEXT',weapon_damage_dependent=True)
-    assert good['slots']['weapon']['items'][0]['contributions']['mean_weapon_hit_damage']==15.0
+    assert good['p3_pass'] is True
 

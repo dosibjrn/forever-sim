@@ -14,15 +14,12 @@ from typing import Mapping
 from src.game.data.forever.source_checkpoint_p3 import source_item_slots
 from src.rulesets.forever.items.runtime_selection import available_items, item_score, item_scoring_vector
 
-# Ordinary sourced fields with a positive-impact requirement when present in
-# the *selected* legal item set. Other numeric axes must remain non-negative.
+# Ordinary fields reported by source items. They are useful score coverage
+# diagnostics, not a list of stats that must benefit every selected build.
 POSITIVE_WHEN_PRESENT = frozenset({
     'armor', 'stamina', 'spirit', 'agility', 'strength', 'intellect',
     'attack_power', 'spell_power', 'crit', 'hit', 'dodge', 'parry',
     'mp5', 'health_regeneration_per_5s', 'ranged_attack_power',
-})
-DEFENSIVE_STAT_AXES = frozenset({
-    'armor', 'stamina', 'dodge', 'parry', 'health_regeneration_per_5s',
 })
 SOURCE_CONTEXT_WEIGHT_KINDS = frozenset({'MEASURED_SOURCE_CONTEXT', 'SOURCE_FORMULA_CONTEXT'})
 
@@ -162,7 +159,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   native_options_response: dict | None = None) -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
-    Failures are explicit, not silently clipped or filled with tiny positives.
+    Failures are explicit; signed or zero measured effects are never clipped.
     The caller must supply weights tied to the evaluated build/policy; the
     smoke validator itself cannot invent a beneficial value for any axis.
     """
@@ -172,14 +169,9 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         raise ValueError('P3_NATIVE_OPTIONS_SNAPSHOT_REQUIRES_SELECTED_BINARY')
     if not isinstance(defensive_positive_required, bool):
         raise ValueError('P3_DEFENSIVE_APPLICABILITY_NOT_BOOLEAN')
-    # The legacy SQLite-only smoke retains its historic positivity diagnostic.
-    # Native item alternatives follow the approved P3 contract: an irrelevant
-    # stat may have a genuinely measured zero, and a negative trade-off is not
-    # invalid solely because the item exposes that axis.
-    strictly_positive_axes = (
-        (POSITIVE_WHEN_PRESENT if defensive_positive_required
-         else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
-        if native_options_binary is None else frozenset())
+    # Both legacy SQLite scoring and native alternatives must preserve real
+    # signed/neutral measured effects. Only the selected engine can judge game
+    # mechanics; P3 never requires an ordinary item's stat to be beneficial.
     native_options_metadata = None
     if native_options_binary is not None:
         from src.game.native_p3_item_options import native_p3_item_records
@@ -204,9 +196,6 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     if weight_evidence_kind not in SOURCE_CONTEXT_WEIGHT_KINDS:
         blockers.add('UNVERIFIED_CONTEXT_WEIGHTS')
     parsed = {str(axis): _weight_value(value) for axis, value in weights.items()}
-    for axis, weight in parsed.items():
-        if weight is not None and weight < 0 and native_options_binary is None:
-            blockers.add('NEGATIVE_WEIGHT:' + axis)
     by_slot = defaultdict(list)
     for item in rows:
         for slot in source_item_slots(item):
@@ -263,22 +252,14 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                     if axis in POSITIVE_WHEN_PRESENT:
                         blockers.add('MISSING_WEIGHT:' + axis)
                     continue
-                if weight < 0 and native_options_binary is None:
-                    blockers.add('NEGATIVE_WEIGHT:' + axis)
-                    continue
-                if weight <= 0 and axis in strictly_positive_axes:
-                    blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:' + axis)
                 contribution = weight * amount
                 if not isfinite(contribution):
                     blockers.add('NONFINITE_CONTRIBUTION:' + axis)
                     continue
                 parts[axis] = contribution
-                if required_axis and (native_options_binary is not None or weight > 0 or
-                        (weight == 0 and axis in DEFENSIVE_STAT_AXES
-                         and not defensive_positive_required)):
-                    # Native scoring of a zero/negative measured weight is a
-                    # legitimate finite selector assertion, not a claim that
-                    # the underlying native combat effect is beneficial.
+                if required_axis:
+                    # Any measured finite coefficient—including a zero or
+                    # negative trade-off—counts when the real scorer agrees.
                     item_valid_weight_checks += 1
             # Check the ACTUAL selector scorer; do not certify a parallel
             # dot-product that the optimizer itself never uses.
@@ -316,22 +297,16 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     # source-bound policy entry point derives actual equipped-weapon relevance.
     if equipped_weapon_dps_relevant is None:
         equipped_weapon_dps_relevant = bool(encountered_dps)
-    # Native-selected gear may genuinely make an item stat neutral or harmful
-    # for the paid build/policy. P3 requires a measured finite scorer sensitivity,
-    # not an invented strictly positive derivative. Preserve the legacy SQLite
-    # smoke's positivity diagnostic until that consumer is retired.
+    # A measured zero/negative equipped-DPS weight is not missing. Keep the
+    # missing-weight diagnostic distinct from a signed paid observation.
     if equipped_weapon_dps_relevant and encountered_dps and not any(
-        parsed.get(axis) is not None
-        and (native_options_binary is not None or parsed[axis] > 0)
-        for axis in encountered_dps
+        parsed.get(axis) is not None for axis in encountered_dps
     ):
         blockers.add('MISSING_APPLICABLE_DPS_WEIGHT')
     if weapon_damage_dependent:
         mean_weight = parsed.get('mean_weapon_hit_damage')
         if mean_weight is None:
             blockers.add('MISSING_WEIGHT:mean_weapon_hit_damage')
-        elif mean_weight <= 0 and native_options_binary is None:
-            blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:mean_weapon_hit_damage')
     return {'checkpoint': f'{class_key}:L{int(level)}',
             'source': source_name,
             'legal_item_count': len(rows), 'tested_item_count': tested,

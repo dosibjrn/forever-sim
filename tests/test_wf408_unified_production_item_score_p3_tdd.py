@@ -43,7 +43,7 @@ def test_proc_only_item_needs_no_invented_weight(monkeypatch):
     assert r['p3_pass'],r['blockers']
 
 
-def test_zero_resistance_allowed_but_negative_stat_forbidden(monkeypatch):
+def test_zero_resistance_and_negative_stat_both_score_as_measured(monkeypatch):
     item=_item(99004,'back',stamina=5,extra_stats={'arcres':7})
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**kw:(item,))
     okay=fast_p3_smoke(class_key='druid',level=20,
@@ -53,7 +53,8 @@ def test_zero_resistance_allowed_but_negative_stat_forbidden(monkeypatch):
     bad=fast_p3_smoke(class_key='druid',level=20,
         weights={'stamina':1,'resistance_arcane':-1},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT',weapon_damage_dependent=False)
-    assert 'NEGATIVE_WEIGHT:resistance_arcane' in bad['blockers']
+    assert bad['p3_pass'] is True
+    assert bad['slots']['back']['items'][0]['contributions']['resistance_arcane'] == -7.0
 
 
 def test_parry_raw_rating_and_ranged_ap_ordinary_axes(monkeypatch):
