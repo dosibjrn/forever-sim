@@ -1,4 +1,4 @@
-name: Warlock L30 native pet smoke short real Rust test
+name: Warlock L30 level-correct pet smoke Rust test
 
 on:
   push:
@@ -24,12 +24,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 701b82d67817dd125cb3ba71eb55f87e10ebd381
+          ref: e8d399a360b63a9b20568926852d05e30e80dece
           path: engine
       - name: Verify native source and optimizer syntax
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "701b82d67817dd125cb3ba71eb55f87e10ebd381"
+          test "$(git -C engine rev-parse HEAD)" = "e8d399a360b63a9b20568926852d05e30e80dece"
           python3 -m py_compile project/tools/wf_warlock_native_optimizer.py
           echo "Native Rust: $(git -C engine rev-parse HEAD)"
           echo "Forever optimizer: $(git -C project rev-parse HEAD)"
