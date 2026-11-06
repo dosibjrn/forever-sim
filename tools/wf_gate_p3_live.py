@@ -467,12 +467,30 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     reasons = []
     if (is_mage_l60 or is_paladin_l60 or is_warlock_l20) and not occupancy_verified:
         reasons.append("P3_NATIVE_OCCUPIED_SLOT_RECEIPT_MISSING")
+    # Preserve the native refusal in the *gate* verdict, not only a nested
+    # receipt. In particular, a source Warlock prepare refusal occurs before
+    # any paid combat; Work1 needs the exact Rust reason to repair the actor.
+    # This never promotes a refused or unscored candidate to a gate PASS.
+    if paid == 0 and isinstance(receipt.get("status"), str):
+        native_status = receipt["status"]
+        native_reason = (receipt.get("reason") or receipt.get("error")
+                         or (prepared.get("reason") if isinstance(prepared, dict)
+                             else None))
+        reasons.append("P3_NATIVE_EQUIPPED_REFUSAL:" + native_status
+                       + (":" + str(native_reason)[:350] if native_reason else ""))
     if type(paid) is not int or not 1 <= paid <= 44:
         reasons.append("P3_NATIVE_PAID_ATTEMPTS_INVALID")
     if baseline.get("status") != "VALID" or (
             type(baseline.get("score")) not in (int, float)
             or not isfinite(baseline["score"])):
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
+        # Paid native INVALID/UNSUPPORTED/UNSCORED/ERROR is a genuine
+        # result, not a reason to invent a gear score or hide the Rust refusal.
+        if baseline.get("status") in ("INVALID", "UNSUPPORTED", "UNSCORED", "ERROR"):
+            reasons.append(
+                "P3_NATIVE_BASELINE_REFUSAL:" + baseline["status"] +
+                (":" + str(baseline["reason"])[:350]
+                 if baseline.get("reason") else ""))
     expected_class, expected_level = (
         ("ClassWarlock", 20) if is_warlock_l20 else
         ("ClassDruid", 60) if checkpoint == "feral_l60" else
