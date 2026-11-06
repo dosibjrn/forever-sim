@@ -214,3 +214,47 @@ def test_native_warlock_probe_execution_error_propagates_to_gate():
     assert result["status"] == "BLOCKED"
     assert "P3_NATIVE_EQUIPPED_REFUSAL:NATIVE_EQUIPPED_PROBE_ERROR:native source request file unreadable" in result["reasons"]
     assert result["native_equipped_paid_attempts"] == 0
+
+
+def test_native_warlock_refused_baseline_does_not_spend_gear_budget():
+    """If Rust refuses the original build, swaps cannot produce a P3 delta."""
+    from native_matrix import NativeCandidateRefusal
+
+    paid = []
+
+    def evaluator(binary, request, iterations, seed, mode, deadline, **kwargs):
+        assert mode == "balanced"
+        assert kwargs["objective"] == "DPS"
+        paid.append(copy.deepcopy(request))
+        raise NativeCandidateRefusal(
+            "UNSUPPORTED", reason="native Warlock APL unavailable",
+            request_sha256="native-refused-original")
+
+    receipt = compare_equipped_native(
+        "selected-engine", source(), {"head": {"selected_ids": [900, 901]}},
+        class_key="warlock", level=20, objective="DPS", max_paid_attempts=44,
+        evaluator=evaluator, preparer=prepared)
+    assert len(paid) == 1
+    assert receipt["paid_attempts"] == 1
+    assert receipt["status"] == "PAID_NATIVE_REFUSAL"
+    assert receipt["evaluations"][0]["status"] == "UNSUPPORTED"
+    assert receipt["evaluations"][0]["reason"] == "native Warlock APL unavailable"
+    assert receipt["evaluations"][0]["request_sha256"] == "native-refused-original"
+    assert receipt["native_slot_evaluations"] == []
+    assert receipt["native_slots_valid"] == 0
+    assert receipt["source_occupied_slots"]
+    assert receipt["comparison"] is None
+    assert not receipt["actor_checkpoint_verified"]
+
+    # Paid refusal is FAIL, not an invented comparable score or a 0-paid
+    # missing-source BLOCKED. Its actual Rust reason reaches the top-level gate.
+    gate = p3._native_rogue_p3_verdict(
+        {"status": "ok", "items": [
+            {"slot": "head", "item_id": 900, "item_level": 20}]},
+        receipt, checkpoint="warlock_l20")
+    assert gate["status"] == "FAIL"
+    assert gate["native_equipped_paid_attempts"] == 1
+    assert "P3_NATIVE_BASELINE_REFUSAL:UNSUPPORTED:native Warlock APL unavailable" in gate["reasons"]
+    assert "P3_NATIVE_BASELINE_NOT_VALID" in gate["reasons"]
+    assert "P3_NATIVE_RELEVANT_SCORE_SENSITIVITY_NOT_MEASURED" in gate["reasons"]
+    assert "runtime_proof" not in gate
