@@ -494,6 +494,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     expected_objective = {
         "paladin_protection_l60": "TPS",
         "paladin_holy_l60": "HPS",
+        "warlock_l20": "DPS",
     }.get(checkpoint)
     score_delta_key = "delta_score" if expected_objective else "delta_dps"
     if expected_objective and receipt.get("objective") != expected_objective:
