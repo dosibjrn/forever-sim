@@ -56,19 +56,32 @@ def test_warlock_l20_native_p3_selection_is_specific():
     assert not p3.native_item_options_required("warlock", 20, "affliction")
 
 
-def test_unverified_native_warlock_equipment_refuses_without_ir(monkeypatch):
+def test_unverified_native_warlock_proposals_do_not_false_block(monkeypatch):
     monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "selected-engine")
+    monkeypatch.delenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST", raising=False)
     monkeypatch.setattr(p3, "_query_native_unified_p3_items",
                         lambda *_args: {
-                            "status": "empty", "items": [],
-                            "unverified_candidate_count": 20})
+                            "status": "ok", "items": [],
+                            "unverified_candidate_count": 20,
+                            "unverified_item_ids": [900, 901, 902, 903]})
     monkeypatch.setattr(p3, "_paid_native_equipped_probe",
                         lambda *_a, **_kw: (_ for _ in ()).throw(
-                            AssertionError("No native payment for unverified items")))
+                            AssertionError("No native payment without real actor request")))
     result = p3.run_live(ROOT, "warlock", 20)
     assert result["status"] == "BLOCKED"
-    assert result["reasons"] == ["NATIVE_ITEM_OPTIONS_PROFICIENCY_UNVERIFIED"]
-    assert result["real_source_search_evaluated"] == 0
+    # Real missing executable actor request still blocks. Source metadata alone
+    # must never invent a 'proficiency unverified' gameplay legality verdict.
+    assert result["reasons"] == ["P3_NATIVE_WARLOCK_L20_REQUEST_REQUIRED"]
+    proposals = p3._native_p3_equipped_slot_proposals(
+        {"items": [], "unverified_item_ids": [900, 901, 902, 903]})["slots"]
+    assert set(proposals) == {"weapon", "offhand", "ranged", "head", "neck",
+                             "shoulder", "back", "chest", "wrist", "hands",
+                             "waist", "legs", "feet", "ring1", "ring2",
+                             "trinket1", "trinket2"}
+    assert all(len(row["selected_ids"]) == 3 for row in proposals.values())
+    assert all(set(row["selected_ids"]) <= {900, 901, 902, 903}
+               for row in proposals.values())
+    assert proposals["head"] != proposals["weapon"]  # sample multiple Rust IDs
 
 
 def test_missing_native_warlock_actor_request_refuses_without_payment(monkeypatch):
@@ -143,19 +156,58 @@ def test_native_warlock_balanced_dps_pays_real_changed_item_only():
         assert binary == "selected-engine"
         assert mode == "balanced"
         assert kwargs["objective"] == "DPS"
+        assert kwargs["actor_level"] == 20
         paid.append(copy.deepcopy(request))
         head = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
         return (7.5 if head == 900 else 7.0), {}, 0.01, f"paid-{len(paid)}"
 
+    def prepare_l20(*args, **kwargs):
+        assert kwargs["actor_level"] == 20
+        return prepared(*args, **kwargs)
+
     result = compare_equipped_native(
         "selected-engine", original, {"head": {"selected_ids": [900]}},
         class_key="warlock", level=20, objective="DPS",
-        evaluator=evaluator, preparer=prepared)
+        evaluator=evaluator, preparer=prepare_l20)
     assert result["status"] == "PAID_NATIVE_DIFFERENCE"
     assert result["paid_attempts"] == len(paid) == 2
     assert result["actor_checkpoint_verified"]
     assert result["comparison"]["delta_dps"] == 0.5
     assert original == unchanged
+
+
+def test_native_warlock_l20_actor_level_is_on_real_cli_prepare_and_sim(monkeypatch):
+    import time
+    import pytest
+    from native_executor import run as native_run
+    from native_matrix import NativeCandidateRefusal
+    from native_p3_equipped import prepared_native_actor
+
+    commands = []
+    def rust_cli(command, **_kwargs):
+        commands.append(command)
+        if command[1] == "prepare":
+            return SimpleNamespace(returncode=0, stderr="", stdout=json.dumps({
+                "player": {"class": "ClassWarlock", "level": 20},
+                "reference": {"engine_revision": "native-test"},
+            }))
+        return SimpleNamespace(returncode=4, stderr="actual native refusal",
+                               stdout="")
+
+    monkeypatch.setattr(subprocess, "run", rust_cli)
+    prepared_receipt = prepared_native_actor(
+        "rust-engine", source(), runner=rust_cli, actor_level=20)
+    assert prepared_receipt["status"] == "PREPARED"
+    assert prepared_receipt["actor_level"] == 20
+    with pytest.raises(NativeCandidateRefusal) as caught:
+        native_run("rust-engine", source(), 2, 42, "balanced",
+                   time.monotonic() + 10, actor_level=20)
+    assert caught.value.status == "INVALID"
+    assert [cmd[1] for cmd in commands] == ["prepare", "sim"]
+    assert all(cmd[cmd.index("--actor-level") + 1] == "20"
+               for cmd in commands)
+    assert "--rng-mode" in commands[1]
+    assert commands[1][commands[1].index("--rng-mode") + 1] == "balanced"
 
 
 def test_native_warlock_cannot_promote_level60_donor_or_wrong_class():
