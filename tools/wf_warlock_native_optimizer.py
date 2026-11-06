@@ -782,50 +782,63 @@ def main():
                                                "demonicPact")):
                 continue
             for a_label, apl in apls:
-                tried += 1
-                request = copy.deepcopy(source)
-                set_native_strategy(request, strategy)
-                actor(request)["talentsString"] = t["talents"]
-                actor(request)["rotation"]["priorityList"] = copy.deepcopy(apl)
-                request["simOptions"]["iterations"] = 8
-                request["simOptions"]["randomSeed"] = "4242"
-                req_path.write_text(json.dumps(request))
-                try:
-                    call([binary, "prepare", "--request", req_path,
-                          "--actor-level", str(level), "--outfile", prep_path])
-                    prepared_all = json.loads(prep_path.read_text())
-                    prepared = prepared_all["player"]
-                    if prepared.get("level") != level or prepared.get("class") != "ClassWarlock":
-                        raise RuntimeError(f"Native prepared actor not Warlock L{level}")
-                    sacrifice_receipt = native_sacrifice_receipt(prepared_all, strategy)
-                    call([binary, "sim", "--infile", prep_path, "--rng-mode", "balanced",
-                          "--outfile", sim_path])
-                    paid = json.loads(sim_path.read_text())["result"]
-                    team_dps = paid["raidMetrics"]["dps"]["avg"]
-                    if not isinstance(team_dps, (int, float)) or not math.isfinite(team_dps):
-                        raise RuntimeError("Rust returned nonfinite team DPS")
-                    pet_receipt = native_pet_receipt(prepared_all, paid, strategy["pet"])
-                    scored.append({
-                        "dps_screen": float(team_dps),
-                        "pet": strategy["pet"], "sacrifice": strategy["sacrifice"],
-                        "strategy": strategy["key"], "mode": strategy["mode"],
-                        "native_sacrifice_auras": sacrifice_receipt,
-                        "native_pet_dps": pet_receipt["native_pet_dps"],
-                        "native_pet_labels": pet_receipt["native_prepared_pets"],
-                        "native_pet_autocast_spells": pet_receipt["native_pet_autocast_spells"],
-                        "talents": t["talents"], "talent_label": t["label"],
-                        "talent_ranks": t["ranks"], "apl_label": a_label, "apl": apl,
-                    })
-                    strategy_paid += 1
-                except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
-                    reason = str(exc)[-500:]
-                    rejected[(strategy["key"], reason)] += 1
-                    strategy_rejected += 1
-                    if len(rejected_samples) < 50:
-                        rejected_samples.append({
-                            "strategy": strategy["key"], "talents": t["talents"],
-                            "apl": a_label, "reason": reason,
+                # The HP gear path is deliberately evaluated jointly with
+                # the Felhunter sacrifice + Improved Life Tap APL family.
+                # It does not assume a percent-HP-to-DPS conversion:
+                # every score is from the selected native Rust executor.
+                gear_choices = [("native_dps", source)]
+                if (strategy["sacrifice"] == "Felhunter"
+                        and "_tap" in a_label
+                        and talent_has_native_rank(option_source, t["talents"],
+                                                   "improvedLifeTap")):
+                    gear_choices.append(("native_max_hp", survival_gear_source))
+                for gear_variant, request_source in gear_choices:
+                    tried += 1
+                    request = copy.deepcopy(request_source)
+                    set_native_strategy(request, strategy)
+                    actor(request)["talentsString"] = t["talents"]
+                    actor(request)["rotation"]["priorityList"] = copy.deepcopy(apl)
+                    request["simOptions"]["iterations"] = 8
+                    request["simOptions"]["randomSeed"] = "4242"
+                    req_path.write_text(json.dumps(request))
+                    try:
+                        call([binary, "prepare", "--request", req_path,
+                              "--actor-level", str(level), "--outfile", prep_path])
+                        prepared_all = json.loads(prep_path.read_text())
+                        prepared = prepared_all["player"]
+                        if prepared.get("level") != level or prepared.get("class") != "ClassWarlock":
+                            raise RuntimeError(f"Native prepared actor not Warlock L{level}")
+                        sacrifice_receipt = native_sacrifice_receipt(prepared_all, strategy)
+                        call([binary, "sim", "--infile", prep_path, "--rng-mode", "balanced",
+                              "--outfile", sim_path])
+                        paid = json.loads(sim_path.read_text())["result"]
+                        team_dps = paid["raidMetrics"]["dps"]["avg"]
+                        if not isinstance(team_dps, (int, float)) or not math.isfinite(team_dps):
+                            raise RuntimeError("Rust returned nonfinite team DPS")
+                        pet_receipt = native_pet_receipt(prepared_all, paid, strategy["pet"])
+                        scored.append({
+                            "dps_screen": float(team_dps),
+                            "gear_variant": gear_variant,
+                            "native_prepared_max_hp": prepared["stats"].get("Health"),
+                            "pet": strategy["pet"], "sacrifice": strategy["sacrifice"],
+                            "strategy": strategy["key"], "mode": strategy["mode"],
+                            "native_sacrifice_auras": sacrifice_receipt,
+                            "native_pet_dps": pet_receipt["native_pet_dps"],
+                            "native_pet_labels": pet_receipt["native_prepared_pets"],
+                            "native_pet_autocast_spells": pet_receipt["native_pet_autocast_spells"],
+                            "talents": t["talents"], "talent_label": t["label"],
+                            "talent_ranks": t["ranks"], "apl_label": a_label, "apl": apl,
                         })
+                        strategy_paid += 1
+                    except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                        reason = str(exc)[-500:]
+                        rejected[(strategy["key"], gear_variant, reason)] += 1
+                        strategy_rejected += 1
+                        if len(rejected_samples) < 50:
+                            rejected_samples.append({
+                                "strategy": strategy["key"], "gear_variant": gear_variant,
+                                "talents": t["talents"], "apl": a_label, "reason": reason,
+                            })
         print("NATIVE_STRATEGY_SEARCH", json.dumps({
             "strategy": strategy["key"], "paid": strategy_paid,
             "refused": strategy_rejected,
@@ -852,7 +865,7 @@ def main():
     strategy_counts = Counter()
 
     def add_finalist(row):
-        key = (row["strategy"], row["talents"], row["apl_label"])
+        key = (row["strategy"], row["gear_variant"], row["talents"], row["apl_label"])
         if key in selected_keys:
             return False
         selected.append(row)
@@ -864,6 +877,7 @@ def main():
         return True
 
     baseline = next((row for row in scored if row["pet"] == "NoSummon"
+                     and row["gear_variant"] == "native_dps"
                      and row["talents"] == source_build
                      and row["apl_label"] == "saved_multi_spell"), None)
     if baseline is not None:
@@ -871,6 +885,7 @@ def main():
     # Keep an active pet baseline, plus examples of *each* sacrifice effect.
     # A 30-second DPS ranking alone must not drop regeneration strategies.
     family_order = (
+        ["sacrifice:Felhunter", "pact:Imp+Felhunter"] +
         ["sacrifice:" + s for s in supported_pets if s != "NoSummon"] +
         ["active:" + s for s in supported_pets if s != "NoSummon"] +
         ["pact:" + s["pet"] + "+" + s["sacrifice"]
@@ -879,7 +894,13 @@ def main():
     for family in family_order:
         if len(selected) >= args.max_finalists:
             break
-        first = next((row for row in scored if row["strategy"] == family), None)
+        # Prefer the high-HP variant of the user's proposed Felhunter
+        # Life Tap engine when Rust has genuinely paid for it.
+        first = next((row for row in scored
+                      if row["strategy"] == family
+                      and row["gear_variant"] == "native_max_hp"), None)
+        if first is None:
+            first = next((row for row in scored if row["strategy"] == family), None)
         if first is not None:
             add_finalist(first)
     for row in scored:
@@ -893,7 +914,8 @@ def main():
 
     chain_results = []
     for index,row in enumerate(selected):
-        req = copy.deepcopy(source)
+        req = copy.deepcopy(survival_gear_source if row["gear_variant"] == "native_max_hp"
+                            else source)
         actor(req)["talentsString"] = row["talents"]
         actor(req)["rotation"]["priorityList"] = copy.deepcopy(row["apl"])
         set_native_strategy(req, {
@@ -966,7 +988,9 @@ def main():
                         key=lambda x:(-x["confirmed_kills"],-x["dps_screen"]))
     result = {
         "source":"Rust get_options + native paid balanced screening + real gsim retained 100 mob",
-        "gear_held_fixed_after_native_selection":True, "native_level_gear":gear_audit,
+        "gear_held_fixed_after_native_selection":False,
+        "gear_variants_native_prepared": ["native_dps", "native_max_hp"],
+        "native_level_gear":gear_audit,
         "mob_level":level, "mob_hp_classic_proxy":representative_hp(level),
         "test_mob_min_base_damage":20,
         "talents_considered":len(talents), "apl_considered":len(apls),
@@ -975,6 +999,7 @@ def main():
         "native_pet_smoke":smoke_rows,
         "paid_by_pet":dict(Counter(r["pet"] for r in scored)),
         "paid_by_strategy":dict(Counter(r["strategy"] for r in scored)),
+        "paid_by_gear_variant": dict(Counter(r["gear_variant"] for r in scored)),
         "paid_30s_combinations":len(scored),
         "refused_30s_combinations":sum(rejected.values()),
         "screen_top20":[{k:v for k,v in row.items() if k != "apl"} for row in scored[:20]],
