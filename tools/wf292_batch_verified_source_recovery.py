@@ -25,11 +25,39 @@ import time
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tools.run_forever_ability_repair import _verify_existing_staging_lineage
 from src.v2.source_sqlite_detail_snapshots import (
     MissingVerifiedSpellDetail, read_verified_spell_detail_snapshot)
 
 FETCHER = Path(__file__).with_name('capture_forever_abilities_sqlite.py')
+
+
+def _verify_existing_staging_lineage(canonical: Path, staging: Path) -> None:
+    """A fetched stage must still match current canonical outside detail evidence.
+
+    A standalone stage from another machine/agent must never silently become
+    a new base. The capture tool's details-only mode edits only the two detail
+    tables; any other changed row or schema requires explicit rebase.
+    """
+    excluded={'spell_details','spell_detail_snapshots'}
+    paths=(f'file:{canonical}?mode=ro',f'file:{staging}?mode=ro')
+    with sqlite3.connect(paths[0],uri=True) as source,sqlite3.connect(paths[1],uri=True) as stage:
+        for db in (source,stage):
+            if db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
+                raise ValueError('STAGING_LINEAGE_INVALID_SQLITE')
+            if db.execute('PRAGMA foreign_key_check').fetchone() is not None:
+                raise ValueError('STAGING_LINEAGE_FOREIGN_KEYS_INVALID')
+        schema_query="SELECT type,name,sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND name NOT LIKE 'sqlite_%' ORDER BY type,name"
+        if source.execute(schema_query).fetchall()!=stage.execute(schema_query).fetchall():
+            raise ValueError('STAGING_LINEAGE_SCHEMA_DRIFT')
+        names=[r[0] for r in source.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+        for name in names:
+            if name in excluded:
+                continue
+            # All identifiers come from canonical sqlite_master, never user input.
+            quoted='"'+name.replace('"','""')+'"'
+            sql=f'SELECT * FROM {quoted} ORDER BY rowid'
+            if source.execute(sql).fetchall()!=stage.execute(sql).fetchall():
+                raise ValueError(f'STAGING_LINEAGE_DATA_DRIFT:{name}')
 
 
 def _index(db: sqlite3.Connection) -> list[dict]:
