@@ -126,6 +126,10 @@ def test_warlock_rust_unverified_item_ids_retained_as_native_proposals(monkeypat
         seen.append(command)
         return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
 
+    from src.game import native_p3_item_options
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        lambda *_args, **_kwargs: {
+                            "status": "empty", "items": []})
     monkeypatch.setattr(subprocess, "run", source_cli)
     options = p3._query_native_unified_p3_items(ROOT, "selected-engine", "warlock", 20)
     assert seen == [["selected-engine", "options",
@@ -492,3 +496,39 @@ def test_warlock_native_l20_raw_fixture_without_level_is_prepared_and_paid():
         ("score", {"objective": "DPS", "actor_level": 20}),
         ("score", {"objective": "DPS", "actor_level": 20}),
     ]
+
+
+def test_warlock_equipped_p3_prefers_rust_verified_item_options(monkeypatch):
+    """Selected Rust item-options provides real slot IDs; no fallback guessed rule."""
+    from src.game import native_p3_item_options
+    received = []
+
+    def genuine_item_options(binary, class_key, level, *, spec, slot):
+        received.append((binary, class_key, level, spec, slot))
+        return {
+            "status": "ok", "source_revision": "tested-rust-source-sha",
+            "unverified_candidate_count": 0,
+            "items": [
+                {"item_id": 8100, "slot": "one_hand", "item_level": 19},
+                {"item_id": 8101, "slot": "one_hand", "item_level": 18},
+                {"item_id": 8200, "slot": "ranged", "item_level": 20},
+                {"item_id": 8201, "slot": "ranged", "item_level": 17},
+                {"item_id": 8300, "slot": "chest", "item_level": 19},
+            ],
+        }
+
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        genuine_item_options)
+    monkeypatch.setattr(subprocess, "run",
+                        lambda *_args, **_kw: (_ for _ in ()).throw(
+                            AssertionError("Do not fall back to incomplete get_options")))
+    selected = p3._query_native_unified_p3_items(
+        ROOT, "selected-engine", "warlock", 20)
+    assert received == [("selected-engine", "warlock", 20, "unrestricted", "all")]
+    assert selected["source"] == "tested-rust-source-sha"
+    assert selected["transport"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    assert selected["unverified_item_ids"] == []
+    slots = p3._native_p3_equipped_slot_proposals(selected)["slots"]
+    assert slots["weapon"]["selected_ids"] == [8100, 8101]
+    assert slots["ranged"]["selected_ids"] == [8200, 8201]
+    assert slots["chest"]["selected_ids"] == [8300]
