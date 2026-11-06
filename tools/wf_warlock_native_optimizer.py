@@ -375,6 +375,33 @@ def proposals_from_native_talents(options, source_encoded: str, seed: int):
                 if row:
                     yield row
 
+    # Exact native-source L40 Pact proposal for pre-summoned Succubus +
+    # sacrificed Felhunter. Master Summoner is intentionally 0/2: pre-pull
+    # summoning has no 100-kill-clock value. Use the original talent fields
+    # and native rank caps; Rust prepare remains the source of truth.
+    if demon_tree is not None and budget == 31:
+        pact_core = {
+            "demonicEmbrace": 5, "unholyPower": 5,
+            "demonicAegis": 2, "felVitality": 3,
+            "improvedSayaad": 3, "demonicSacrifice": 1,
+            "decimation": 2, "soulLink": 1,
+            "demonicKnowledge": 3, "masterDemonologist": 5,
+            "demonicPact": 1,
+        }
+        native_rows = {t["field_name"]: t for t in trees[demon_tree]["talents"]}
+        if (sum(pact_core.values()) == budget and
+                all(name in native_rows and native_rows[name]["max_rank"] >= points
+                    for name, points in pact_core.items())):
+            alloc = [[0] * len(tree["talents"]) for tree in trees]
+            for name, points in pact_core.items():
+                alloc[demon_tree][native_rows[name]["index"]] = points
+            # Summoning speed remains 0; all points fund active combat.
+            if alloc[demon_tree][native_rows["masterSummoner"]["index"]] != 0:
+                raise RuntimeError("Pact proposal unexpectedly spent Master Summoner")
+            row = emit(serialize(alloc), "native_pact_succubus_felhunter_no_master_summoner")
+            if row:
+                yield row
+
     # L40 Demonic Pact consumes all 31 talent points, but a pure Felhunter
     # sacrifice can combine Demonic Sacrifice with 2/2 Improved Life Tap.
     # Generate legal hybrid proposals directly from source metadata so the
