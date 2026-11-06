@@ -1,0 +1,51 @@
+name: Warlock L20 real native APL 100-mob chain (no gate promotion)
+
+on:
+  push:
+    branches:
+      - experiment/warlock-l20-native-apl-100mob-20261106
+    paths:
+      - .github/workflows/warlock-l20-native-apl-100mob.yml
+      - tools/wf_native_warlock_l20_world.py
+      - integrations/mythicsim-rust/engine
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  one-actor-100-world-mobs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install existing gsim dependencies
+        run: python -m pip install --disable-pip-version-check "beautifulsoup4==4.13.4"
+      - name: Build exact native L20 Rust actor from selected gitlink
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_DEV_DEBUG: "0"
+        run: |
+          set -euo pipefail
+          cargo build --locked --bin forever-engine
+          echo "RUST_SHA=$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Native balanced Warlock L20 with APL and 100 distinct 2D mobs
+        run: |
+          python tools/wf_native_warlock_l20_world.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --source-request integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --targets 100 --out /tmp/warlock-l20-100-mob
+      - name: Preserve authentic inputs and measured world receipts, including refusals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l20-real-apl-100-world-mob-receipts
+          path: /tmp/warlock-l20-100-mob/
+          if-no-files-found: warn
+          retention-days: 14
