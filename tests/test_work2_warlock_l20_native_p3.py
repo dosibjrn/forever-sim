@@ -620,3 +620,68 @@ def test_warlock_p3_explicit_request_overrides_pinned_fixture(tmp_path, monkeypa
     monkeypatch.delenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST")
     fixture.unlink()
     assert p3._warlock_l20_native_request(tmp_path) is None
+
+def test_warlock_p3_selects_later_paid_negative_delta_after_equal_slot():
+    """An earlier VALID zero delta must not hide a later native-paid change."""
+    original = source()
+    unchanged = copy.deepcopy(original)
+    observed = []
+
+    def evaluator(binary, request, iterations, seed, mode, deadline, **kwargs):
+        assert binary == "selected-engine" and mode == "balanced"
+        assert kwargs["objective"] == "DPS" and kwargs["actor_level"] == 20
+        items = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        observed.append((items[0]["id"], items[4]["id"]))
+        score = 9.25 if items[4]["id"] == 901 else 10.0
+        return score, {}, 0.01, f"paid-{len(observed)}"
+
+    receipt = compare_equipped_native(
+        "selected-engine", original,
+        {"head": {"selected_ids": [900]}, "chest": {"selected_ids": [901]}},
+        class_key="warlock", level=20, objective="DPS",
+        max_paid_attempts=3, evaluator=evaluator, preparer=prepared)
+
+    assert observed == [(100, 104), (900, 104), (100, 901)]
+    assert receipt["paid_attempts"] == 3
+    assert [row["delta_dps"] for row in receipt["native_slot_evaluations"]] == [
+        0.0, -0.75]
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["comparison"]["delta_dps"] == -0.75
+    assert receipt["swap"]["slot"] == "chest"
+    assert receipt["actor_checkpoint_verified"] is True
+    assert original == unchanged
+
+
+def test_warlock_p3_pays_second_native_item_when_first_scores_equal():
+    """Two genuine Rust alternatives are allowed; zero is not a reason to stop."""
+    observed = []
+
+    def evaluator(binary, request, iterations, seed, mode, deadline, **kwargs):
+        assert mode == "balanced" and kwargs["objective"] == "DPS"
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
+        observed.append(item_id)
+        return (8.75 if item_id == 901 else 10.0), {}, 0.01, str(item_id)
+
+    receipt = compare_equipped_native(
+        "selected-engine", source(), {"head": {"selected_ids": [900, 901]}},
+        class_key="warlock", level=20, objective="DPS",
+        max_paid_attempts=3, evaluator=evaluator, preparer=prepared)
+
+    assert observed == [100, 900, 901]
+    assert receipt["paid_attempts"] == 3
+    assert receipt["native_slots_valid"] == 2
+    assert receipt["native_slots_requested"] == 1
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["swap"]["to_id"] == 901
+    assert receipt["comparison"]["delta_dps"] == -1.25
+    assert [row["delta_dps"] for row in receipt["native_slot_evaluations"]] == [
+        0.0, -1.25]
+
+    # Bounded cost still wins over retrying every Rust option.
+    capped = compare_equipped_native(
+        "selected-engine", source(), {"head": {"selected_ids": [900, 901]}},
+        class_key="warlock", level=20, objective="DPS",
+        max_paid_attempts=2, evaluator=evaluator, preparer=prepared)
+    assert capped["paid_attempts"] == 2
+    assert capped["status"] == "PAID_NATIVE_EQUAL"
+    assert capped["comparison"]["delta_dps"] == 0.0
