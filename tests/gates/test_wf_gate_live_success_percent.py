@@ -119,7 +119,10 @@ def test_p7_5_uses_higher_accepted_compatible_holdout_floor():
     assert m["dps_objective_proximity_percent"] == 96.77
     assert m["dps_objective_pareto_effort_estimate_percent"] == 87.1
     del r["strongest_accepted_compatible_prior_dps"]
-    assert measured_p7_dps_proximity("P7.5", r) is None
+    reference_only = measured_p7_dps_proximity("P7.5", r)
+    assert reference_only["dps_objective_required"] == 744.0
+    assert reference_only["dps_objective_proximity_percent"] == 100.0
+    assert reference_only["dps_objective_gate_pass"] is False
 
 
 def test_unverified_native_only_or_incomplete_p7_cannot_show_score():
@@ -162,8 +165,14 @@ def test_p7_5_seven_percent_applies_to_both_external_and_best_accepted_prior():
         assert not p7_final_stochastic_mean_passes(
             "P7.5", 929., external, iterations=1000,
             stochastic=True, strongest_accepted_compatible_prior=prior)
-    with pytest.raises(ValueError, match="PRIOR_REQUIRED"):
-        p7_required_dps("P7.5", 800.)
+    assert p7_required_dps("P7.5", 800.) == pytest.approx(744.)
+    assert p7_final_stochastic_mean_passes(
+        "P7.5", 744., 800., iterations=1000, stochastic=True)
+    assert not p7_final_stochastic_mean_passes(
+        "P7.5", 743.9, 800., iterations=1000, stochastic=True)
+    with pytest.raises(ValueError, match="PRIOR_INVALID"):
+        p7_required_dps("P7.5", 800.,
+                        strongest_accepted_compatible_prior=0.0)
 
 
 def test_p7_5_actual_joint_dps_visible_without_forged_prior_fraction(monkeypatch, capsys):
@@ -171,7 +180,7 @@ def test_p7_5_actual_joint_dps_visible_without_forged_prior_fraction(monkeypatch
     from tools import wf_gate as runner
     monkeypatch.setattr(runner, "_run_live_gate", lambda *args: {
         "status": "FAIL",
-        "reasons": ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"],
+        "reasons": ["P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED"],
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "joint_cold_world_dps": 512.5,
         "external_reference_only_floor": 677.2201,
@@ -187,19 +196,18 @@ def test_p7_5_actual_joint_dps_visible_without_forged_prior_fraction(monkeypatch
     assert "verified" not in row and "applicable" not in row
 
 
-def test_p7_5_cli_receipt_exposes_real_stochastic_final_without_prior_pass(monkeypatch, capsys):
-    """RED in actual WF613 run: provider final DPS was hidden by CLI output.
+def test_p7_5_cli_receipt_exposes_real_stochastic_final_below_reference_floor(monkeypatch, capsys):
+    """A genuine frozen final remains visible even when below reference floor.
 
-    A frozen final score is a diagnostic fact; it cannot create a P7.5 PASS
-    when the accepted-compatible prior is missing.
+    A reported score is diagnostic; it cannot create a P7.5 PASS when the
+    1,000-fight mean fails the approved 93%-of-reference threshold.
     """
     import json
     from tools import wf_gate as runner
 
     monkeypatch.setattr(runner, "_run_live_gate", lambda *args: {
         "status": "FAIL",
-        "reasons": ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR",
-                    "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
+        "reasons": ["P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "source_request_raw_sha256": "pinned-report",
         "native_source_revision": "pinned-rust",
