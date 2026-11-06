@@ -1,0 +1,112 @@
+name: Work2 — Warlock L20 source-native P3 (no record)
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/work2-warlock-l20-native-p3.yml
+      - integrations/mythicsim-rust/native_p3_equipped.py
+      - tools/wf_gate_p3_live.py
+      - tests/test_work2_warlock_l20_native_p3.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work2-warlock-l20-native-p3-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-warlock-l20:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Work2 source and selected Rust gitlink
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+          persist-credentials: false
+
+      - name: Assert pinned selected engine identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          selected="$(git ls-tree HEAD "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$selected" && "$actual" == "$selected" ]]
+          [[ "$(git -C "$engine" remote get-url origin)" == *dosibjrn/mythicsim-forever-engine* ]]
+          echo "FOREVER_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "SELECTED_RUST_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify Warlock native request and refusal transport
+        run: |
+          python -m pip install --disable-pip-version-check "pytest==8.3.5" "beautifulsoup4==4.13.4"
+          python -m pytest -q tests/test_work2_warlock_l20_native_p3.py \
+            integrations/mythicsim-rust/tests/test_native_p3_equipped.py
+
+      - name: Build exact selected native Rust executable
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_DEV_DEBUG: "0"
+        run: cargo build --locked --bin forever-engine
+
+      - name: One changed-path native Warlock L20 options and no-record P3
+        shell: bash
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/warlock-l20-native-p3"
+          mkdir -p "$dir"
+          git rev-parse HEAD > "$dir/forever-head.txt"
+          git -C integrations/mythicsim-rust/engine rev-parse HEAD > "$dir/native-engine-sha.txt"
+          "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" options --class warlock --level 20 \
+            > "$dir/warlock-l20-native-options.json"
+          rc=0
+          python tools/wf_gate.py --class warlock --level 20 \
+            --spec unrestricted --gate P3 --out "$dir/warlock-l20-p3.json" || rc=$?
+          python - "$dir/warlock-l20-native-options.json" "$dir/warlock-l20-p3.json" "$rc" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          options = json.loads(Path(sys.argv[1]).read_text())
+          gate = json.loads(Path(sys.argv[2]).read_text())
+          rc = int(sys.argv[3])
+          assert (options["class"], options["level"]) == ("warlock", 20), options
+          assert (gate["class"], gate["level"], gate["spec"], gate["gate"]) == (
+              "warlock", 20, "unrestricted", "P3"), gate
+          assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
+          assert rc == (0 if gate["status"] == "PASS" else 1), (rc, gate)
+          row = gate["results"][0]
+          print("WARLOCK_L20_NATIVE_P3_NO_RECORD", json.dumps({
+              "gate": gate["status"], "reasons": row.get("reasons"),
+              "native_eligibility": options["coverage"].get("item_eligibility_complete"),
+              "native_item_status": options.get("native_item_status"),
+              "eligible_items": sum(item["eligibility"] == "native_eligible"
+                                    for item in options["items"]),
+              "unverified_items": sum(item["eligibility"] == "proficiency_unverified"
+                                      for item in options["items"]),
+              "real_source_search_evaluated": row.get("real_source_search_evaluated"),
+              "native_paid": row.get("native_equipped_paid_attempts"),
+              "prepared_actor": (row.get("native_equipped_paid_receipt") or {}).get(
+                  "native_prepared_actor"),
+          }, default=str), flush=True)
+          with open(sys.argv[2].replace(".json", "-verdict.txt"), "w") as output:
+              output.write(f"NO OFFICIAL PASS: {gate['status']} — see full gate receipt\n"
+                           if gate["status"] != "PASS" else "BRANCH NO-RECORD PASS (unrecorded)\n")
+          PY
+
+      - name: Preserve exact source-native Warlock diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l20-p3-no-record
+          path: ${{ runner.temp }}/warlock-l20-native-p3/
+          if-no-files-found: ignore
