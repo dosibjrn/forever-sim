@@ -74,7 +74,8 @@ def first_equipped_proposal(reference: dict, selection: dict, *, expected_class=
     return None, None
 
 
-def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run, go_rules=False):
+def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run,
+                          go_rules=False, actor_level: int | None = None):
     """Read the *executed engine's* prepared actor, not the request's level hint.
 
     A source request may say level 20 while an older Rust build still creates
@@ -86,6 +87,8 @@ def prepared_native_actor(binary, reference: dict, *, runner=subprocess.run, go_
         command = [str(binary), "prepare", "--request", str(path)]
         if go_rules:
             command.append("--go-rules")
+        if actor_level is not None:
+            command.extend(("--actor-level", str(actor_level)))
         try:
             completed = runner(
                 command, capture_output=True, text=True, timeout=60, check=False)
@@ -173,8 +176,14 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # The request's level field is only a hint: the selected Rust engine can
     # prepare an L60 actor even from a level-20 request. Read the actual
     # prepared actor from that same binary before consuming paid evaluations.
-    prepared = (preparer(binary, copy.deepcopy(reference), go_rules=True)
-                if go_rules else preparer(binary, copy.deepcopy(reference)))
+    # Warlock L20 is a real level-specific native actor, not a level-60
+    # default with an L20 hint in the source request. Explicitly select it
+    # on BOTH prepare and paid simulate; other existing callers are unchanged.
+    actor_level = level if class_key == "warlock" and level == 20 else None
+    prepare_kwargs = ({"go_rules": True} if go_rules else {})
+    if actor_level is not None:
+        prepare_kwargs["actor_level"] = actor_level
+    prepared = preparer(binary, copy.deepcopy(reference), **prepare_kwargs)
     if not isinstance(prepared, dict) or prepared.get("status") != "PREPARED":
         return {
             "status": (prepared.get("status", "NATIVE_PREPARE_ERROR")
@@ -208,7 +217,8 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             score, _output, elapsed, payload_sha = evaluator(
                 binary, copy.deepcopy(request), iterations, seed,
                 "balanced", deadline, objective=objective,
-                **({"go_rules": True} if go_rules else {}))
+                **({"go_rules": True} if go_rules else {}),
+                **({"actor_level": actor_level} if actor_level is not None else {}))
             if not math.isfinite(score):
                 raise ValueError("P3_NATIVE_EQUIPPED_NONFINITE_SCORE")
             row.update(status="VALID", score=score, native_elapsed_s=elapsed,
