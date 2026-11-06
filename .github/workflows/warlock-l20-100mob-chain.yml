@@ -1,0 +1,60 @@
+name: Warlock L20 optimized APL 100 real mob chain
+
+on:
+  push:
+    branches: [work/warlock-l20-100mob-chain-20261106]
+    paths:
+      - .github/workflows/warlock-l20-100mob-chain.yml
+      - tools/wf_warlock_l20_100mob.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  warlock-l20-100mob-native-gsim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Forever Sim world executor
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout exact Rust engine containing paid L20 optimized build
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 84bb2e76748fd62e74ecf838c4bca434000952ea
+          path: engine
+      - name: Record exact Rust and world implementations
+        run: |
+          git -C engine rev-parse HEAD
+          git -C project rev-parse HEAD
+          test "$(git -C engine rev-parse HEAD)" = "84bb2e76748fd62e74ecf838c4bca434000952ea"
+          test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install gsim world Python dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Build selected real Rust engine
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Run real 100 consecutive L20 mobs on each optimized APL candidate
+        working-directory: project
+        run: |
+          set -euo pipefail
+          python -u tools/wf_warlock_l20_100mob.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --out ../warlock-100mob-output \
+            --targets 100 --recovery-seconds 12
+      - name: Preserve exact requests, prepared native actors and world kill evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l20-100-real-native-mobs
+          path: warlock-100mob-output/
+          if-no-files-found: warn
+          retention-days: 14
