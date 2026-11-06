@@ -24,12 +24,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: be5700c0a7508709e9c9029f4dcc065d2aefcbf3
+          ref: 645c285f00e7add5ce6e0b7fe8a22bb020ae39a1
           path: engine
       - name: Verify pinned engine and Python syntax
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "be5700c0a7508709e9c9029f4dcc065d2aefcbf3"
+          test "$(git -C engine rev-parse HEAD)" = "645c285f00e7add5ce6e0b7fe8a22bb020ae39a1"
           python3 -m py_compile project/tools/wf_warlock_l30_talent_apl_optimizer.py
           echo "Selected Rust $(git -C engine rev-parse HEAD)"
       - uses: actions/setup-python@v5
