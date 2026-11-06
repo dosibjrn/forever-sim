@@ -212,7 +212,11 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # Each refusal consumes the same paid budget and remains in the receipt.
     rows = [score_request("baseline", reference)]
     requested_slots = []
-    for slot, _index in NATIVE_SLOT_POSITIONS:
+    # A refused/failed native baseline has no comparable objective. Preserve
+    # its authoritative status and debit exactly that paid call; trying gear
+    # swaps cannot establish P3 sensitivity without a valid baseline.
+    slots_to_probe = (NATIVE_SLOT_POSITIONS if rows[0]["status"] == "VALID" else ())
+    for slot, _index in slots_to_probe:
         source = selection.get(slot)
         ids = source.get("selected_ids") if isinstance(source, dict) else None
         if not isinstance(ids, list):
