@@ -42,6 +42,55 @@ def actor(request):
     return request["raid"]["parties"][0]["players"][0]
 
 
+def native_pet_candidates(proto_schema_path: Path) -> list[str]:
+    """Read the selected MythicSim protobuf summon enum; no shadow pet list."""
+    schema = json.loads(proto_schema_path.read_text())
+    rows = schema["enums"]["proto.WarlockOptions.Summon"]
+    result = [entry["name"] for entry in rows]
+    if "NoSummon" not in result or len(result) < 2:
+        raise RuntimeError("Selected Rust schema exposes no usable Warlock summon options")
+    return result
+
+
+def set_native_pet(request: dict, summon: str) -> None:
+    """Set the existing source-native Warlock option, not a Python pet model."""
+    options = actor(request).setdefault("warlock", {}).setdefault(
+        "options", {}).setdefault("classOptions", {})
+    options["summon"] = summon
+    # Do not accidentally sacrifice the chosen pet through a fixture default.
+    options.pop("pactSacrifice", None)
+
+
+def native_pet_receipt(prepared: dict, paid: dict, chosen_pet: str) -> dict:
+    """Collect explicit Rust prepared/paid pet evidence for every candidate."""
+    pets = prepared.get("pets") or []
+    labels = [p.get("label", "") for p in pets]
+    selected = [
+        p for p in pets
+        if p.get("label", "").casefold().endswith(" - " + chosen_pet.casefold())
+    ]
+    if chosen_pet != "NoSummon" and not selected:
+        raise RuntimeError(
+            "PET_NOT_IN_NATIVE_PREPARED: requested " + chosen_pet +
+            " but Rust exported " + repr(labels))
+    if chosen_pet == "NoSummon" and selected:
+        raise RuntimeError("Native NoSummon unexpectedly exported selected pet")
+    player_metrics = paid["raidMetrics"]["parties"][0]["players"][0]
+    pet_rows = player_metrics.get("pets") or []
+    pet_details = []
+    for row in pet_rows:
+        value = row.get("dps", {}).get("avg", 0) or 0
+        if not isinstance(value, (float, int)) or not math.isfinite(value):
+            raise RuntimeError("Rust returned nonfinite pet DPS")
+        pet_details.append({"name": row.get("name", ""), "dps": float(value)})
+    return {
+        "summon": chosen_pet,
+        "native_prepared_pets": labels,
+        "native_pet_dps": sum(p["dps"] for p in pet_details),
+        "native_pet_metrics": pet_details,
+    }
+
+
 def proposals_from_native_talents(options, source_encoded: str, seed: int):
     """Generate allocations using *source-returned* tree/tier/parent metadata.
 
