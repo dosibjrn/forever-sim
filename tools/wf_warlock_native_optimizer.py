@@ -357,13 +357,36 @@ def apl_proposals(options, source, source_module):
                     [(fallback, None)])
                 name = "dots_" + "_".join(n for n, _ in lead) + "__" + fallback_name
                 candidates.append((name, apl))
-                if tap is not None and fallback_name == "shadow_bolt":
-                    for threshold in (10, 20):
+                if tap is not None and fallback_name in ("shadow_bolt", "drain_life"):
+                    for threshold in (20, 45, 65):
+                        tap_action = source_module.mana_conditioned_apl(tap, threshold)
+                        # Health gating is a native APL condition, not an
+                        # extra Life Tap implementation. Prevent low-health
+                        # self-damage while the engine handles regeneration.
+                        mana_cond = tap_action["action"]["condition"]
+                        tap_action["action"]["condition"] = {"and": {"vals": [
+                            mana_cond,
+                            {"cmp": {"lhs": {"currentHealthPercent": {}},
+                                     "op": "OpGt",
+                                     "rhs": {"const": {"val": "35%"}}}},
+                        ]}}
                         candidates.append((
-                            name + "_tap" + str(threshold),
-                            [source_module.mana_conditioned_apl(tap, threshold), *apl]))
+                            name + "_tap" + str(threshold) + "_hp35",
+                            [tap_action, *apl]))
         candidates.append(("filler_" + fallback_name,
                            source_module.multi_apl([(fallback, None)])))
+        if tap is not None and fallback_name in ("shadow_bolt", "drain_life"):
+            for threshold in (30, 60):
+                tap_action = source_module.mana_conditioned_apl(tap, threshold)
+                tap_action["action"]["condition"] = {"and": {"vals": [
+                    tap_action["action"]["condition"],
+                    {"cmp": {"lhs": {"currentHealthPercent": {}},
+                             "op": "OpGt",
+                             "rhs": {"const": {"val": "35%"}}}},
+                ]}}
+                candidates.append((
+                    "filler_" + fallback_name + "_tap" + str(threshold) + "_hp35",
+                    [tap_action, *source_module.multi_apl([(fallback, None)])]))
     unique = {}
     for label, actions in candidates:
         unique.setdefault(json.dumps(actions, sort_keys=True), (label, actions))
