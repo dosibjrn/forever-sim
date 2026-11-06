@@ -443,44 +443,65 @@ def main():
     scored = []
     rejected = Counter()
     rejected_samples = []
-    # Exercise independent talent x APL candidates through actual Rust.
-    for t in talents:
-        for a_label, apl in apls:
-            request = copy.deepcopy(source)
-            actor(request)["talentsString"] = t["talents"]
-            actor(request)["rotation"]["priorityList"] = copy.deepcopy(apl)
-            request["simOptions"]["iterations"] = 8
-            request["simOptions"]["randomSeed"] = "4242"
-            req_path.write_text(json.dumps(request))
-            try:
-                call([binary, "prepare", "--request", req_path, "--actor-level", str(level),
-                      "--outfile", prep_path])
-                prepared = json.loads(prep_path.read_text())["player"]
-                if prepared.get("level") != level or prepared.get("class") != "ClassWarlock":
-                    raise RuntimeError(f"Native prepared actor not Warlock L{level}")
-                call([binary, "sim", "--infile", prep_path, "--rng-mode", "balanced",
-                      "--outfile", sim_path])
-                paid = json.loads(sim_path.read_text())["result"]
-                dps = paid["raidMetrics"]["parties"][0]["players"][0]["dps"]["avg"]
-                if not isinstance(dps, (int, float)) or not math.isfinite(dps):
-                    raise RuntimeError("Rust returned nonfinite paid DPS")
-                scored.append({
-                    "dps_screen": float(dps), "talents": t["talents"],
-                    "talent_label":t["label"], "talent_ranks":t["ranks"],
-                    "apl_label": a_label, "apl": apl,
-                })
-            except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as e:
-                reason = str(e)[-500:]
-                rejected[reason] += 1
-                if len(rejected_samples) < 20:
-                    rejected_samples.append({"talents":t["talents"],
-                                             "apl":a_label,"reason":reason})
+    # Joint optimizer: pet × talents × conditional APL. The pet is a native
+    # player option; its actions, cooldowns, damage and aggro are handled by
+    # the *selected Rust engine*, never guessed by this search.
+    for pet in pet_options:
+        pet_paid, pet_rejected = 0, 0
+        for t in talents:
+            for a_label, apl in apls:
+                request = copy.deepcopy(source)
+                set_native_pet(request, pet)
+                actor(request)["talentsString"] = t["talents"]
+                actor(request)["rotation"]["priorityList"] = copy.deepcopy(apl)
+                request["simOptions"]["iterations"] = 8
+                request["simOptions"]["randomSeed"] = "4242"
+                req_path.write_text(json.dumps(request))
+                try:
+                    call([binary, "prepare", "--request", req_path,
+                          "--actor-level", str(level), "--outfile", prep_path])
+                    prepared_all = json.loads(prep_path.read_text())
+                    prepared = prepared_all["player"]
+                    if prepared.get("level") != level or prepared.get("class") != "ClassWarlock":
+                        raise RuntimeError(f"Native prepared actor not Warlock L{level}")
+                    call([binary, "sim", "--infile", prep_path,
+                          "--rng-mode", "balanced", "--outfile", sim_path])
+                    paid = json.loads(sim_path.read_text())["result"]
+                    # The native aggregate reports player+pet team DPS.
+                    dps = paid["raidMetrics"]["dps"]["avg"]
+                    if not isinstance(dps, (int, float)) or not math.isfinite(dps):
+                        raise RuntimeError("Rust returned nonfinite team DPS")
+                    pet_receipt = native_pet_receipt(prepared_all, paid, pet)
+                    scored.append({
+                        "dps_screen": float(dps), "pet": pet,
+                        "native_pet_dps": pet_receipt["native_pet_dps"],
+                        "native_pet_labels": pet_receipt["native_prepared_pets"],
+                        "talents": t["talents"], "talent_label": t["label"],
+                        "talent_ranks": t["ranks"], "apl_label": a_label,
+                        "apl": apl,
+                    })
+                    pet_paid += 1
+                except (KeyError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                    reason = str(exc)[-500:]
+                    rejected[(pet, reason)] += 1
+                    pet_rejected += 1
+                    if len(rejected_samples) < 30:
+                        rejected_samples.append({
+                            "pet":pet,"talents":t["talents"],
+                            "apl":a_label,"reason":reason})
+        print("NATIVE_PET_SEARCH", json.dumps({
+            "pet":pet,"paid":pet_paid,"refused":pet_rejected,
+            "best_team_dps":max((r["dps_screen"] for r in scored
+                                 if r["pet"] == pet), default=None),
+            "best_pet_dps":max((r["native_pet_dps"] for r in scored
+                                if r["pet"] == pet), default=None),
+        }), flush=True)
     scored.sort(key=lambda x:x["dps_screen"], reverse=True)
     print("NATIVE_SCREEN_RESULTS",json.dumps({
-        "tried":len(talents)*len(apls),
+        "tried":len(pet_options)*len(talents)*len(apls),
         "paid":len(scored),"refused":sum(rejected.values()),
-        "top5":[{k:v for k,v in r.items() if k not in ("apl", "talent_ranks")}
-                for r in scored[:5]]}),flush=True)
+        "top10":[{k:v for k,v in row.items() if k not in ("apl", "talent_ranks")}
+                 for row in scored[:10]]}),flush=True)
 
     # Choose diverse finalists: top-paid overall, different talent trees,
     # different APLs and the saved prior winner, not just one DPS ordering.
