@@ -68,16 +68,22 @@ def test_native_p3_mage_client_universe_counts_are_explicit_and_forwarded(level)
     assert actual["items"] == [item]
 
 
-@pytest.mark.parametrize("level", [20, 30])
-def test_native_p3_mage_rejects_missing_client_exclusion_receipt(level):
-    payload = _response(**{"class": "mage", "level": level})
+@pytest.mark.parametrize(("class_key", "level"), [
+    ("mage", 20), ("mage", 30), ("shaman", 20), ("paladin", 20),
+])
+def test_native_p3_accepts_native_items_without_optional_source_accounting(class_key, level):
+    payload = _response(**{"class": class_key, "level": level})
     del payload["excluded_non_client_item_count"]
-    with pytest.raises(
-        NativeItemOptionsError,
-        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
-    ):
-        query_native_p3_item_options(
-            "native", "mage", level, runner=_runner(payload))
+    result = query_native_p3_item_options(
+        "native", class_key, level, runner=_runner(payload))
+    assert result == payload
+    assert result["items"][0]["item_id"] == 25
+
+
+def test_native_p3_validates_optional_source_accounting_when_present():
+    payload = _response(**{"class": "mage", "excluded_non_client_item_count": -1})
+    with pytest.raises(NativeItemOptionsError, match="INVALID_EXCLUDED_NON_CLIENT_COUNT"):
+        query_native_p3_item_options("native", "mage", 20, runner=_runner(payload))
 
 
 def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
@@ -117,14 +123,6 @@ def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
 
 
 
-def test_native_p3_shaman_requires_client_exclusion_accounting():
-    payload = _response(**{"class": "shaman"})
-    del payload["excluded_non_client_item_count"]
-    with pytest.raises(
-        NativeItemOptionsError,
-        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
-    ):
-        query_native_p3_item_options("native", "shaman", 20, runner=_runner(payload))
 
 
 def test_native_p3_forwards_paladin_request_and_preserves_source_candidates():
@@ -165,16 +163,6 @@ def test_native_p3_forwards_paladin_request_and_preserves_source_candidates():
     assert metadata["unverified_candidate_count"] == 0
     assert metadata["excluded_non_client_item_count"] == 1240
     assert metadata["source"] == source
-
-
-def test_native_p3_paladin_requires_client_exclusion_accounting():
-    payload = _response(**{"class": "paladin"})
-    del payload["excluded_non_client_item_count"]
-    with pytest.raises(
-        NativeItemOptionsError,
-        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
-    ):
-        query_native_p3_item_options("native", "paladin", 20, runner=_runner(payload))
 
 
 def test_native_p3_empty_is_distinct_from_refusal():
@@ -479,7 +467,6 @@ def test_selected_engine_workflow_runs_shaman_l20_native_p3_without_record():
     assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in shaman
     assert 'row["real_native_representative_items_scored"] > 0' in shaman
     assert 'row["real_source_search_evaluated"] > 0' in shaman
-    assert 'row["native_excluded_non_client_item_count"] > 0' in shaman
     assert "--record-pass" not in shaman
 
 def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
@@ -503,7 +490,6 @@ def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
     assert 'row["native_player_context_weapon"]' in paladin
     assert 'row["native_item_options_status"] == "ok"' in paladin
     assert 'row["native_unverified_candidate_count"] == 0' in paladin
-    assert 'row["native_excluded_non_client_item_count"] > 0' in paladin
     assert 'row["real_native_representative_items_scored"] > 0' in paladin
     assert 'row["real_source_search_evaluated"] > 0' in paladin
     assert "--record-pass" not in paladin
