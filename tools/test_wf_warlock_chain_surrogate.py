@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from wf_warlock_chain_surrogate import (
     extract_three_mob_features, train_supervised, predict,
+    select_native_100_validation,
 )
 
 
@@ -77,6 +78,57 @@ class ThreeMobSurrogateTests(unittest.TestCase):
                                    "elapsed_s":1.}})
         model2=train_supervised(sessions,engine_sha="engine",scenario_id="fixed")
         self.assertEqual(model2["completed_100_runs"],8)
+
+
+    def test_true_long_run_budget_uses_prediction_and_exploration(self):
+        native={"health_end_fraction":.85,"mana_end_fraction":.65,
+                "kill_time_slope":0.,"late_kill_s":14.}
+        def case(index, pet, seconds, distance):
+            return {"result":{
+                "candidate":index,"gear":"native_dps",
+                "talents":"t"+str(index),"pet":pet,"filler":"drain life",
+                "surrogate":{
+                    "estimated_100_mob_elapsed_s":seconds,
+                    "probability_100_mob_completed":None,
+                    "standardized_training_distance":distance,
+                },
+            },"probe":{"features":native}}
+        fast=case(20,"Succubus",1750.,.3)
+        uncertain=case(21,"Imp",2700.,4.5)
+        observed=[case(0,"Succubus",3000.,0.)]
+        selected,reason=select_native_100_validation(
+            [fast,uncertain],observed,iteration=3)
+        self.assertEqual(selected["result"]["candidate"],20)
+        self.assertEqual(reason,"predicted_100_mob_exploitation")
+        selected,reason=select_native_100_validation(
+            [fast,uncertain],observed,iteration=2)
+        self.assertEqual(selected["result"]["candidate"],21)
+        self.assertEqual(reason,"out_of_sample_exploration")
+
+    def test_resource_bootstrap_when_long_labels_are_insufficient(self):
+        weak={"result":{"candidate":0,"pet":"Imp"},
+              "probe":{"features":{
+                  "health_end_fraction":.3,"mana_end_fraction":.2,
+                  "kill_time_slope":4.,"late_kill_s":20.}}}
+        strong={"result":{"candidate":1,"pet":"Felhunter"},
+                "probe":{"features":{
+                    "health_end_fraction":.9,"mana_end_fraction":.7,
+                    "kill_time_slope":1.,"late_kill_s":26.}}}
+        selected,reason=select_native_100_validation(
+            [weak,strong],[],iteration=0)
+        self.assertEqual(selected["result"]["candidate"],1)
+        self.assertEqual(reason,"native_resource_bootstrap")
+
+    def test_unverified_timeout_is_not_a_survival_failure_label(self):
+        p=extract_three_mob_features(self.prepared,self.world)
+        sessions=[{
+            "engine_sha":"engine","scenario_id":"fixed","probe":p,
+            "result":{"status":"UNVERIFIED_ERROR","confirmed_kills":0},
+        }]
+        model=train_supervised(sessions,engine_sha="engine",scenario_id="fixed")
+        self.assertEqual(model["labeled_100_runs"],0)
+        self.assertIsNone(model["survival_model"])
+
 
 
 if __name__=="__main__":
