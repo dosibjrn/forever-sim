@@ -62,7 +62,9 @@ def test_rust_probes_construct_equipped_troll_l20_without_mutating_source():
     assert equipped[14]["id"] == 902  # second Rust weapon after genuine refusal
     assert equipped[16]["id"] == 1001  # native ranged (wand) position
     assert equipped[4]["id"] == 1101
-    assert len(seen) == receipt["native_prepare_attempts"] == 4
+    assert len(seen) == receipt["native_prepare_attempts"] == 5
+    assert seen[-1] == [row["id"] for row in equipped]
+    assert receipt["final_native_prepared_actor"]["engine_revision"] == "tested-engine"
     assert receipt["paid_p3_attempts"] == 0  # gate's 44 paid calls stay separate
     assert receipt["native_prepare_refusals"] == [
         {"slot": "weapon", "item_id": 901,
@@ -124,3 +126,44 @@ def test_no_item_options_is_explicit_refusal_not_empty_p3_success():
         build_warlock_equipped_request(
             "selected", source(), {"status": "empty", "items": []},
             preparer=lambda *_a, **_kw: pytest.fail("no native call"))
+
+
+def test_fully_equipped_source_requires_one_final_native_prepare():
+    """Previously every occupied fixture slot bypassed Rust prepare entirely."""
+    baseline = source()
+    player(baseline)["equipment"]["items"] = [{"id": 42} for _ in range(17)]
+    observed = []
+
+    def rust_preparer(binary, candidate, *, actor_level):
+        assert binary == "selected" and actor_level == 20
+        observed.append(copy.deepcopy(candidate))
+        return {"status": "PREPARED", "actor_class": "ClassWarlock",
+                "actor_level": 20, "engine_revision": "selected-source"}
+
+    request, receipt = build_warlock_equipped_request(
+        "selected", baseline, options(), preparer=rust_preparer)
+    assert request == baseline
+    assert observed == [baseline]
+    assert len(receipt["occupied_slots"]) == 17
+    assert receipt["native_prepare_attempts"] == 1
+    assert receipt["paid_p3_attempts"] == 0
+    assert receipt["final_native_prepared_actor"]["engine_revision"] == "selected-source"
+
+
+def test_fully_equipped_source_preserves_real_native_final_refusal():
+    """Do not label fixture gear PREPARED without executing selected Rust."""
+    baseline = source()
+    player(baseline)["equipment"]["items"] = [{"id": 42} for _ in range(17)]
+    seen = []
+
+    def rust_refusal(binary, request, *, actor_level):
+        seen.append(copy.deepcopy(request))
+        return {"status": "NATIVE_PREPARE_REFUSED",
+                "reason": "native item combination invalid"}
+
+    with pytest.raises(NativeWarlockEquippedError,
+                       match="WARLOCK_L20_FINAL_NATIVE_PREPARE_REFUSED:"
+                             "NATIVE_PREPARE_REFUSED:native item combination invalid"):
+        build_warlock_equipped_request(
+            "selected", baseline, options(), preparer=rust_refusal)
+    assert seen == [baseline]
