@@ -85,6 +85,7 @@ def native_item_options_required(
         or (key == "paladin" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
         or (key == "rogue" and level == 20 and profile == "unrestricted")
+        or (key == "warlock" and level == 20 and profile == "unrestricted")
         or (key == "druid" and level == 60 and profile == "feral")
         or (key == "mage" and level == 60 and profile in ("arcane", "fire", "frost"))
         or (key == "paladin" and level == 60 and profile in ("retribution", "protection", "holy"))
@@ -357,6 +358,10 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     """
     if checkpoint == "feral_l60":
         request_path = str(root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
+    elif checkpoint == "warlock_l20":
+        # A caller-provided genuine L20 Warlock source; never reuse L60
+        # Warlock fixtures or the old source-naked Python/Imp proxy.
+        request_path = os.environ.get("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST")
     elif checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60"):
         # Shared selected-native Mage source fixtures; never invent a build
         # from Python class rules or reuse another spec's actor.
@@ -394,6 +399,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                "--max-paid-attempts", str(min(remaining, 44))]
     if checkpoint == "feral_l60":
         command.extend(("--class-key", "druid", "--level", "60", "--go-rules"))
+    elif checkpoint == "warlock_l20":
+        command.extend(("--class-key", "warlock", "--level", "20"))
     elif checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60"):
         mage_profile = {"mage_l60": "arcane", "mage_fire_l60": "fire",
                         "mage_frost_l60": "frost"}[checkpoint]
@@ -435,6 +442,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     # The full native options domain may include absent offhand/ranged fields.
     is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60")
     is_paladin_l60 = checkpoint in ("paladin_retribution_l60", "paladin_protection_l60", "paladin_holy_l60")
+    is_warlock_l20 = checkpoint == "warlock_l20"
     occupied = receipt.get("source_occupied_slots")
     occupancy_verified = (
         isinstance(occupied, list) and bool(occupied)
@@ -443,7 +451,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         and len(occupied) <= 17
     )
     statuses = ({slot: [] for slot in occupied}
-                if (is_mage_l60 or is_paladin_l60) and occupancy_verified
+                if (is_mage_l60 or is_paladin_l60 or is_warlock_l20) and occupancy_verified
                 else {slot: [] for slot in proposals})
     for row in alternatives:
         if isinstance(row, dict):
@@ -457,7 +465,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     request_sha = baseline.get("request_sha256")
     paid = receipt.get("paid_attempts", 0)
     reasons = []
-    if (is_mage_l60 or is_paladin_l60) and not occupancy_verified:
+    if (is_mage_l60 or is_paladin_l60 or is_warlock_l20) and not occupancy_verified:
         reasons.append("P3_NATIVE_OCCUPIED_SLOT_RECEIPT_MISSING")
     if type(paid) is not int or not 1 <= paid <= 44:
         reasons.append("P3_NATIVE_PAID_ATTEMPTS_INVALID")
@@ -466,6 +474,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
             or not isfinite(baseline["score"])):
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
     expected_class, expected_level = (
+        ("ClassWarlock", 20) if is_warlock_l20 else
         ("ClassDruid", 60) if checkpoint == "feral_l60" else
         ("ClassMage", 60) if is_mage_l60 else
         ("ClassPaladin", 60) if is_paladin_l60 else ("ClassRogue", 20))
@@ -551,14 +560,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                       and str(spec).lower() in ("arcane", "fire", "frost"))
     is_paladin_native = (str(class_key).lower() == "paladin" and int(level) == 60
                          and str(spec).lower() in ("retribution", "protection", "holy"))
-    if is_rogue_native or is_feral_native or is_mage_native or is_paladin_native:
+    is_warlock_native = (str(class_key).lower() == "warlock" and int(level) == 20
+                         and str(spec).lower() == "unrestricted")
+    if is_rogue_native or is_feral_native or is_mage_native or is_paladin_native or is_warlock_native:
         # Rogue's selected engine capability was previously untested because
         # SQLite returned no items. Refuse *before* consuming paid evaluations
         # until the exact pinned native engine can supply legal options.
         from src.game.native_p3_item_options import (
             NativeItemOptionsError, query_native_p3_item_options)
         try:
-            if is_mage_native or is_paladin_native:
+            if is_mage_native or is_paladin_native or is_warlock_native:
                 native_options = _query_native_unified_p3_items(
                     root, native_binary, class_key, level)
             else:
@@ -571,7 +582,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     'real_source_search_evaluated': 0}
         if not native_options['items']:
             return {'status': 'BLOCKED',
-                    'reasons': ['NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES'],
+                    'reasons': [('NATIVE_ITEM_OPTIONS_PROFICIENCY_UNVERIFIED'
+                                 if is_warlock_native and native_options.get('unverified_candidate_count', 0)
+                                 else 'NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
 
@@ -581,8 +594,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             return {"status": "BLOCKED",
                     "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
+        if is_warlock_native and not os.environ.get("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST"):
+            return {"status": "BLOCKED",
+                    "reasons": ["P3_NATIVE_WARLOCK_L20_REQUEST_REQUIRED"],
+                    "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
         selection = _native_p3_equipped_slot_proposals(native_options)
-        checkpoint = ("feral_l60" if is_feral_native else
+        checkpoint = ("warlock_l20" if is_warlock_native else
+                      "feral_l60" if is_feral_native else
                       f"paladin_{str(spec).lower()}_l60" if is_paladin_native else
                       {"arcane": "mage_l60", "fire": "mage_fire_l60",
                         "frost": "mage_frost_l60"}[str(spec).lower()]
