@@ -122,11 +122,61 @@ def search_feral_native_apl_survival(
                 -triple[2]["two_target_elapsed_seconds"],
             ),
         )
+        # Short native APL speed is not enough for a persistent actor: the
+        # 24-second policy actually died at the 50th mob on the selected
+        # source. Price a longer *native* rest on the identical selected build
+        # and 50 distinct world mobs before paying one 100-mob objective.
+        # Rust, not Python, decides whether this recovers health or survives.
         temporary.write_text(json.dumps(selected, sort_keys=True), encoding="utf-8")
+        recovery_screens: list[dict] = []
+        surviving_recovery: list[dict] = []
+        for seconds in dict.fromkeys((recovery_seconds, 120)):
+            attempt = {"recovery_seconds": seconds, "screen_targets": 50}
+            try:
+                screen = run_feral_l60_world(
+                    binary, temporary, target_count=50,
+                    recovery_seconds=seconds,
+                    prepare_run=prepare_run, world_run=world_run,
+                )
+            except AssertionError as exc:
+                detail = str(exc)
+                if not detail.startswith("RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:"):
+                    raise
+                attempt.update(status="native_actor_died", native_failure=detail)
+            else:
+                proof = screen["native_world"]
+                elapsed = proof.get("world_elapsed_seconds")
+                health = proof.get("minimum_native_actor_health")
+                if (
+                    type(elapsed) not in (float, int) or not math.isfinite(elapsed)
+                    or elapsed <= 0 or type(health) not in (float, int)
+                    or not math.isfinite(health) or health <= 0
+                ):
+                    raise RuntimeError("FERAL_NATIVE_APL_RECOVERY_SCREEN_SCORE_MISSING")
+                attempt.update(
+                    status="native_screen_survived",
+                    fifty_target_elapsed_seconds=float(elapsed),
+                    minimum_native_actor_health=float(health),
+                    native_prepared_request_sha256=screen["native_prepared_request_sha256"],
+                )
+                surviving_recovery.append(attempt)
+            recovery_screens.append(attempt)
+        if not surviving_recovery:
+            raise RuntimeError(
+                "FERAL_NATIVE_APL_NO_SURVIVING_RECOVERY_SCREEN:"
+                + json.dumps(recovery_screens, sort_keys=True)
+            )
+        # Maximize observed survival margin; equal margins favor paid speed.
+        # These are search candidate rankings, not a new gate predicate.
+        best_recovery = max(surviving_recovery, key=lambda attempt: (
+            attempt["minimum_native_actor_health"],
+            -attempt["fifty_target_elapsed_seconds"],
+        ))
+        chosen_recovery_seconds = best_recovery["recovery_seconds"]
         try:
             paid = run_feral_l60_world(
                 binary, temporary, target_count=100,
-                recovery_seconds=recovery_seconds,
+                recovery_seconds=chosen_recovery_seconds,
                 prepare_run=prepare_run, world_run=world_run,
             )
         except AssertionError as exc:
@@ -136,6 +186,8 @@ def search_feral_native_apl_survival(
                 "FERAL_NATIVE_APL_100_TARGET_NATIVE_DEATH:"
                 + json.dumps({
                     "selected_policy": label, "two_target_screens": attempts,
+                    "recovery_screens": recovery_screens,
+                    "selected_recovery_seconds": chosen_recovery_seconds,
                     "native_failure": str(exc),
                 }, sort_keys=True)
             ) from exc
@@ -146,6 +198,8 @@ def search_feral_native_apl_survival(
             "selected_policy": label,
             "selected_native_two_target_screen": selected_screen,
             "two_target_screens": attempts,
+            "recovery_screens": recovery_screens,
+            "selected_recovery_seconds": chosen_recovery_seconds,
             "native_paid_100_target_objective": objective,
             "native_prepared_request_sha256": paid["native_prepared_request_sha256"],
             "source_request_raw_sha256": paid["source_request_raw_sha256"],
