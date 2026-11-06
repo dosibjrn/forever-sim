@@ -7,7 +7,7 @@ Two stages, no alternative gameplay simulator:
 - Diverse paid finalists fight 100 *distinct* gsim targets on ONE retained
   Rust actor/clock/resources with native damage and world death acknowledgments.
 The final objective is completed mobs first and measured seconds per mob, NOT
-30-second DPS. Gear is intentionally held fixed to isolate talents/APL.
+30-second DPS. Gear is native-paid at selected level, then fixed for talent/APL.
 """
 from __future__ import annotations
 
@@ -467,7 +467,7 @@ def main():
                      key=lambda x:x["elapsed_s"])
     result = {
         "source":"Rust get_options + native paid balanced screening + real gsim retained 100 mob",
-        "gear_held_fixed_after_native_l30_selection":True, "native_level30_gear":gear_audit,
+        "gear_held_fixed_after_native_selection":True, "native_level_gear":gear_audit,
         "mob_level":level, "mob_hp_classic_proxy":representative_hp(level),
         "test_mob_min_base_damage":20,
         "talents_considered":len(talents), "apl_considered":len(apls),
