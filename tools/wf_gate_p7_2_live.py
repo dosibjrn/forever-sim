@@ -19,8 +19,6 @@ import tempfile
 import time
 from uuid import uuid4
 
-from tools.wf_gate_coverage import p7_search_window_completed
-
 from tools.wf_gate_p7_1_live import (FERAL_REFERENCE_DPS, PINNED_RUST,
                                      SAVED_BALANCE_RAW_SHA, SAVED_FERAL_RAW_SHA,
                                      _selected_rust_submodule)
@@ -40,14 +38,12 @@ def _blocked(reason: str):
 
 
 def _cold_apl(base: dict, rng: random.Random, mutation, *,
-              elite=None, reference_parent=False,
-              preserve_source_conditions=False):
+              reference_parent=False, preserve_source_conditions=False):
     """Generate an APL-only proposal while freezing the source build.
 
     P7.2 does not require a cold restart: a local mutation of the runnable
     source rotation is a useful first candidate before broader cold draws.
-    Optional elites come only from this search's paid Balanced native archive.
-    Gear and talents are never mutated.
+    Gear and talents are never mutated. Rust alone judges the resulting APL.
     """
     result = copy.deepcopy(base)
     p = result["raid"]["parties"][0]["players"][0]
@@ -58,43 +54,21 @@ def _cold_apl(base: dict, rng: random.Random, mutation, *,
     # independently interpreting Warcraft conditions in Forever.
     mutation_options = ({"preserve_source_conditions": True}
                         if preserve_source_conditions else {})
-    if elite is None and reference_parent:
+    if reference_parent:
         # The authenticated reference is a legal starting *policy* for this
         # single-axis reachability gate, not an already-paid changed result.
         # Native alone decides legality of the proposed changed rotation.
         candidate = mutation.mutate_apl(
             grammar, grammar, rng, cold=False, **mutation_options)
-    elif elite is None:
+    else:
         candidate = mutation.mutate_apl(
             None, grammar, rng, cold=True, **mutation_options)
-    else:
-        winner = elite["raid"]["parties"][0]["players"][0]
-        if (winner["equipment"] != original["equipment"]
-                or winner.get("talentsString") != original.get("talentsString")):
-            raise ValueError("P72_PAID_ELITE_CHANGED_FIXED_DIMENSIONS")
-        # Reuse only an actually paid P7.2 winner, never the reference policy
-        # or an independently accepted P7.1/P7.3-P7.5 result as a seed.
-        candidate = mutation.mutate_apl(
-            winner["rotation"]["priorityList"], grammar, rng, cold=False,
-            **mutation_options)
     p["rotation"]["priorityList"] = candidate
     original = base["raid"]["parties"][0]["players"][0]
     if p["equipment"] != original["equipment"] or (
             p.get("talentsString") != original.get("talentsString")):
         raise ValueError("ROTATION_ONLY_COLD_SEARCH_CHANGED_FIXED_DIMENSIONS")
     return result
-
-
-def _paid_elite_choice(elites, rng: random.Random, proposal_index: int):
-    """Choose a parent from this run's Balanced-scored paid APL archive.
-
-    Keep a top-22 archive for diversity, sample its top 18 for local proposals,
-    and force every fifth proposal to restart from the source grammar. No
-    stochastic score or other gate's winner can influence parent selection.
-    """
-    if proposal_index % 5 == 0 or not elites:
-        return None
-    return rng.choice(elites[:min(18, len(elites))])[1]
 
 
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
@@ -190,12 +164,6 @@ def run_live(root: Path, class_key: str, level: int, *,
     source_sha = meta.get("source_request_raw_sha256",
                           SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA)
     native_rules = "go_reference" if feral else "forever"
-    search_mode = os.environ.get("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
-    if search_mode not in ("0", "1"):
-        return _blocked("P7_2_INVALID_FULL_SOURCE_SEARCH_MODE")
-    # Optional extended exploration is diagnostic only. A short genuinely paid
-    # changed-axis candidate can satisfy P7.2 under PROCESS v2.22.
-    full_search = search_mode == "1"
     mutation = _source_module(root / "integrations/mythicsim-rust/apl_mutation.py",
                               "p72_source_apl_mutator")
     production = _source_module(
@@ -207,23 +175,18 @@ def run_live(root: Path, class_key: str, level: int, *,
     initial_hash = hashlib.sha256(
         json.dumps(original_apl, sort_keys=True).encode()).hexdigest()
     best = None
-    elites = []
     executed = 0
     failures = []
     native_refusals = []
     paid_or_rejected = set()
     proposals = 0
     search_start = time.monotonic()
-    search_deadline = search_start + 300.0
-    while (time.monotonic() < search_deadline
-           if full_search else proposals < 4):
+    # One genuinely changed native-paid APL is sufficient for P7.2.
+    while proposals < 4:
         proposals += 1
         try:
-            elite = (_paid_elite_choice(elites, rng, proposals)
-                     if full_search else None)
             candidate = _cold_apl(
-                base, rng, mutation, elite=elite,
-                reference_parent=(not full_search and proposals <= 2),
+                base, rng, mutation, reference_parent=(proposals <= 2),
                 preserve_source_conditions=feral)
             changed_apl = candidate["raid"]["parties"][0]["players"][0][
                 "rotation"]["priorityList"]
@@ -253,11 +216,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 raise ValueError("P7_2_NATIVE_PAID_DPS_INVALID")
             score = float(score)
             executed += 1
-            elites.append((score, candidate))
-            elites.sort(key=lambda row: row[0], reverse=True)
-            del elites[22:]
-            if best is None or score > best[0]:
-                best = (score, candidate_sha, candidate)
+            best = (score, candidate_sha, candidate)
+            break  # One changed, genuinely native-paid rotation satisfies P7.2.
         except (ValueError, RuntimeError, OSError, subprocess.SubprocessError,
                 KeyError, TypeError, AssertionError) as exc:
             if isinstance(exc, getattr(production, "NativeSourceRefusal", ())):
@@ -266,8 +226,6 @@ def run_live(root: Path, class_key: str, level: int, *,
             failures.append(type(exc).__name__ + ":" + str(exc)[:180])
 
     search_wall_s = time.monotonic() - search_start
-    search_window_met = p7_search_window_completed(
-        full_search=full_search, elapsed_seconds=search_wall_s)
     if best is None:
         all_refused = bool(failures) and len(native_refusals) == len(failures)
         return {
@@ -283,8 +241,8 @@ def run_live(root: Path, class_key: str, level: int, *,
             "native_rules": native_rules,
             "native_refusals": native_refusals[:4],
             "search_wall_s": search_wall_s,
-            "independent_300s_search_requested": full_search,
-            "independent_300s_search_completed": search_window_met,
+            "independent_300s_search_requested": False,
+            "independent_300s_search_completed": False,
             "source_legal_cold_candidates_paid": executed,
             "cold_unique_source_requests": len(paid_or_rejected),
             "cold_candidate_failures": failures[:4],
@@ -315,8 +273,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "cold_winner_request": winner,
         "winner_native_dps": score,
         "search_wall_s": search_wall_s,
-        "independent_300s_search_requested": full_search,
-        "independent_300s_search_completed": search_window_met,
+        "independent_300s_search_requested": False,
+        "independent_300s_search_completed": False,
         "cold_unique_source_requests": len(paid_or_rejected),
         "source_legal_cold_candidates_paid": executed,
         "cold_candidate_failures": failures[:4],
