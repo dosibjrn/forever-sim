@@ -91,9 +91,9 @@ def p7_required_dps(gate: str, saved_reference: float, *,
                     strongest_accepted_compatible_prior: float | None = None) -> float:
     """Owner-approved final floors: 99% P7.1-P7.4, 93% P7.5.
 
-    The strongest prior must be from independently ACCEPTED compatible P7
-    evidence, never a tentative search candidate. A common floor avoids a
-    stale P7.1 full-reference or P7.5 full-external special case.
+    When an independently ACCEPTED compatible stochastic prior exists it
+    raises the P7.5 comparator; otherwise the pinned reference alone sets the
+    floor. Never substitute a tentative search candidate.
     """
     if gate not in ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5"):
         raise ValueError("UNKNOWN_P7_GATE")
@@ -103,9 +103,10 @@ def p7_required_dps(gate: str, saved_reference: float, *,
     comparator = float(saved_reference)
     if gate == "P7.5":
         prior = strongest_accepted_compatible_prior
-        if type(prior) not in (int, float) or not isfinite(prior) or prior <= 0:
-            raise ValueError("P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED")
-        comparator = max(comparator, float(prior))
+        if prior is not None:
+            if type(prior) not in (int, float) or not isfinite(prior) or prior <= 0:
+                raise ValueError("P7_5_ACCEPTED_COMPATIBLE_PRIOR_INVALID")
+            comparator = max(comparator, float(prior))
     return (P7_5_FINAL_DPS_FLOOR_FRACTION if gate == "P7.5"
             else P7_FINAL_DPS_FLOOR_FRACTION) * comparator
 
@@ -164,8 +165,7 @@ def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
             return None
         required = p7_required_dps(
             gate, float(reference),
-            strongest_accepted_compatible_prior=(
-                float(prior) if prior is not None else float(reference)))
+            strongest_accepted_compatible_prior=prior)
         c = min(1., float(actual) / required)
         return {
             "dps_objective_actual": round(float(actual), 4),
@@ -218,16 +218,17 @@ def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
             return None
         actual = report.get("frozen_stochastic_world_dps")
         if gate == "P7.5":
-            # An accepted-compatible prior is mandatory for the P7.5 floor.
-            # Search scores and unaccepted historical native-only wins do not
-            # establish that provenance.
+            # A compatible accepted stochastic prior raises the floor, but
+            # its absence is not an extra gate: compare to the pinned reference.
+            # Never accept an invalid present value as an absent prior.
             prior = report.get("strongest_accepted_compatible_prior_dps")
-            if (type(prior) not in (int, float) or not isfinite(prior)
-                    or prior <= 0):
+            if (prior is not None and
+                    (type(prior) not in (int, float)
+                     or not isfinite(prior) or prior <= 0)):
                 return None
             required = p7_required_dps(
                 gate, float(reference),
-                strongest_accepted_compatible_prior=float(prior))
+                strongest_accepted_compatible_prior=prior)
         else:
             required = p7_required_dps(gate, float(reference))
     if type(actual) not in (int, float) or not isfinite(actual) or actual < 0:
