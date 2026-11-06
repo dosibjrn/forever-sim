@@ -12,7 +12,8 @@ from tools import wf_gate_p3_live as p3
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "integrations/mythicsim-rust"))
-from native_p3_equipped import compare_equipped_native  # noqa: E402
+from native_p3_equipped import (compare_equipped_native, prepared_native_actor)  # noqa: E402
+from native_executor import run as native_run  # noqa: E402
 
 
 def source(*, actor="ClassWarlock", level=20):
@@ -415,3 +416,79 @@ def test_warlock_p3_empty_slot_only_proposals_do_not_run_native():
     assert receipt["status"] == "NO_DISTINCT_NATIVE_EQUIPPED_ALTERNATIVE"
     assert receipt["paid_attempts"] == 0
     assert receipt["comparison"] is None
+
+
+
+def test_warlock_native_prepare_cli_forwards_actor_level(monkeypatch):
+    """The new Rust L20 API requires explicit --actor-level on raw prepare."""
+    seen = []
+
+    def native_cli(command, **_kwargs):
+        seen.append(command)
+        return SimpleNamespace(returncode=0, stderr="", stdout=json.dumps({
+            "player": {"class": "ClassWarlock", "level": 20},
+            "reference": {"engine_revision": "selected-rust"},
+            "request_sha256": "prepared-native",
+        }))
+
+    result = prepared_native_actor(
+        "selected-engine", source(), runner=native_cli, actor_level=20)
+    assert result["status"] == "PREPARED"
+    assert result["actor_class"] == "ClassWarlock"
+    assert result["actor_level"] == 20
+    assert seen[0][-2:] == ["--actor-level", "20"]
+
+
+def test_warlock_native_paid_cli_forwards_actor_level(monkeypatch):
+    """The same exact native actor level must reach paid sim --request."""
+    import time
+    import pytest
+    from native_matrix import NativeCandidateRefusal
+    import native_executor
+
+    seen = []
+
+    def native_cli(command, **_kwargs):
+        seen.append(command)
+        return SimpleNamespace(returncode=3,
+                               stdout=json.dumps({"status": "UNSUPPORTED",
+                                                  "reason": "native source refusal"}),
+                               stderr="")
+
+    monkeypatch.setattr(native_executor.subprocess, "run", native_cli)
+    with pytest.raises(NativeCandidateRefusal) as failure:
+        native_run("selected-engine", source(), 5, 914, "balanced",
+                   time.monotonic() + 10, objective="DPS", actor_level=20)
+    assert failure.value.status == "UNSUPPORTED"
+    assert seen[0][-2:] == ["--actor-level", "20"]
+    assert "--rng-mode" in seen[0] and "balanced" in seen[0]
+
+
+def test_warlock_native_l20_raw_fixture_without_level_is_prepared_and_paid():
+    """Request hint is optional only when Rust really prepares matching L20."""
+    original = source()
+    del original["raid"]["parties"][0]["players"][0]["level"]
+    kwargs_seen = []
+
+    def native_prepare(_binary, _request, **kwargs):
+        kwargs_seen.append(("prepare", kwargs))
+        return prepared()
+
+    def native_score(_binary, request, _iters, _seed, mode, _deadline, **kwargs):
+        kwargs_seen.append(("score", kwargs))
+        assert mode == "balanced"
+        head = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
+        return (7.5 if head == 900 else 7.0), {}, 0.01, "paid-native"
+
+    receipt = compare_equipped_native(
+        "selected-engine", original, {"head": {"selected_ids": [900]}},
+        class_key="warlock", level=20, objective="DPS", max_paid_attempts=2,
+        preparer=native_prepare, evaluator=native_score)
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["actor_checkpoint_verified"] is True
+    assert receipt["paid_attempts"] == 2
+    assert kwargs_seen == [
+        ("prepare", {"actor_level": 20}),
+        ("score", {"objective": "DPS", "actor_level": 20}),
+        ("score", {"objective": "DPS", "actor_level": 20}),
+    ]
