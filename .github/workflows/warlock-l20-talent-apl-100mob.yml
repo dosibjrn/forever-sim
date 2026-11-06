@@ -1,0 +1,62 @@
+name: Warlock L20 true talent and APL 100-mob optimization
+
+on:
+  push:
+    branches: [work/warlock-l20-optimize-talents-apl-chain-20261106]
+    paths:
+      - tools/wf_warlock_l20_talent_apl_optimizer.py
+      - .github/workflows/warlock-l20-talent-apl-100mob.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  optimize-real-warlock-chain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout world executor and optimizer
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout selected Rust source with L20 executable actor
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 86c4329ddb25c7c21a9f49a72bd2721c490aedb7
+          path: engine
+      - name: Verify exact source and optimized equipped build
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "86c4329ddb25c7c21a9f49a72bd2721c490aedb7"
+          test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
+          python3 -m py_compile project/tools/wf_warlock_l20_talent_apl_optimizer.py
+          echo "Rust source $(git -C engine rev-parse HEAD)"
+          echo "Optimizer source $(git -C project rev-parse HEAD)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing gsim world dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Build native Rust
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Genuine native discovery, paid talent x conditional APL screen, 100-mob finalists
+        working-directory: project
+        run: |
+          set -euo pipefail
+          python3 -u tools/wf_warlock_l20_talent_apl_optimizer.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --engine-tools ../engine/tools \
+            --out ../warlock-talents-apl-chain-result \
+            --max-finalists 6 --seed 10916
+      - name: Preserve actual native paid candidate and world results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l20-talent-apl-100mob-real-optimization
+          path: warlock-talents-apl-chain-result/
+          if-no-files-found: warn
+          retention-days: 14
