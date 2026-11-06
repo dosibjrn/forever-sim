@@ -1,0 +1,83 @@
+import math
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from wf_warlock_chain_surrogate import (
+    extract_three_mob_features, train_supervised, predict,
+)
+
+
+class ThreeMobSurrogateTests(unittest.TestCase):
+    def setUp(self):
+        self.prepared={"player":{
+            "stats":{"Health":1000.},"mana":{"max":500.},
+            "spells":[{"action_id":{"spell_id":20554},"cd":{"duration_ns":180_000_000_000}}],
+        }}
+        self.world={
+            "world_targets_killed":3,"continuous_native_actor":True,
+            "actual_2d_ack":True,"world_elapsed_seconds":45.,
+            "native_windows":[{
+                "index":idx,"native_kill_ns":int((idx+1)*15e9),
+                "actor_health":950.-50.*idx,"actor_mana":460.-40.*idx,
+                "native_combat_mana_regen_actual_gain":30.,
+                "native_health_damage_taken":50.,
+                "native_health_actual_gain":0.,
+                "native_mana_spent":100.,"native_mana_gained":60.,
+                "native_spell_cast_receipts":[{
+                    "spell_id":20554,"casts":1,
+                    "cooldown_ns":180_000_000_000,"is_long_cooldown":True,
+                }] if idx==0 else [],
+                "native_long_cooldown_states":[{
+                    "spell_id":20554,"duration_ns":180_000_000_000,
+                    "ready_in_ns":int((180.-15.*(idx+1))*1e9),
+                }],
+            } for idx in range(3)],
+        }
+
+    def test_native_three_kill_resource_and_cd_features(self):
+        p=extract_three_mob_features(self.prepared,self.world)
+        self.assertEqual(p["raw"]["kill_times_s"],[15.,15.,15.])
+        self.assertEqual(p["raw"]["native_mana_spent"],300.)
+        self.assertEqual(p["raw"]["native_mana_gained"],180.)
+        self.assertEqual(p["features"]["long_cooldown_casts_first3"],1.)
+        self.assertAlmostEqual(p["features"]["long_cooldown_remaining_s"],135.)
+        self.assertTrue(p["cooldowns"]["long_cooldown_usage_observed"])
+
+    def test_not_trained_without_real_long_labels(self):
+        p=extract_three_mob_features(self.prepared,self.world)
+        m=train_supervised([],engine_sha="engine",scenario_id="fixed")
+        result=predict(m,p,engine_sha="engine",scenario_id="fixed")
+        self.assertFalse(result["prediction_trained"])
+        self.assertIsNone(result["estimated_100_mob_elapsed_s"])
+        with self.assertRaises(ValueError):
+            predict(m,p,engine_sha="other",scenario_id="fixed")
+
+    def test_trains_only_completed_100_mob_labels(self):
+        p=extract_three_mob_features(self.prepared,self.world)
+        sessions=[]
+        for i in range(8):
+            q={"features":p["features"].copy()}
+            q["features"]["mean_kill_s"]+=i
+            q["features"]["mana_end_fraction"]-=i*0.01
+            sessions.append({
+                "engine_sha":"engine","scenario_id":"fixed","probe":q,
+                "result":{"status":"COMPLETED","confirmed_kills":100,
+                          "elapsed_s":1700.+i*100.},
+            })
+        model=train_supervised(sessions,engine_sha="engine",scenario_id="fixed")
+        self.assertEqual(model["completed_100_runs"],8)
+        result=predict(model,p,engine_sha="engine",scenario_id="fixed")
+        self.assertTrue(result["prediction_trained"])
+        self.assertTrue(math.isfinite(result["estimated_100_mob_elapsed_s"]))
+        self.assertGreater(result["estimated_100_mob_elapsed_s"],0.)
+        sessions.append({"engine_sha":"engine","scenario_id":"fixed","probe":p,
+                         "result":{"status":"INCOMPLETE","confirmed_kills":13,
+                                   "elapsed_s":1.}})
+        model2=train_supervised(sessions,engine_sha="engine",scenario_id="fixed")
+        self.assertEqual(model2["completed_100_runs"],8)
+
+
+if __name__=="__main__":
+    unittest.main()
