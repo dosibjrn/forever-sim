@@ -1,0 +1,26 @@
+{
+  "class": "druid",
+  "encounter_sha256": "178cff9df78f1c9ff0c19bf7ac4c1c622aa03e9babc47fce61b0e57d7b66a79e",
+  "encounter_target_level": 30,
+  "level": 30,
+  "native_actor_level_context": 30,
+  "native_prepared_actor": {
+    "class": "ClassDruid",
+    "level": 30,
+    "status": "PREPARED"
+  },
+  "native_rules": "forever",
+  "reference_configuration_source": "native_generated_msim_reference",
+  "reference_dps": 8.357414975823593,
+  "reference_iterations": 1000,
+  "reference_native_sample": {
+    "first_duration_s": 120.0,
+    "iterations": 1000,
+    "native_dps": 8.357414975823593,
+    "native_rules": "forever"
+  },
+  "reference_rng_mode": "stochastic",
+  "selected_engine_revision": "41444ee58e337c1523aebf4910425f17dd965936",
+  "source_request_raw_sha256": "d7a60e1bbb8e076030773991102a0e0c14546a736858fec36383bea33f4bd3da",
+  "spec": "unrestricted"
+}

@@ -100,6 +100,33 @@ def _paid_elite_choice(elites, rng: random.Random, proposal_index: int):
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
                            spec: str, gate: str, *, require_world: bool = True):
     """One exact-source native preflight shared by P7 discovery gates."""
+    if (class_key, level, spec, gate) == (
+            "druid", 30, "unrestricted", "P7.2"):
+        # The selected L30 reference is a distinct frozen native request, not
+        # an L60 Balance donor. Reuse its authenticated stochastic receipt and
+        # native PREPARE without charging another 1,000-fight sample.
+        from tools.wf_p7_native_reference import (
+            _binary_and_pin, _reference_directory, run_generated_p71,
+        )
+        checked = run_generated_p71(root, class_key, level, spec)
+        if checked.get("status") != "PASS":
+            return _blocked("P7_2_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED")
+        selected = _binary_and_pin(root)
+        if selected is None:
+            return _blocked("P7_2_PINNED_RUST_BINARY_OR_GITLINK_MISSING")
+        binary, revision = selected
+        request_path = (_reference_directory(root, class_key, level, spec)
+                        / "request.json")
+        # run_generated_p71 already checked the exact bytes, encounter, engine
+        # revision and real prepared actor against the frozen paid manifest.
+        base = json.loads(request_path.read_bytes())
+        return base, {
+            "reference_dps": checked["saved_reference_dps"],
+            "selected_engine_revision": revision,
+            "selected_reference_profile": spec,
+            "source_request_raw_sha256": checked["source_request_raw_sha256"],
+            "native_actor_level_context": level,
+        }, binary
     # An unrestricted checkpoint may optimize any native-legal Druid build.
     # Reuse the authentic Balance reference encounter without claiming it is
     # an independently measured unrestricted reference; P7.5 is eligible too.
@@ -211,6 +238,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                 path = Path(tmp) / "changed-apl.json"
                 path.write_text(json.dumps(candidate))
                 native_options = {"go_rules": True} if feral else {}
+                if level != 60:
+                    # L30's native Player.level extension is not a substitute
+                    # for the engine's explicit actor context during SIM.
+                    native_options["actor_level"] = level
                 native = production.native_source_control(
                     binary, path, 3, rng_mode="balanced", **native_options)
             if (type(native.get("iterations")) is not int
