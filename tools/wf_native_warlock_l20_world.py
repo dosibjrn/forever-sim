@@ -42,12 +42,11 @@ def main():
     assert player["class"] == "ClassWarlock" and player["race"] == "RaceTroll"
     assert len(player["equipment"]["items"]) == 17
 
-    # Source APL is the previously real-paid Corruption / Bane / Shadow Bolt.
-    # Add an ACTUAL native Shoot action as a candidate fallback. Only Rust
-    # determines whether this action executes; ranged auto can fire during idle.
-    player["rotation"]["priorityList"].append({
-        "action": {"castSpell": {"spellId": {"otherId": "OtherActionShoot"}}}
-    })
+    # Preserve the actual Rust-paid Corruption / Bane / Shadow Bolt APL.
+    # The native Warlock wand is already a registered ranged auto-attack.
+    # A direct APL castSpell(OtherActionShoot) was REFUSED by Rust; never fake
+    # that cast or bypass its refusal. The native swing is measured separately.
+    assert len(player["rotation"]["priorityList"]) >= 3
     request["simOptions"]["iterations"] = 1
     request["simOptions"]["debugFirstIteration"] = False
     request["encounter"]["duration"] = 30
