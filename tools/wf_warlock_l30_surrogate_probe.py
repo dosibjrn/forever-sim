@@ -23,7 +23,8 @@ from wf_warlock_l30_direct_affliction_comparison import (
     USER_AFFLICTION, OLD_DESTRO_COMPARATOR, exact_source_ranks, make_apl,
 )
 from wf_warlock_chain_surrogate import (
-    extract_three_mob_features, predict, train_supervised,
+    extract_three_mob_features, predict, select_native_100_validation,
+    train_supervised,
 )
 from live_two_world_pulls import run as native_world_chain
 
@@ -210,17 +211,27 @@ def run():
     # Broad source-native bootstrap, not 30-second DPS ordering:
     # both talent families, both pet types, both gear tracks and fillers.
     bootstrap=(0,5,2,7,4,1,8,13,3,6,11,12,15,9,10,14)
+    # Keep an initial diverse calibration sample, but NEVER consume the
+    # entire full-run budget before the trained predictor can choose a case.
+    # Nine historical native 100-world labels can bootstrap the model only
+    # after exact first-three Rust trace parity has passed above.
+    seed_count=min(args.full_count, 2 if prefit["time_model"] else 6)
     chosen=[case for idx in bootstrap for case in probes
-            if case["result"]["candidate"]==idx][:args.full_count]
+            if case["result"]["candidate"]==idx][:seed_count]
+    decision_trace=[]
     def pay_full_100(case):
         item=case["result"]
-        item["status"]="INCOMPLETE"
+        item["status"]="UNVERIFIED_ERROR"
         try:
             world=native_world_chain(
                 binary,case["prepared"],classic_mob_level=30,
                 target_count=100,rng_mode="balanced")
             (case["folder"]/"native_100_world.json").write_text(
                 json.dumps(world,indent=2,allow_nan=False)+"\n")
+            if (world.get("world_targets_killed") != 100
+                    or world.get("continuous_native_actor") is not True
+                    or world.get("actual_2d_ack") is not True):
+                raise RuntimeError("Rust did not confirm 100 ACKs on one actor")
             item.update(status="COMPLETED",
                         confirmed_kills=world["world_targets_killed"],
                         elapsed_s=world["world_elapsed_seconds"],
@@ -234,53 +245,66 @@ def run():
                     and detail[0]=="RUST_TWO_WORLD_NATIVE_FAILED"
                     and type(detail[3]) is int):
                 item["confirmed_kills"]=detail[3]
+                item["status"]="INCOMPLETE"
             found=re.search(r'RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:index=(\d+)',
                             item["error_100"])
             if found:
                 item["confirmed_kills"]=max(0,int(found.group(1))-1)
+                item["status"]="INCOMPLETE"
         # New native truth supersedes an older parity-checked label for the
         # same candidate, rather than falsely double-counting training rows.
-        sessions[:]=[row for row in sessions
-                     if row.get("candidate") != item["candidate"]]
-        sessions.append({
+        if item["status"] in ("COMPLETED","INCOMPLETE"):
+            sessions[:]=[row for row in sessions
+                         if row.get("candidate") != item["candidate"]]
+            sessions.append({
+                "candidate":item["candidate"],
+                "engine_sha":args.engine_sha,"scenario_id":scenario_id,
+                "probe":case["probe"],"result":item.copy(),
+            })
+        # A crash/timeout is NOT a verified chain death and cannot teach
+        # survival regression or create a fictitious fast duration.
+        decision_trace.append({
             "candidate":item["candidate"],
-            "engine_sha":args.engine_sha,"scenario_id":scenario_id,
-            "probe":case["probe"],"result":item.copy(),
+            "selection_reason":item["selection_reason"],
+            "prediction_at_selection":item.get("surrogate"),
+            "native_100_status":item["status"],
+            "native_100_kills":item["confirmed_kills"],
+            "native_100_elapsed_s":item.get("elapsed_s"),
         })
         (args.out/"100mob_training_labels.json").write_text(
             json.dumps(sessions,indent=2,allow_nan=False)+"\n")
         (case["folder"]/"result.json").write_text(json.dumps(item,indent=2)+"\n")
         print("RUST_100_MOB_LABEL",json.dumps(item),flush=True)
 
+    validated_ids=set()
     for case in chosen:
+        case["result"]["selection_reason"]="diverse_native_bootstrap"
         pay_full_100(case)
-    model=train_supervised(
-        sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
-    (args.out/"surrogate_model.json").write_text(
-        json.dumps(model,indent=2,allow_nan=False)+"\n")
-    # After a diverse truth-labeled calibration batch, spend the remaining
-    # 100-mob budget where the trained model predicts best *or* where the
-    # native HP/mana/kill-slope receipts are promising if no model is trained.
-    untested=[case for case in probes if case not in chosen]
-    for case in untested:
-        case["result"]["surrogate"]=predict(
-            model,case["probe"],engine_sha=args.engine_sha,scenario_id=scenario_id)
-    if model["time_model"] is not None:
-        untested.sort(key=lambda case: (
-            -(case["result"]["surrogate"]["probability_100_mob_completed"]
-              if case["result"]["surrogate"]["probability_100_mob_completed"] is not None
-              else .5),
-            case["result"]["surrogate"]["estimated_100_mob_elapsed_s"],
-        ))
-    else:
-        untested.sort(key=lambda case: (
-            -case["probe"]["features"]["health_end_fraction"],
-            -case["probe"]["features"]["mana_end_fraction"],
-            case["probe"]["features"]["kill_time_slope"],
-            case["probe"]["features"]["late_kill_s"],
-        ))
-    for case in untested[:max(0,args.full_count-len(chosen))]:
-        pay_full_100(case)
+        validated_ids.add(case["result"]["candidate"])
+
+    # Refit after EVERY actual long run; new partial deaths update survival
+    # only, and each finished 100 changes the time model. Alternate predicted
+    # fastest choices with source-novel/uncertain candidates.
+    while len(validated_ids)<args.full_count:
+        model=train_supervised(
+            sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+        untested=[case for case in probes
+                  if case["result"]["candidate"] not in validated_ids]
+        if not untested:
+            break
+        for case in untested:
+            case["result"]["surrogate"]=predict(
+                model,case["probe"],engine_sha=args.engine_sha,
+                scenario_id=scenario_id)
+        observed=[case for case in probes if any(
+            session["candidate"]==case["result"]["candidate"]
+            for session in sessions)]
+        selected,reason=select_native_100_validation(
+            untested,observed,iteration=len(validated_ids))
+        selected["result"]["selection_reason"]=reason
+        pay_full_100(selected)
+        validated_ids.add(selected["result"]["candidate"])
+
     model=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
     (args.out/"surrogate_model.json").write_text(
@@ -296,6 +320,8 @@ def run():
         "source_gear":gear_audit,
         "three_mob_probes":len(probes),"candidates":len(cases),
         "actual_100_mob_labels":len(sessions),
+        "new_native_100_attempts":len(decision_trace),
+        "adaptive_native_100_decisions":decision_trace,
         "model_trained":model["time_model"] is not None,
         "model":model,"winner_100":successes[0] if successes else None,
         "candidates_with_results":[c["result"] for c in cases],
