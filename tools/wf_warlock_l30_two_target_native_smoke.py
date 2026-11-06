@@ -63,9 +63,11 @@ def main() -> None:
     # Two independent source-native targets from the SAME chosen template.
     # Rust owns both target actors, HP, dot ticking and target switching.
     base_target = req["encounter"]["targets"][0]
-    base_target["name"] = "World candidate mob 0"
+    # MythicSim's ordinary multi-target contract requires IDENTICAL
+    # target definitions. They are still distinct native runtime units
+    # with target positions 0 and 1; names must not encode identity.
+    base_target["name"] = "World candidate mob"
     other = copy.deepcopy(base_target)
-    other["name"] = "World candidate mob 1"
     req["encounter"]["targets"] = [base_target, other]
 
     request = args.out / "source_two_target_request.json"
@@ -99,7 +101,7 @@ def main() -> None:
         "50_percent_next_pull_executed": False,
         "world_two_simultaneously_living_mob_ACKs": False,
         "candidate": policy,
-        "targets": ["World candidate mob 0", "World candidate mob 1"],
+        "targets": ["native target index 0", "native target index 1"],
         "native_paid_damage_by_target": damage,
         "native_paid_casts_by_target": casts,
         "native_paid_dps": metrics.get("dps", {}).get("avg"),
