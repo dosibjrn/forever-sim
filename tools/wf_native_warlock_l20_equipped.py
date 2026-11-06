@@ -96,12 +96,33 @@ def build_warlock_equipped_request(binary: str, template: dict,
                                         else "invalid native prepare response")})
     if not accepted:
         raise NativeWarlockEquippedError("WARLOCK_L20_NO_NATIVE_PREPARED_EQUIPMENT")
+
+    # A previous PREPARED response only covers the preceding candidate. The
+    # producer may also preserve every pre-equipped slot without invoking
+    # prepare once. Require native confirmation of the *complete output request*
+    # before handing it to the paid P3 evaluator; never infer compatibility
+    # from individual item probes or a source fixture.
+    final_prepared = preparer(binary, copy.deepcopy(request), actor_level=20)
+    attempts += 1
+    if (not isinstance(final_prepared, dict)
+            or final_prepared.get("status") != "PREPARED"
+            or final_prepared.get("actor_class") != "ClassWarlock"
+            or type(final_prepared.get("actor_level")) is not int
+            or final_prepared["actor_level"] != 20):
+        outcome = (final_prepared if isinstance(final_prepared, dict)
+                   else {"status": "NATIVE_PREPARE_ERROR"})
+        raise NativeWarlockEquippedError(
+            "WARLOCK_L20_FINAL_NATIVE_PREPARE_REFUSED:"
+            + str(outcome.get("status"))
+            + ":" + str(outcome.get("reason") or outcome.get("actor_class") or ""))
+
     # The source fixture (incl. its native APL, encounter, talents and race)
     # remains unchanged. P3 pays for one full baseline and separate gear swaps.
     return request, {
         "status": "NATIVE_WARLOCK_L20_EQUIPPED_REQUEST_PREPARED_NOT_PAID",
         "actor": "ClassWarlock", "race": "RaceTroll", "level": 20,
         "native_prepare_attempts": attempts, "occupied_slots": accepted,
+        "final_native_prepared_actor": final_prepared,
         "native_prepare_refusals": refusals,
         "paid_p3_attempts": 0,
     }
