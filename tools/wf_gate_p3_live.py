@@ -388,6 +388,21 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
     }
 
 
+def _warlock_l20_native_request(root: Path) -> str | None:
+    """Use the selected Rust revision's genuinely paid equipped L20 source.
+
+    An explicit caller request still wins. The fallback is a fixture shipped
+    by the selected exact-SHA Rust gitlink, not a Python-created source build
+    or a stale external engine. Native prepare/sim retains final authority.
+    """
+    explicit = os.environ.get("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST")
+    if explicit:
+        return explicit
+    pinned_fixture = (root / "integrations/mythicsim-rust/engine/fixtures"
+                      / "warlock-l20-troll-best-paid.request.json")
+    return str(pinned_fixture) if pinned_fixture.is_file() else None
+
+
 def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                                 item_check: dict, remaining: int, *,
                                 checkpoint: str = "rogue_l20"):
@@ -398,9 +413,9 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
     if checkpoint == "feral_l60":
         request_path = str(root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
     elif checkpoint == "warlock_l20":
-        # A caller-provided genuine L20 Warlock source; never reuse L60
-        # Warlock fixtures or the old source-naked Python/Imp proxy.
-        request_path = os.environ.get("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST")
+        # Prefer the selected Rust gitlink's proven paid 17-slot source over
+        # rebuilding the old naked/template request; allow explicit override.
+        request_path = _warlock_l20_native_request(root)
     elif checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60"):
         # Shared selected-native Mage source fixtures; never invent a build
         # from Python class rules or reuse another spec's actor.
@@ -653,7 +668,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             return {"status": "BLOCKED",
                     "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
-        if is_warlock_native and not os.environ.get("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST"):
+        if is_warlock_native and not _warlock_l20_native_request(root):
             return {"status": "BLOCKED",
                     "reasons": ["P3_NATIVE_WARLOCK_L20_REQUEST_REQUIRED"],
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
