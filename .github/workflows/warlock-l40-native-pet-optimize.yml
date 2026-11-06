@@ -1,8 +1,8 @@
-name: Warlock L30 native pet gear talent APL 100-mob rerun
+name: Warlock L30 native pet smoke short real Rust test
 
 on:
   push:
-    branches: [work/warlock-l30-pet-native-rerun-20261106]
+    branches: [work/warlock-l30-native-pet-smoke-20261106]
     paths:
       - tools/wf_warlock_native_optimizer.py
       - .github/workflows/warlock-l40-native-pet-optimize.yml
@@ -14,7 +14,7 @@ permissions:
 jobs:
   real-l40-warlock-pet-build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 18
     steps:
       - name: Checkout Forever shared optimizer
         uses: actions/checkout@v4
@@ -55,23 +55,11 @@ jobs:
             --engine-tools ../engine/tools \
             --out ../warlock-l30-native-pet-smoke-l30 \
             --pet-smoke-only --seed 10916
-      - name: Native pet x talents x conditional APL paid optimizer and real 100 mob chains
-        working-directory: project
-        run: |
-          set -euo pipefail
-          python3 -u tools/wf_warlock_native_optimizer.py \
-            --binary ../engine/target/debug/forever-engine \
-            --level 30 \
-            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
-            --proto-schema ../engine/data/proto-schema.json \
-            --engine-tools ../engine/tools \
-            --out ../warlock-l30-pet-optimization-results \
-            --max-finalists 12 --seed 10916
       - name: Preserve all real native pet, talent, APL, and 100-mob receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: warlock-l30-native-pet-talents-apl-100mob
+          name: warlock-l30-native-pet-smoke
           path: |
             warlock-l30-native-pet-smoke-l30/
             warlock-l30-pet-optimization-results/
