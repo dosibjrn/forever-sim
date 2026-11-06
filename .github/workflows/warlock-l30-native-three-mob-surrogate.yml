@@ -16,7 +16,7 @@ permissions:
 jobs:
   l30-three-world-probes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 75
     steps:
       - name: Checkout optimization source
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       - name: Build Rust executable
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Probe actual 3-mob chains for all 16 L30 builds
+      - name: Probe 16 actual 3-mob chains and calibrate 4 full 100-mob truth labels
         working-directory: project
         run: |
           python3 -u tools/wf_warlock_l30_surrogate_probe.py \
@@ -50,7 +50,7 @@ jobs:
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --engine-tools ../engine/tools \
             --engine-sha 0f3c4ddce3d8f191118b29ff3321f338aca062a5 \
-            --full-count 0 \
+            --full-count 4 \
             --out ../warlock-l30-native-three-mob-surrogate
       - name: Preserve actual native 3-mob measurements and training status
         if: always()
