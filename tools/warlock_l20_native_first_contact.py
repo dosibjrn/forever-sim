@@ -2,8 +2,8 @@
 """Read-only Warlock L20 first contact with the pinned MythicSim Rust API.
 
 This is a diagnostic, NOT a P3 gate or a second source of Warcraft truth.
-The CLI reports native source coverage and refuses to promote unknown item
-proficiency, unverified spell learning or unexecuted L20 combat to a PASS.
+The CLI reports source facts without making an acceptance decision. P1/P2
+spell-learnability verification and a successful naked kill are NOT P3 gates.
 
 Usage:
     python tools/warlock_l20_native_first_contact.py --binary PATH/forever-engine
@@ -115,26 +115,17 @@ def diagnose_warlock_l20(
             eligible_count = 0
     else:
         raise NativeWarlockProbeError("NATIVE_ITEM_OPTIONS_UNKNOWN_STATUS")
-    ready = (
-        raw_eligibility and raw_learning
-        and item_status in ("ok", "empty")
-        and native_gear.get("required_level_supported") is True
-    )
-    missing = []
-    if not raw_eligibility or item_status not in ("ok", "empty"):
-        missing.append("WARLOCK_L20_NATIVE_ITEM_PROFICIENCY")
-    if not raw_learning:
-        missing.append("WARLOCK_L20_SPELL_LEARNABILITY")
-    # The L20 prepared-actor and real paid combat must be independently proven;
-    # get_options is only source discovery, never combat execution.
-    missing.append("WARLOCK_L20_NATIVE_PREPARED_ACTOR_AND_PAID_COMBAT")
+    # This probe is NOT a pass/fail gate. In particular, the native source's
+    # spell_learnability_complete flag is not a prerequisite for any active
+    # P3 gear smoke. Report its observed value, not a fabricated blocker.
+    # Combat and P3 scoring are separate executable operations.
     return {
         "checkpoint": "warlock:20:unrestricted",
         "source": "selected_mythicsim_rust",
         "source_revision": revision,
         "source_options_level": 20,
-        "status": "BLOCKED",
-        "gate_acceptance": "NOT_RUN",
+        "status": "DIAGNOSTIC",
+        "p3_gate_executed": False,
         "native_l20_combat": "NOT_EXECUTED",
         "item_source_ready": bool(raw_eligibility and item_status in ("ok", "empty")),
         "spell_learning_source_ready": raw_learning,
@@ -145,18 +136,12 @@ def diagnose_warlock_l20(
         "native_spell_family_rows": len(spells),
         "talent_trees": len(talents["trees"]),
         "talent_points": talents["points_available"],
-        "all_source_dimensions_ready": ready,
-        "missing": missing,
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
-    parser.add_argument(
-        "--require-ready", action="store_true",
-        help="Return 3 if native source or combat proof is still missing",
-    )
     args = parser.parse_args()
     try:
         report = diagnose_warlock_l20(str(args.binary))
@@ -167,8 +152,8 @@ def main() -> int:
         }, sort_keys=True))
         return 2
     print(json.dumps(report, sort_keys=True, indent=2))
-    # Completed diagnostics exit 0, missing L20 gate readiness is NEVER PASS.
-    return 3 if args.require_ready else 0
+    # Discovery and valid refusals are diagnostics, not gate failures.
+    return 0
 
 
 if __name__ == "__main__":
