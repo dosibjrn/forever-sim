@@ -442,7 +442,9 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     assert report["joint_cold_world_dps"] == 735.0
     assert report["frozen_stochastic_world_dps"] == 735.0
     assert report["frozen_stochastic_iterations"] == 1000
-    assert report["status"] == "BLOCKED"  # accepted compatible prior not established
+    assert report["status"] == "PASS"  # injected full holdout; no optional prior needed
+    assert report["final_required_dps"] == 0.93 * 728.19
+    assert report["strongest_accepted_compatible_prior_dps"] is None
     assert base == original
 
 
@@ -539,7 +541,8 @@ def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
     assert len(crossover_rngs) == 1  # proposal 13 is the paid gear/talent/APL crossover
     assert crossover_rngs[0] is not candidate_rngs[0]
     assert candidate_rngs[-1].getstate() == candidate_rng_state_at_crossover[0]
-    assert report["status"] == "BLOCKED"  # missing accepted prior, not a gate PASS
+    assert report["status"] == "PASS"  # injected full holdout; no optional prior needed
+    assert report["final_required_dps"] == 0.93 * 728.19
     assert base == original
 
 
