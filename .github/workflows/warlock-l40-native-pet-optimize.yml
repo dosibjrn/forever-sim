@@ -24,12 +24,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: e8d399a360b63a9b20568926852d05e30e80dece
+          ref: cd934ab054a5b8df1b447fd298047e5832a25380
           path: engine
       - name: Verify native source and optimizer syntax
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "e8d399a360b63a9b20568926852d05e30e80dece"
+          test "$(git -C engine rev-parse HEAD)" = "cd934ab054a5b8df1b447fd298047e5832a25380"
           python3 -m py_compile project/tools/wf_warlock_native_optimizer.py
           echo "Native Rust: $(git -C engine rev-parse HEAD)"
           echo "Forever optimizer: $(git -C project rev-parse HEAD)"
