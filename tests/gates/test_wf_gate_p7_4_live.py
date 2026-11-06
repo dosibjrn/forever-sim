@@ -69,146 +69,6 @@ def test_wrong_reference_never_reaches_native(tmp_path):
     assert "P7_4_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT" in report["reasons"]
 
 
-def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
-        monkeypatch, tmp_path):
-    """Producer routing regression; mocked backend is NOT a P7.4 acceptance run."""
-    import hashlib
-    import json
-    from pathlib import Path
-    from types import SimpleNamespace
-
-    base = {"raid": {"parties": [{"players": [{
-        "class": "ClassDruid",
-        "distanceFromTarget": 15,
-        "equipment": {"items": [{"id": 10}, {"id": 20}]},
-        "talentsString": "fixed-talents",
-        "rotation": {"priorityList": [{"action": {"castSpell": {"spellId": 1}}}]},
-    }]}]}}
-    original = copy.deepcopy(base)
-    binary = tmp_path / "upstream/target/release/forever-engine"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("fake executable; never invoked")
-
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Routing clock: start, two paid candidates, then 300s observation.
-    # No per-final-step timestamp calls are required for gate acceptance.
-    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
-    clock = iter([0.0, 0.0, 0.0, 300.0, 300.0, 300.0])
-    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
-    monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *a: (base, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *a, **kw: None)
-
-    upstream = binary.parents[2]
-    (upstream / "data").mkdir()
-    (upstream / "data/items.jsonl").write_text("{}\n")
-    (upstream / "data/enchants.jsonl").write_text("{}\n")
-    options_calls = []
-    def pinned_rust_candidate_pool(items_path, enchants_path):
-        options_calls.append((items_path, enchants_path))
-        return (
-            {0: [11], 1: [21]},
-            {0: [None, 201], 1: [None]},
-            {"unique_item_options": 2, "unique_enchant_options": 1},
-        )
-
-    def swap(request, ids):
-        result = copy.deepcopy(request)
-        for slot, iid in zip(
-                result["raid"]["parties"][0]["players"][0]["equipment"]["items"],
-                ids):
-            slot["id"] = iid
-        return result
-
-    gear = SimpleNamespace(
-        pinned_rust_candidate_pool=pinned_rust_candidate_pool, _swap=swap,
-        preflight=lambda reference, candidate: True,
-        RejectedGear=ValueError)
-    # Force two actually paid mock candidates. The first wins, the last
-    # candidate loses: reporting the final loop SHA would misidentify it.
-    candidates = iter([[11, 21], [12, 21]])
-    monkeypatch.setattr(gate, "_cold_gear",
-                        lambda request, *args, **kwargs: swap(request, next(candidates)))
-    calls = []
-    def native(binary, path, n, *, rng_mode):
-        calls.append(("native", n, rng_mode, path.read_text()))
-        return {"native_dps": 730.0}
-
-    def world(binary, path, distance, iterations, *, rng_mode):
-        assert distance == 15
-        calls.append(("world", iterations, rng_mode, path.read_text()))
-        item_id = json.loads(path.read_text())["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
-        return {"native_dps": 729.0 if item_id == 11 else 700.0,
-                "world_mean_dps": 729.0 if item_id == 11 else 700.0,
-                "world_target_lethal_fights": 1,
-                "iterations_done": iterations, "native_damage_events": 12,
-                "native_world_ticks": 25}
-
-    producer = SimpleNamespace(native_source_control=native, run=world)
-    monkeypatch.setattr(gate, "_source_module",
-                        lambda path, name: gear if "p74_gear_search" in str(path)
-                        else producer)
-
-    from tools.wf_gate import _run_live_gate
-    report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.4", "")
-    assert options_calls == [(
-        upstream / "data/items.jsonl", upstream / "data/enchants.jsonl"
-    )], "Full search must read the pinned Rust data tables"
-    assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
-        ("native", 3, "balanced"), ("world", 3, "balanced"),
-        ("native", 3, "balanced"), ("world", 3, "balanced"),
-        ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
-    assert json.loads(calls[0][3]) == json.loads(calls[5][3])
-    assert json.loads(calls[0][3]) != json.loads(calls[2][3])
-    assert report["frozen_request_raw_sha256"] == hashlib.sha256(
-        calls[5][3].encode()).hexdigest()
-    assert report["cold_winner_request_sha256"] == hashlib.sha256(
-        json.dumps(json.loads(calls[5][3]), sort_keys=True).encode()).hexdigest()
-    assert report["frozen_stochastic_native_dps"] == 729.0
-    assert report["frozen_stochastic_native_control_dps"] == 730.0
-    assert report["frozen_stochastic_native_control_comparable"] is False
-    assert report["frozen_stochastic_world_target_lethal_fights"] == 1
-    assert report["cold_unique_source_requests"] == 2
-    frozen_items = json.loads(calls[5][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-    assert report["cold_winner_gear"] == [
-        {"slot": slot, "item_id": item["id"], "enchant_id": item.get("enchant")}
-        for slot, item in enumerate(frozen_items)]
-    assert report["source_legal_cold_candidates_paid"] == 2
-    assert report["item_candidate_admission"] == "pinned_rust_items_jsonl"
-    assert report["pinned_rust_item_options_applied"] is True
-    assert report["pinned_rust_unique_item_options"] == 2
-    assert report["pinned_rust_unique_enchant_options"] == 1
-    assert report["source_candidate_failure_count"] == 0
-    assert report["winner_selection"] == "best_balanced_live_screen"
-    assert report["search_rng_mode"] == "balanced"
-    assert report["paid_stochastic_finalists"] == 0
-    assert report["stochastic_parent_proposals"] == 0
-    # The real chosen winner is NOT the last attempted candidate.
-    assert report["cold_winner_request_sha256"] != hashlib.sha256(
-        json.dumps(json.loads(calls[2][3]), sort_keys=True).encode()).hexdigest()
-    assert report["independent_300s_search_completed"] is True
-    assert report["frozen_stochastic_iterations"] == 1000
-    assert report["frozen_stochastic_reference_floor_met"] is True
-    assert report["status"] == "PASS"  # mocked routing, not real source/native proof
-    assert report["runtime_proof"]["executed"] is True
-    assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
-    assert report["reasons"] == []
-    assert base == original
-
-
-
-def test_p74_invalid_full_search_flag_blocks_before_source_work(
-        monkeypatch, tmp_path):
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "invalid")
-    monkeypatch.setattr(
-        gate, "_pinned_source_runtime",
-        lambda *a: ({}, {"reference_dps": 728.19}, tmp_path / "binary"))
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert report == {"status": "BLOCKED",
-                      "reasons": ["P7_4_INVALID_FULL_SOURCE_SEARCH_MODE"]}
-
-
 def test_full_cold_p74_can_free_enchant_without_changing_fixed_axes():
     """Pre-fix: unchanged reference item IDs could never gain a new enchant."""
     base = {"raid": {"parties": [{"players": [{
@@ -731,94 +591,6 @@ def test_p74_freeze_prefers_independently_confirmed_balanced_winner():
     assert confirmed[5] == "paid_4x3_balanced_native_world_confirmed"
 
 
-def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
-        monkeypatch, tmp_path):
-    """Actual run_live scheduling changes the frozen winner; no M1 recording."""
-    import json
-
-    base = {"simOptions": {"randomSeed": "original"},
-            "raid": {"parties": [{"players": [{
-                "class": "ClassDruid", "distanceFromTarget": 15,
-                "equipment": {"items": [{"id": 10}]},
-                "talentsString": "fixed",
-                "rotation": {"priorityList": []},
-            }]}]}}
-    original = copy.deepcopy(base)
-    binary = tmp_path / "upstream/target/release/forever-engine"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("fake, never executed")
-
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Start, three paid screens, three independent re-screens, confirmation,
-    # end of the full 300s window and observed deadline.
-    times = iter([0.0, 0.0, 0.0, 0.0, 130.0, 150.0,
-                  170.0, 270.0, 300.0, 300.0])
-    monkeypatch.setattr(gate.time, "monotonic",
-                        lambda: next(times, 300.0))
-    monkeypatch.setattr(gate.time, "sleep", lambda s: None)
-    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *args: True)
-    monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *args: (base, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *args, **kw: None)
-
-    upstream = binary.parents[2]
-    (upstream / "data").mkdir()
-    (upstream / "data/items.jsonl").write_text("{}\n")
-    (upstream / "data/enchants.jsonl").write_text("{}\n")
-    gear = SimpleNamespace(
-        pinned_rust_candidate_pool=lambda items_path, enchants_path: (
-            {0: [11, 12, 13]}, {0: [None]},
-            {"unique_item_options": 3, "unique_enchant_options": 0},
-        ),
-        RejectedGear=ValueError)
-    candidates = iter((11, 12, 13))
-    def cold(reference, *args, **kwargs):
-        req = copy.deepcopy(reference)
-        req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] = next(candidates)
-        return req
-    monkeypatch.setattr(gate, "_cold_gear", cold)
-
-    def item(request):
-        return request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
-
-    def native(binary, path, n, *, rng_mode):
-        return {"native_dps": 735.0}
-
-    def world(binary, path, distance, iterations, *, rng_mode):
-        req = json.loads(path.read_text())
-        score = {11: 760.0, 12: 755.0, 13: 740.0}[item(req)]
-        return {"native_dps": 740.0 if rng_mode == "stochastic" else score,
-                "world_mean_dps": 740.0 if rng_mode == "stochastic" else score,
-                "iterations_done": iterations, "native_damage_events": 2,
-                "native_world_ticks": 3}
-    production = SimpleNamespace(native_source_control=native, run=world)
-    monkeypatch.setattr(
-        gate, "_source_module",
-        lambda path, name: gear if "p74_gear_search" in str(path) else production)
-
-    paid_reranks = []
-    def rerank(production, binary, request, distance, *, seeds=("1955004", "1955047")):
-        paid_reranks.append((item(request), seeds))
-        scores = {11: 690.0, 12: 742.0, 13: 735.0}
-        return (740.0 if seeds[0] == "1955113" else scores[item(request)]), {
-            "world_mean_dps": scores[item(request)],
-            "native_damage_events": 2, "native_world_ticks": 3}
-    monkeypatch.setattr(gate, "_paid_p74_balanced_finalist", rerank)
-
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert report["status"] == "PASS"  # mocked backend; not real gate evidence
-    assert report["winner_screen_dps"] == 755.0
-    assert report["winner_selection"] == "paid_4x3_balanced_native_world_confirmed"
-    assert report["cold_winner_gear"][0]["item_id"] == 12
-    assert report["paid_balanced_finalists"] == 3
-    assert report["paid_balanced_confirmed"] == 1
-    assert report["frozen_stochastic_iterations"] == 1000
-    assert len(paid_reranks) == 4
-    assert paid_reranks[-1] == (12, ("1955113", "1955139"))
-    assert base == original
-
-
 def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
     import json
     import sys
@@ -1113,3 +885,21 @@ def test_feral_p74_rejects_modified_original_source_before_native(monkeypatch, t
         root, "druid", 60, "feral", "P7.4", require_world=False)
     assert report == {"status": "BLOCKED",
                       "reasons": ["P7_4_PINNED_SOURCE_REQUEST_CHANGED"]}
+
+def test_p74_full_search_env_cannot_reenable_retired_holdout(monkeypatch, tmp_path):
+    """Both legacy switch values still dispatch only to paid native P7.4."""
+    calls = []
+
+    def direct_native(root, class_key, level, spec):
+        calls.append((root, class_key, level, spec))
+        return {"status": "PASS", "reasons": [], "winner_native_dps": 42.0}
+
+    monkeypatch.setattr(gate, "_run_native_gear_axis", direct_native)
+    for flag in ("1", "invalid"):
+        monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", flag)
+        report = gate.run_live(tmp_path, "druid", 30, spec="balance")
+        assert report["status"] == "PASS"
+        assert report["winner_native_dps"] == 42.0
+
+    assert calls == [(tmp_path, "druid", 30, "balance")] * 2
+
