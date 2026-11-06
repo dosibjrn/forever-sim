@@ -1,0 +1,60 @@
+name: Warlock L30 native two-target rolling APL smoke
+
+on:
+  push:
+    branches: [work/warlock-l30-two-target-native-apl-20261107]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-l30-two-target:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - name: Checkout Forever optimizer
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout exact canonical Rust target identity revision
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: ca2f38cd97a1eac28ed87d6b4d56b7850cc4ed1a
+          path: engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check Python source APL and regressions
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "ca2f38cd97a1eac28ed87d6b4d56b7850cc4ed1a"
+          python3 -m py_compile project/tools/wf_warlock_rolling_apl.py project/tools/wf_warlock_l30_two_target_native_smoke.py
+          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_rolling_apl.py' -v
+      - name: Run exact Rust two-target-identity regression
+        working-directory: engine
+        run: |
+          cargo test --locked first_and_second_native_mob_damage_stay_distinct -- --nocapture
+          cargo test --locked no_invalid_target_identity_is_transported -- --nocapture
+          cargo test --locked target_hp_value_comes_from_last_real_world_ack -- --nocapture
+      - name: Build native source engine
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Run real balanced two-target source-native APL
+        working-directory: project
+        run: |
+          python3 -u tools/wf_warlock_l30_two_target_native_smoke.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --engine-tools ../engine/tools \
+            --pull-threshold 50 \
+            --out ../warlock-l30-two-target-native
+      - name: Preserve source request, native paid results and capability receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l30-two-target-native
+          path: warlock-l30-two-target-native/
+          if-no-files-found: warn
+          retention-days: 14
