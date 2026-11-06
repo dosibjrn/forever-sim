@@ -484,6 +484,13 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
             type(baseline.get("score")) not in (int, float)
             or not isfinite(baseline["score"])):
         reasons.append("P3_NATIVE_BASELINE_NOT_VALID")
+        # Paid native INVALID/UNSUPPORTED/UNSCORED/ERROR is a genuine
+        # result, not a reason to invent a gear score or hide the Rust refusal.
+        if baseline.get("status") in ("INVALID", "UNSUPPORTED", "UNSCORED", "ERROR"):
+            reasons.append(
+                "P3_NATIVE_BASELINE_REFUSAL:" + baseline["status"] +
+                (":" + str(baseline["reason"])[:350]
+                 if baseline.get("reason") else ""))
     expected_class, expected_level = (
         ("ClassWarlock", 20) if is_warlock_l20 else
         ("ClassDruid", 60) if checkpoint == "feral_l60" else
