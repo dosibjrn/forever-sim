@@ -104,7 +104,7 @@ def main() -> None:
             requested_rolling_apl, option_drain, real_drain)
         if replaced < 1 or proposed_replaced < 1:
             raise RuntimeError("Failed to replace inactive native Drain Life proposal rank")
-        request.write_text(json.dumps(req, indent=2) + "\\n")
+        request.write_text(json.dumps(req, indent=2) + "\n")
         call([binary, "prepare", "--request", request,
               "--actor-level", "30", "--outfile", prepared_path], seconds=120)
         prepared = json.loads(prepared_path.read_text())
