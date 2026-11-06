@@ -268,6 +268,8 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Source-IR SQLite-lineage audit is superseded by trusted native engine results.
+    "src/v2/source_db_authority.py",
     # Uncalled GameIR-only 2/100-mob policy search; exclusive test retired.
     "src/v2/source_persistent_policy_neighborhood.py",
     # Orphaned WF412 GameIR 100-mob stat/recovery reoptimizer; no native P3 caller.
@@ -297,6 +299,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "source_db_authority",
     "p7_frozen_winner_parity",
     "replay_stage5_candidate_2d",
     "replay_historical_wf678_winner",
@@ -537,6 +540,8 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Exclusive tests for the retired Python-only source authority certificate.
+    "tests/test_wf_gen03a4c_db_authority.py",
     # Obsolete WF321/WF324 control and 100-mob Python GameIR-only suites.
     "tests/test_wf321_druid_l20_bash_control_l2.py",
     "tests/test_wf324_druid20_horizon_consistency.py",

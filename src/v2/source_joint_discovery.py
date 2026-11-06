@@ -25,7 +25,6 @@ from src.v2.source_mode_search import evaluate_discovered_mode_search
 from src.v2.source_policy_search import synthesize_source_policies
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_joint_feedback import trace_joint_feedback
-from src.v2.source_db_authority import audit_ir_database_authority
 
 
 def _gear_envelope(class_key: str, level: int, *, max_gear_candidates: int,
@@ -244,7 +243,6 @@ def evaluate_bounded_joint_discovery(*, class_key: str, level: int, ir_slice=Non
         'full_fixed_point': False,
         'class_key': class_key, 'level': level, 'source_ir_id': source.id,
         'source_gear': 'canonical_sqlite_forever_catalogue',
-        'source_authority_audit': audit_ir_database_authority(source),
         'gear_candidate_count': len(gears),
         'gear_weight_combination_order': gear_weight_order,
         'melee_gear_search_enabled': bool(include_melee_gear),
@@ -281,7 +279,6 @@ def evaluate_bounded_joint_discovery(*, class_key: str, level: int, ir_slice=Non
         'alternatives': states[1:],
         'policy_changed_across_gear_at_fixed_talents': any(len(s) > 1 for s in policies_by_talent.values()),
         'missing': [
-            'canonical_sqlite_ability_talent_actor_field_lineage_unverified',
             'complete_talent_tree_representation', 'all_legal_gear_combinations',
             'source_gear_role_bridge_is_class_limited',
             'unsupported_gear_stats_and_weapon_effects', 'item_acquisition_cost_and_reachability',
