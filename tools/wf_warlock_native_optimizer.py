@@ -320,6 +320,67 @@ def proposals_from_native_talents(options, source_encoded: str, seed: int):
                 if row:
                     yield row
 
+    # L40 Demonic Pact consumes all 31 talent points, but a pure Felhunter
+    # sacrifice can combine Demonic Sacrifice with 2/2 Improved Life Tap.
+    # Generate legal hybrid proposals directly from source metadata so the
+    # HP -> mana -> damage path is actually explored, not left to luck.
+    aff_tree = next((i for i, tree in enumerate(trees)
+                     if tree["name"] == "Affliction"), None)
+    if demon_tree is not None and aff_tree is not None and budget >= 13:
+        for k in range(8):
+            alloc = [[0] * len(tree["talents"]) for tree in trees]
+            targets = {
+                "demonicSacrifice": (demon_tree, 1),
+                "improvedLifeTap": (aff_tree, 2),
+            }
+            for spent in range(budget):
+                # Unlock 11-point sacrifice first; then improve Life Tap,
+                # then spend the remaining budget using the source tiers.
+                if sum(alloc[demon_tree]) <= 10:
+                    order = [demon_tree]
+                elif sum(alloc[aff_tree]) < 2:
+                    order = [aff_tree]
+                else:
+                    order = [aff_tree, demon_tree]
+                choices = []
+                for t_id in order:
+                    tree = trees[t_id]
+                    points_in_tree = sum(alloc[t_id])
+                    for talent in tree["talents"]:
+                        idx = talent["index"]
+                        if alloc[t_id][idx] >= talent["max_rank"]:
+                            continue
+                        if (talent["minimum_level"] > level
+                                or talent["points_required_in_tree"] > points_in_tree):
+                            continue
+                        parent = talent.get("prerequisite") or {}
+                        if parent:
+                            prereq = next(
+                                (r for r in tree["talents"]
+                                 if r["field_name"] == parent.get("field_name")), None)
+                            if prereq is None or alloc[t_id][prereq["index"]] < parent["required_rank"]:
+                                continue
+                        choices.append((t_id, talent))
+                if not choices:
+                    break
+                desired = next(
+                    ((t_id, row) for field, (target_tree, required) in targets.items()
+                     for t_id, row in choices if t_id == target_tree
+                     and row["field_name"] == field
+                     and alloc[t_id][row["index"]] < required), None)
+                t_id, row = desired if desired is not None else rng.choice(choices)
+                alloc[t_id][row["index"]] += 1
+            else:
+                encoded = serialize(alloc)
+                if (sum(alloc[demon_tree]) >= 11
+                        and next((alloc[demon_tree][t["index"]] for t in trees[demon_tree]["talents"]
+                                  if t["field_name"] == "demonicSacrifice"), 0)
+                        and next((alloc[aff_tree][t["index"]] for t in trees[aff_tree]["talents"]
+                                  if t["field_name"] == "improvedLifeTap"), 0) == 2):
+                    row = emit(encoded, "native_sacrifice_improved_tap_" + str(k))
+                    if row:
+                        yield row
+
 
 def apl_proposals(options, source, source_module):
     """Every considered spell identity originates from Rust's options or
