@@ -2,8 +2,10 @@
 
 Only reorder existing source APL actions. MythicSim prepares and executes every
 candidate; Forever never interprets ability IDs, legality, damage or healing.
-A real two-target paid screen selects at most one changed policy for a 100-target
-run. This is not the cold 300s P4-P6 acceptance search.
+Two-target and 50-target native screens rank changed policies for bounded
+100-target attempts. A real 100-target native death can trigger the next
+independently screened policy; no failed run is scored. This is not the cold
+300s P4-P6 acceptance search.
 """
 from __future__ import annotations
 
@@ -118,7 +120,7 @@ def search_feral_native_apl_survival(
             reverse=True,
         )
         recovery_screens: list[dict] = []
-        winning = None
+        hundred_failures: list[dict] = []
         for label, selected, selected_screen in ranked_changed:
             temporary.write_text(json.dumps(selected, sort_keys=True), encoding="utf-8")
             surviving_recovery: list[dict] = []
@@ -153,55 +155,63 @@ def search_feral_native_apl_survival(
                     )
                     surviving_recovery.append(attempt)
                 recovery_screens.append(attempt)
-            if surviving_recovery:
-                # Only genuine native 50-mob survivors may earn the 100-mob run.
-                # More candidates are screened only when this one did not survive.
-                best_recovery = max(surviving_recovery, key=lambda attempt: (
-                    attempt["minimum_native_actor_health"],
-                    -attempt["fifty_target_elapsed_seconds"],
-                ))
-                winning = (label, selected, selected_screen, best_recovery)
-                break
-        if winning is None:
-            raise RuntimeError(
-                "FERAL_NATIVE_APL_NO_SURVIVING_RECOVERY_SCREEN:"
-                + json.dumps(recovery_screens, sort_keys=True)
-            )
-        label, selected, selected_screen, best_recovery = winning
-        chosen_recovery_seconds = best_recovery["recovery_seconds"]
-        temporary.write_text(json.dumps(selected, sort_keys=True), encoding="utf-8")
-        try:
-            paid = run_feral_l60_world(
-                binary, temporary, target_count=100,
-                recovery_seconds=chosen_recovery_seconds,
-                prepare_run=prepare_run, world_run=world_run,
-            )
-        except AssertionError as exc:
-            if not str(exc).startswith("RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:"):
-                raise
+            if not surviving_recovery:
+                continue
+            # Fifty kills are necessary screening evidence, not a promise
+            # that the same actor survives the remaining fifty. If the first
+            # source-native policy dies at 100, try the next *independently*
+            # screened changed APL rather than discarding its genuine chance.
+            best_recovery = max(surviving_recovery, key=lambda attempt: (
+                attempt["minimum_native_actor_health"],
+                -attempt["fifty_target_elapsed_seconds"],
+            ))
+            chosen_recovery_seconds = best_recovery["recovery_seconds"]
+            temporary.write_text(json.dumps(selected, sort_keys=True), encoding="utf-8")
+            try:
+                paid = run_feral_l60_world(
+                    binary, temporary, target_count=100,
+                    recovery_seconds=chosen_recovery_seconds,
+                    prepare_run=prepare_run, world_run=world_run,
+                )
+            except AssertionError as exc:
+                if not str(exc).startswith("RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:"):
+                    raise
+                hundred_failures.append({
+                    "selected_policy": label,
+                    "selected_recovery_seconds": chosen_recovery_seconds,
+                    "native_failure": str(exc),
+                    "native_prepared_request_sha256":
+                        best_recovery["native_prepared_request_sha256"],
+                })
+                continue
+            objective = paid["objective_100_mobs"]
+            if objective is None:
+                raise RuntimeError("FERAL_NATIVE_APL_100_TARGET_OBJECTIVE_UNPAID")
+            return {
+                "selected_policy": label,
+                "selected_native_two_target_screen": selected_screen,
+                "two_target_screens": attempts,
+                "recovery_screens": recovery_screens,
+                "failed_native_100_target_attempts": hundred_failures,
+                "selected_recovery_seconds": chosen_recovery_seconds,
+                "native_paid_100_target_objective": objective,
+                "native_prepared_request_sha256": paid["native_prepared_request_sha256"],
+                "source_request_raw_sha256": paid["source_request_raw_sha256"],
+                "p4_p5_p6_certified": False,
+            }
+        if hundred_failures:
             raise RuntimeError(
                 "FERAL_NATIVE_APL_100_TARGET_NATIVE_DEATH:"
                 + json.dumps({
-                    "selected_policy": label, "two_target_screens": attempts,
+                    "two_target_screens": attempts,
                     "recovery_screens": recovery_screens,
-                    "selected_recovery_seconds": chosen_recovery_seconds,
-                    "native_failure": str(exc),
+                    "failed_native_100_target_attempts": hundred_failures,
                 }, sort_keys=True)
-            ) from exc
-        objective = paid["objective_100_mobs"]
-        if objective is None:
-            raise RuntimeError("FERAL_NATIVE_APL_100_TARGET_OBJECTIVE_UNPAID")
-        return {
-            "selected_policy": label,
-            "selected_native_two_target_screen": selected_screen,
-            "two_target_screens": attempts,
-            "recovery_screens": recovery_screens,
-            "selected_recovery_seconds": chosen_recovery_seconds,
-            "native_paid_100_target_objective": objective,
-            "native_prepared_request_sha256": paid["native_prepared_request_sha256"],
-            "source_request_raw_sha256": paid["source_request_raw_sha256"],
-            "p4_p5_p6_certified": False,
-        }
+            )
+        raise RuntimeError(
+            "FERAL_NATIVE_APL_NO_SURVIVING_RECOVERY_SCREEN:"
+            + json.dumps(recovery_screens, sort_keys=True)
+        )
 
 
 def main() -> None:
