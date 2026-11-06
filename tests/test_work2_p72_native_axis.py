@@ -166,7 +166,7 @@ def test_p72_tries_reference_policy_mutation_then_cold_candidates(monkeypatch):
 
     report = p72.run_live(Path("/not-needed"), "druid", 60, spec="unrestricted")
 
-    assert [is_cold for _, is_cold in attempts] == [False, False, True, True]
+    assert [is_cold for _, is_cold in attempts] == [False, False, True]
     assert attempts[0][0] == source_apl
     assert attempts[1][0] == source_apl
     assert attempts[2][0] is None
