@@ -343,9 +343,22 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
     # endpoint first; never turn its candidates into a Python legality claim.
     warlock_l20 = str(class_key).lower() == "warlock" and level == 20
     if warlock_l20:
-        from src.game.native_p3_item_options import query_native_p3_item_options
-        equipped = query_native_p3_item_options(
-            native_binary, "warlock", 20, spec="unrestricted", slot="all")
+        from src.game.native_p3_item_options import (
+            NativeItemOptionsError, query_native_p3_item_options)
+        try:
+            equipped = query_native_p3_item_options(
+                native_binary, "warlock", 20, spec="unrestricted", slot="all")
+        except NativeItemOptionsError as exc:
+            # The selected older pin's item-options endpoint explicitly
+            # rejects Warlock, while its get_options can still supply
+            # unverified proposals for native prepare/sim to judge. Preserve
+            # that previous UNKNOWN-only transport, never promote to VALID.
+            # All other native errors/refusals remain authoritative.
+            if str(exc) != (
+                    "P3_NATIVE_ITEM_OPTIONS_REFUSED:"
+                    "NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"):
+                raise
+            equipped = {"items": []}
         if equipped["items"]:
             return {
                 "status": equipped["status"],
