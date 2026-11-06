@@ -20,6 +20,11 @@ FEATURES = (
     "native_mana_regen_per_mob_fraction",
     "native_health_damage_per_mob_fraction",
     "long_cooldowns_ready_per_100_s",
+    "long_cooldown_casts_first3",
+    "long_cooldown_remaining_s",
+    "mana_spent_per_mob_fraction",
+    "mana_gained_per_mob_fraction",
+    "health_actual_gain_per_mob_fraction",
 )
 
 
@@ -29,28 +34,44 @@ def finite(value: Any, label: str) -> float:
     return float(value)
 
 
-def cooldown_receipt(prepared: dict) -> dict:
-    """Native spellbook cooldown definitions, not claimed runtime casts.
+def cooldown_receipt(prepared: dict, windows: list[dict]) -> dict:
+    """Source-native long-CD ability, actual casts and remaining cooldown.
 
-    Actual usage and charges require source Rust window action receipts.
-    Do not silently turn a long-CD *available* into a long-CD *used*.
+    A 180s cooldown cast in the first three mobs is *not* available
+    for the next 180s; report remaining time rather than allowing the
+    predictor to multiply the initial burst by 100.
     """
-    player = prepared["player"]
-    cds = []
-    for spell in player.get("spells", []):
-        cd = (spell.get("cd") or {}).get("duration_ns")
-        shared = (spell.get("shared_cd") or {}).get("duration_ns")
-        ns = max((v for v in (cd, shared) if type(v) is int), default=0)
-        if ns >= 30_000_000_000:
-            cds.append({
-                "action_id": spell.get("action_id"),
-                "duration_s": ns / 1e9,
-                "casts_observed": None,
-            })
+    if not windows:
+        raise ValueError("No native cooldown windows")
+    last = windows[-1]
+    if not all("native_spell_cast_receipts" in w and
+               "native_long_cooldown_states" in w for w in windows):
+        return {
+            "long_cooldowns_available": [],
+            "long_cooldown_casts_total": None,
+            "long_cooldown_remaining_s": None,
+            "long_cooldown_usage_observed": False,
+            "long_cooldown_usage_source": "Missing source-Rust native spell cast receipts",
+        }
+    states = last["native_long_cooldown_states"]
+    casts = [cast for w in windows for cast in w["native_spell_cast_receipts"]
+             if cast.get("is_long_cooldown") is True]
+    for state in states:
+        if not (type(state.get("duration_ns")) is int
+                and type(state.get("ready_in_ns")) is int
+                and state["ready_in_ns"] >= 0):
+            raise ValueError("Invalid native cooldown timer receipt")
+    total = sum(int(row["casts"]) for row in casts)
     return {
-        "long_cooldowns_available": cds,
-        "long_cooldown_usage_observed": False,
-        "long_cooldown_usage_source": "Rust world windows do not yet report per-action casts",
+        "long_cooldowns_available": states,
+        "long_cooldown_casts_total": total,
+        "long_cooldown_remaining_s": sum(
+            state["ready_in_ns"]/1e9 for state in states),
+        "long_cooldown_usage_observed": True,
+        "long_cooldown_usage_source": "Rust retained actor spell.cast counts and timer state",
+        "long_cooldown_casts_by_mob": [
+            [cast for cast in w["native_spell_cast_receipts"]
+             if cast.get("is_long_cooldown") is True] for w in windows],
     }
 
 
@@ -86,8 +107,18 @@ def extract_three_mob_features(prepared: dict, world: dict) -> dict:
     damage_observed = all(type(v) in (int,float) for v in native_health_damage)
     regen = sum(finite(v,"mana regen") for v in native_mana_regen) if regen_observed else None
     damage = sum(finite(v,"HP damage") for v in native_health_damage) if damage_observed else None
-    cd = cooldown_receipt(prepared)
-    cd_rate = sum(100.0 / v["duration_s"] for v in cd["long_cooldowns_available"])
+    cd = cooldown_receipt(prepared, windows)
+    cd_rate = sum(100.0 / (state["duration_ns"]/1e9)
+                  for state in cd["long_cooldowns_available"])
+    mana_spent_rows = [w.get("native_mana_spent") for w in windows]
+    mana_gained_rows = [w.get("native_mana_gained") for w in windows]
+    hp_gained_rows = [w.get("native_health_actual_gain") for w in windows]
+    spent_observed = all(type(v) in (float,int) for v in mana_spent_rows)
+    gained_observed = all(type(v) in (float,int) for v in mana_gained_rows)
+    hp_gained_observed = all(type(v) in (float,int) for v in hp_gained_rows)
+    mana_spent = sum(finite(v, "mana spent") for v in mana_spent_rows) if spent_observed else None
+    mana_gained = sum(finite(v, "mana gained") for v in mana_gained_rows) if gained_observed else None
+    health_gained = sum(finite(v, "health gain") for v in hp_gained_rows) if hp_gained_observed else None
     features = {
         "mean_kill_s": fmean(times),
         "late_kill_s": fmean(times[1:]),
@@ -101,6 +132,14 @@ def extract_three_mob_features(prepared: dict, world: dict) -> dict:
         "native_health_damage_per_mob_fraction":
             damage / (THREE * health_max) if damage is not None else 0.0,
         "long_cooldowns_ready_per_100_s": cd_rate,
+        "long_cooldown_casts_first3": cd["long_cooldown_casts_total"] or 0.,
+        "long_cooldown_remaining_s": cd["long_cooldown_remaining_s"] or 0.,
+        "mana_spent_per_mob_fraction": (
+            mana_spent/(THREE*mana_max) if mana_spent is not None else 0.),
+        "mana_gained_per_mob_fraction": (
+            mana_gained/(THREE*mana_max) if mana_gained is not None else 0.),
+        "health_actual_gain_per_mob_fraction": (
+            health_gained/(THREE*health_max) if health_gained is not None else 0.),
     }
     if any(not math.isfinite(v) for v in features.values()):
         raise ValueError("Nonfinite Rust-derived feature")
@@ -112,6 +151,11 @@ def extract_three_mob_features(prepared: dict, world: dict) -> dict:
             "health_max": health_max, "mana_max": mana_max,
             "native_mana_regen_actual_gain": regen,
             "native_health_damage_taken": damage,
+            "native_health_actual_gain": health_gained,
+            "native_mana_spent": mana_spent,
+            "native_mana_gained": mana_gained,
+            "native_cast_receipts_observed": spent_observed and gained_observed,
+            "native_spell_cast_receipts": [w.get("native_spell_cast_receipts") for w in windows],
             "native_mana_regen_observed": regen_observed,
             "native_health_damage_observed": damage_observed,
             "native_passive_recovery_ns": [w.get("native_passive_recovery_ns") for w in windows],
