@@ -59,7 +59,7 @@ def query_native_p3_item_options(
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_REFUSED:" + str(code or "UNKNOWN"))
     if response.get("required_level_supported") is not True:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_LEVEL_SOURCE_UNAVAILABLE")
-    unverified_count = response.get("unverified_candidate_count")
+    unverified_count = response.get("unverified_candidate_count", 0)
     if type(unverified_count) is not int or unverified_count < 0:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_UNVERIFIED_COUNT")
     # Optional source-accounting diagnostics are not a P3 acceptance gate.
@@ -68,11 +68,9 @@ def query_native_p3_item_options(
     if type(excluded_count) is not int or excluded_count < 0:
         raise NativeItemOptionsError(
             "P3_NATIVE_ITEM_OPTIONS_INVALID_EXCLUDED_NON_CLIENT_COUNT")
-    if status == "partial_level_unknown":
-        if unverified_count == 0:
-            raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_STATUS_COUNT_MISMATCH")
-    elif unverified_count != 0:
-        raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_STATUS_COUNT_MISMATCH")
+    # The native status is authoritative. Source-accounting totals may be
+    # absent, lagging, or nonzero alongside valid returned options; none is a
+    # second Warcraft legality decision before native paid P3 scoring.
     if status not in ("ok", "empty", "partial_level_unknown") or not isinstance(response.get("items"), list):
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_RESPONSE")
     if ((status == "empty" and response["items"])
@@ -482,7 +480,7 @@ def native_p3_item_records(binary: str | Path, class_key: str, level: int,
             unmapped_by_item[item_id] = tuple(sorted(unmapped))
     return tuple(records), unmapped_by_item, {
         "status": response["status"],
-        "unverified_candidate_count": response["unverified_candidate_count"],
+        "unverified_candidate_count": response.get("unverified_candidate_count", 0),
         "excluded_non_client_item_count": response.get("excluded_non_client_item_count", 0),
         "source": response.get("source"),
     }

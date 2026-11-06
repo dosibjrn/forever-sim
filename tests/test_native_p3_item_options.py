@@ -181,12 +181,34 @@ def test_native_p3_preserves_partial_level_unknown_status_and_count():
     assert actual["unverified_candidate_count"] == 2267
 
 
+@pytest.mark.parametrize(("native_status", "diagnostic_count"), [
+    ("ok", 1),
+    ("partial_level_unknown", 0),
+])
+def test_native_p3_trusts_selected_rust_status_not_accounting_count(native_status, diagnostic_count):
+    payload = _response(status=native_status, unverified_candidate_count=diagnostic_count)
+    actual = query_native_p3_item_options("native", "priest", 20, runner=_runner(payload))
+    assert actual == payload
+    assert actual["items"][0]["item_id"] == 25
+
+
+def test_native_p3_missing_optional_unverified_count_still_projects_native_items():
+    payload = _response()
+    del payload["unverified_candidate_count"]
+    actual = query_native_p3_item_options("native", "priest", 20, runner=_runner(payload))
+    assert actual == payload
+    items, unmapped, metadata = native_p3_item_records(
+        "native", "priest", 20, runner=_runner(payload))
+    assert len(items) == 1 and items[0].item_id == 25
+    assert unmapped == {}
+    assert metadata["status"] == "ok"
+    assert metadata["unverified_candidate_count"] == 0
+
+
 @pytest.mark.parametrize("payload,reason", [
     (_response(required_level_supported=False), "LEVEL_SOURCE_UNAVAILABLE"),
     (_response(level=60), "REQUEST_MISMATCH"),
     (_response(status="empty"), "STATUS_COUNT_MISMATCH"),
-    (_response(status="partial_level_unknown", unverified_candidate_count=0), "STATUS_COUNT_MISMATCH"),
-    (_response(unverified_candidate_count=1), "STATUS_COUNT_MISMATCH"),
     (_response(items=[{"item_id": 25, "slot": "head"}]), "INVALID_ITEM_SHAPE"),
 ])
 def test_native_p3_refuses_unusable_responses(payload, reason):
