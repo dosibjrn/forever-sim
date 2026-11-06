@@ -333,4 +333,10 @@ def test_negative_paid_effect_is_never_recoded_as_zero(monkeypatch):
         ir, stat="agility", level=30, probe_deltas=(20.,),
         max_evaluations=2)
     assert receipt["paid_evaluations"] == 2
-    assert receipt["status"] == "NO_POSITIVE_SOURCE_POLICY_WITNESS"
+    assert receipt["status"] == "MEASURED_NEGATIVE_SOURCE_POLICY_WITNESS"
+    assert receipt["weight_s_saved_per_mob_per_unit"] == -0.05
+    assert receipt["baseline_seconds_per_mob"] == 10.0
+    assert receipt["perturbed_seconds_per_mob"] == 11.0
+    assert receipt["delta"] == 20.0
+    assert receipt["method"] == (
+        "same_paid_source_policy_real_combat_and_recovery_before_after")
