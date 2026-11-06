@@ -852,7 +852,8 @@ def test_p75_cli_rejects_malformed_wf613_operator_diagnostics(monkeypatch, capsy
     assert "best_paid_balanced_world_dps" not in record
 
 
-def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_path):
+def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_path,
+                                        **test_kwargs):
     """Run the P7.3/P7.4 optimizer-policy fixture in this existing CI suite."""
     from importlib.util import module_from_spec, spec_from_file_location
     from pathlib import Path
@@ -862,7 +863,7 @@ def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_pa
     assert spec is not None and spec.loader is not None
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
-    getattr(module, test_name)(monkeypatch, tmp_path)
+    getattr(module, test_name)(monkeypatch, tmp_path, **test_kwargs)
 
 
 def test_p73_changed_talent_is_native_balanced_without_stochastic_holdout(
@@ -870,7 +871,7 @@ def test_p73_changed_talent_is_native_balanced_without_stochastic_holdout(
     _run_sibling_gate_policy_regression(
         "test_wf_gate_p7_3_live.py",
         "test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates",
-        monkeypatch, tmp_path)
+        monkeypatch, tmp_path, legacy_env="0")
 
 
 def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
