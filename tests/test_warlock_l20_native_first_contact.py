@@ -63,15 +63,16 @@ class WarlockL20NativeProbeTest(unittest.TestCase):
         result = module.diagnose_warlock_l20(
             "rust", runner=runner_for(source_options(), native_items())
         )
-        self.assertEqual(result["status"], "BLOCKED")
-        self.assertEqual(result["gate_acceptance"], "NOT_RUN")
+        self.assertEqual(result["status"], "DIAGNOSTIC")
+        self.assertFalse(result["p3_gate_executed"])
         self.assertEqual(result["native_l20_combat"], "NOT_EXECUTED")
         self.assertFalse(result["item_source_ready"])
         self.assertEqual(
             result["native_gear_refusal"]["code"],
             "NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS",
         )
-        self.assertIn("WARLOCK_L20_NATIVE_ITEM_PROFICIENCY", result["missing"])
+        self.assertNotIn("missing", result)
+        self.assertFalse(result["spell_learning_source_ready"])
         self.assertEqual(result["talent_points"], 11)
 
     def test_even_complete_native_options_are_not_combat_or_p3_pass(self):
@@ -79,15 +80,11 @@ class WarlockL20NativeProbeTest(unittest.TestCase):
             "rust", runner=runner_for(
                 source_options(ready=True), native_items(ready=True))
         )
-        self.assertTrue(result["all_source_dimensions_ready"])
         self.assertTrue(result["item_source_ready"])
-        self.assertEqual(result["gate_acceptance"], "NOT_RUN")
+        self.assertFalse(result["p3_gate_executed"])
         self.assertEqual(result["native_l20_combat"], "NOT_EXECUTED")
-        self.assertEqual(result["status"], "BLOCKED")
-        self.assertEqual(
-            result["missing"],
-            ["WARLOCK_L20_NATIVE_PREPARED_ACTOR_AND_PAID_COMBAT"],
-        )
+        self.assertEqual(result["status"], "DIAGNOSTIC")
+        self.assertNotIn("missing", result)
 
     def test_wrong_level_and_clipped_talent_points_fail_closed(self):
         options = source_options()
