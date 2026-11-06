@@ -1,0 +1,62 @@
+name: L30 native three-mob resource and cooldown surrogate
+
+on:
+  push:
+    branches: [work/warlock-l30-three-mob-surrogate-20261106]
+    paths:
+      - tools/wf_warlock_chain_surrogate.py
+      - tools/wf_warlock_l30_surrogate_probe.py
+      - tools/test_wf_warlock_chain_surrogate.py
+      - .github/workflows/warlock-l30-native-three-mob-surrogate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  l30-three-world-probes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout optimization source
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout exact canonical Rust with three-mob receipts
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 0f3c4ddce3d8f191118b29ff3321f338aca062a5
+          path: engine
+      - name: Verify source, syntax and tiny predictor regression tests
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "0f3c4ddce3d8f191118b29ff3321f338aca062a5"
+          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py
+          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install existing native bridge deps
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Build Rust executable
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Probe 16 actual 3-mob chains and calibrate 4 full 100-mob truth labels
+        working-directory: project
+        run: |
+          python3 -u tools/wf_warlock_l30_surrogate_probe.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --engine-tools ../engine/tools \
+            --engine-sha 0f3c4ddce3d8f191118b29ff3321f338aca062a5 \
+            --full-count 4 \
+            --out ../warlock-l30-native-three-mob-surrogate
+      - name: Preserve actual native 3-mob measurements and training status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l30-native-three-mob-surrogate
+          path: warlock-l30-native-three-mob-surrogate/
+          if-no-files-found: warn
+          retention-days: 14
