@@ -91,3 +91,37 @@ def build_rolling_two_target_apl(spells: list[dict], *,
             "fear_and_pet_funnel_not_executed_in_this_smoke": True,
             "multi_target_world_ACK_verified": False}
     return result, meta
+
+
+def build_stationary_native_multidot_smoke(spells: list[dict]) -> tuple[list[dict], dict]:
+    """Native-only capability screen: can Rust really DoT two live targets?
+
+    The selected Fight's stationary targets intentionally have no HP ledger.
+    Therefore a 50%-of-current-mob condition would be ungrounded outside the
+    2D ACK world. Use existing native multidot APL actions here only; this
+    smoke never claims the requested threshold behavior was executed.
+    """
+    dot_names = ("immolate", "bane of agony", "siphon life", "corruption")
+    dot_ids = {name: discover(spells, name) for name in dot_names}
+    missing = [name for name, sid in dot_ids.items() if sid is None]
+    if missing:
+        raise ValueError("Native two-target DoT unsupported: "+", ".join(missing))
+    actions = [
+        {"action": {"multidot": {
+            "spellId": {"spellId": dot_ids[name]}, "maxDots": 2,
+        }}}
+        for name in dot_names
+    ]
+    drain_id = discover(spells, "drain life")
+    if drain_id is None:
+        raise ValueError("Native Drain Life not discovered")
+    actions.insert(0, cast(drain_id, health_below(30, "Player")))
+    wand_id = discover(spells, "shoot")
+    actions.append(cast(wand_id if wand_id is not None else drain_id))
+    return actions, {
+        "source_dot_spell_ids": dot_ids,
+        "filler": "shoot" if wand_id is not None else "drain life",
+        "native_two_target_dots_only": True,
+        "pull_at_50_pct_executed": False,
+        "world_2d_ack_executed": False,
+    }
