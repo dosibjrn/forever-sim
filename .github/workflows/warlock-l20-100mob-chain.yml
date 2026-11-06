@@ -2,7 +2,7 @@ name: Warlock L20 optimized APL 100 real mob chain
 
 on:
   push:
-    branches: [work/warlock-l20-100mob-chain-20261106]
+    branches: [main]
     paths:
       - .github/workflows/warlock-l20-100mob-chain.yml
       - tools/wf_warlock_l20_100mob.py
