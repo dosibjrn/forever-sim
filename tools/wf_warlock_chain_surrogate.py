@@ -274,7 +274,17 @@ def predict(model: dict, probe: dict, *, engine_sha: str,
         raise ValueError("Never transfer 100-mob surrogate to different Rust engine/scenario")
     if not isinstance(probe.get("features"),dict):
         raise ValueError("No native three-mob features")
+    reference = model.get("time_model") or model.get("survival_model")
+    distance = None
+    if reference is not None:
+        # A bounded standardized distance is an extrapolation diagnostic,
+        # NOT a calibrated probability interval or an engine mechanic.
+        z = [(float(probe["features"][key])-mean)/scale
+             for key,mean,scale in zip(FEATURES,reference["means"],
+                                       reference["scales"])]
+        distance = math.sqrt(fmean(min(5.,abs(value))**2 for value in z))
     result={
+        "standardized_training_distance":distance,
         "estimated_100_mob_elapsed_s":None,
         "probability_100_mob_completed":None,
         "uncertainty_mae_s":model.get("loo_mae_elapsed_s"),
@@ -290,3 +300,60 @@ def predict(model: dict, probe: dict, *, engine_sha: str,
         result["probability_100_mob_completed"]=max(
             0.,min(1.,_predict_regression(model["survival_model"],probe)))
     return result
+
+
+def select_native_100_validation(untested: list[dict], observed: list[dict],
+                                 *, iteration: int) -> tuple[dict, str]:
+    """Choose one MORE genuinely paid 100-mob Rust run.
+
+    Exploitation uses completed-chain labels only. Every third adaptive
+    choice targets out-of-distribution/category diversity; untrained models
+    use native HP/mana/time receipts for bootstrap. This never predicts a
+    kill, changes a game rule, or awards a completed chain.
+    """
+    if not untested:
+        raise ValueError("No unvalidated native three-mob cases")
+
+    def diversity(case: dict) -> float:
+        chosen = case["result"]
+        return sum(
+            1.0 / (1.0 + sum(
+                previous["result"].get(axis) == chosen.get(axis)
+                for previous in observed))
+            for axis in ("gear", "talents", "pet", "filler")
+        )
+
+    predicted = [case for case in untested
+                 if isinstance(case["result"].get("surrogate"), dict)
+                 and case["result"]["surrogate"].get(
+                     "estimated_100_mob_elapsed_s") is not None]
+    if not predicted:
+        def native_priority(case: dict) -> tuple:
+            f = case["probe"]["features"]
+            return (f["health_end_fraction"], f["mana_end_fraction"],
+                    -f["kill_time_slope"], -f["late_kill_s"], diversity(case))
+        return max(untested, key=native_priority), "native_resource_bootstrap"
+
+    if iteration % 3 == 2:
+        def exploration(case: dict) -> tuple:
+            p = case["result"]["surrogate"]
+            distance = p.get("standardized_training_distance")
+            return (float(distance) if distance is not None else 0.,
+                    diversity(case), -case["probe"]["features"]["late_kill_s"])
+        return max(predicted, key=exploration), "out_of_sample_exploration"
+
+    def exploitation(case: dict) -> tuple:
+        p = case["result"]["surrogate"]
+        survival = p.get("probability_100_mob_completed")
+        # With no failed chain labels, completion probability is UNKNOWN,
+        # not 100%. Keep neutral until verified negative labels exist.
+        survival = 0.5 if survival is None else float(survival)
+        distance = p.get("standardized_training_distance")
+        uncertainty_penalty = 1. + .05 * min(
+            6., float(distance) if distance is not None else 0.)
+        estimated = float(p["estimated_100_mob_elapsed_s"])
+        if not math.isfinite(estimated) or estimated <= 0:
+            return (float("inf"), 0.)
+        return (estimated * uncertainty_penalty /
+                max(.2, .25 + .75 * survival), -diversity(case))
+    return min(predicted, key=exploitation), "predicted_100_mob_exploitation"
