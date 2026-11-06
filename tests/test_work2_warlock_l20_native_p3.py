@@ -159,15 +159,22 @@ def test_native_warlock_balanced_dps_pays_real_changed_item_only():
 
 
 def test_native_warlock_cannot_promote_level60_donor_or_wrong_class():
-    for fixture in (source(level=60), source(actor="ClassMage")):
-        called = []
-        result = compare_equipped_native(
-            "selected-engine", fixture, {"head": {"selected_ids": [900]}},
+    called = []
+    donor = compare_equipped_native(
+        "selected-engine", source(level=60), {"head": {"selected_ids": [900]}},
+        class_key="warlock", level=20, objective="DPS",
+        evaluator=lambda *_a, **_kw: called.append(True),
+        preparer=prepared)
+    assert donor["status"] == "NATIVE_REQUEST_CHECKPOINT_MISMATCH"
+    assert donor["paid_attempts"] == 0
+    import pytest
+    with pytest.raises(ValueError, match="P3_NATIVE_EQUIPPED_CLASS_MISMATCH"):
+        compare_equipped_native(
+            "selected-engine", source(actor="ClassMage"),
+            {"head": {"selected_ids": [900]}},
             class_key="warlock", level=20, objective="DPS",
-            evaluator=lambda *_a, **_kw: called.append(True),
-            preparer=prepared)
-        assert result["paid_attempts"] == 0
-        assert not called
+            evaluator=lambda *_a, **_kw: called.append(True), preparer=prepared)
+    assert not called
 
     wrong_native = p3._native_rogue_p3_verdict(
         {"status": "ok", "items": [{"slot": "head", "item_id": 900, "item_level": 20}]},
