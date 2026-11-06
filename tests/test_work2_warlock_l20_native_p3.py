@@ -179,6 +179,8 @@ def test_unverified_warlock_swap_native_refusal_is_paid_and_preserved():
 def test_missing_native_warlock_actor_request_refuses_without_payment(monkeypatch):
     monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "selected-engine")
     monkeypatch.delenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST", raising=False)
+    # This behavior must remain stable after Merge pins the paid fixture.
+    monkeypatch.setattr(p3, "_warlock_l20_native_request", lambda _root: None)
     monkeypatch.setattr(p3, "_query_native_unified_p3_items",
                         lambda *_args: {"status": "ok", "items": [
                             {"slot": "head", "item_id": 900, "item_level": 20}]})
@@ -577,3 +579,44 @@ def test_old_selected_rust_unsupported_warlock_items_keeps_unknown_proposals(mon
                        match="P3_NATIVE_ITEM_OPTIONS_INVALID_RESPONSE"):
         p3._query_native_unified_p3_items(
             ROOT, "old-pinned-engine", "warlock", 20)
+
+
+def test_warlock_p3_defaults_to_tested_fixture_in_selected_rust_gitlink(tmp_path, monkeypatch):
+    """Paid equipped fixture is usable by production without a manual env var."""
+    monkeypatch.delenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST", raising=False)
+    fixture = (tmp_path / "integrations/mythicsim-rust/engine/fixtures"
+               / "warlock-l20-troll-best-paid.request.json")
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text('{"raid":{"parties":[]}}', encoding="utf-8")
+    assert p3._warlock_l20_native_request(tmp_path) == str(fixture)
+    calls = []
+
+    def fake_native(command, **kwargs):
+        calls.append((command, kwargs))
+        return SimpleNamespace(returncode=0, stdout=json.dumps({
+            "status": "PAID_NATIVE_REFUSAL", "paid_attempts": 1}), stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_native)
+    receipt = p3._paid_native_equipped_probe(
+        tmp_path, "selected-engine",
+        {"slots": {"head": {"selected_ids": [900]}}}, 44,
+        checkpoint="warlock_l20")
+    assert receipt["paid_attempts"] == 1
+    command, kwargs = calls[0]
+    assert command[command.index("--request") + 1] == str(fixture)
+    assert command[-4:] == ["--class-key", "warlock", "--level", "20"]
+    assert json.loads(kwargs["input"]) == {"head": {"selected_ids": [900]}}
+
+
+def test_warlock_p3_explicit_request_overrides_pinned_fixture(tmp_path, monkeypatch):
+    fixture = (tmp_path / "integrations/mythicsim-rust/engine/fixtures"
+               / "warlock-l20-troll-best-paid.request.json")
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST",
+                       "/tmp/caller-selected-warlock.json")
+    assert p3._warlock_l20_native_request(tmp_path) == (
+        "/tmp/caller-selected-warlock.json")
+    monkeypatch.delenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST")
+    fixture.unlink()
+    assert p3._warlock_l20_native_request(tmp_path) is None

@@ -65,21 +65,35 @@ jobs:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: |
           set -euo pipefail
+          paid=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-best-paid.request.json
           template=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-native.request.json
           dir="$RUNNER_TEMP/warlock-l20-native-p3"
           mkdir -p "$dir"
-          if [[ -f "$template" ]]; then
+          if [[ -f "$paid" ]]; then
+            # Rust source search already prepared and paid this 17-item actor.
+            # Keep its original items, talents, APL and encounter unchanged.
+            cp "$paid" "$dir/equipped-source-request.json"
+            echo "P3_REQUEST_SOURCE=selected-rust-best-paid" >> "$GITHUB_STEP_SUMMARY"
+            echo "FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST=$dir/equipped-source-request.json" >> "$GITHUB_ENV"
+            echo "P3_SELECTED_SOURCE_READY=true" >> "$GITHUB_ENV"
+          elif [[ -f "$template" ]]; then
             python tools/wf_native_warlock_l20_equipped.py \
               --binary "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" \
               --template "$template" \
               --out "$dir/equipped-source-request.json" \
               --receipt "$dir/equipped-source-prepare.json"
+            echo "P3_REQUEST_SOURCE=selected-rust-native-template" >> "$GITHUB_STEP_SUMMARY"
             echo "FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST=$dir/equipped-source-request.json" >> "$GITHUB_ENV"
+            echo "P3_SELECTED_SOURCE_READY=true" >> "$GITHUB_ENV"
           else
             echo "WARLOCK_L20_SELECTED_RUST_FIXTURE_NOT_PINNED; gate will report source request required"
           fi
 
       - name: One changed-path native Warlock L20 options and no-record P3
+        # The legacy selected pin has no Warlock L20 equipped source. A
+        # repeated known 0-paid gate refusal yields no new information;
+        # execute P3 only when the tested native source exists in this pin.
+        if: env.P3_SELECTED_SOURCE_READY == 'true'
         shell: bash
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
