@@ -72,6 +72,61 @@ def talent_has_native_rank(options: dict, encoded: str, field_name: str) -> bool
     return False
 
 
+def set_native_sustain_buffs(request: dict) -> None:
+    """Configure existing native-request fields, never implement regen here.
+
+    L40: Demon Armor rank 3; Troll's Blood Elixir item 3826 is a long-
+    duration guardian elixir, not a combat potion. The selected Rust engine
+    decides whether either source effect is represented in combat.
+    """
+    player = actor(request)
+    player.setdefault("warlock", {}).setdefault("options", {}).setdefault(
+        "classOptions", {})["armor"] = "DemonArmor"
+    player.setdefault("consumables", {})["guardianElixirId"] = 3826
+
+
+def native_sustain_receipt(prepared: dict, request: dict) -> dict:
+    """Report native observed sustain coverage; never assume omitted effects.
+
+    This does not simulate healing. Missing source effects are explicitly
+    flagged, so a short DPS result is not misrepresented as a complete
+    Troll/Felhunter health-to-mana sustain measurement.
+    """
+    player = prepared["player"]
+    effects = prepared.get("effects") or []
+    auras = player.get("auras") or []
+    spells = player.get("spells") or []
+    active_armor = any(
+        a.get("label") == "Demon Armor" and a.get("active")
+        for a in auras)
+    rapid_prepared = any(
+        (spell.get("action_id") or {}).get("spell_id") == 1260270
+        for spell in spells)
+    regen_effects = [
+        effect.get("kind") for effect in effects
+        if "regen" in str(effect.get("kind", "")).lower()
+        or "health" in str(effect.get("kind", "")).lower()
+    ]
+    return {
+        "requested_demon_armor": actor(request)["warlock"]["options"][
+            "classOptions"].get("armor") == "DemonArmor",
+        "native_demon_armor_aura": active_armor,
+        "requested_trolls_blood_elixir_id": actor(request).get(
+            "consumables", {}).get("guardianElixirId"),
+        "native_trolls_blood_aura": any(
+            "troll" in str(a.get("label", "")).casefold()
+            and "blood" in str(a.get("label", "")).casefold()
+            for a in auras if a.get("active")),
+        "native_rapid_regeneration_spell": rapid_prepared,
+        "native_regen_effect_kinds": regen_effects,
+        "full_troll_hp_regeneration_verified": False,
+        "note": ("Native prepared evidence only. Passive troll combat HP regen, "
+                 "Rapid Regeneration, Demon Armor HP5, Troll's Blood HP5, "
+                 "and Felhunter sacrifice HP ticks require native Rust "
+                 "effect and combat receipts before ranking as sustain DPS."),
+    }
+
+
 def native_pet_strategies(pets: list[str]) -> list[dict]:
     """Enumerate request configurations, not a second pet/ability simulator.
 
@@ -663,6 +718,7 @@ def main():
     source["encounter"]["targets"][0]["name"] = f"Source-native L{level} combat"
     actor(source)["name"] = f"Warlock L{level} Troll native"
     actor(source)["equipment"]["items"] = [{"id":0} for _ in range(17)]
+    set_native_sustain_buffs(source)
     sys.path.insert(0, str(args.engine_tools.resolve()))
     import warlock_l20_native_search as source_search
     option_source = json.loads(call(
@@ -727,6 +783,7 @@ def main():
                   "--rng-mode", "balanced", "--outfile", smoke_paid])
             paid_data = json.loads(smoke_paid.read_text())["result"]
             pet_receipt = native_pet_receipt(prepared_data, paid_data, chosen_pet)
+            row["native_sustain"] = native_sustain_receipt(prepared_data, proposal)
             row.update(status="RUST_PAID",
                        raid_dps=paid_data["raidMetrics"]["dps"]["avg"],
                        **pet_receipt)
@@ -823,6 +880,7 @@ def main():
                             "pet": strategy["pet"], "sacrifice": strategy["sacrifice"],
                             "strategy": strategy["key"], "mode": strategy["mode"],
                             "native_sacrifice_auras": sacrifice_receipt,
+                            "native_sustain": native_sustain_receipt(prepared_all, request),
                             "native_pet_dps": pet_receipt["native_pet_dps"],
                             "native_pet_labels": pet_receipt["native_prepared_pets"],
                             "native_pet_autocast_spells": pet_receipt["native_pet_autocast_spells"],
@@ -942,6 +1000,7 @@ def main():
                 raise RuntimeError("wrong prepared Rust actor")
             result["native_prepared_pets"] = [
                 pet.get("label") for pet in prepared_data.get("pets", [])]
+            result["native_sustain"] = native_sustain_receipt(prepared_data, scenario)
             result["native_sacrifice_auras"] = native_sacrifice_receipt(
                 prepared_data, {
                     "mode": row["mode"], "key": row["strategy"],
