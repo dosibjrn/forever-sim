@@ -6,6 +6,8 @@ on:
     paths:
       - 'tools/warlock_l20_native_first_contact.py'
       - 'tests/test_warlock_l20_native_first_contact.py'
+      - 'tests/test_warlock_l20_p3_native_routing.py'
+      - 'tools/wf_gate_p3_live.py'
       - '.github/workflows/warlock-l20-native-first-contact.yml'
 
 permissions:
@@ -24,6 +26,7 @@ jobs:
           persist-credentials: false
       - name: Python contract tests
         run: python -m unittest discover -s tests -p 'test_warlock_l20_native_first_contact.py' -v
+          python -m unittest discover -s tests -p 'test_warlock_l20_p3_native_routing.py' -v
       - name: Hydrate exactly pinned Rust engine
         shell: bash
         run: |
