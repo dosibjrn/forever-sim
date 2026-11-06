@@ -236,9 +236,11 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                        request_sha256=getattr(exc, "request_sha256", None))
         return row
 
-    # One shared native baseline. Try the second Rust-supplied item for a
-    # slot only when its first native evaluation was refused or unscored.
-    # Each refusal consumes the same paid budget and remains in the receipt.
+    # One shared native baseline. Try the second Rust-supplied item when
+    # the first is refused, unscored, or has exactly the same measured score
+    # as the baseline. A finite zero response is real evidence, but is not
+    # sensitivity; a second genuine native score may reveal it. Keep every
+    # evaluation, including refusals, under the same paid budget.
     rows = [score_request("baseline", reference)]
     requested_slots = []
     # A refused/failed native baseline has no comparable objective. Preserve
@@ -270,12 +272,21 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                 break
             row = score_request("equipped", alternative, item_swap)
             rows.append(row)
-            if row["status"] == "VALID":
+            if (row["status"] == "VALID"
+                    and row["score"] != rows[0]["score"]):
                 break
     if reference != original:
         raise AssertionError("Native evaluation modified source reference")
     baseline_valid = rows[0]["status"] == "VALID"
-    selected = next((row for row in rows[1:] if row["status"] == "VALID"), None)
+    valid_rows = [row for row in rows[1:] if row["status"] == "VALID"]
+    # The receipt's representative comparison must reflect any actual paid
+    # sensitivity, including a negative delta. Previously an early valid
+    # equal-score swap hid a later real difference, while the per-slot rows
+    # correctly showed it. Fall back to the equal pair only if all paid
+    # valid alternatives are equal to the baseline.
+    changed = (next((row for row in valid_rows
+                     if baseline_valid and row["score"] != rows[0]["score"]), None))
+    selected = changed if changed is not None else next(iter(valid_rows), None)
     paired = baseline_valid and selected is not None
     delta = selected["score"] - rows[0]["score"] if paired else None
     native_slot_evaluations = [
