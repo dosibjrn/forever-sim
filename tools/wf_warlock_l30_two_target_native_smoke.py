@@ -17,6 +17,7 @@ from pathlib import Path
 
 from wf_warlock_rolling_apl import (
     build_rolling_two_target_apl, build_stationary_native_multidot_smoke,
+    prepared_spell_id, replace_cast_spell_id,
 )
 from wf_warlock_l30_direct_affliction_comparison import USER_AFFLICTION
 from wf_warlock_native_optimizer import (
@@ -81,16 +82,56 @@ def main() -> None:
             or prepared["player"]["class"] != "ClassWarlock"):
         raise RuntimeError("Native Rust prepared wrong actor")
     policy["native_pet_autocasts"] = native_pet_autocast_receipt(prepared, "Succubus")
+    # The options API is a *proposal* source, not an assertion that a rank
+    # exists in this particular prepared actor. At L30 it suggested Drain
+    # Life 403686 but real Rust prepared rank was 709. Require the actual
+    # spellbook's identity before paying the APL.
+    available = {
+        name: prepared_spell_id(prepared, name)
+        for name in ("immolate", "bane_of_agony", "siphon_life",
+                     "corruption", "drain_life", "life_tap")
+    }
+    if any(id is None for id in available.values()):
+        raise RuntimeError("Native prepared L30 Warlock missing actual APL abilities: "
+                           + json.dumps(available))
+    option_drain = requested["native_spell_ids"]["drain life"]
+    real_drain = available["drain_life"]
+    policy["native_prepared_spell_ids"] = available
+    policy["proposed_drain_life_spell_id"] = option_drain
+    if real_drain != option_drain:
+        replaced = replace_cast_spell_id(apl, option_drain, real_drain)
+        proposed_replaced = replace_cast_spell_id(
+            requested_rolling_apl, option_drain, real_drain)
+        if replaced < 1 or proposed_replaced < 1:
+            raise RuntimeError("Failed to replace inactive native Drain Life proposal rank")
+        request.write_text(json.dumps(req, indent=2) + "\\n")
+        call([binary, "prepare", "--request", request,
+              "--actor-level", "30", "--outfile", prepared_path], seconds=120)
+        prepared = json.loads(prepared_path.read_text())
+        if prepared_spell_id(prepared, "drain_life") != real_drain:
+            raise RuntimeError("Rust preparer changed previously verified Drain Life rank")
+    policy["native_prepared_fear_id"] = prepared_spell_id(prepared, "fear")
+    policy["native_prepared_health_funnel_id"] = prepared_spell_id(
+        prepared, "health_funnel")
+    policy["native_prepared_wand_id"] = prepared_spell_id(prepared, "shoot")
     call([binary, "sim", "--infile", prepared_path,
           "--rng-mode", "balanced", "--outfile", paid_path], seconds=240)
     paid = json.loads(paid_path.read_text())
     metrics = paid["result"]["raidMetrics"]["parties"][0]["players"][0]
     damage = [0., 0.]
     casts = [0, 0]
+    casts_by_spell = {}
     for action in metrics.get("actions", []):
+        spell_id = (action.get("id") or {}).get("spellId")
+        target_casts = 0
         for index, target in enumerate((action.get("targets") or [])[:2]):
             damage[index] += float(target.get("damage") or 0.)
-            casts[index] += int(target.get("casts") or 0)
+            n = int(target.get("casts") or 0)
+            casts[index] += n
+            target_casts += n
+        if type(spell_id) is int:
+            casts_by_spell[str(spell_id)] = (
+                casts_by_spell.get(str(spell_id), 0) + target_casts)
 
     # The two encounter units must both be actually damaged by native
     # Warlock actions. This is necessary, NOT sufficient, to certify an
@@ -104,6 +145,8 @@ def main() -> None:
         "targets": ["native target index 0", "native target index 1"],
         "native_paid_damage_by_target": damage,
         "native_paid_casts_by_target": casts,
+        "native_paid_casts_by_spell_id": casts_by_spell,
+        "native_paid_drain_life_casts": casts_by_spell.get(str(real_drain), 0),
         "native_paid_dps": metrics.get("dps", {}).get("avg"),
         "native_two_target_damage_observed": all(v > 0 for v in damage),
         "not_a_world_chain_or_target_hp_threshold_test": True,
@@ -111,6 +154,8 @@ def main() -> None:
     (args.out / "two_target_diagnostic.json").write_text(
         json.dumps(result, indent=2, allow_nan=False) + "\n")
     print("NATIVE_WARLOCK_TWO_TARGET_DIAGNOSTIC", json.dumps(result), flush=True)
+    if not result["native_paid_drain_life_casts"]:
+        raise RuntimeError("Native Drain Life still did not execute; source rank mismatch")
     if not result["native_two_target_damage_observed"]:
         raise RuntimeError(
             "Rust native APL did not damage both targets; see paid_two_target.json")
