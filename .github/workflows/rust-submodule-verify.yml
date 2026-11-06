@@ -616,7 +616,7 @@ jobs:
                     "known_items", known,
                     "native_status", native_status,
                     "unverified_levels", unknown,
-                    "excluded_non_client", excluded,
+                    "excluded_non_client", row.get("native_excluded_non_client_item_count", 0),
                     "verified", row["pass_count"],
                     "applicable", row["reachability_count"],
                     "representative_scored", row["real_native_representative_items_scored"],
