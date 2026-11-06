@@ -81,7 +81,7 @@ def test_unverified_native_warlock_proposals_do_not_false_block(monkeypatch):
     assert all(len(row["selected_ids"]) == 3 for row in proposals.values())
     assert all(set(row["selected_ids"]) <= {900, 901, 902, 903}
                for row in proposals.values())
-    assert proposals["head"] != proposals["weapon"]  # sample multiple Rust IDs
+    assert len({tuple(row["selected_ids"]) for row in proposals.values()}) > 1  # varied source samples
 
 
 def test_missing_native_warlock_actor_request_refuses_without_payment(monkeypatch):
