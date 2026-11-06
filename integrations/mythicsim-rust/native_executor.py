@@ -270,9 +270,12 @@ def _raise_structured_native_outcome(raw, *, returncode, stdout, stderr,
         )
 
 
-def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *, go_rules=False):
+def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *,
+        go_rules=False, actor_level: int | None = None):
     objective = _objective_name(objective)
     objective_metric_path(objective)  # validate the requested output path before invoking native
+    if actor_level is not None and (type(actor_level) is not int or actor_level <= 0):
+        raise ValueError("native --actor-level must be a positive integer")
     remaining = deadline - time.monotonic()
     if remaining <= 0.05:
         raise TimeoutError("No remaining time before native execution")
@@ -289,6 +292,8 @@ def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *, g
                    "--gate", "--rng-mode", rng_mode]
         if go_rules:
             command.append("--go-rules")
+        if actor_level is not None:
+            command.extend(("--actor-level", str(actor_level)))
         res = subprocess.run(
             command,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
