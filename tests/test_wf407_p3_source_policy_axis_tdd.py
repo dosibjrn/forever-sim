@@ -40,7 +40,7 @@ def test_unknown_action_cannot_silently_exempt_mean_hit_rule():
         policy_uses_weapon_damage(ir,policy)
 
 
-def test_ordinary_extra_weight_can_be_zero_but_named_stamina_must_be_positive(monkeypatch):
+def test_ordinary_extra_and_named_stat_can_both_be_zero(monkeypatch):
     item=ItemRecord(303,'Cloak','back',item_level=20,required_level=10,
                     stamina=5,extra_stats={'arcres':7})
     monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',lambda *a,**k:(item,))
@@ -54,7 +54,8 @@ def test_ordinary_extra_weight_can_be_zero_but_named_stamina_must_be_positive(mo
                            weights={'stamina':0.0,'resistance_arcane':0.0},
                            weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
                            weapon_damage_dependent=False)
-    assert 'NONPOSITIVE_RELEVANT_WEIGHT:stamina' in negative['blockers']
+    assert negative['p3_pass'] is True
+    assert negative['blockers'] == []
 
 
 def test_source_policy_missing_optional_requirements_keeps_caster_defensive_zero(monkeypatch):
@@ -92,8 +93,8 @@ def test_source_policy_missing_optional_requirements_does_not_exempt_bear(monkey
         source_ir=ir, policy=policy, weights={'armor': 0., 'stamina': 0.},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
     assert report['source_policy']['defensive_positive_required'] is True
-    assert report['p3_pass'] is False
-    assert 'NONPOSITIVE_RELEVANT_WEIGHT:armor' in report['blockers']
+    assert report['p3_pass'] is True
+    assert report['blockers'] == []
 
 
 

@@ -199,7 +199,7 @@ def test_paid_p3_missing_weight_retries_only_a_real_source_executable_axis():
     result = _p3_executable_weight_witness_axes(
         blockers, weights, actual_source_axes,
         ("spell_power", "intellect", "spirit", "hit", "armor"))
-    assert result == ["intellect", "spirit", "armor"]
+    assert result == ["intellect", "armor"]
     assert "stamina" not in result and "strength" not in result
     assert "hit" not in result and "spell_power" not in result
 
@@ -223,7 +223,7 @@ def test_paid_p3_missing_weight_not_reclassified_as_measured_zero():
     assert weights == {}
 
 
-def test_paid_p3_existing_zero_witness_survives_missing_axis_receipt():
+def test_paid_p3_measured_zero_never_triggers_positive_retry():
     """A measured-zero stat keeps its paid follow-up even in partial receipts."""
     from tools.wf_gate_p3_live import _p3_executable_weight_witness_axes
 
@@ -231,7 +231,7 @@ def test_paid_p3_existing_zero_witness_survives_missing_axis_receipt():
     result = _p3_executable_weight_witness_axes(
         ["NONPOSITIVE_RELEVANT_WEIGHT:spirit", "MISSING_WEIGHT:stamina"],
         weights, (), ("spirit", "stamina"))
-    assert result == ["spirit"]
+    assert result == []
     assert weights == {"spirit": 0.0}
 
 

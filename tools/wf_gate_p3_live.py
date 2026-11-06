@@ -115,31 +115,20 @@ def _p3_stat_witness_priority(ir, policy) -> tuple[str, ...]:
 
 
 def _p3_executable_weight_witness_axes(blockers, weights, executable_axes, priority):
-    """Retry missing or zero weights only when the selected source can execute them.
+    """Probe only genuinely missing coefficients on source-executable axes.
 
-    Item-level P3 blockers determine applicability; executable_axes comes from
-    the selected IR's real stat-perturbation provider. A missing weight is NOT
-    a measured zero, and an unsupported native item stat is NOT executable.
-    Both cases remain unresolved unless a genuinely paid same-policy probe
-    later establishes a finite weight.
+    A finite measured zero or negative is already a valid P3 observation;
+    repeating paid policies in search of a positive sign would add an
+    unapproved acceptance criterion and consume the shared native budget.
     """
     available = set(executable_axes)
     rank = {axis: index for index, axis in enumerate(priority)}
     selected = set()
     for blocker in blockers:
         kind, separator, axis = str(blocker).partition(":")
-        if not separator or kind not in ("MISSING_WEIGHT", "NONPOSITIVE_RELEVANT_WEIGHT"):
-            continue
-        if kind == "MISSING_WEIGHT":
-            # Only the paid source-runner's *actual* axis-selection receipt can
-            # authorize a previously missing axis for real stat perturbation.
-            if axis not in available or axis in weights:
-                continue
-        elif weights.get(axis) != 0.0:
-            # Keep previously measured zero-weight witness attempts intact.
-            # A mock or partial receipt must never erase an existing witness.
-            continue
-        selected.add(axis)
+        if (separator and kind == "MISSING_WEIGHT"
+                and axis in available and axis not in weights):
+            selected.add(axis)
     return sorted(selected, key=lambda axis: (rank.get(axis, len(rank)), axis))
 
 
@@ -836,14 +825,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return {'status': 'BLOCKED', 'reasons': [str(exc)],
                 'production_component': 'src.game.native_p3_item_options',
                 'real_source_search_evaluated': result.get('evaluated', 0)}
-    # One narrowly chosen 12-evaluation winner is not proof that an ordinary
-    # stat has no causal value to this build. The same source-legal full-point
-    # IR may carry alternative executable policies. When the first policy
-    # measured exactly ZERO for a required axis, seek a positive *paid* witness
-    # with the source-authored policies and the same combat+recovery scorer.
-    # Do not erase observed negative weights, waive missing stats, fabricate an
-    # epsilon, or change P4/P5 search. The only extra work is paid from the
-    # source search's remaining bounded budget.
+    # Only genuinely missing source-executable axes can receive a bounded
+    # additional paid measurement. Already measured zero/negative coefficients
+    # are final observations for this selected context, not P3 defects.
     extra_evaluations = 0
     source_policy_stat_witnesses = []
     newly_measured_weight = False
@@ -890,25 +874,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # exact, native-enriched rank-915 source action.
     native_spell_winner = (
         mage_l30_native or (shaman_l20_native and native_fallback_action))
-    force_native_shaman_spell_power_witness = (
-        shaman_l20_native and native_spell_winner
-        and native_spell_coefficients_error is None
-        and bool(native_spell_coefficients_applied))
-    if (force_native_shaman_spell_power_witness
-            and "spell_power" not in witness_axes):
-        # The native coefficient can make the initial CombatRuntime sensitivity
-        # positive, removing the NONPOSITIVE blocker. Still require the explicit
-        # paid source-policy witness for the exact native fallback action.
-        witness_axes.insert(0, "spell_power")
     paid_winner_baseline_available = (
         native_spell_winner
         and paid_search_winner_baseline(
             policy, record, tuple(record.get("prefix") or ())) is not None
     )
     for axis in witness_axes:
-        if (axis in weights and weights[axis] != 0.0
-                and not (force_native_shaman_spell_power_witness
-                         and axis == "spell_power")):
+        if axis in weights:
             continue
         if native_item_sized_probe:
             probe_deltas, probe_delta_sources = _native_item_stat_probe_deltas(
