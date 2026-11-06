@@ -134,8 +134,25 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                       "warlock": "ClassWarlock"}.get(class_key)
     if expected_class is None or type(level) is not int or level < 1:
         raise ValueError("P3_NATIVE_EQUIPPED_CHECKPOINT_INVALID")
+    # P3 compares alternatives in the original build's occupied slots.
+    # A native option for an empty equipment position is not a swap: filling
+    # it can consume the paid cap before any required occupied slot is scored.
+    # This checks only the request's structure, never Warcraft item legality.
+    gear = _first_player(reference).get("equipment")
+    entries = gear.get("items") if isinstance(gear, dict) else None
+    if not isinstance(entries, list) or len(entries) not in (14, 15, 16, 17):
+        raise ValueError("P3_NATIVE_EQUIPPED_REQUEST_SHAPE_UNAVAILABLE")
+    occupied_slots = {
+        slot for slot, index in NATIVE_SLOT_POSITIONS
+        if index < len(entries) and isinstance(entries[index], dict)
+        and type(entries[index].get("id")) is int and entries[index]["id"] > 0
+    }
+    occupied_selection = {
+        slot: options for slot, options in selection.items()
+        if slot in occupied_slots
+    }
     candidate, swap = first_equipped_proposal(
-        reference, selection, expected_class=expected_class)
+        reference, occupied_selection, expected_class=expected_class)
     if candidate is None:
         return {"status": "NO_DISTINCT_NATIVE_EQUIPPED_ALTERNATIVE",
                 "paid_attempts": 0, "comparison": None, "swap": None}
@@ -217,7 +234,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # swaps cannot establish P3 sensitivity without a valid baseline.
     slots_to_probe = (NATIVE_SLOT_POSITIONS if rows[0]["status"] == "VALID" else ())
     for slot, _index in slots_to_probe:
-        source = selection.get(slot)
+        source = occupied_selection.get(slot)
         ids = source.get("selected_ids") if isinstance(source, dict) else None
         if not isinstance(ids, list):
             continue
