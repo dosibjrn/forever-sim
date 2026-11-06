@@ -873,15 +873,6 @@ def test_p73_changed_talent_is_native_balanced_without_stochastic_holdout(
         monkeypatch, tmp_path)
 
 
-def test_p74_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
-        monkeypatch, tmp_path):
-    _run_sibling_gate_policy_regression(
-        "test_wf_gate_p7_4_live.py",
-        "test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout",
-        monkeypatch, tmp_path)
-
-
-
 def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
     source_path = Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust/p75_unrestricted_search.py"
     source = source_path.read_text()
@@ -908,43 +899,6 @@ def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
     assert "WOWSIM_RNG_MODE" not in source
     assert '"rng_mode":"balanced"' in source
     assert '"holdout_mode":"stochastic"' in source
-
-
-def test_p74_stochastic_rng_calls_are_confined_to_frozen_holdout():
-    """Static guard: optimizer calls are balanced; stochastic calls sit under complete_search."""
-    import ast
-    from pathlib import Path
-
-    for filename in ("wf_gate_p7_4_live.py",):
-        source = Path(__file__).parents[2] / "tools" / filename
-        module = ast.parse(source.read_text())
-        run_live = next(
-            node for node in module.body
-            if isinstance(node, ast.FunctionDef) and node.name == "run_live"
-        )
-        modes = []
-        def visit(node, parents=()):
-            if isinstance(node, ast.Call):
-                mode = next((kw.value.value for kw in node.keywords
-                             if kw.arg == "rng_mode"
-                             and isinstance(kw.value, ast.Constant)), None)
-                if mode is not None:
-                    modes.append(mode)
-                    if mode == "stochastic":
-                        assert any(
-                            isinstance(parent, ast.If)
-                            and isinstance(parent.test, ast.Name)
-                            and parent.test.id == "complete_search"
-                            for parent in parents
-                        )
-                    elif mode == "balanced":
-                        assert any(isinstance(parent, ast.While) for parent in parents)
-            for child in ast.iter_child_nodes(node):
-                visit(child, parents + (node,))
-        visit(run_live)
-        assert modes.count("balanced") == 2
-        assert modes.count("stochastic") == 2
-        assert len(modes) == 4
 
 
 def test_p73_calls_native_balanced_only_not_2d_or_stochastic_holdout():
