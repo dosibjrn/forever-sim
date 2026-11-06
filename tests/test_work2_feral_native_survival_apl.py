@@ -125,6 +125,7 @@ def test_native_two_target_survival_selects_one_genuine_100_target_run(tmp_path)
     ]
     assert result["selected_policy"] == "advance_last"
     assert result["selected_recovery_seconds"] == 120
+    assert result["failed_native_100_target_attempts"] == []
     assert [(r["screen_targets"], r["recovery_seconds"], r["status"])
             for r in result["recovery_screens"]] == [
         (50, 24, "native_screen_survived"),
@@ -198,19 +199,69 @@ def test_native_refusals_cannot_win_or_trigger_100(tmp_path):
 
 def test_selected_native_100_target_death_not_scored(tmp_path):
     path = write_source(tmp_path)
+    tried_hundred = []
+
     def lethal(binary, prepared, **kwargs):
         if kwargs["target_count"] == 100:
+            tried_hundred.append(json.loads(prepared.read_text())["policy"])
             raise AssertionError(
                 "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=44:"
                 "adjacent_native_windows=[]"
             )
         return native_world(binary, prepared, **kwargs)
+
     with pytest.raises(RuntimeError, match="FERAL_NATIVE_APL_100_TARGET_NATIVE_DEATH") as exc:
         search_feral_native_apl_survival(
             "/native", path, prepare_run=native_prepare, world_run=lethal,
         )
-    assert '"first' not in str(exc.value) or "first_index=44" in str(exc.value)
-    assert "advance_last" in str(exc.value)
+    assert tried_hundred == ["advance_last", "advance_penultimate"]
+    assert "first_index=44" in str(exc.value)
+    assert all(policy in str(exc.value) for policy in tried_hundred)
+
+
+def test_native_hundred_death_falls_back_to_next_paid_fifty_survivor(tmp_path):
+    """The first policy dying after mob 50 must not veto another real survivor."""
+    path = write_source(tmp_path)
+    calls = []
+
+    def first_dies(binary, prepared, **kwargs):
+        policy = json.loads(prepared.read_text())["policy"]
+        count = kwargs["target_count"]
+        rest = kwargs["native_recovery_seconds"]
+        calls.append((policy, count, rest))
+        if policy == "advance_last" and count == 100:
+            raise AssertionError(
+                "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=72:"
+                "adjacent_native_windows=[]"
+            )
+        return native_world(binary, prepared, **kwargs)
+
+    result = search_feral_native_apl_survival(
+        "/native", path, prepare_run=native_prepare, world_run=first_dies,
+    )
+    assert calls == [
+        ("source", 2, 24),
+        ("advance_last", 2, 24),
+        ("advance_penultimate", 2, 24),
+        ("advance_last", 50, 24),
+        ("advance_last", 50, 120),
+        ("advance_last", 100, 120),
+        ("advance_penultimate", 50, 24),
+        ("advance_penultimate", 50, 120),
+        ("advance_penultimate", 100, 120),
+    ]
+    assert result["selected_policy"] == "advance_penultimate"
+    assert result["selected_recovery_seconds"] == 120
+    assert result["native_paid_100_target_objective"]["targets"] == 100
+    assert result["failed_native_100_target_attempts"] == [{
+        "selected_policy": "advance_last",
+        "selected_recovery_seconds": 120,
+        "native_failure": (
+            "RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE:first_index=72:"
+            "adjacent_native_windows=[]"),
+        "native_prepared_request_sha256": "a" * 64,
+    }]
+    assert result["p4_p5_p6_certified"] is False
 
 
 @pytest.mark.parametrize("seconds", [0, 121, 1.0, True])
