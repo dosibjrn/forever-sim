@@ -14,6 +14,40 @@ def discover(spells: list[dict], name: str) -> int | None:
     return int(rows[0]["spell_id"]) if rows else None
 
 
+
+def prepared_spell_id(prepared: dict, class_spell: str) -> int | None:
+    """Use the *actual* Rust-prepared spellbook, not a proposed unlearned rank.
+
+    get_options can list a higher/nonactive spell ID; a native APL using that
+    ID may silently have no action. Only the canonical prepared actor's active
+    class_spell/action_id pair can certify a castable request.
+    """
+    rows = [
+        row for row in (prepared.get("player", {}).get("spells") or [])
+        if row.get("class_spell") == class_spell
+        and type((row.get("action_id") or {}).get("spell_id")) is int
+        and (row["action_id"]["spell_id"]) > 0
+    ]
+    if not rows:
+        return None
+    ids = {row["action_id"]["spell_id"] for row in rows}
+    if len(ids) != 1:
+        raise ValueError("Ambiguous native prepared spell identity: " + class_spell)
+    return ids.pop()
+
+
+def replace_cast_spell_id(apl: list[dict], old_id: int, new_id: int) -> int:
+    """Rewrite only APL identity to one verified by the actual Rust actor."""
+    count = 0
+    for entry in apl:
+        action = entry.get("action") or {}
+        spell = (action.get("castSpell") or {}).get("spellId")
+        if isinstance(spell, dict) and spell.get("spellId") == old_id:
+            spell["spellId"] = new_id
+            count += 1
+    return count
+
+
 def health_below(threshold: int, unit: str) -> dict:
     if not 0 < threshold <= 100:
         raise ValueError("HP threshold out of range")
