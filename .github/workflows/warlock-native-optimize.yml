@@ -1,0 +1,72 @@
+name: Warlock native gear talents APL 100-mob optimization
+
+on:
+  push:
+    branches: [work/warlock-l30-real-build-100mob-20261106]
+    paths:
+      - tools/wf_warlock_native_optimizer.py
+      - .github/workflows/warlock-native-optimize.yml
+  workflow_dispatch:
+    inputs:
+      level:
+        description: "Warlock level (10-60)"
+        required: true
+        type: choice
+        options: ["20", "30", "40", "60"]
+        default: "40"
+
+permissions:
+  contents: read
+
+jobs:
+  optimize-warlock-level:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      WARLOCK_LEVEL: ${{ inputs.level || '40' }}
+    steps:
+      - name: Checkout shared native optimizer
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout selected source-backed native Rust
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 701b82d67817dd125cb3ba71eb55f87e10ebd381
+          path: engine
+      - name: Verify source identity and optimizer
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "701b82d67817dd125cb3ba71eb55f87e10ebd381"
+          python3 -m py_compile project/tools/wf_warlock_native_optimizer.py
+          echo "Warlock level $WARLOCK_LEVEL, engine $(git -C engine rev-parse HEAD)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install 2D world dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Verify shared source-backed native actor level curve and build
+        working-directory: engine
+        run: |
+          cargo test --locked --lib warlock_l20_actor_source_tests
+          cargo build --locked --bin forever-engine
+      - name: Real get_options gear, talent x multi-APL Rust scoring and 100 mobs
+        working-directory: project
+        run: |
+          set -euo pipefail
+          python3 -u tools/wf_warlock_native_optimizer.py \
+            --binary ../engine/target/debug/forever-engine \
+            --level "$WARLOCK_LEVEL" \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --engine-tools ../engine/tools \
+            --out "../warlock-level-${WARLOCK_LEVEL}-native-results" \
+            --max-finalists 6 --seed 10916
+      - name: Preserve native gear, build candidates and all real world outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-native-gear-talents-apl-100mob-level-${{ env.WARLOCK_LEVEL }}
+          path: warlock-level-${{ env.WARLOCK_LEVEL }}-native-results/
+          if-no-files-found: warn
+          retention-days: 14
