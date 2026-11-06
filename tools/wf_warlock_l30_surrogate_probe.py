@@ -134,7 +134,7 @@ def run():
     sessions=[]
     # Broad source-native bootstrap, not 30-second DPS ordering:
     # both talent families, both pet types, both gear tracks and fillers.
-    bootstrap=(0,3,4,7,8,11,12,15,1,5,9,13,2,6,10,14)
+    bootstrap=(0,5,2,7,4,1,8,13,3,6,11,12,15,9,10,14)
     chosen=[case for idx in bootstrap for case in probes
             if case["result"]["candidate"]==idx][:args.full_count]
     def pay_full_100(case):
