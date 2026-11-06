@@ -270,8 +270,10 @@ def _raise_structured_native_outcome(raw, *, returncode, stdout, stderr,
         )
 
 
-def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *, go_rules=False):
+def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *, go_rules=False, actor_level=None):
     objective = _objective_name(objective)
+    if actor_level is not None and (type(actor_level) is not int or not 1 <= actor_level <= 60):
+        raise ValueError("NATIVE_ACTOR_LEVEL_ARGUMENT_INVALID")
     objective_metric_path(objective)  # validate the requested output path before invoking native
     remaining = deadline - time.monotonic()
     if remaining <= 0.05:
@@ -289,6 +291,8 @@ def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS", *, g
                    "--gate", "--rng-mode", rng_mode]
         if go_rules:
             command.append("--go-rules")
+        if actor_level is not None:
+            command.extend(("--actor-level", str(actor_level)))
         res = subprocess.run(
             command,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
