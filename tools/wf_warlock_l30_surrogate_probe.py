@@ -226,11 +226,19 @@ def run():
     historical_file=Path(__file__).resolve().parents[1]/"data"/(
         "warlock-l30-real-100mob-truth-with-first3-parity.json")
     historical=json.loads(historical_file.read_text())
-    if (historical["source_three_engine_sha"]!=args.engine_sha
-            or historical["scenario_id"]!=scenario_id):
-        raise RuntimeError("Historical 100-mob truth has another Rust engine/scenario")
+    if historical["scenario_id"]!=scenario_id:
+        raise RuntimeError("Historical 100-mob scenario differs")
+    # Native Shoot support changes both available APL actions and combat.
+    # NEVER silently reuse 100-mob labels from a different Rust revision.
+    same_engine = historical["source_three_engine_sha"] == args.engine_sha
+    historical_rows = historical["rows"] if same_engine else []
+    if not same_engine:
+        print("RUST_100_LABELS_EXCLUDED_DIFFERENT_ENGINE",
+              json.dumps({"old": historical["source_three_engine_sha"],
+                          "new": args.engine_sha,
+                          "recalibrate_100": True}), flush=True)
     reused_ids=[]
-    for old_id,old_elapsed,old_windows in historical["rows"]:
+    for old_id,old_elapsed,old_windows in historical_rows:
         case=next((x for x in probes if x["result"]["candidate"]==old_id),None)
         if case is None:
             raise RuntimeError("Previously 100-mob-completed candidate lacks live 3-mob probe")
@@ -351,8 +359,8 @@ def run():
     # Historical parity-verified 100-kill labels are already real paid
     # truth; do not spend full-run budget repeating them.
     validated_ids=set(reused_ids)
-    # Refit after each new 100-mob run. The acquisition is model-selected,
-    # not a hard-coded priority list of builds, families, axes or spells.
+    # Refit after each new 100-mob run. Before six real completed labels,
+    # native HP/mana/time receipts guide bootstrap with no synthetic labels.
     while len(decision_trace)<args.full_count:
         model=train_supervised(
             sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
