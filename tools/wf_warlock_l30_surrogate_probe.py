@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import random
 import re
 import subprocess
 import sys
@@ -27,6 +28,36 @@ from wf_warlock_chain_surrogate import (
     train_supervised,
 )
 from live_two_world_pulls import run as native_world_chain
+from wf_warlock_surrogate_rank_validation import report_rank_validation
+
+
+def diverse_source_candidates(novel, apl_rows, count, seed):
+    """Generate a reproducible, disjoint set of source-proposed candidates.
+
+    Pet and gear strata are balanced. Talents/APLs are shuffled independently;
+    their native mechanics and legalities are still decided only by Rust.
+    """
+    if not novel or not apl_rows:
+        raise ValueError("No native source candidates")
+    rng = random.Random(seed)
+    strata = [(p, g) for p in ("Succubus", "Felhunter", "Imp", "Voidwalker")
+              for g in ("native_dps", "native_max_hp")]
+    rng.shuffle(strata)
+    visited = set()
+    # The only specified dimensions are source-supported choices; no recipes.
+    for k in range(count):
+        pet, gear = strata[k % len(strata)]
+        for attempt in range(1000):
+            talent = rng.choice(novel)
+            apl_name, apl = rng.choice(apl_rows)
+            signature = (pet, gear, talent["talents"], apl_name)
+            if signature not in visited:
+                visited.add(signature)
+                yield gear, talent, pet, apl_name, apl
+                break
+        else:
+            raise RuntimeError("Source candidate combinations exhausted")
+
 
 
 def run():
@@ -36,11 +67,14 @@ def run():
     parser.add_argument("--engine-tools", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--engine-sha", required=True)
-    parser.add_argument("--full-count", type=int, default=8)
-    parser.add_argument("--extra-candidates", type=int, default=24)
+    parser.add_argument("--full-count", type=int, default=32)
+    parser.add_argument("--extra-candidates", type=int, default=112)
+    parser.add_argument("--seed", type=int, default=20261108)
     args = parser.parse_args()
-    if not 0 <= args.full_count <= 16:
-        parser.error("full-count must be 0..16")
+    if not 0 <= args.full_count <= 128:
+        parser.error("full-count must be 0..128")
+    if not 0 <= args.extra_candidates <= 2000:
+        parser.error("extra-candidates must be 0..2000")
     args.out.mkdir(parents=True,exist_ok=True)
     binary=args.binary.resolve()
     source=json.loads(args.source.read_text())
@@ -144,24 +178,19 @@ def run():
     # and APL entirely from Rust get_options and pay every evaluated candidate
     # with the *same* three-world-mob retained native actor. No 30s combat
     # score is ever used to discard an APL, talent or pet configuration.
-    proposals=list(proposals_from_native_talents(options,OLD_DESTRO_COMPARATOR,10916))
+    proposals=list(proposals_from_native_talents(options,OLD_DESTRO_COMPARATOR,args.seed))
     novel=[x for x in proposals
            if x["talents"] not in (USER_AFFLICTION,OLD_DESTRO_COMPARATOR)
            and sum(int(ch) for ch in x["talents"] if ch.isdigit())==21]
     apl_rows,_=apl_proposals(options,source,search)
     if not novel or not apl_rows:
         raise RuntimeError("Rust did not offer extra native talent/APL proposals")
-    pet_choices=("Succubus","Felhunter","Imp","Voidwalker")
-    for k in range(args.extra_candidates):
-        proposed=novel[(k*5)%len(novel)]
-        pet=pet_choices[k%len(pet_choices)]
-        gear_name,base=(
-            ("native_dps",dps_gear) if k//4%2==0
-            else ("native_max_hp",hp_gear))
-        apl_name,apl=apl_rows[(k*7)%len(apl_rows)]
+    for gear_name, proposed, pet, apl_name, apl in diverse_source_candidates(
+            novel, apl_rows, args.extra_candidates, args.seed):
+        base = dps_gear if gear_name == "native_dps" else hp_gear
         probe_candidate(
-            gear_name,base,proposed["label"],proposed["talents"],
-            pet,apl,apl_name)
+            gear_name, base, proposed["label"], proposed["talents"],
+            pet, apl, apl_name)
     probes=[case for case in cases if case["probe"] is not None]
     sessions=[]
     # Reuse exact, completed 100-mob native truth from the earlier L30 run
@@ -307,6 +336,13 @@ def run():
 
     model=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    ranking=report_rank_validation(
+        sessions,cases,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    (args.out/"ranking_validation.json").write_text(
+        json.dumps(ranking,indent=2,allow_nan=False)+"\n")
+    print("RUST_SURROGATE_RANKING_VALIDATION",json.dumps({
+        name: {k:v for k,v in report.items() if k != "rows"}
+        for name,report in ranking["validation"].items()}),flush=True)
     (args.out/"surrogate_model.json").write_text(
         json.dumps(model,indent=2,allow_nan=False)+"\n")
     for case in probes:
@@ -323,6 +359,7 @@ def run():
         "new_native_100_attempts":len(decision_trace),
         "adaptive_native_100_decisions":decision_trace,
         "model_trained":model["time_model"] is not None,
+        "ranking_validation":ranking["validation"],
         "model":model,"winner_100":successes[0] if successes else None,
         "candidates_with_results":[c["result"] for c in cases],
     }
