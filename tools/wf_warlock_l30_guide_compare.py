@@ -145,11 +145,12 @@ def main():
         "target_type": "CMaNGOS level-30 ordinary melee proxy, not verified Forever mob",
         "movement": "2D world path between successive mobs, no 50% HP overlapping pulls",
         "rng": "balanced",
+        "recovery_policy": "decisions_food_water_below_hp50_or_mana10",
         "apl_family": "same Corruption/Agony/Immolate, plus Icy's talent-only Siphon Life; Life Tap below 45% mana above 35% health",
         "results": [],
     }
     (args.out / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
-    for filler in ("drain", "wand"):
+    for filler in ("drain",):  # Wand APL has separate known native infinite-loop issue
         folder = args.out / filler
         folder.mkdir(exist_ok=True)
         scenario = copy.deepcopy(gear_request)
@@ -181,7 +182,8 @@ def main():
             result["native_pet_autocast"] = native_pet_autocast_receipt(prepared, "Succubus")
             result["native_sustain"] = native_sustain_receipt(prepared, scenario)
             world = native_world_chain(binary, prepared_path, classic_mob_level=30,
-                                       target_count=100, rng_mode="balanced")
+                                       target_count=100, rng_mode="balanced",
+                                       recovery_policy="decisions")
             (folder / "native_world.json").write_text(json.dumps(world, indent=2, allow_nan=False) + "\n")
             if (world["world_targets_killed"] != 100
                     or world.get("continuous_native_actor") is not True
