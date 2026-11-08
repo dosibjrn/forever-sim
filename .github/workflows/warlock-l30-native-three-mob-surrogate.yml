@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1
+          ref: f64efdc861f181febca5be7464f7015f4524b0de
           path: engine
       - uses: actions/setup-python@v5
         with:
@@ -42,11 +42,14 @@ jobs:
       - name: Verify native source, 3/8-mob feature parity and ranking validation tests
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1"
+          test "$(git -C engine rev-parse HEAD)" = "f64efdc861f181febca5be7464f7015f4524b0de"
           python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py project/tools/wf_warlock_surrogate_rank_validation.py project/tools/wf_warlock_eight_mob_joint_search.py project/tools/wf_native_apl_source.py
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_probe.py' -v
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_joint_search.py' -v
+      - name: Verify L30 native Warlock equipped wand Shoot and no phantom attack
+        working-directory: engine
+        run: cargo test --locked warlock_wand_registers_native_shoot_for_apl_and_combat -- --nocapture
       - name: Build Rust executable
         working-directory: engine
         run: cargo build --locked --bin forever-engine
@@ -57,7 +60,7 @@ jobs:
             --binary ../engine/target/debug/forever-engine \
             --source data/warlock-l30-rust-source-fixture.request.json \
             --engine-tools ../engine/tools \
-            --engine-sha a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1 \
+            --engine-sha f64efdc861f181febca5be7464f7015f4524b0de \
             --full-count 10 \
             --extra-candidates 24 \
             --search-iterations 96 \
