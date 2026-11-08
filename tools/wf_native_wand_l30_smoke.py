@@ -69,10 +69,25 @@ def run():
         raise RuntimeError("Wand did not enable real native ranged swings")
     if no_wand["melee"]["auto_swing_ranged"] is not False:
         raise RuntimeError("No wand still swings ranged")
+    # Registration alone is insufficient! Before this fix the 8-mob runtime
+    # refused an APL that actually cast OtherActionShoot ("unknown behavior").
+    # The canonical Rust check must confirm that this action can execute.
+    check=subprocess.run(
+        [str(args.binary.resolve()),"check","--infile",
+         str(args.out/"with_wand.prepared.json")],
+        capture_output=True,text=True,timeout=90)
+    if check.returncode:
+        raise RuntimeError("Native Shoot APL coverage check failed: "+
+                           (check.stderr or check.stdout)[-1800:])
+    coverage=json.loads(check.stdout)
+    if coverage.get("supported") is not True:
+        raise RuntimeError("Native Shoot APL cannot execute: "+
+                           repr(coverage.get("refusals")))
     print("RUST_L30_NATIVE_SHOOT_PROVEN",json.dumps({
         "actor_level":30,"source_wand_item_id":wand[0],
         "wand_required_level":wand[1],"shoot_equipped":True,
-        "shoot_without_wand":False,"native_ranged_auto_attack":True
+        "shoot_without_wand":False,"native_ranged_auto_attack":True,
+        "native_shoot_apl_coverage":coverage["supported"]
     }),flush=True)
 
 
