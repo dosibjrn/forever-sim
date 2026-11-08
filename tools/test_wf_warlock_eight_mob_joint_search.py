@@ -112,7 +112,7 @@ class NativeEightSearchTests(unittest.TestCase):
         probes[1]["probe"] = None
         def p(model, probe, **kwargs):
             return {"estimated_100_mob_elapsed_s": 2000 + probe["features"]["mean_kill_s"]}
-        ordered = sorted_observed_native(probes, {}, predict=p,
+        ordered = sorted_observed_native(probes, {"time_model": {}}, predict=p,
                                         engine_sha="r", scenario_id="s")
         self.assertEqual([case["result"]["candidate"] for _, case in ordered], [0, 2])
 
