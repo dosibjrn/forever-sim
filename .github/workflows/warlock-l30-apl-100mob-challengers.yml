@@ -1,4 +1,4 @@
-name: L30 Affliction 100 native serial-mob APL challengers
+name: L30 native automatic 100-mob optimizer
 
 on:
   push:
@@ -26,17 +26,19 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
       - run: |
-          python3 -m py_compile project/tools/wf_warlock_l30_100mob_challengers.py
+          python3 -m py_compile project/tools/wf_warlock_l30_native_coordinate_optimizer.py
           test "$(git -C engine rev-parse HEAD)" = "ca2f38cd97a1eac28ed87d6b4d56b7850cc4ed1a"
       - working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Paid native 100 mob APL pet and gear comparison
+      - name: Native 100-mob adaptive talent APL pet gear search
         working-directory: project
         run: |
-          python3 -u tools/wf_warlock_l30_100mob_challengers.py \
+          python3 -u tools/wf_warlock_l30_native_coordinate_optimizer.py \
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --engine-tools ../engine/tools \
+            --proto-schema ../engine/data/proto-schema.json \
+            --budget 20 \
             --out ../warlock-l30-apl-challengers
       - if: always()
         uses: actions/upload-artifact@v4
