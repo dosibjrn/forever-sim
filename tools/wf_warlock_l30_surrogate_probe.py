@@ -365,8 +365,11 @@ def run():
     while len(decision_trace)<args.full_count:
         model=train_supervised(
             sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+        # A refused/failed short probe has no native features and must not
+        # be passed to the surrogate or to 100-mob candidate selection.
         untested=[case for case in probes
-                  if case["result"]["candidate"] not in validated_ids]
+                  if case["probe"] is not None
+                  and case["result"]["candidate"] not in validated_ids]
         if not untested:
             break
         for case in untested:
@@ -401,6 +404,10 @@ def run():
     (args.out/"surrogate_model.json").write_text(
         json.dumps(model,indent=2,allow_nan=False)+"\n")
     for case in probes:
+        if case["probe"] is None:
+            case["result"]["surrogate"]={"prediction_trained":False,
+                                         "no_native_eight_receipt":True}
+            continue
         case["result"]["surrogate"]=predict(
             model,case["probe"],engine_sha=args.engine_sha,scenario_id=scenario_id)
     successes=sorted(
