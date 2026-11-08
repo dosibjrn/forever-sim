@@ -235,10 +235,12 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
 
 
 def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> dict:
-    """Carry only source-Rust regeneration actually paid on the ACKed 2D clock.
+    """Verify elapsed native clock time between ACKed 2D kills.
 
-    Older pins lacking native tick receipts remain unobserved. A timed pause
-    without a native regeneration event cannot by itself certify recovery.
+    Event-driven passive HP/mana ticks do not necessarily fire during every
+    paid movement or food-water gap. The clock receipt proves elapsed time;
+    tick and food/water gain receipts separately prove actual resource gain.
+    Older pins missing the source-native clock/tick fields remain unobserved.
     """
     if not windows or len(windows) != len(kills):
         raise AssertionError("RUST_WORLD_PAID_RECOVERY_TARGET_COUNT_INVALID")
@@ -279,8 +281,10 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> di
         "native_passive_recovery_observed": True,
         "native_passive_recovery_ns_by_target": elapsed,
         "native_passive_recovery_ticks_by_target": ticks_by_target,
-        "paid_recovery": all(ns > 0 and ticks > 0
-                             for ns, ticks in zip(elapsed[1:], ticks_by_target[1:])),
+        # A 300-ms paid world step legitimately has zero 2-second passive
+        # regen events. Do not turn that gap into a false "unpaid" result.
+        "paid_recovery": len(elapsed) > 1 and all(ns > 0 for ns in elapsed[1:]),
+        "native_passive_regen_gaps_with_ticks": sum(ticks > 0 for ticks in ticks_by_target[1:]),
     }
 
 
