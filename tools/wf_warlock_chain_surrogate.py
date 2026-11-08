@@ -351,6 +351,20 @@ def select_native_100_validation(untested: list[dict], observed: list[dict],
                  and case["result"]["surrogate"].get(
                      "estimated_100_mob_elapsed_s") is not None]
     if not predicted:
+        # Calibration starts with genuinely paid native 8-mob receipts.
+        # Do not let HP-first selection ignore the fastest 8-kill winner.
+        if iteration % 3 == 1:
+            measured=[case for case in untested
+                      if type(case["result"].get("eight_elapsed_s")) in (float,int)
+                      and case["result"]["eight_elapsed_s"] > 0]
+            if measured:
+                return min(measured, key=lambda case: (
+                    case["result"]["eight_elapsed_s"],
+                    -case["probe"]["features"]["health_end_fraction"],
+                    -case["probe"]["features"]["mana_end_fraction"],
+                )), "native_8mob_fastest_bootstrap"
+        if iteration % 3 == 2:
+            return max(untested,key=lambda case:diversity(case)), "native_diversity_bootstrap"
         def native_priority(case: dict) -> tuple:
             f = case["probe"]["features"]
             return (f["health_end_fraction"], f["mana_end_fraction"],
