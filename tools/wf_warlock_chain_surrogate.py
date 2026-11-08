@@ -35,6 +35,21 @@ def finite(value: Any, label: str) -> float:
     return float(value)
 
 
+def metric_rows(windows: list[dict], combat_key: str,
+                legacy_key: str) -> tuple[list[Any], str]:
+    """Prefer Rust's post-recovery combat snapshot, never mix receipt schemas.
+
+    Older native pins reported since-last-kill totals containing food/water
+    and travel recovery. Keep their historical behavior explicit so a
+    surrogate trained on one engine cannot silently learn a different metric.
+    """
+    present = [combat_key in w for w in windows]
+    if any(present) and not all(present):
+        raise ValueError("Mixed native combat-only and legacy recovery receipts")
+    key = combat_key if all(present) else legacy_key
+    return [w.get(key) for w in windows], key
+
+
 def cooldown_receipt(prepared: dict, windows: list[dict]) -> dict:
     """Source-native long-CD ability, actual casts and remaining cooldown.
 
@@ -119,9 +134,16 @@ def extract_probe_features(prepared: dict, world: dict, *, expected_kills: int) 
     cd = cooldown_receipt(prepared, windows)
     cd_rate = sum(100.0 / (state["duration_ns"]/1e9)
                   for state in cd["long_cooldowns_available"])
-    mana_spent_rows = [w.get("native_mana_spent") for w in windows]
-    mana_gained_rows = [w.get("native_mana_gained") for w in windows]
-    hp_gained_rows = [w.get("native_health_actual_gain") for w in windows]
+    mana_spent_rows, mana_spent_source = metric_rows(
+        windows, "native_combat_mana_spent", "native_mana_spent")
+    mana_gained_rows, mana_gained_source = metric_rows(
+        windows, "native_combat_mana_gained", "native_mana_gained")
+    hp_gained_rows, hp_gained_source = metric_rows(
+        windows, "native_combat_health_actual_gain", "native_health_actual_gain")
+    strict = [("native_recovery_mana_regen_actual_gain" in w
+               and "native_combat_start_ns" in w) for w in windows]
+    if any(strict) and not all(strict):
+        raise ValueError("Mixed native combat and recovery regen receipt schemas")
     spent_observed = all(type(v) in (float,int) for v in mana_spent_rows)
     gained_observed = all(type(v) in (float,int) for v in mana_gained_rows)
     hp_gained_observed = all(type(v) in (float,int) for v in hp_gained_rows)
@@ -166,6 +188,14 @@ def extract_probe_features(prepared: dict, world: dict, *, expected_kills: int) 
             "native_health_actual_gain": health_gained,
             "native_mana_spent": mana_spent,
             "native_mana_gained": mana_gained,
+            "native_mana_spent_source": mana_spent_source,
+            "native_mana_gained_source": mana_gained_source,
+            "native_health_gain_source": hp_gained_source,
+            "regeneration_window_source":
+                "post_recovery_combat_only" if all(strict)
+                else "legacy_cumulative_since_last_kill",
+            "native_recovery_mana_regen_actual_gain": [
+                w.get("native_recovery_mana_regen_actual_gain") for w in windows],
             "native_cast_receipts_observed": spent_observed and gained_observed,
             "native_spell_cast_receipts": [w.get("native_spell_cast_receipts") for w in windows],
             "native_mana_regen_observed": regen_observed,

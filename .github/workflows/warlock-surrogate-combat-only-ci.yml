@@ -1,0 +1,25 @@
+name: Warlock native combat-only feature receipts
+on:
+  pull_request:
+    paths:
+      - tools/wf_warlock_chain_surrogate.py
+      - tools/test_wf_warlock_chain_surrogate.py
+      - .github/workflows/warlock-surrogate-combat-only-ci.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-feature-accounting:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify native-only feature parsing and regression tests
+        run: |
+          python3 -m py_compile tools/wf_warlock_chain_surrogate.py
+          python3 -m unittest discover -s tools -p 'test_wf_warlock_chain_surrogate.py' -v
