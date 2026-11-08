@@ -410,10 +410,12 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False,
-        rng_mode: str = "stochastic") -> dict:
+        rng_mode: str = "stochastic", recovery_policy: str | None = None) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
+    if recovery_policy not in (None, "decisions"):
+        raise ValueError("RUST_MULTI_WORLD_RECOVERY_POLICY_INVALID")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
@@ -469,7 +471,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
          str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", rng_mode],
+         "--rng-mode", rng_mode] +
+        (["--recovery-policy", "decisions"] if recovery_policy == "decisions" else []),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -617,6 +620,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "source_sha256": source_hash, "native_pid": proc.pid,
             "world_target_hp": mob_health,
             "world_target_provenance": target_metadata,
+            "native_recovery_mode": result.get("recovery_mode"),
             "native_windows": result["windows"], "world_kills": kills,
             "minimum_native_actor_health": min_native_health,
             **native_mana,
