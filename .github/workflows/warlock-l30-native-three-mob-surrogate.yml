@@ -7,6 +7,7 @@ on:
       - tools/wf_warlock_chain_surrogate.py
       - tools/wf_warlock_surrogate_rank_validation.py
       - tools/wf_warlock_eight_mob_joint_search.py
+      - data/warlock-l30-rust-source-fixture.request.json
       - tools/wf_warlock_l30_surrogate_probe.py
       - tools/test_wf_warlock_chain_surrogate.py
       - tools/test_wf_warlock_eight_mob_probe.py
@@ -53,7 +54,7 @@ jobs:
         run: |
           python3 -u tools/wf_warlock_l30_surrogate_probe.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --source data/warlock-l30-rust-source-fixture.request.json \
             --engine-tools ../engine/tools \
             --engine-sha a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1 \
             --full-count 10 \
