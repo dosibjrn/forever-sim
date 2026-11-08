@@ -28,12 +28,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: work/decisions-food-water-native-world-20261108
+          ref: work/decisions-food-water-latest-warlock-20261108
           path: engine
       - name: Verify source and scripts
         run: |
           set -euo pipefail
-          test "$(git -C engine branch --show-current)" = "work/decisions-food-water-native-world-20261108"
+          test "$(git -C engine branch --show-current)" = "work/decisions-food-water-latest-warlock-20261108"
           python3 -m py_compile project/tools/wf_warlock_l30_guide_compare.py
           python3 -m py_compile project/tools/wf_warlock_native_optimizer.py
       - uses: actions/setup-python@v5
