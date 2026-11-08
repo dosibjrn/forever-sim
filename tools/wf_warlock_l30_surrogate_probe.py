@@ -448,6 +448,10 @@ def run():
         "winner":summary["winner_100"],
         "joint_search":search_summary,
     }),flush=True)
+    if args.full_count > 0 and not successes:
+        raise RuntimeError(
+            "ZERO_NATIVE_100_MOB_COMPLETIONS: real 100 world kills are required "
+            "before declaring a free Warlock optimizer winner")
 
 
 if __name__=="__main__":
