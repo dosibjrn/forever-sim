@@ -30,6 +30,9 @@ from wf_warlock_chain_surrogate import (
 )
 from live_two_world_pulls import run as native_world_chain
 from wf_warlock_surrogate_rank_validation import report_rank_validation
+from wf_warlock_eight_mob_joint_search import (
+    adaptive_native_search, sorted_observed_native,
+)
 
 
 def diverse_source_candidates(novel, apl_rows, count, seed):
@@ -71,16 +74,19 @@ def run():
     parser.add_argument("--full-count", type=int, default=4)
     parser.add_argument("--extra-candidates", type=int, default=24)
     parser.add_argument("--seed", type=int, default=20261108)
+    parser.add_argument("--search-iterations", type=int, default=0)
     args = parser.parse_args()
     if not 0 <= args.full_count <= 128:
         parser.error("full-count must be 0..128")
     if not 0 <= args.extra_candidates <= 2000:
         parser.error("extra-candidates must be 0..2000")
+    if not 0 <= args.search_iterations <= 20000:
+        parser.error("search-iterations must be 0..20000")
     args.out.mkdir(parents=True,exist_ok=True)
     binary=args.binary.resolve()
     source=json.loads(args.source.read_text())
     source["encounter"]["targets"][0]["level"]=30
-    actor(source)["name"]="Warlock L30 Troll three-mob surrogate"
+    actor(source)["name"]="Warlock L30 Troll eight-mob free optimizer"
     actor(source)["equipment"]["items"]=[{"id":0} for _ in range(17)]
     set_native_sustain_buffs(source)
     sys.path.insert(0,str(args.engine_tools.resolve()))
@@ -118,15 +124,19 @@ def run():
         binary,source,options,args.out,level=30)
     scenario_id="L30-world-proxy-2D-balanced-native-12s-gap-v1"
     cases=[]
-    def probe_candidate(gear_name,base,build_name,build,pet,apl,filler):
+    def probe_candidate(gear_name,base,build_name,build,pet,apl,filler,
+                        *, request_override=None):
         """Pay eight Rust kills and extract both three/eight views of same trace."""
         index=len(cases)
         folder=args.out/("candidate_%02d" % index)
         folder.mkdir(exist_ok=True)
-        request=copy.deepcopy(base)
-        actor(request)["talentsString"]=build
-        set_native_pet(request,pet)
-        actor(request)["rotation"]["priorityList"]=copy.deepcopy(apl)
+        if request_override is None:
+            request=copy.deepcopy(base)
+            actor(request)["talentsString"]=build
+            set_native_pet(request,pet)
+            actor(request)["rotation"]["priorityList"]=copy.deepcopy(apl)
+        else:
+            request=copy.deepcopy(request_override)
         request=profile(request,level=30)
         source_path=folder/"source_request.json"
         prepared_path=folder/"prepared.json"
@@ -176,7 +186,8 @@ def run():
         cases.append({"result":item,"probe":probe,"probe3":probe3,
                       "prepared":prepared_path,"folder":folder})
         (folder/"result.json").write_text(json.dumps(item,indent=2)+"\n")
-        print("RUST_THREE_MOB_FEATURES",json.dumps(item),flush=True)
+        print("RUST_EIGHT_MOB_FEATURES",json.dumps(item),flush=True)
+        return cases[-1]
 
     # Stable first 16 anchor IDs support exact native three-kill parity
     # with real 100-mob labels from the previous verified workflow.
@@ -255,16 +266,30 @@ def run():
         "candidates":reused_ids,"trained":prefit["time_model"] is not None,
         "loo_mae_elapsed_s":prefit["loo_mae_elapsed_s"],
     }),flush=True)
-    # Broad source-native bootstrap, not 30-second DPS ordering:
-    # both talent families, both pet types, both gear tracks and fillers.
-    bootstrap=(0,5,2,7,4,1,8,13,3,6,11,12,15,9,10,14)
-    # Keep an initial diverse calibration sample, but NEVER consume the
-    # entire full-run budget before the trained predictor can choose a case.
-    # Nine historical native 100-world labels can bootstrap the model only
-    # after exact first-three Rust trace parity has passed above.
-    seed_count=min(args.full_count, 2 if prefit["time_model"] else 6)
-    chosen=[case for idx in bootstrap for case in probes
-            if case["result"]["candidate"]==idx][:seed_count]
+    # Explore all four native configuration axes with no hand-selected APL
+    # order, talent recipe, item list or per-axis quota. Parent selection is
+    # driven by eight-kill Rust measurements and the real-100 trained model.
+    def evaluate_mutation(mutant, axis, iteration, incumbent_estimate):
+        unit=actor(mutant)
+        pet=unit["warlock"]["options"]["classOptions"].get("summon","NoSummon")
+        return probe_candidate(
+            "native_mutation",mutant,"joint_"+axis,unit["talentsString"],pet,
+            unit["rotation"]["priorityList"],"evolved_order",
+            request_override=mutant)
+    search_summary=None
+    if args.search_iterations:
+        search_summary=adaptive_native_search(
+            probes,evaluate=evaluate_mutation,model=prefit,predict=predict,
+            engine_sha=args.engine_sha,scenario_id=scenario_id,
+            options=options,source_module=search,
+            talent_proposals=proposals,
+            pets=sorted({c["result"]["pet"] for c in cases}),
+            iterations=args.search_iterations,seed=args.seed,
+            emit=lambda row: print("RUST_EIGHT_MOB_JOINT_SEARCH",json.dumps(row),
+                                   flush=True))
+        (args.out/"adaptive_search_summary.json").write_text(
+            json.dumps(search_summary,indent=2,allow_nan=False)+"\n")
+        print("RUST_EIGHT_MOB_JOINT_DONE",json.dumps(search_summary),flush=True)
     decision_trace=[]
     def pay_full_100(case):
         item=case["result"]
@@ -323,16 +348,12 @@ def run():
         (case["folder"]/"result.json").write_text(json.dumps(item,indent=2)+"\n")
         print("RUST_100_MOB_LABEL",json.dumps(item),flush=True)
 
-    validated_ids=set()
-    for case in chosen:
-        case["result"]["selection_reason"]="diverse_native_bootstrap"
-        pay_full_100(case)
-        validated_ids.add(case["result"]["candidate"])
-
-    # Refit after EVERY actual long run; new partial deaths update survival
-    # only, and each finished 100 changes the time model. Alternate predicted
-    # fastest choices with source-novel/uncertain candidates.
-    while len(validated_ids)<args.full_count:
+    # Historical parity-verified 100-kill labels are already real paid
+    # truth; do not spend full-run budget repeating them.
+    validated_ids=set(reused_ids)
+    # Refit after each new 100-mob run. The acquisition is model-selected,
+    # not a hard-coded priority list of builds, families, axes or spells.
+    while len(decision_trace)<args.full_count:
         model=train_supervised(
             sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
         untested=[case for case in probes
@@ -374,8 +395,21 @@ def run():
         case["result"]["surrogate"]=predict(
             model,case["probe"],engine_sha=args.engine_sha,scenario_id=scenario_id)
     successes=sorted(
-        (c["result"] for c in cases if c["result"]["status"]=="COMPLETED"),
+        ({"candidate":row["candidate"],**row["result"]}
+         for row in sessions
+         if row["result"].get("status")=="COMPLETED"
+         and row["result"].get("confirmed_kills")==100),
         key=lambda c:c["elapsed_s"])
+    for winner in successes:
+        match=next((c for c in cases if c["result"]["candidate"]
+                    == winner["candidate"]),None)
+        if match:
+            winner["gear"]=match["result"]["gear"]
+            winner["pet"]=match["result"]["pet"]
+            winner["talents"]=match["result"]["talents"]
+            winner["apl"]=json.loads(
+                (match["folder"]/"source_request.json").read_text()
+            )["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
     summary={
         "engine_sha":args.engine_sha,"scenario_id":scenario_id,
         "source_gear":gear_audit,
@@ -383,6 +417,7 @@ def run():
         "candidates":len(cases),
         "actual_100_mob_labels":len(sessions),
         "new_native_100_attempts":len(decision_trace),
+        "joint_search":search_summary,
         "adaptive_native_100_decisions":decision_trace,
         "model_trained":model["time_model"] is not None,
         "ranking_validation":{key:value["validation"] for key,value in ranking.items()},
@@ -395,6 +430,7 @@ def run():
         "eight_mob_probes":len(probes),"full_labels":len(sessions),
         "model_trained":summary["model_trained"],
         "winner":summary["winner_100"],
+        "joint_search":search_summary,
     }),flush=True)
 
 
