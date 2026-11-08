@@ -50,7 +50,7 @@ jobs:
           python3 -u tools/wf_warlock_l30_guide_compare.py \
             --binary ../engine/target/debug/forever-engine \
             --source tests/fixtures/warlock-l20-troll-best-paid.request.json \
-            --engine-tools ../engine/tools \
+            --engine-tools ../project/tools \
             --out ../guide-comparison-${{ matrix.guide }} \
             --guide ${{ matrix.guide }}
       - name: Save native results, source requests, full receipts
