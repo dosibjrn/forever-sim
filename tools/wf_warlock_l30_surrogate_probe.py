@@ -89,8 +89,9 @@ def run():
     actor(source)["name"]="Warlock L30 Troll three-mob surrogate"
     actor(source)["equipment"]["items"]=[{"id":0} for _ in range(17)]
     set_native_sustain_buffs(source)
-    sys.path.insert(0,str(args.engine_tools.resolve()))
-    import warlock_l20_native_search as search
+    # Minimal source-native APL helper is kept with the optimizer: newer Rust
+    # revisions do not ship the older standalone L20 search Python script.
+    import wf_native_apl_source as search
 
     options=json.loads(call(
         [binary,"options","--class","warlock","--level","30"],seconds=60))
