@@ -86,7 +86,7 @@ def run():
     binary=args.binary.resolve()
     source=json.loads(args.source.read_text())
     source["encounter"]["targets"][0]["level"]=30
-    actor(source)["name"]="Warlock L30 Troll eight-mob free optimizer"
+    actor(source)["name"]="Warlock L30 Troll three-mob surrogate"
     actor(source)["equipment"]["items"]=[{"id":0} for _ in range(17)]
     set_native_sustain_buffs(source)
     sys.path.insert(0,str(args.engine_tools.resolve()))
