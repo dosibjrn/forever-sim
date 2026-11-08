@@ -11,8 +11,10 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"integrations/mythicsim-rust"))
 from live_two_world_pulls import run as native_world_chain
 
 
