@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cheap *predictive* screening of native three-world-mob Rust receipts.
+"""Cheap *predictive* screening of native short-chain Rust receipts.
 
 This module is not a simulator: no HP, mana, pet, spell, regeneration or
 cooldown state is modified. Training labels come ONLY from real subsequent
@@ -13,6 +13,7 @@ from statistics import fmean
 from typing import Any
 
 THREE = 3
+EIGHT = 8
 FEATURES = (
     "mean_kill_s", "late_kill_s", "kill_time_slope",
     "mana_end_fraction", "mana_net_drain_per_mob_fraction",
@@ -37,7 +38,7 @@ def finite(value: Any, label: str) -> float:
 def cooldown_receipt(prepared: dict, windows: list[dict]) -> dict:
     """Source-native long-CD ability, actual casts and remaining cooldown.
 
-    A 180s cooldown cast in the first three mobs is *not* available
+    A 180s cooldown cast early in the probe is *not* available
     for the next 180s; report remaining time rather than allowing the
     predictor to multiply the initial burst by 100.
     """
@@ -75,20 +76,28 @@ def cooldown_receipt(prepared: dict, windows: list[dict]) -> dict:
     }
 
 
-def extract_three_mob_features(prepared: dict, world: dict) -> dict:
-    """Consume ONLY real ACKed, retained-actor three-target Rust receipts."""
-    if (world.get("world_targets_killed") != THREE or
+def extract_probe_features(prepared: dict, world: dict, *, expected_kills: int) -> dict:
+    """Consume only genuine sequential Rust lethal ACKs on one retained actor.
+
+    This is strictly a measurement transform, not a second game simulator.
+    Both 3- and 8-kill probes have identical feature keys so they can be
+    compared on the same labeled 100-mob outcomes without a schema change.
+    """
+    if expected_kills < 3:
+        raise ValueError("Short probe needs at least three world mob kills")
+    if (world.get("world_targets_killed") != expected_kills or
             world.get("continuous_native_actor") is not True or
             world.get("actual_2d_ack") is not True):
-        raise ValueError("Three-mob native receipts must be 3 lethal ACKs on one actor")
+        raise ValueError(f"Native probe must contain {expected_kills} lethal ACKs on one actor")
     windows = world.get("native_windows") or []
-    if len(windows) != THREE:
-        raise ValueError("Rust did not report all three windows")
+    if len(windows) != expected_kills:
+        raise ValueError("Rust did not report every native kill window")
     kills = [finite(v, "native_kill_ns") / 1e9 for v in
              (w.get("native_kill_ns") for w in windows)]
-    if not (0 < kills[0] < kills[1] < kills[2]):
+    if not all(earlier < later for earlier,later in zip((0.,*kills[:-1]),kills)):
         raise ValueError("Nonmonotonic Rust kill clocks")
-    times = [kills[0], kills[1] - kills[0], kills[2] - kills[1]]
+    times = [kills[0]] + [later-earlier for earlier,later in zip(kills[:-1],kills[1:])]
+    mob_count = expected_kills
     if abs(kills[-1] - finite(world["world_elapsed_seconds"], "world elapsed")) > 1e-5:
         raise ValueError("World and native kill clocks differ")
     health_max = finite(prepared["player"]["stats"]["Health"], "native max HP")
@@ -121,25 +130,28 @@ def extract_three_mob_features(prepared: dict, world: dict) -> dict:
     health_gained = sum(finite(v, "health gain") for v in hp_gained_rows) if hp_gained_observed else None
     features = {
         "mean_kill_s": fmean(times),
-        "late_kill_s": fmean(times[1:]),
-        "kill_time_slope": (times[2] - times[0]) / 2.0,
+        "late_kill_s": fmean(times[max(1, mob_count//2):]),
+        "kill_time_slope": (times[-1] - times[0]) / (mob_count - 1),
         "mana_end_fraction": mana[-1] / mana_max,
-        "mana_net_drain_per_mob_fraction": (mana_max - mana[-1]) / (THREE * mana_max),
+        "mana_net_drain_per_mob_fraction": (mana_max - mana[-1]) / (mob_count * mana_max),
         "health_end_fraction": health[-1] / health_max,
-        "health_net_drain_per_mob_fraction": (health_max - health[-1]) / (THREE * health_max),
+        "health_net_drain_per_mob_fraction": (health_max - health[-1]) / (mob_count * health_max),
         "native_mana_regen_per_mob_fraction":
-            regen / (THREE * mana_max) if regen is not None else 0.0,
+            regen / (mob_count * mana_max) if regen is not None else 0.0,
         "native_health_damage_per_mob_fraction":
-            damage / (THREE * health_max) if damage is not None else 0.0,
+            damage / (mob_count * health_max) if damage is not None else 0.0,
         "long_cooldowns_ready_per_100_s": cd_rate,
-        "long_cooldown_casts_first3": cd["long_cooldown_casts_total"] or 0.,
+        "long_cooldown_casts_first3": sum(
+            int(cast.get("casts", 0)) for w in windows[:3]
+            for cast in (w.get("native_spell_cast_receipts") or [])
+            if cast.get("is_long_cooldown") is True),
         "long_cooldown_remaining_s": cd["long_cooldown_remaining_s"] or 0.,
         "mana_spent_per_mob_fraction": (
-            mana_spent/(THREE*mana_max) if mana_spent is not None else 0.),
+            mana_spent/(mob_count*mana_max) if mana_spent is not None else 0.),
         "mana_gained_per_mob_fraction": (
-            mana_gained/(THREE*mana_max) if mana_gained is not None else 0.),
+            mana_gained/(mob_count*mana_max) if mana_gained is not None else 0.),
         "health_actual_gain_per_mob_fraction": (
-            health_gained/(THREE*health_max) if health_gained is not None else 0.),
+            health_gained/(mob_count*health_max) if health_gained is not None else 0.),
     }
     if any(not math.isfinite(v) for v in features.values()):
         raise ValueError("Nonfinite Rust-derived feature")
@@ -162,8 +174,19 @@ def extract_three_mob_features(prepared: dict, world: dict) -> dict:
             "native_passive_recovery_ticks": [w.get("native_passive_recovery_ticks") for w in windows],
         },
         "cooldowns": cd,
-        "source": "3 genuine Rust world kills, one actor; 100-mob result not inferred",
+        "source": f"{mob_count} genuine Rust world kills, one actor; "
+                  "100-mob result not inferred",
     }
+
+
+def extract_three_mob_features(prepared: dict, world: dict) -> dict:
+    """Legacy 3-mob probe; retained as matched control for 8-mob trials."""
+    return extract_probe_features(prepared, world, expected_kills=THREE)
+
+
+def extract_eight_mob_features(prepared: dict, world: dict) -> dict:
+    """New 8-mob probe (same engine, same actor and same 15 feature keys)."""
+    return extract_probe_features(prepared, world, expected_kills=EIGHT)
 
 
 def _solve_linear(matrix: list[list[float]], vector: list[float]) -> list[float]:
