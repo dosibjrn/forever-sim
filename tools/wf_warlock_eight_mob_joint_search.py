@@ -282,16 +282,40 @@ def adaptive_native_search(probes, *, evaluate, model, predict,
             parent = rng.choice(ranked[:min(len(ranked), 8)])[1]
         current = json.loads((parent["folder"]/"source_request.json").read_text())
         candidate = axis = None
-        for _ in range(48):
-            mutant, dimension = mutate_request(
-                current, talent_proposals=talent_proposals, pets=pets,
-                pools=pools, action_ids=action_ids, source_module=source_module,
-                options=options, rng=rng)
-            key = request_signature(mutant)
-            if key not in visited:
-                visited.add(key)
-                candidate, axis = mutant, dimension
-                break
+        # Every action-ID family exposed by native prepared state must be
+        # evaluated at least once. OtherActionShoot is not a class spell, so
+        # ordinary spell-rank-only exploration cannot discover it.
+        if iteration == 0:
+            other_actions = [a for a in action_ids if "otherId" in a]
+            already_used = {
+                json.dumps(((entry.get("action") or {}).get("castSpell") or {})
+                           .get("spellId") or {}, sort_keys=True)
+                for case0 in probes for entry in json.loads(
+                    (case0["folder"]/"source_request.json").read_text())
+                    ["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+            }
+            missing = [action for action in other_actions
+                       if json.dumps(action, sort_keys=True) not in already_used]
+            if missing:
+                mutant = copy.deepcopy(current)
+                entry = {"action":{"castSpell":{"spellId":rng.choice(missing)}}}
+                apl = actor(mutant)["rotation"]["priorityList"]
+                apl.insert(rng.randrange(len(apl)+1), entry)
+                key=request_signature(mutant)
+                if key not in visited:
+                    visited.add(key)
+                    candidate, axis=mutant,"apl_action_family_coverage"
+        if candidate is None:
+            for _ in range(48):
+                mutant, dimension = mutate_request(
+                    current, talent_proposals=talent_proposals, pets=pets,
+                    pools=pools, action_ids=action_ids, source_module=source_module,
+                    options=options, rng=rng)
+                key = request_signature(mutant)
+                if key not in visited:
+                    visited.add(key)
+                    candidate, axis = mutant, dimension
+                    break
         if candidate is None:
             raise RuntimeError("Native candidate search exhausted, cannot silently reuse")
         case = evaluate(candidate, axis, iteration, ranked[0][0])
