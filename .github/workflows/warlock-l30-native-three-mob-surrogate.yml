@@ -7,6 +7,7 @@ on:
       - tools/wf_warlock_chain_surrogate.py
       - tools/wf_warlock_surrogate_rank_validation.py
       - tools/wf_warlock_eight_mob_joint_search.py
+      - tools/wf_native_apl_source.py
       - data/warlock-l30-rust-source-fixture.request.json
       - tools/wf_warlock_l30_surrogate_probe.py
       - tools/test_wf_warlock_chain_surrogate.py
@@ -42,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C engine rev-parse HEAD)" = "a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1"
-          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py project/tools/wf_warlock_surrogate_rank_validation.py project/tools/wf_warlock_eight_mob_joint_search.py
+          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py project/tools/wf_warlock_surrogate_rank_validation.py project/tools/wf_warlock_eight_mob_joint_search.py project/tools/wf_native_apl_source.py
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_probe.py' -v
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_joint_search.py' -v
