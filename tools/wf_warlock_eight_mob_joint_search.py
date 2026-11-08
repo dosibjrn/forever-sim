@@ -54,11 +54,30 @@ def request_signature(request):
     ), sort_keys=True, separators=(",", ":"))
 
 
-def apl_mutation(actions, spell_ids, source_module, rng):
-    """Evolve ordered native actions, guards and lengths, no favored spell IDs."""
+def native_cast_identifiers(prepared):
+    """Actual actions exposed by Rust prepare, including OtherActionShoot.
+
+    OtherActionShoot is NOT a class spell rank in get_options. It appears only
+    for an equipped wand in Rust's shared ranged-auto-attack registration.
+    Python never asserts that a missing native spell is available.
+    """
+    ids = {}
+    for spell in prepared["player"].get("spells") or []:
+        action_id = spell.get("action_id") or {}
+        number = action_id.get("spell_id")
+        other = action_id.get("other_id")
+        if type(number) is int and number > 0:
+            ids[("spell", number)] = {"spellId": number}
+        if other in ("OtherActionShoot", 4):
+            ids[("other", "OtherActionShoot")] = {"otherId": "OtherActionShoot"}
+    return list(ids.values())
+
+
+def apl_mutation(actions, action_ids, source_module, rng):
+    """Evolve ordered source-native APL actions, including wand Shoot."""
     result = copy.deepcopy(actions)
-    if not spell_ids:
-        raise ValueError("No Rust-discovered native actions")
+    if not action_ids:
+        raise ValueError("No Rust-prepared native actions")
     choice = rng.choice(("insert", "delete", "swap", "replace", "condition"))
     if choice == "insert" and len(result) >= 12:
         choice = "replace"
@@ -70,9 +89,21 @@ def apl_mutation(actions, spell_ids, source_module, rng):
         choice = "insert"
 
     def native_entry():
-        spell_id = rng.choice(spell_ids)
+        action = rng.choice(action_ids)
+        if "otherId" in action:
+            # Only source-native Shoot can be inserted. Native APL interprets
+            # the condition; Python does not simulate wand swings.
+            entry = {"action": {"castSpell": {"spellId": action}}}
+            if rng.random() < .65:
+                threshold = rng.randrange(10, 100, 5)
+                entry["action"]["condition"] = {"cmp": {
+                    "lhs": {"currentManaPercent": {}},
+                    "op": "OpLt",
+                    "rhs": {"const": {"val": str(threshold) + "%"}},
+                }}
+            return entry
         guard = rng.choice((None, None, "dot_missing", "aura_missing"))
-        return source_module.cast_apl(spell_id, guard=guard)
+        return source_module.cast_apl(action["spellId"], guard=guard)
 
     if choice == "insert":
         result.insert(rng.randrange(len(result)+1), native_entry())
@@ -85,13 +116,16 @@ def apl_mutation(actions, spell_ids, source_module, rng):
         result[rng.randrange(len(result))] = native_entry()
     elif choice == "condition":
         index = rng.randrange(len(result))
-        spell_id = (((result[index].get("action") or {}).get("castSpell") or {})
-                    .get("spellId") or {}).get("spellId")
-        if type(spell_id) is not int:
+        identity = (((result[index].get("action") or {}).get("castSpell") or {})
+                    .get("spellId") or {})
+        spell_id = identity.get("spellId")
+        other_id = identity.get("otherId")
+        if other_id == "OtherActionShoot":
+            result[index] = native_entry()
+        elif type(spell_id) is not int:
             result[index] = native_entry()
         else:
-            # The native conditional syntax is source-owned. This is a gene
-            # mutation, not a prescribed spell ordering or combat calculation.
+            # The native conditional syntax is source-owned.
             result[index] = source_module.cast_apl(
                 spell_id, guard=rng.choice((None, "dot_missing", "aura_missing")))
     return result
@@ -127,7 +161,7 @@ def mutate_talents(encoded, options, rng):
                     for ranks in values)
 
 
-def mutate_request(parent, *, talent_proposals, pets, pools, spell_ids,
+def mutate_request(parent, *, talent_proposals, pets, pools, action_ids,
                    source_module, options, rng):
     """Uniform selection among all four axes; no per-axis quotas or priorities."""
     child = copy.deepcopy(parent)
@@ -152,7 +186,7 @@ def mutate_request(parent, *, talent_proposals, pets, pools, spell_ids,
             unit["equipment"]["items"][slot] = {"id": rng.choice(available)}
     elif axis == "apl":
         unit["rotation"]["priorityList"] = apl_mutation(
-            unit["rotation"]["priorityList"], spell_ids, source_module, rng)
+            unit["rotation"]["priorityList"], action_ids, source_module, rng)
     return child, axis
 
 
@@ -182,11 +216,23 @@ def adaptive_native_search(probes, *, evaluate, model, predict,
     """
     rng = random.Random(seed)
     pools = source_item_pools(options)
-    spell_ids = sorted({
-        row["spell_id"] for row in source_module.native_spell_candidates(
-            options, json.loads((probes[0]["folder"]/"source_request.json").read_text()))
-        if type(row.get("spell_id")) is int and row["spell_id"] > 0
-    })
+    native_ids = {}
+    wand_exposed = False
+    for case in probes:
+        try:
+            prepared = json.loads(case["prepared"].read_text())
+        except (OSError, ValueError, KeyError):
+            continue
+        for action in native_cast_identifiers(prepared):
+            native_ids[json.dumps(action, sort_keys=True)] = action
+            wand_exposed |= action.get("otherId") == "OtherActionShoot"
+    action_ids = list(native_ids.values())
+    # An equipped wand is not evidence of Shoot unless Rust prepared it.
+    if not action_ids:
+        raise RuntimeError("Selected native Rust exported no actor APL actions")
+    emit({"native_apl_action_count": len(action_ids),
+          "native_shoot_registered": wand_exposed,
+          "wand_action": {"otherId": "OtherActionShoot"} if wand_exposed else None})
     visited = {
         request_signature(json.loads((case["folder"]/"source_request.json").read_text()))
         for case in probes
@@ -208,7 +254,7 @@ def adaptive_native_search(probes, *, evaluate, model, predict,
         for _ in range(48):
             mutant, dimension = mutate_request(
                 current, talent_proposals=talent_proposals, pets=pets,
-                pools=pools, spell_ids=spell_ids, source_module=source_module,
+                pools=pools, action_ids=action_ids, source_module=source_module,
                 options=options, rng=rng)
             key = request_signature(mutant)
             if key not in visited:
