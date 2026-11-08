@@ -256,6 +256,7 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> di
             "native_passive_recovery_ns_by_target": None,
             "native_passive_recovery_ticks_by_target": None,
             "paid_recovery": False,
+            "legacy_passive_tick_each_gap": False,
         }
     if not all(present):
         raise AssertionError("RUST_WORLD_PAID_RECOVERY_RECEIPT_INCOMPLETE")
@@ -284,7 +285,37 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> di
         # A 300-ms paid world step legitimately has zero 2-second passive
         # regen events. Do not turn that gap into a false "unpaid" result.
         "paid_recovery": len(elapsed) > 1 and all(ns > 0 for ns in elapsed[1:]),
+        "legacy_passive_tick_each_gap": len(elapsed) > 1 and all(
+            ns > 0 and ticks > 0
+            for ns, ticks in zip(elapsed[1:], ticks_by_target[1:])),
         "native_passive_regen_gaps_with_ticks": sum(ticks > 0 for ticks in ticks_by_target[1:]),
+    }
+
+
+
+def _match_native_paid_recovery_contract(native_result: dict, receipt: dict) -> dict:
+    """Accept a Rust-paid clock only under the engine's advertised contract.
+
+    Older pinned Rust versions required a passive tick in *every* between-pull
+    gap. Retain their old result flag, but surface the source-verified clock-paid
+    time independently. The new engine explicitly advertises clock semantics,
+    so silent bool mismatches still fail instead of becoming false passes.
+    """
+    semantics = native_result.get(
+        "paid_recovery_semantics", "legacy_passive_tick_each_gap")
+    if semantics == "native_clock_elapsed_v2":
+        expected = receipt["paid_recovery"]
+    elif semantics == "legacy_passive_tick_each_gap":
+        expected = receipt["legacy_passive_tick_each_gap"]
+    else:
+        raise AssertionError("RUST_WORLD_PAID_RECOVERY_SEMANTICS_UNKNOWN")
+    if native_result.get("paid_recovery") is not expected:
+        raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
+    return {
+        **receipt,
+        "paid_recovery": expected,
+        "native_clock_paid_recovery": receipt["paid_recovery"],
+        "paid_recovery_semantics": semantics,
     }
 
 
@@ -610,9 +641,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             result["windows"], target_count)
         native_mana = _native_mana_continuity(
             result["windows"], target_count)
-        recovery = _native_paid_recovery_receipts(result["windows"], kills)
-        if result["paid_recovery"] is not recovery["paid_recovery"]:
-            raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
+        recovery = _match_native_paid_recovery_contract(
+            result, _native_paid_recovery_receipts(result["windows"], kills))
         native_health_damage = _native_health_damage_summary(
             result["windows"], require_positive=require_native_health_damage,
             require_zero=require_native_zero_health_damage)
