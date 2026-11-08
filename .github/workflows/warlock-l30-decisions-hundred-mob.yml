@@ -1,0 +1,114 @@
+name: Warlock L30 Decisions 100-mob combat-only native validation
+
+on:
+  push:
+    branches: [work/warlock-l30-100mob-combat-validation-20261109]
+    paths:
+      - .github/workflows/warlock-l30-decisions-hundred-mob.yml
+      - tools/wf_warlock_l30_guide_compare.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hundred-native-mob-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        guide: [icy, mobalytics]
+    steps:
+      - name: Checkout L30 guide comparison with combat-only receipts
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout exact source Rust with food-water and combat/rest accounting
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 207827ae2357cf6860c670cf59beb9fca5e8530a
+          path: engine
+      - name: Check exact source SHA, Python feature regressions
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "207827ae2357cf6860c670cf59beb9fca5e8530a"
+          python3 -m py_compile project/tools/wf_warlock_l30_guide_compare.py project/tools/wf_warlock_chain_surrogate.py
+          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install native world bridge dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Build canonical Rust (targeted receipt regression)
+        working-directory: engine
+        run: |
+          cargo test --locked regen_receipts_exclude_between_pull_regen_from_combat
+          cargo build --locked --bin forever-engine
+      - name: Run real 100 distinct world kills with native Decisions food-water
+        working-directory: project
+        run: |
+          python3 -u tools/wf_warlock_l30_guide_compare.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source tests/fixtures/warlock-l20-troll-best-paid.request.json \
+            --engine-tools ../project/tools \
+            --out ../warlock-hundred-mob-${{ matrix.guide }} \
+            --guide ${{ matrix.guide }} --targets 100
+      - name: Inspect actual combat-only 100-mob result and first-three measured features
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          import copy, json, math, sys
+          from pathlib import Path
+          sys.path.insert(0,"tools")
+          from wf_warlock_chain_surrogate import extract_three_mob_features
+          root=Path("../warlock-hundred-mob-${{ matrix.guide }}")
+          report=json.loads((root/"comparison.json").read_text())
+          assert report["target_count"]==100, report
+          for outcome in report["results"]:
+              assert outcome["status"]=="COMPLETED", outcome
+              assert outcome["confirmed_kills"]==100, outcome
+              folder=root/outcome["filler"]
+              world=json.loads((folder/"native_world.json").read_text())
+              windows=world["native_windows"]
+              assert len(windows)==100 and world["actual_2d_ack"] and world["continuous_native_actor"]
+              assert all(w["native_combat_start_ns"] < w["native_kill_ns"] for w in windows)
+              assert all("native_recovery_mana_regen_actual_gain" in w for w in windows)
+              assert all("native_combat_mana_spent" in w for w in windows)
+              assert all("native_combat_mana_gained" in w for w in windows)
+              initial=copy.deepcopy(world)
+              initial["native_windows"]=windows[:3]
+              initial["world_targets_killed"]=3
+              initial["world_elapsed_seconds"]=windows[2]["native_kill_ns"]/1e9
+              probe=extract_three_mob_features(json.loads((folder/"prepared.json").read_text()), initial)
+              assert probe["raw"]["regeneration_window_source"]=="post_recovery_combat_only"
+              assert probe["raw"]["native_mana_gained_source"]=="native_combat_mana_gained"
+              (folder/"first_three_from_100_features.json").write_text(
+                  json.dumps(probe,indent=2,allow_nan=False)+"\n")
+              duration=world["world_elapsed_seconds"]
+              combat=sum(w["native_combat_duration_ns"]/1e9 for w in windows)
+              food=sum(w["food_seconds"] for w in windows)
+              water=sum(w["water_seconds"] for w in windows)
+              assert math.isfinite(duration) and duration>=combat>0
+              summary={
+                  "guide":outcome["guide"],"target_count":100,
+                  "world_elapsed_s":duration,"combat_s":combat,
+                  "food_s":food,"water_s":water,
+                  "rest_decisions":sum(bool(w["decisions_full_recovery"]) for w in windows),
+                  "first_three_elapsed_s":initial["world_elapsed_seconds"],
+                  "min_health":world["minimum_native_actor_health"],
+                  "min_mana":world["minimum_native_actor_mana"],
+                  "engine_sha":"207827ae2357cf6860c670cf59beb9fca5e8530a",
+              }
+              (folder/"summary_100.json").write_text(json.dumps(summary,indent=2)+"\n")
+              print("WARLOCK_L30_REAL_100_COMBAT_ONLY_VERIFIED",json.dumps(summary),flush=True)
+          PY
+      - name: Preserve real 100-mob world receipts, food-water, first-three features
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l30-decisions-100mob-${{ matrix.guide }}
+          path: warlock-hundred-mob-${{ matrix.guide }}/
+          if-no-files-found: warn
+          retention-days: 14
