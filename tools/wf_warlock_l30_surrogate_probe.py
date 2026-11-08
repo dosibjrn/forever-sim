@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native 3-world-mob probe + real-100-label training of a tiny L30 surrogate.
+"""Native 8-world-mob probe + real-100-label training of a tiny L30 surrogate.
 
 The predictor never implements a spell, a stat formula, a pet, regeneration
 or a battle. Only Rust carries the actor through actual world-mob deaths.
@@ -24,7 +24,8 @@ from wf_warlock_l30_direct_affliction_comparison import (
     USER_AFFLICTION, OLD_DESTRO_COMPARATOR, exact_source_ranks, make_apl,
 )
 from wf_warlock_chain_surrogate import (
-    extract_three_mob_features, predict, select_native_100_validation,
+    extract_three_mob_features, extract_eight_mob_features, predict,
+    select_native_100_validation,
     train_supervised,
 )
 from live_two_world_pulls import run as native_world_chain
@@ -67,8 +68,8 @@ def run():
     parser.add_argument("--engine-tools", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--engine-sha", required=True)
-    parser.add_argument("--full-count", type=int, default=32)
-    parser.add_argument("--extra-candidates", type=int, default=112)
+    parser.add_argument("--full-count", type=int, default=4)
+    parser.add_argument("--extra-candidates", type=int, default=24)
     parser.add_argument("--seed", type=int, default=20261108)
     args = parser.parse_args()
     if not 0 <= args.full_count <= 128:
@@ -118,7 +119,7 @@ def run():
     scenario_id="L30-world-proxy-2D-balanced-native-12s-gap-v1"
     cases=[]
     def probe_candidate(gear_name,base,build_name,build,pet,apl,filler):
-        """Pay Rust's actual three-world-kill chain, not a DPS proxy."""
+        """Pay eight Rust kills and extract both three/eight views of same trace."""
         index=len(cases)
         folder=args.out/("candidate_%02d" % index)
         folder.mkdir(exist_ok=True)
@@ -136,28 +137,43 @@ def run():
             "status":"PROBE_UNTESTED","confirmed_kills":0,
         }
         probe=None
+        probe3=None
         try:
             call([binary,"prepare","--request",source_path,
                   "--actor-level","30","--outfile",prepared_path])
             prepared=json.loads(prepared_path.read_text())
             item["pet_autocasts"]=native_pet_autocast_receipt(prepared,pet)
             item["sustain"]=native_sustain_receipt(prepared,request)
-            three=native_world_chain(
+            eight=native_world_chain(
                 binary,prepared_path,classic_mob_level=30,
-                target_count=3,rng_mode="balanced")
+                target_count=8,rng_mode="balanced")
+            (folder/"eight_native_world.json").write_text(
+                json.dumps(eight,indent=2,allow_nan=False)+"\n")
+            probe=extract_eight_mob_features(prepared,eight)
+            # Derive the legacy 3-mob control from the exact same native
+            # eight-kill trace, not an independent RNG execution.
+            three=copy.deepcopy(eight)
+            three["native_windows"]=three["native_windows"][:3]
+            three["world_targets_killed"]=3
+            three["world_elapsed_seconds"]=(
+                three["native_windows"][-1]["native_kill_ns"] / 1e9)
+            probe3=extract_three_mob_features(prepared,three)
             (folder/"three_native_world.json").write_text(
                 json.dumps(three,indent=2,allow_nan=False)+"\n")
-            probe=extract_three_mob_features(prepared,three)
             (folder/"three_features.json").write_text(
+                json.dumps(probe3,indent=2,allow_nan=False)+"\n")
+            (folder/"eight_features.json").write_text(
                 json.dumps(probe,indent=2,allow_nan=False)+"\n")
             item.update(status="PROBE_COMPLETED",
                         three_elapsed_s=three["world_elapsed_seconds"],
+                        eight_elapsed_s=eight["world_elapsed_seconds"],
+                        probe_targets=8,
                         features=probe["features"],
                         cooldowns=probe["cooldowns"])
         except (RuntimeError,ValueError,KeyError,AssertionError,OSError,
                 subprocess.TimeoutExpired) as exc:
             item.update(status="PROBE_FAILED",error=str(exc)[-1800:])
-        cases.append({"result":item,"probe":probe,
+        cases.append({"result":item,"probe":probe,"probe3":probe3,
                       "prepared":prepared_path,"folder":folder})
         (folder/"result.json").write_text(json.dumps(item,indent=2)+"\n")
         print("RUST_THREE_MOB_FEATURES",json.dumps(item),flush=True)
@@ -226,6 +242,8 @@ def run():
             },
         })
         reused_ids.append(old_id)
+    # Adaptive acquisition is trained on eight-kill receipts. Three-kill
+    # features are held as a paired control on the identical Rust labels.
     prefit=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
     (args.out/"historical_parity_and_surrogate.json").write_text(
@@ -336,13 +354,20 @@ def run():
 
     model=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
-    ranking=report_rank_validation(
+    ranking8=report_rank_validation(
         sessions,cases,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    probe3_by_candidate={c["result"]["candidate"]:c["probe3"] for c in cases}
+    sessions3=[{**row,"probe":probe3_by_candidate[row["candidate"]]}
+               for row in sessions if probe3_by_candidate.get(row["candidate"]) is not None]
+    ranking3=report_rank_validation(
+        sessions3,cases,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    ranking={"eight_mob":ranking8,"three_mob_control":ranking3}
     (args.out/"ranking_validation.json").write_text(
         json.dumps(ranking,indent=2,allow_nan=False)+"\n")
     print("RUST_SURROGATE_RANKING_VALIDATION",json.dumps({
-        name: {k:v for k,v in report.items() if k != "rows"}
-        for name,report in ranking["validation"].items()}),flush=True)
+        scope:{name:{k:v for k,v in result.items() if k!="rows"}
+               for name,result in diag["validation"].items()}
+        for scope,diag in ranking.items()}),flush=True)
     (args.out/"surrogate_model.json").write_text(
         json.dumps(model,indent=2,allow_nan=False)+"\n")
     for case in probes:
@@ -354,19 +379,20 @@ def run():
     summary={
         "engine_sha":args.engine_sha,"scenario_id":scenario_id,
         "source_gear":gear_audit,
-        "three_mob_probes":len(probes),"candidates":len(cases),
+        "eight_mob_probes":len(probes),"three_mob_controls":len(sessions3),
+        "candidates":len(cases),
         "actual_100_mob_labels":len(sessions),
         "new_native_100_attempts":len(decision_trace),
         "adaptive_native_100_decisions":decision_trace,
         "model_trained":model["time_model"] is not None,
-        "ranking_validation":ranking["validation"],
+        "ranking_validation":{key:value["validation"] for key,value in ranking.items()},
         "model":model,"winner_100":successes[0] if successes else None,
         "candidates_with_results":[c["result"] for c in cases],
     }
     (args.out/"optimization_results.json").write_text(
         json.dumps(summary,indent=2,allow_nan=False)+"\n")
     print("RUST_THREE_TO_100_OPTIMIZATION",json.dumps({
-        "probes":len(probes),"full_labels":len(sessions),
+        "eight_mob_probes":len(probes),"full_labels":len(sessions),
         "model_trained":summary["model_trained"],
         "winner":summary["winner_100"],
     }),flush=True)
