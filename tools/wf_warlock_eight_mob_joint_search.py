@@ -193,16 +193,39 @@ def mutate_request(parent, *, talent_proposals, pets, pools, action_ids,
 def sorted_observed_native(probes, model, *, predict, engine_sha, scenario_id):
     """Ranks paid 8-mob receipts by surrogate 100-mob time, no 30-s DPS."""
     candidates = []
+    trained = model.get("time_model") is not None
     for case in probes:
         if case.get("probe") is None:
             continue
         row = predict(model, case["probe"],
                       engine_sha=engine_sha, scenario_id=scenario_id)
         estimate = row.get("estimated_100_mob_elapsed_s")
-        if type(estimate) not in (int, float) or not 0 < estimate < float("inf"):
-            continue
-        candidates.append((float(estimate), case))
-    return sorted(candidates, key=lambda row: row[0])
+        if type(estimate) in (int, float) and 0 < estimate < float("inf"):
+            candidates.append((float(estimate), case))
+        elif not trained:
+            # No fictitious duration labels: when the engine SHA changes and
+            # calibration is not yet trained, explore the measured native
+            # three-objective Pareto frontier (eight-time, HP, mana).
+            features = case["probe"]["features"]
+            candidates.append((
+                float(case["result"]["eight_elapsed_s"]), case,
+            ))
+    if not candidates:
+        return []
+    if trained:
+        return sorted(candidates, key=lambda row: row[0])
+    def dominates(a, b):
+        fa, fb = a[1]["probe"]["features"], b[1]["probe"]["features"]
+        faster = a[0] <= b[0]
+        hp = fa["health_end_fraction"] >= fb["health_end_fraction"]
+        mana = fa["mana_end_fraction"] >= fb["mana_end_fraction"]
+        strictly = (a[0] < b[0] or
+                    fa["health_end_fraction"] > fb["health_end_fraction"] or
+                    fa["mana_end_fraction"] > fb["mana_end_fraction"])
+        return faster and hp and mana and strictly
+    return sorted(candidates, key=lambda a: (
+        sum(dominates(b, a) for b in candidates if b is not a),
+        a[0]))
 
 
 def adaptive_native_search(probes, *, evaluate, model, predict,
@@ -230,9 +253,17 @@ def adaptive_native_search(probes, *, evaluate, model, predict,
     # An equipped wand is not evidence of Shoot unless Rust prepared it.
     if not action_ids:
         raise RuntimeError("Selected native Rust exported no actor APL actions")
+    wand_equipped = any(
+        json.loads((case["folder"]/"source_request.json").read_text())
+        ["raid"]["parties"][0]["players"][0]["equipment"]["items"][16]["id"] > 0
+        for case in probes)
     emit({"native_apl_action_count": len(action_ids),
           "native_shoot_registered": wand_exposed,
+          "wand_equipped": wand_equipped,
           "wand_action": {"otherId": "OtherActionShoot"} if wand_exposed else None})
+    if wand_equipped and not wand_exposed:
+        raise RuntimeError("NATIVE_SHOOT_NOT_EXPORTED: selected Rust engine or "
+                           "native prepared actor lacks equipped Warlock wand Shoot")
     visited = {
         request_signature(json.loads((case["folder"]/"source_request.json").read_text()))
         for case in probes
@@ -274,7 +305,9 @@ def adaptive_native_search(probes, *, evaluate, model, predict,
         emit({"iteration": iteration, "axis": axis,
               "native_eight_valid": case.get("probe") is not None,
               "attempted": attempted, "completed_eight": completed,
-              "best_predicted_100_s": scored[0][0] if scored else None,
+              "best_predicted_100_s": scored[0][0] if scored and model.get("time_model") else None,
+              "best_native_eight_s_before_calibration": (
+                  scored[0][0] if scored and not model.get("time_model") else None),
               "candidate_id": case["result"]["candidate"],
               "candidate_status": case["result"]["status"]})
     return {"tried": attempted, "completed_eight": completed,
