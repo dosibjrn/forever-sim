@@ -40,7 +40,7 @@ class EightMobProbeTests(unittest.TestCase):
         eight = extract_eight_mob_features(self.prepared, self.world)
         self.assertEqual(len(eight["raw"]["kill_times_s"]), 8)
         self.assertEqual(eight["raw"]["kill_times_s"], [15.]*8)
-        self.assertAlmostEqual(eight["features"]["mana_net_drain_per_mob_fraction"], .23/8)
+        self.assertAlmostEqual(eight["features"]["mana_net_drain_per_mob_fraction"], 230/(8*500))
         three_world = copy.deepcopy(self.world)
         three_world["world_targets_killed"] = 3
         three_world["native_windows"] = self.world["native_windows"][:3]
