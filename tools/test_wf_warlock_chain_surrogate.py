@@ -46,6 +46,47 @@ class ThreeMobSurrogateTests(unittest.TestCase):
         self.assertAlmostEqual(p["features"]["long_cooldown_remaining_s"],135.)
         self.assertTrue(p["cooldowns"]["long_cooldown_usage_observed"])
 
+    def test_combat_only_resource_features_override_legacy_rest_inclusive(self):
+        # An actual retained Rust actor recovers between kills. Food/water is
+        # not a Warlock combat mana-gain or healing action in the surrogate.
+        for window in self.world["native_windows"]:
+            window.update({
+                "native_combat_start_ns": window["native_kill_ns"] - int(8e9),
+                "native_recovery_mana_regen_actual_gain": 120.,
+                "native_combat_mana_spent": 60.,
+                "native_combat_mana_gained": 20.,
+                "native_combat_health_actual_gain": 15.,
+                "native_mana_spent": 99.,
+                "native_mana_gained": 140.,
+                "native_health_actual_gain": 65.,
+            })
+        result=extract_three_mob_features(self.prepared,self.world)
+        self.assertEqual(result["raw"]["native_mana_spent_source"],
+                         "native_combat_mana_spent")
+        self.assertEqual(result["raw"]["regeneration_window_source"],
+                         "post_recovery_combat_only")
+        self.assertAlmostEqual(result["features"]["mana_spent_per_mob_fraction"],
+                               60./500.)
+        self.assertAlmostEqual(result["features"]["mana_gained_per_mob_fraction"],
+                               20./500.)
+        self.assertAlmostEqual(result["features"]["health_actual_gain_per_mob_fraction"],
+                               15./1000.)
+        self.assertEqual(result["raw"]["native_recovery_mana_regen_actual_gain"],
+                         [120.,120.,120.])
+
+    def test_reject_mixed_native_resource_window_schema(self):
+        self.world["native_windows"][1]["native_combat_mana_gained"]=2.
+        with self.assertRaisesRegex(ValueError,"Mixed native combat-only"):
+            extract_three_mob_features(self.prepared,self.world)
+
+    def test_reject_mixed_regen_receipt_schema(self):
+        self.world["native_windows"][0].update({
+            "native_combat_start_ns": 0,
+            "native_recovery_mana_regen_actual_gain": 5.,
+        })
+        with self.assertRaisesRegex(ValueError,"Mixed native combat and recovery"):
+            extract_three_mob_features(self.prepared,self.world)
+
     def test_not_trained_without_real_long_labels(self):
         p=extract_three_mob_features(self.prepared,self.world)
         m=train_supervised([],engine_sha="engine",scenario_id="fixed")
