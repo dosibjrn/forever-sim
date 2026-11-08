@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native 3-world-mob probe + real-100-label training of a tiny L30 surrogate.
+"""Native 8-world-mob probe + real-100-label training of a tiny L30 surrogate.
 
 The predictor never implements a spell, a stat formula, a pet, regeneration
 or a battle. Only Rust carries the actor through actual world-mob deaths.
@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import random
 import re
 import subprocess
 import sys
@@ -23,10 +24,44 @@ from wf_warlock_l30_direct_affliction_comparison import (
     USER_AFFLICTION, OLD_DESTRO_COMPARATOR, exact_source_ranks, make_apl,
 )
 from wf_warlock_chain_surrogate import (
-    extract_three_mob_features, predict, select_native_100_validation,
+    extract_three_mob_features, extract_eight_mob_features, predict,
+    select_native_100_validation,
     train_supervised,
 )
 from live_two_world_pulls import run as native_world_chain
+from wf_warlock_surrogate_rank_validation import report_rank_validation
+from wf_warlock_eight_mob_joint_search import (
+    adaptive_native_search, sorted_observed_native,
+)
+
+
+def diverse_source_candidates(novel, apl_rows, count, seed):
+    """Generate a reproducible, disjoint set of source-proposed candidates.
+
+    Pet and gear strata are balanced. Talents/APLs are shuffled independently;
+    their native mechanics and legalities are still decided only by Rust.
+    """
+    if not novel or not apl_rows:
+        raise ValueError("No native source candidates")
+    rng = random.Random(seed)
+    strata = [(p, g) for p in ("Succubus", "Felhunter", "Imp", "Voidwalker")
+              for g in ("native_dps", "native_max_hp")]
+    rng.shuffle(strata)
+    visited = set()
+    # The only specified dimensions are source-supported choices; no recipes.
+    for k in range(count):
+        pet, gear = strata[k % len(strata)]
+        for attempt in range(1000):
+            talent = rng.choice(novel)
+            apl_name, apl = rng.choice(apl_rows)
+            signature = (pet, gear, talent["talents"], apl_name)
+            if signature not in visited:
+                visited.add(signature)
+                yield gear, talent, pet, apl_name, apl
+                break
+        else:
+            raise RuntimeError("Source candidate combinations exhausted")
+
 
 
 def run():
@@ -36,11 +71,17 @@ def run():
     parser.add_argument("--engine-tools", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--engine-sha", required=True)
-    parser.add_argument("--full-count", type=int, default=8)
+    parser.add_argument("--full-count", type=int, default=4)
     parser.add_argument("--extra-candidates", type=int, default=24)
+    parser.add_argument("--seed", type=int, default=20261108)
+    parser.add_argument("--search-iterations", type=int, default=0)
     args = parser.parse_args()
-    if not 0 <= args.full_count <= 16:
-        parser.error("full-count must be 0..16")
+    if not 0 <= args.full_count <= 128:
+        parser.error("full-count must be 0..128")
+    if not 0 <= args.extra_candidates <= 2000:
+        parser.error("extra-candidates must be 0..2000")
+    if not 0 <= args.search_iterations <= 20000:
+        parser.error("search-iterations must be 0..20000")
     args.out.mkdir(parents=True,exist_ok=True)
     binary=args.binary.resolve()
     source=json.loads(args.source.read_text())
@@ -48,8 +89,9 @@ def run():
     actor(source)["name"]="Warlock L30 Troll three-mob surrogate"
     actor(source)["equipment"]["items"]=[{"id":0} for _ in range(17)]
     set_native_sustain_buffs(source)
-    sys.path.insert(0,str(args.engine_tools.resolve()))
-    import warlock_l20_native_search as search
+    # Minimal source-native APL helper is kept with the optimizer: newer Rust
+    # revisions do not ship the older standalone L20 search Python script.
+    import wf_native_apl_source as search
 
     options=json.loads(call(
         [binary,"options","--class","warlock","--level","30"],seconds=60))
@@ -83,15 +125,19 @@ def run():
         binary,source,options,args.out,level=30)
     scenario_id="L30-world-proxy-2D-balanced-native-12s-gap-v1"
     cases=[]
-    def probe_candidate(gear_name,base,build_name,build,pet,apl,filler):
-        """Pay Rust's actual three-world-kill chain, not a DPS proxy."""
+    def probe_candidate(gear_name,base,build_name,build,pet,apl,filler,
+                        *, request_override=None):
+        """Pay eight Rust kills and extract both three/eight views of same trace."""
         index=len(cases)
         folder=args.out/("candidate_%02d" % index)
         folder.mkdir(exist_ok=True)
-        request=copy.deepcopy(base)
-        actor(request)["talentsString"]=build
-        set_native_pet(request,pet)
-        actor(request)["rotation"]["priorityList"]=copy.deepcopy(apl)
+        if request_override is None:
+            request=copy.deepcopy(base)
+            actor(request)["talentsString"]=build
+            set_native_pet(request,pet)
+            actor(request)["rotation"]["priorityList"]=copy.deepcopy(apl)
+        else:
+            request=copy.deepcopy(request_override)
         request=profile(request,level=30)
         source_path=folder/"source_request.json"
         prepared_path=folder/"prepared.json"
@@ -102,31 +148,47 @@ def run():
             "status":"PROBE_UNTESTED","confirmed_kills":0,
         }
         probe=None
+        probe3=None
         try:
             call([binary,"prepare","--request",source_path,
                   "--actor-level","30","--outfile",prepared_path])
             prepared=json.loads(prepared_path.read_text())
             item["pet_autocasts"]=native_pet_autocast_receipt(prepared,pet)
             item["sustain"]=native_sustain_receipt(prepared,request)
-            three=native_world_chain(
+            eight=native_world_chain(
                 binary,prepared_path,classic_mob_level=30,
-                target_count=3,rng_mode="balanced")
+                target_count=8,rng_mode="balanced")
+            (folder/"eight_native_world.json").write_text(
+                json.dumps(eight,indent=2,allow_nan=False)+"\n")
+            probe=extract_eight_mob_features(prepared,eight)
+            # Derive the legacy 3-mob control from the exact same native
+            # eight-kill trace, not an independent RNG execution.
+            three=copy.deepcopy(eight)
+            three["native_windows"]=three["native_windows"][:3]
+            three["world_targets_killed"]=3
+            three["world_elapsed_seconds"]=(
+                three["native_windows"][-1]["native_kill_ns"] / 1e9)
+            probe3=extract_three_mob_features(prepared,three)
             (folder/"three_native_world.json").write_text(
                 json.dumps(three,indent=2,allow_nan=False)+"\n")
-            probe=extract_three_mob_features(prepared,three)
             (folder/"three_features.json").write_text(
+                json.dumps(probe3,indent=2,allow_nan=False)+"\n")
+            (folder/"eight_features.json").write_text(
                 json.dumps(probe,indent=2,allow_nan=False)+"\n")
             item.update(status="PROBE_COMPLETED",
                         three_elapsed_s=three["world_elapsed_seconds"],
+                        eight_elapsed_s=eight["world_elapsed_seconds"],
+                        probe_targets=8,
                         features=probe["features"],
                         cooldowns=probe["cooldowns"])
         except (RuntimeError,ValueError,KeyError,AssertionError,OSError,
                 subprocess.TimeoutExpired) as exc:
             item.update(status="PROBE_FAILED",error=str(exc)[-1800:])
-        cases.append({"result":item,"probe":probe,
+        cases.append({"result":item,"probe":probe,"probe3":probe3,
                       "prepared":prepared_path,"folder":folder})
         (folder/"result.json").write_text(json.dumps(item,indent=2)+"\n")
-        print("RUST_THREE_MOB_FEATURES",json.dumps(item),flush=True)
+        print("RUST_EIGHT_MOB_FEATURES",json.dumps(item),flush=True)
+        return cases[-1]
 
     # Stable first 16 anchor IDs support exact native three-kill parity
     # with real 100-mob labels from the previous verified workflow.
@@ -144,24 +206,19 @@ def run():
     # and APL entirely from Rust get_options and pay every evaluated candidate
     # with the *same* three-world-mob retained native actor. No 30s combat
     # score is ever used to discard an APL, talent or pet configuration.
-    proposals=list(proposals_from_native_talents(options,OLD_DESTRO_COMPARATOR,10916))
+    proposals=list(proposals_from_native_talents(options,OLD_DESTRO_COMPARATOR,args.seed))
     novel=[x for x in proposals
            if x["talents"] not in (USER_AFFLICTION,OLD_DESTRO_COMPARATOR)
            and sum(int(ch) for ch in x["talents"] if ch.isdigit())==21]
     apl_rows,_=apl_proposals(options,source,search)
     if not novel or not apl_rows:
         raise RuntimeError("Rust did not offer extra native talent/APL proposals")
-    pet_choices=("Succubus","Felhunter","Imp","Voidwalker")
-    for k in range(args.extra_candidates):
-        proposed=novel[(k*5)%len(novel)]
-        pet=pet_choices[k%len(pet_choices)]
-        gear_name,base=(
-            ("native_dps",dps_gear) if k//4%2==0
-            else ("native_max_hp",hp_gear))
-        apl_name,apl=apl_rows[(k*7)%len(apl_rows)]
+    for gear_name, proposed, pet, apl_name, apl in diverse_source_candidates(
+            novel, apl_rows, args.extra_candidates, args.seed):
+        base = dps_gear if gear_name == "native_dps" else hp_gear
         probe_candidate(
-            gear_name,base,proposed["label"],proposed["talents"],
-            pet,apl,apl_name)
+            gear_name, base, proposed["label"], proposed["talents"],
+            pet, apl, apl_name)
     probes=[case for case in cases if case["probe"] is not None]
     sessions=[]
     # Reuse exact, completed 100-mob native truth from the earlier L30 run
@@ -170,11 +227,19 @@ def run():
     historical_file=Path(__file__).resolve().parents[1]/"data"/(
         "warlock-l30-real-100mob-truth-with-first3-parity.json")
     historical=json.loads(historical_file.read_text())
-    if (historical["source_three_engine_sha"]!=args.engine_sha
-            or historical["scenario_id"]!=scenario_id):
-        raise RuntimeError("Historical 100-mob truth has another Rust engine/scenario")
+    if historical["scenario_id"]!=scenario_id:
+        raise RuntimeError("Historical 100-mob scenario differs")
+    # Native Shoot support changes both available APL actions and combat.
+    # NEVER silently reuse 100-mob labels from a different Rust revision.
+    same_engine = historical["source_three_engine_sha"] == args.engine_sha
+    historical_rows = historical["rows"] if same_engine else []
+    if not same_engine:
+        print("RUST_100_LABELS_EXCLUDED_DIFFERENT_ENGINE",
+              json.dumps({"old": historical["source_three_engine_sha"],
+                          "new": args.engine_sha,
+                          "recalibrate_100": True}), flush=True)
     reused_ids=[]
-    for old_id,old_elapsed,old_windows in historical["rows"]:
+    for old_id,old_elapsed,old_windows in historical_rows:
         case=next((x for x in probes if x["result"]["candidate"]==old_id),None)
         if case is None:
             raise RuntimeError("Previously 100-mob-completed candidate lacks live 3-mob probe")
@@ -197,6 +262,8 @@ def run():
             },
         })
         reused_ids.append(old_id)
+    # Adaptive acquisition is trained on eight-kill receipts. Three-kill
+    # features are held as a paired control on the identical Rust labels.
     prefit=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
     (args.out/"historical_parity_and_surrogate.json").write_text(
@@ -208,16 +275,30 @@ def run():
         "candidates":reused_ids,"trained":prefit["time_model"] is not None,
         "loo_mae_elapsed_s":prefit["loo_mae_elapsed_s"],
     }),flush=True)
-    # Broad source-native bootstrap, not 30-second DPS ordering:
-    # both talent families, both pet types, both gear tracks and fillers.
-    bootstrap=(0,5,2,7,4,1,8,13,3,6,11,12,15,9,10,14)
-    # Keep an initial diverse calibration sample, but NEVER consume the
-    # entire full-run budget before the trained predictor can choose a case.
-    # Nine historical native 100-world labels can bootstrap the model only
-    # after exact first-three Rust trace parity has passed above.
-    seed_count=min(args.full_count, 2 if prefit["time_model"] else 6)
-    chosen=[case for idx in bootstrap for case in probes
-            if case["result"]["candidate"]==idx][:seed_count]
+    # Explore all four native configuration axes with no hand-selected APL
+    # order, talent recipe, item list or per-axis quota. Parent selection is
+    # driven by eight-kill Rust measurements and the real-100 trained model.
+    def evaluate_mutation(mutant, axis, iteration, incumbent_estimate):
+        unit=actor(mutant)
+        pet=unit["warlock"]["options"]["classOptions"].get("summon","NoSummon")
+        return probe_candidate(
+            "native_mutation",mutant,"joint_"+axis,unit["talentsString"],pet,
+            unit["rotation"]["priorityList"],"evolved_order",
+            request_override=mutant)
+    search_summary=None
+    if args.search_iterations:
+        search_summary=adaptive_native_search(
+            probes,evaluate=evaluate_mutation,model=prefit,predict=predict,
+            engine_sha=args.engine_sha,scenario_id=scenario_id,
+            options=options,source_module=search,
+            talent_proposals=proposals,
+            pets=sorted({c["result"]["pet"] for c in cases}),
+            iterations=args.search_iterations,seed=args.seed,
+            emit=lambda row: print("RUST_EIGHT_MOB_JOINT_SEARCH",json.dumps(row),
+                                   flush=True))
+        (args.out/"adaptive_search_summary.json").write_text(
+            json.dumps(search_summary,indent=2,allow_nan=False)+"\n")
+        print("RUST_EIGHT_MOB_JOINT_DONE",json.dumps(search_summary),flush=True)
     decision_trace=[]
     def pay_full_100(case):
         item=case["result"]
@@ -276,20 +357,19 @@ def run():
         (case["folder"]/"result.json").write_text(json.dumps(item,indent=2)+"\n")
         print("RUST_100_MOB_LABEL",json.dumps(item),flush=True)
 
-    validated_ids=set()
-    for case in chosen:
-        case["result"]["selection_reason"]="diverse_native_bootstrap"
-        pay_full_100(case)
-        validated_ids.add(case["result"]["candidate"])
-
-    # Refit after EVERY actual long run; new partial deaths update survival
-    # only, and each finished 100 changes the time model. Alternate predicted
-    # fastest choices with source-novel/uncertain candidates.
-    while len(validated_ids)<args.full_count:
+    # Historical parity-verified 100-kill labels are already real paid
+    # truth; do not spend full-run budget repeating them.
+    validated_ids=set(reused_ids)
+    # Refit after each new 100-mob run. Before six real completed labels,
+    # native HP/mana/time receipts guide bootstrap with no synthetic labels.
+    while len(decision_trace)<args.full_count:
         model=train_supervised(
             sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+        # A refused/failed short probe has no native features and must not
+        # be passed to the surrogate or to 100-mob candidate selection.
         untested=[case for case in probes
-                  if case["result"]["candidate"] not in validated_ids]
+                  if case["probe"] is not None
+                  and case["result"]["candidate"] not in validated_ids]
         if not untested:
             break
         for case in untested:
@@ -307,32 +387,71 @@ def run():
 
     model=train_supervised(
         sessions,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    ranking8=report_rank_validation(
+        sessions,cases,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    probe3_by_candidate={c["result"]["candidate"]:c["probe3"] for c in cases}
+    sessions3=[{**row,"probe":probe3_by_candidate[row["candidate"]]}
+               for row in sessions if probe3_by_candidate.get(row["candidate"]) is not None]
+    ranking3=report_rank_validation(
+        sessions3,cases,engine_sha=args.engine_sha,scenario_id=scenario_id)
+    ranking={"eight_mob":ranking8,"three_mob_control":ranking3}
+    (args.out/"ranking_validation.json").write_text(
+        json.dumps(ranking,indent=2,allow_nan=False)+"\n")
+    print("RUST_SURROGATE_RANKING_VALIDATION",json.dumps({
+        scope:{name:{k:v for k,v in result.items() if k!="rows"}
+               for name,result in diag["validation"].items()}
+        for scope,diag in ranking.items()}),flush=True)
     (args.out/"surrogate_model.json").write_text(
         json.dumps(model,indent=2,allow_nan=False)+"\n")
     for case in probes:
+        if case["probe"] is None:
+            case["result"]["surrogate"]={"prediction_trained":False,
+                                         "no_native_eight_receipt":True}
+            continue
         case["result"]["surrogate"]=predict(
             model,case["probe"],engine_sha=args.engine_sha,scenario_id=scenario_id)
     successes=sorted(
-        (c["result"] for c in cases if c["result"]["status"]=="COMPLETED"),
+        ({"candidate":row["candidate"],**row["result"]}
+         for row in sessions
+         if row["result"].get("status")=="COMPLETED"
+         and row["result"].get("confirmed_kills")==100),
         key=lambda c:c["elapsed_s"])
+    for winner in successes:
+        match=next((c for c in cases if c["result"]["candidate"]
+                    == winner["candidate"]),None)
+        if match:
+            winner["gear"]=match["result"]["gear"]
+            winner["pet"]=match["result"]["pet"]
+            winner["talents"]=match["result"]["talents"]
+            winner["apl"]=json.loads(
+                (match["folder"]/"source_request.json").read_text()
+            )["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
     summary={
         "engine_sha":args.engine_sha,"scenario_id":scenario_id,
         "source_gear":gear_audit,
-        "three_mob_probes":len(probes),"candidates":len(cases),
+        "eight_mob_probes":len(probes),"three_mob_controls":len(sessions3),
+        "candidates":len(cases),
         "actual_100_mob_labels":len(sessions),
         "new_native_100_attempts":len(decision_trace),
+        "joint_search":search_summary,
         "adaptive_native_100_decisions":decision_trace,
         "model_trained":model["time_model"] is not None,
+        "ranking_validation":{key:value["validation"] for key,value in ranking.items()},
         "model":model,"winner_100":successes[0] if successes else None,
         "candidates_with_results":[c["result"] for c in cases],
     }
     (args.out/"optimization_results.json").write_text(
         json.dumps(summary,indent=2,allow_nan=False)+"\n")
     print("RUST_THREE_TO_100_OPTIMIZATION",json.dumps({
-        "probes":len(probes),"full_labels":len(sessions),
+        "eight_mob_probes":len(probes),"full_labels":len(sessions),
         "model_trained":summary["model_trained"],
         "winner":summary["winner_100"],
+        "joint_search":search_summary,
     }),flush=True)
+    if args.full_count > 0 and not successes:
+        raise RuntimeError(
+            "ZERO_NATIVE_100_MOB_COMPLETIONS: real 100 world kills are required "
+            "before declaring a free Warlock optimizer winner")
 
 
 if __name__=="__main__":

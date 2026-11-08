@@ -119,6 +119,23 @@ class ThreeMobSurrogateTests(unittest.TestCase):
         self.assertEqual(selected["result"]["candidate"],1)
         self.assertEqual(reason,"native_resource_bootstrap")
 
+    def test_native_8mob_fastest_is_paid_real_100_before_calibration(self):
+        # Resource-dominated 8-kill champion still gets an actual native
+        # 100-kill check, not just the first high-HP/easy-to-survive build.
+        a={"result":{"candidate":0,"pet":"Imp","eight_elapsed_s":165.985},
+           "probe":{"features":{"health_end_fraction":.754,
+                                 "mana_end_fraction":.541,
+                                 "kill_time_slope":1.,"late_kill_s":20.}}}
+        b={"result":{"candidate":1,"pet":"Felhunter","eight_elapsed_s":230.},
+           "probe":{"features":{"health_end_fraction":1.,
+                                 "mana_end_fraction":.809,
+                                 "kill_time_slope":2.,"late_kill_s":26.}}}
+        first,reason=select_native_100_validation([a,b],[],iteration=0)
+        self.assertEqual(first["result"]["candidate"],1)
+        second,reason=select_native_100_validation([a,b],[],iteration=1)
+        self.assertEqual(second["result"]["candidate"],0)
+        self.assertEqual(reason,"native_8mob_fastest_bootstrap")
+
     def test_unverified_timeout_is_not_a_survival_failure_label(self):
         p=extract_three_mob_features(self.prepared,self.world)
         sessions=[{
