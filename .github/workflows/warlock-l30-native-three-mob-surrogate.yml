@@ -1,12 +1,14 @@
-name: L30 native three-mob resource and cooldown surrogate
+name: L30 native eight-mob surrogate ranking comparison
 
 on:
   push:
-    branches: [work/warlock-l30-three-mob-surrogate-20261106]
+    branches: [work/warlock-l30-surrogate-expand-ranking-20261108]
     paths:
       - tools/wf_warlock_chain_surrogate.py
+      - tools/wf_warlock_surrogate_rank_validation.py
       - tools/wf_warlock_l30_surrogate_probe.py
       - tools/test_wf_warlock_chain_surrogate.py
+      - tools/test_wf_warlock_eight_mob_probe.py
       - .github/workflows/warlock-l30-native-three-mob-surrogate.yml
   workflow_dispatch:
 
@@ -14,35 +16,36 @@ permissions:
   contents: read
 
 jobs:
-  l30-three-world-probes:
+  l30-eight-world-probes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 110
     steps:
       - name: Checkout optimization source
         uses: actions/checkout@v4
         with:
           path: project
-      - name: Checkout exact canonical Rust with three-mob receipts
+      - name: Checkout exact canonical Rust with sequential-mob receipts
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
           ref: 0f3c4ddce3d8f191118b29ff3321f338aca062a5
           path: engine
-      - name: Verify source, syntax and tiny predictor regression tests
-        run: |
-          set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "0f3c4ddce3d8f191118b29ff3321f338aca062a5"
-          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py
-          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install existing native bridge deps
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Verify native source, 3/8-mob feature parity and ranking validation tests
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "0f3c4ddce3d8f191118b29ff3321f338aca062a5"
+          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py project/tools/wf_warlock_surrogate_rank_validation.py
+          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
+          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_probe.py' -v
       - name: Build Rust executable
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Probe 16 actual 3-mob chains and calibrate 4 full 100-mob truth labels
+      - name: Probe 40 actual 8-mob chains and compare 3/8 ranking against real 100-mob truth
         working-directory: project
         run: |
           python3 -u tools/wf_warlock_l30_surrogate_probe.py \
@@ -51,12 +54,14 @@ jobs:
             --engine-tools ../engine/tools \
             --engine-sha 0f3c4ddce3d8f191118b29ff3321f338aca062a5 \
             --full-count 4 \
-            --out ../warlock-l30-native-three-mob-surrogate
-      - name: Preserve actual native 3-mob measurements and training status
+            --extra-candidates 24 \
+            --seed 20261108 \
+            --out ../warlock-l30-native-eight-mob-surrogate
+      - name: Preserve actual 8-mob Rust receipts, paired 3-mob features, labels and ranking
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: warlock-l30-native-three-mob-surrogate
-          path: warlock-l30-native-three-mob-surrogate/
+          name: warlock-l30-native-eight-mob-surrogate
+          path: warlock-l30-native-eight-mob-surrogate/
           if-no-files-found: warn
           retention-days: 14
