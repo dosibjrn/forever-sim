@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from wf_warlock_eight_mob_joint_search import (
     source_item_pools, request_signature, apl_mutation,
     mutate_talents, mutate_request, sorted_observed_native,
+    native_cast_identifiers,
 )
 
 
@@ -74,11 +75,36 @@ class NativeEightSearchTests(unittest.TestCase):
                         "guard": guard}
         ap = source()["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
         rng = random.Random(7)
-        outcomes = [apl_mutation(ap, [101, 202, 303], Native, rng)
+        outcomes = [apl_mutation(ap, [{"spellId": 101}, {"spellId": 202},
+                                     {"spellId": 303}, {"otherId": "OtherActionShoot"}], Native, rng)
                     for _ in range(50)]
         self.assertTrue(all(1 <= len(actions) <= 12 for actions in outcomes))
         self.assertTrue(any(actions != ap for actions in outcomes))
         self.assertTrue(any(actions[0] != ap[0] for actions in outcomes))
+
+    def test_shoot_is_discovered_from_native_prepared_and_mutatable(self):
+        native = {"player": {"spells": [
+            {"action_id": {"spell_id": 116}},
+            {"action_id": {"other_id": "OtherActionShoot"}},
+        ]}}
+        options = native_cast_identifiers(native)
+        self.assertIn({"otherId": "OtherActionShoot"}, options)
+        self.assertIn({"spellId": 116}, options)
+        class Native:
+            @staticmethod
+            def cast_apl(spell_id, *, guard=None):
+                return {"action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+        actions = []
+        rng = random.Random(1)
+        for _ in range(100):
+            actions = apl_mutation(actions or [], options, Native, rng)
+            if any((item["action"].get("castSpell") or {}).get("spellId",{})
+                   .get("otherId")=="OtherActionShoot" for item in actions):
+                break
+        self.assertTrue(any((item["action"].get("castSpell") or {}).get("spellId",{})
+                            .get("otherId")=="OtherActionShoot" for item in actions))
+        self.assertNotIn({"otherId": "OtherActionShoot"},
+                         native_cast_identifiers({"player": {"spells": []}}))
 
     def test_model_ranks_only_real_native_eight_probes(self):
         probes = [{"probe": {"features": {"mean_kill_s": i}}, "result": {"candidate": i}}
