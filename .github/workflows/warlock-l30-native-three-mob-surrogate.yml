@@ -1,4 +1,4 @@
-name: L30 native eight-mob surrogate ranking comparison
+name: L30 native eight-mob free joint optimizer with Shoot
 
 on:
   push:
@@ -6,9 +6,11 @@ on:
     paths:
       - tools/wf_warlock_chain_surrogate.py
       - tools/wf_warlock_surrogate_rank_validation.py
+      - tools/wf_warlock_eight_mob_joint_search.py
       - tools/wf_warlock_l30_surrogate_probe.py
       - tools/test_wf_warlock_chain_surrogate.py
       - tools/test_wf_warlock_eight_mob_probe.py
+      - tools/test_wf_warlock_eight_mob_joint_search.py
       - .github/workflows/warlock-l30-native-three-mob-surrogate.yml
   workflow_dispatch:
 
@@ -18,7 +20,7 @@ permissions:
 jobs:
   l30-eight-world-probes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 110
+    timeout-minutes: 120
     steps:
       - name: Checkout optimization source
         uses: actions/checkout@v4
@@ -28,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 0f3c4ddce3d8f191118b29ff3321f338aca062a5
+          ref: a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1
           path: engine
       - uses: actions/setup-python@v5
         with:
@@ -38,26 +40,28 @@ jobs:
       - name: Verify native source, 3/8-mob feature parity and ranking validation tests
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "0f3c4ddce3d8f191118b29ff3321f338aca062a5"
-          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py project/tools/wf_warlock_surrogate_rank_validation.py
+          test "$(git -C engine rev-parse HEAD)" = "a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1"
+          python3 -m py_compile project/tools/wf_warlock_chain_surrogate.py project/tools/wf_warlock_l30_surrogate_probe.py project/tools/wf_warlock_surrogate_rank_validation.py project/tools/wf_warlock_eight_mob_joint_search.py
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_chain_surrogate.py' -v
           python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_probe.py' -v
+          python3 -m unittest discover -s project/tools -p 'test_wf_warlock_eight_mob_joint_search.py' -v
       - name: Build Rust executable
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Probe 40 actual 8-mob chains and compare 3/8 ranking against nine existing 100-mob labels
+      - name: Run eight-mob native adaptive joint search and new 100-mob labels with equipped wand Shoot
         working-directory: project
         run: |
           python3 -u tools/wf_warlock_l30_surrogate_probe.py \
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --engine-tools ../engine/tools \
-            --engine-sha 0f3c4ddce3d8f191118b29ff3321f338aca062a5 \
-            --full-count 0 \
+            --engine-sha a1db2eb2377906ccb3e1cc6f85765b1fe0c409d1 \
+            --full-count 10 \
             --extra-candidates 24 \
+            --search-iterations 96 \
             --seed 20261108 \
             --out ../warlock-l30-native-eight-mob-surrogate
-      - name: Preserve actual 8-mob Rust receipts, paired 3-mob features, labels and ranking
+      - name: Preserve native 8-mob optimization, Shoot action proof, 100-mob truth and ranking
         if: always()
         uses: actions/upload-artifact@v4
         with:
