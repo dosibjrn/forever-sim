@@ -1,0 +1,68 @@
+name: Warlock L30 native 100 mob confirmation from measured 8 mob winners
+
+on:
+  push:
+    branches: [work/warlock-l30-surrogate-expand-ranking-20261108]
+    paths:
+      - tools/wf_warlock_l30_paid_champion_check.py
+      - .github/workflows/warlock-l30-paid-champion-100mob.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  paid-100:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact native optimizer
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout canonical native Rust with L30 actor and true Shoot APL
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 2d971329b6ca2aacdc02559b971f7dfdaf7f489f
+          path: engine
+      - name: Download optimizer-generated native 8-mob candidate artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: warlock-l30-native-eight-mob-surrogate
+          repository: dosibjrn/forever-sim
+          run-id: 42498603708
+          github-token: ${{ github.token }}
+          path: native-8-input
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify script and original source receipts
+        run: |
+          set -euo pipefail
+          python3 -m py_compile project/tools/wf_warlock_l30_paid_champion_check.py
+          test "$(git -C engine rev-parse HEAD)" = "2d971329b6ca2aacdc02559b971f7dfdaf7f489f"
+          test -f native-8-input/candidate_114/source_request.json
+          test -f native-8-input/candidate_000/result.json || test -f native-8-input/candidate_00/result.json
+      - name: Install native bridge deps
+        run: python3 -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build source native engine
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Replay actual 8-mob receipts then pay 100 real Rust mob kills
+        working-directory: project
+        run: |
+          python3 -u tools/wf_warlock_l30_paid_champion_check.py \
+            --binary ../engine/target/debug/forever-engine \
+            --artifact ../native-8-input \
+            --out ../paid-l30-100-confirmation \
+            --candidate-ids 114 0
+      - name: Preserve exact 8/100 receipts, player gear and complete APL
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l30-paid-100-confirmation
+          path: paid-l30-100-confirmation/
+          if-no-files-found: warn
+          retention-days: 14
