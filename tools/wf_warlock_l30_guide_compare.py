@@ -3,7 +3,7 @@
 
 Each guide gets the SAME source-paid gear, Succubus and two matching APL
 families (drain and native wand Shoot). The native Rust world actor persists
-through 100 successive level-30 2D world kills. Do not infer overlapping pulls
+through 3 or 100 successive level-30 2D world kills. Do not infer overlapping pulls
 or unsupported troll regeneration from this experiment.
 """
 from __future__ import annotations
@@ -19,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "integrations/mythicsim-rust"))
 from live_two_world_pulls import run as native_world_chain
+from wf_warlock_chain_surrogate import extract_three_mob_features
 from wf_warlock_native_optimizer import (
     actor, call, native_level_equipment, native_pet_autocast_receipt,
     native_sustain_receipt, profile, set_native_pet, set_native_sustain_buffs,
@@ -94,6 +95,7 @@ def main():
     p.add_argument("--engine-tools", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--guide", choices=tuple(GUIDE_RANKS), required=True)
+    p.add_argument("--targets", type=int, choices=(3, 100), default=100)
     args = p.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     binary = args.binary.resolve()
@@ -134,7 +136,8 @@ def main():
         raise RuntimeError("Shared native gear search did not equip a wand")
     report = {
         "guide": args.guide,
-        "engine": "native Rust, 100 successive level-30 world kills",
+        "engine": f"native Rust, {args.targets} successive level-30 world kills",
+        "target_count": args.targets,
         "talents": codes[args.guide],
         "icy_talents": codes["icy"],
         "mobalytics_talents": codes["mobalytics"],
@@ -182,16 +185,44 @@ def main():
             result["native_pet_autocast"] = native_pet_autocast_receipt(prepared, "Succubus")
             result["native_sustain"] = native_sustain_receipt(prepared, scenario)
             world = native_world_chain(binary, prepared_path, classic_mob_level=30,
-                                       target_count=100, rng_mode="balanced",
+                                       target_count=args.targets, rng_mode="balanced",
                                        recovery_policy="decisions")
             (folder / "native_world.json").write_text(json.dumps(world, indent=2, allow_nan=False) + "\n")
-            if (world["world_targets_killed"] != 100
+            if (world["world_targets_killed"] != args.targets
                     or world.get("continuous_native_actor") is not True
                     or world.get("actual_2d_ack") is not True):
-                raise RuntimeError("Missing 100 native world kills")
-            result.update(status="COMPLETED", confirmed_kills=100,
+                raise RuntimeError(f"Missing {args.targets} native world kills")
+            if args.targets == 3:
+                probe = extract_three_mob_features(prepared, world)
+                raw = probe["raw"]
+                if (raw["regeneration_window_source"] != "post_recovery_combat_only"
+                        or raw["native_mana_spent_source"] != "native_combat_mana_spent"
+                        or raw["native_mana_gained_source"] != "native_combat_mana_gained"
+                        or raw["native_health_gain_source"] != "native_combat_health_actual_gain"):
+                    raise RuntimeError("Rust engine did not provide combat-only receipts")
+                # All three windows must preserve genuine sequential native
+                # fight boundaries; time spent on food/water is NOT combat.
+                prior_kill = 0
+                for window in world["native_windows"]:
+                    start = window["native_combat_start_ns"]
+                    end = window["native_kill_ns"]
+                    if not (prior_kill <= start < end
+                            and window["native_combat_duration_ns"] == end - start):
+                        raise RuntimeError("Invalid native combat versus rest clock")
+                    prior_kill = end
+                (folder / "three_features.json").write_text(
+                    json.dumps(probe, indent=2, allow_nan=False) + "\n")
+                result["combat_only_features"] = probe["features"]
+                result["feature_source"] = raw["regeneration_window_source"]
+                result["combat_seconds"] = sum(
+                    w["native_combat_duration_ns"] / 1e9 for w in world["native_windows"])
+                result["food_seconds"] = sum(
+                    w["food_seconds"] for w in world["native_windows"])
+                result["water_seconds"] = sum(
+                    w["water_seconds"] for w in world["native_windows"])
+            result.update(status="COMPLETED", confirmed_kills=args.targets,
                           elapsed_s=world["world_elapsed_seconds"],
-                          seconds_per_mob=world["world_elapsed_seconds"]/100,
+                          seconds_per_mob=world["world_elapsed_seconds"]/args.targets,
                           min_hp=world["minimum_native_actor_health"],
                           min_mana=world["minimum_native_actor_mana"],
                           paid_recovery=world["paid_recovery"])
@@ -210,8 +241,9 @@ def main():
         report["results"].append(result)
         (folder / "result.json").write_text(json.dumps(result, indent=2) + "\n")
         (args.out / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
-        print("GUIDE_L30_NATIVE_100_MOBS", json.dumps(result), flush=True)
-    print("GUIDE_L30_100_SUMMARY", json.dumps({
+        print("GUIDE_L30_NATIVE_WORLD_RESULT", json.dumps(result), flush=True)
+    print("GUIDE_L30_WORLD_SUMMARY", json.dumps({
+        "target_count": args.targets,
         "guide": args.guide, "talents": codes[args.guide],
         "gear": gear, "results": report["results"]}), flush=True)
 
