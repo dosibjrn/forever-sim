@@ -97,15 +97,49 @@ def apl_mutation(actions, spell_ids, source_module, rng):
     return result
 
 
+def mutate_talents(encoded, options, rng):
+    """Move a single talent point using native get_options rank metadata.
+
+    Only Rust prepare can accept the resulting build; this generator never
+    validates game rules or changes gameplay mechanics.
+    """
+    trees = options["talents"]["trees"]
+    values = []
+    for part, tree in zip(encoded.split("-"), trees):
+        numbers = [int(part[row["index"]]) if row["index"] < len(part) else 0
+                   for row in tree["talents"]]
+        values.append(numbers)
+    donors = [(t, row["index"]) for t, tree in enumerate(trees)
+              for row in tree["talents"] if values[t][row["index"]] > 0]
+    receivers = [(t, row["index"]) for t, tree in enumerate(trees)
+                 for row in tree["talents"]
+                 if values[t][row["index"]] < row["max_rank"]
+                 and row["minimum_level"] <= options["level"]]
+    if not donors or not receivers:
+        return encoded
+    src_t, src_i = rng.choice(donors)
+    dst_t, dst_i = rng.choice(receivers)
+    if (src_t, src_i) == (dst_t, dst_i):
+        return encoded
+    values[src_t][src_i] -= 1
+    values[dst_t][dst_i] += 1
+    return "-".join("".join(map(str, ranks)).rstrip("0") or "0"
+                    for ranks in values)
+
+
 def mutate_request(parent, *, talent_proposals, pets, pools, spell_ids,
-                   source_module, rng):
+                   source_module, options, rng):
     """Uniform selection among all four axes; no per-axis quotas or priorities."""
     child = copy.deepcopy(parent)
     unit = actor(child)
     axis = rng.choice(("talents", "pet", "gear", "apl"))
     if axis == "talents":
-        proposed = rng.choice(talent_proposals)
-        unit["talentsString"] = proposed["talents"]
+        if rng.random() < .75:
+            unit["talentsString"] = mutate_talents(
+                unit["talentsString"], options, rng)
+        else:
+            proposed = rng.choice(talent_proposals)
+            unit["talentsString"] = proposed["talents"]
     elif axis == "pet":
         set_native_pet(child, rng.choice(pets))
     elif axis == "gear":
@@ -175,7 +209,7 @@ def adaptive_native_search(probes, *, evaluate, model, predict,
             mutant, dimension = mutate_request(
                 current, talent_proposals=talent_proposals, pets=pets,
                 pools=pools, spell_ids=spell_ids, source_module=source_module,
-                rng=rng)
+                options=options, rng=rng)
             key = request_signature(mutant)
             if key not in visited:
                 visited.add(key)
