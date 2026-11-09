@@ -227,7 +227,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # A checkpoint-specific native-generated frozen reference is distinct from
     # the historical L60 Balance/Feral saved report, and only its real selected
     # Rust production scorer can award P7.1. Never relabel an L60 donor as L20.
-    if class_key == "druid" and level in (20, 30, 40) and spec == "unrestricted":
+    if ((class_key == "druid" and level in (20, 30, 40) and spec == "unrestricted")
+            or (class_key == "warlock" and level == 20 and spec == "unrestricted")):
         from tools.wf_p7_native_reference import run_generated_p71
         return run_generated_p71(root, class_key, level, spec)
     if ((class_key, level) != ("druid", 60)
