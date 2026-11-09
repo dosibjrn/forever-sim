@@ -300,7 +300,7 @@ def main() -> int:
     # Incomplete scans return earlier without publishing a false safe total.
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
-            stream.write(f"retained_public_bytes={total}\\n".replace("\\n", "\n"))
+            stream.write(f"retained_public_bytes={total}\n")
     return 0
 
 
