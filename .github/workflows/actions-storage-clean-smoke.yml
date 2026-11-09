@@ -1,9 +1,6 @@
 name: Actions artifact disposable deletion smoke
 
 on:
-  push:
-    paths:
-      - .github/workflows/actions-storage-clean-smoke.yml
   workflow_dispatch:
 
 permissions:
