@@ -7,6 +7,7 @@ No resetting native resources, fabricated kills, or Python combat evaluator.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from math import isfinite
 import subprocess
@@ -21,6 +22,15 @@ from live_two_world_pulls import (  # noqa: E402
     run as native_world_chain,
 )
 from src.scenarios.leveling_targets import representative_hp  # noqa: E402
+
+
+def file_sha256(path: Path) -> str:
+    """Record actual source/binary bytes used by each native paid attempt."""
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def create_scenario(request: dict, *, variant: str) -> dict:
@@ -128,10 +138,16 @@ def classify_native_chain(result: dict, requested_targets: int, *,
         if (not isinstance(damage, dict) or damage.get("observed") is not True
                 or type(damage.get("damage_taken")) not in (float, int)
                 or not isfinite(damage["damage_taken"])
-                or damage["damage_taken"] <= 0
+                or damage["damage_taken"] < 0
                 or type(damage.get("damage_events")) is not int
-                or damage["damage_events"] <= 0):
+                or damage["damage_events"] < 0
+                or (damage["damage_taken"] > 0) != (damage["damage_events"] > 0)):
             return "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False
+        if damage["damage_events"] == 0:
+            # Explicitly observed zero is a real native outcome, not a missing
+            # receipt. Keep the strict survival proof failed without discarding
+            # already ACKed paid Decisions/consumption evidence.
+            return "NO_NATIVE_INCOMING_PLAYER_DAMAGE", False
     return f"COMPLETED_{requested_targets}_REAL_NATIVE_GSIM_KILLS", True
 
 
@@ -172,6 +188,8 @@ def main() -> None:
     )
     args.out.mkdir(parents=True, exist_ok=True)
     original = json.loads(args.source.read_text())
+    binary_sha256 = file_sha256(args.binary)
+    original_source_sha256 = file_sha256(args.source)
     attempts = []
     variants = (("best_apl", "life_tap_20", "life_tap_40")
                 if args.variant == "all" else (args.variant,))
@@ -184,6 +202,9 @@ def main() -> None:
         prepared_path = base / "prepared.json"
         source_path.write_text(json.dumps(scenario, indent=2) + "\n")
         record = {"variant": variant, "target_count_requested": args.targets,
+                  "native_binary_sha256": binary_sha256,
+                  "original_source_sha256": original_source_sha256,
+                  "source_request_sha256": file_sha256(source_path),
                   "mob_level": 20, "mob_hp_classic_proxy": representative_hp(20),
                   "synthetic_min_base_damage": 20,
                   "recovery_request": native_recovery,
@@ -199,6 +220,8 @@ def main() -> None:
                 raise RuntimeError("NATIVE_PREPARE_FAILED: " +
                                    (result.stderr or result.stdout)[-2500:])
             prepared = json.loads(prepared_path.read_text())
+            record["native_prepared_sha256"] = file_sha256(prepared_path)
+            record["native_prepared_request_sha256"] = prepared.get("request_sha256")
             player = prepared["player"]
             record["native_actor"] = {
                 "class": player.get("class"), "race": player.get("race"),
@@ -212,7 +235,11 @@ def main() -> None:
             result = native_world_chain(
                 args.binary, prepared_path, target_count=args.targets,
                 classic_mob_level=20, rng_mode="balanced",
-                require_native_health_damage=args.require_native_health_damage,
+                # Collect the native health receipt even when damage is zero.
+                # The strict positive-damage criterion is applied below by
+                # classify_native_chain to preserve real ACK/recovery evidence
+                # from an unsuccessful survival proof. No false completion.
+                require_native_health_damage=False,
                 **native_recovery,
             )
             (base / "chain_native_world.json").write_text(
@@ -223,6 +250,15 @@ def main() -> None:
             status, complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
                 require_native_consumption=args.require_native_consumption,
+                require_native_health_damage=args.require_native_health_damage)
+            # Independent transport proofs: a native health-damage refusal
+            # must not erase genuine paid food/water evidence, or vice versa.
+            # Neither individual proof grants an accepted chain objective.
+            _, consumption_complete = classify_native_chain(
+                result, args.targets, recovery_policy=args.recovery_policy,
+                require_native_consumption=args.require_native_consumption)
+            _, health_complete = classify_native_chain(
+                result, args.targets, recovery_policy=args.recovery_policy,
                 require_native_health_damage=args.require_native_health_damage)
             record.update(
                 status=status,
@@ -249,9 +285,20 @@ def main() -> None:
                 native_food_health_gain=result.get("native_food_health_gain_total"),
                 native_water_mana_gain=result.get("native_water_mana_gain_total"),
                 native_consumption_proof_required=args.require_native_consumption,
-                native_consumption_proven=complete and args.require_native_consumption,
+                native_consumption_proven=(consumption_complete and args.require_native_consumption),
                 native_health_damage=result.get("native_health_damage"),
-                native_health_damage_proven=complete and args.require_native_health_damage,
+                # Transport the existing source-native per-mob attack receipt.
+                # A world damage-to-target event is not incoming player damage.
+                # This identifies zero/missing *individual* windows for the
+                # Rust owner without inventing Python attack mechanics.
+                native_incoming_player_damage_by_target=[
+                    {"index": window.get("index"),
+                     "native_kill_ns": window.get("native_kill_ns"),
+                     "damage_taken": window.get("native_health_damage_taken"),
+                     "damage_events": window.get("native_health_damage_events")}
+                    for window in result["native_windows"]
+                ],
+                native_health_damage_proven=(health_complete and args.require_native_health_damage),
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
                 # Frozen-build screen only: never promote it to cold-search
@@ -284,6 +331,8 @@ def main() -> None:
         "world": "one persistent gsim 2D world per candidate",
         "no_independent_fight_stitching": True,
         "target_count_requested": args.targets,
+        "native_binary_sha256": binary_sha256,
+        "original_source_sha256": original_source_sha256,
         "native_recovery_requested": native_recovery,
         "native_consumption_proof_required": args.require_native_consumption,
         "native_health_damage_proof_required": args.require_native_health_damage,

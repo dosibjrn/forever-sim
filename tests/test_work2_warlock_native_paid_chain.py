@@ -5,6 +5,7 @@ legality oracle; real native/world behavior is checked by separate Actions.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import runpy
@@ -98,6 +99,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
 ):
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     out = tmp_path / "out"
     observed = []
 
@@ -158,7 +160,16 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert observed[0]["rng_mode"] == "balanced"
     record = json.loads((out / "best_apl" / "summary.json").read_text())
     assert record["killed"] == targets
+    assert record["native_binary_sha256"] == hashlib.sha256(
+        b"mock native engine for receipt test").hexdigest()
+    assert record["original_source_sha256"] == hashlib.sha256(
+        source.read_bytes()).hexdigest()
+    assert record["source_request_sha256"] == hashlib.sha256(
+        (out / "best_apl" / "source_request.json").read_bytes()).hexdigest()
+    assert record["native_prepared_sha256"] == hashlib.sha256(
+        (out / "best_apl" / "prepared.json").read_bytes()).hexdigest()
     assert record["paid_recovery"] is paid
+    assert len(record["native_incoming_player_damage_by_target"]) == targets
     assert record["seconds_per_mob"] == (7. if paid else None)
     assert record["status"] == (
         f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
@@ -166,6 +177,8 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert record["native_2d_paid_objective_eligible"] is (
         paid and targets == 100)
     summary = json.loads((out / "summary.json").read_text())
+    assert summary["native_binary_sha256"] == record["native_binary_sha256"]
+    assert summary["original_source_sha256"] == record["original_source_sha256"]
     assert summary["p4_p5_p6_pass"] is False
     assert summary["cold_30_300_search_executed"] is False
 
@@ -173,6 +186,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
 def test_fixed_recovery_duration_forwarded_from_warlock_driver(tmp_path, monkeypatch):
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     observed = []
 
     def prepare(cmd, **kwargs):
@@ -225,6 +239,7 @@ def test_native_failure_records_real_partial_ack_count_not_completion(
     """A dry native actor may kill some mobs; report the exact ACK count."""
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     out = tmp_path / "out"
 
     def prepare(cmd, **kwargs):
@@ -320,6 +335,15 @@ def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_pr
     assert classify(payload, 8, recovery_policy="decisions",
                     require_native_health_damage=True) == (
                         "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False)
+    # Exact Rust result on the strict eight-target Warlock chain: eight ACKs
+    # and paid water, but *observed zero* incoming player hits. This is not
+    # the same as a missing native receipt, and must not earn an objective.
+    zero_damage = {**payload, "native_health_damage": {
+        "observed": True, "damage_taken": 0., "damage_events": 0}}
+    assert classify(zero_damage, 8, recovery_policy="decisions",
+                    require_native_health_damage=True,
+                    require_native_consumption=True) == (
+                        "NO_NATIVE_INCOMING_PLAYER_DAMAGE", False)
     with_damage = {**payload, "native_health_damage": {
         "observed": True, "damage_taken": 48., "damage_events": 3}}
     assert classify(with_damage, 8, recovery_policy="decisions",
@@ -342,6 +366,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
 ):
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     out = tmp_path / "out"
 
     def prepare(cmd, **kwargs):
@@ -352,7 +377,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
 
     def native(*args, **kwargs):
         assert kwargs["recovery_policy"] == "decisions"
-        assert kwargs["require_native_health_damage"] is True
+        assert kwargs["require_native_health_damage"] is False  # defer strict proof until full receipt
         return {
             "world_targets_killed": 8,
             "world_seconds_per_target_paid_recovery": 20.,
@@ -392,7 +417,81 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
     assert record["native_consumption_proof_required"] is True
     assert record["native_consumption_proven"] is False
     assert record["native_health_damage_proof_required"] is True
-    assert record["native_health_damage_proven"] is False
+    # Independent native health proof remains true despite a failed
+    # food/water requirement; no combined completion is earned.
+    assert record["native_health_damage_proven"] is True
     assert record["native_health_damage"]["damage_taken"] == 35.
+    assert record["seconds_per_mob"] is None
+    assert record["native_2d_paid_objective_eligible"] is False
+
+
+def test_strict_health_refusal_retains_real_eight_target_decisions_receipt(
+    tmp_path, monkeypatch
+):
+    """Native zero incoming damage rejects proof, not the paid ACK evidence."""
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
+    out = tmp_path / "out"
+
+    def prepare(cmd, **kwargs):
+        Path(cmd[cmd.index("--outfile") + 1]).write_text(json.dumps({
+            "player": {"class": "ClassWarlock", "race": "RaceTroll", "level": 20,
+                       "stats": {"Health": 1894., "Mana": 2173.}}}))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    def native(_binary, _prepared, **kwargs):
+        # Rust's actual health observations are returned to Forever; the
+        # caller classifies their adequacy only after retaining all evidence.
+        assert kwargs["require_native_health_damage"] is False
+        assert kwargs["recovery_policy"] == "decisions"
+        return {
+            "world_targets_killed": 8,
+            "world_seconds_per_target_paid_recovery": 16.,
+            "world_elapsed_seconds": 128.,
+            "minimum_native_actor_health": 1894.,
+            "minimum_native_actor_mana": 50.,
+            "native_windows": [{"actor_health": 1894.}] * 8,
+            "native_actor_mana_after_world_kills": [250.] * 8,
+            "paid_recovery": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "native_food_water_observed": True,
+            "native_food_seconds_total": 6.,
+            "native_water_seconds_total": 10.,
+            "native_food_health_gain_total": 65.,
+            "native_water_mana_gain_total": 140.,
+            "gsim_route_paid_movement_s": 8.,
+            "native_damage_events": 15,
+            "native_health_damage": {
+                "observed": True, "damage_taken": 0., "damage_events": 0},
+        }
+
+    main = _WARLOCK["main"]
+    monkeypatch.setitem(main.__globals__, "native_world_chain", native)
+    monkeypatch.setattr(main.__globals__["subprocess"], "run", prepare)
+    monkeypatch.setattr(sys, "argv", [
+        "driver", "--binary", str(tmp_path / "engine"),
+        "--source", str(source), "--out", str(out),
+        "--targets", "8", "--variant", "best_apl",
+        "--recovery-policy", "decisions",
+        "--require-native-consumption", "--require-native-health-damage",
+    ])
+    with pytest.raises(SystemExit, match="No variant completed 8"):
+        main()
+
+    record = json.loads((out / "best_apl/summary.json").read_text())
+    assert record["killed"] == 8
+    assert record["native_food_seconds"] == 6.
+    assert record["native_water_seconds"] == 10.
+    assert record["native_water_mana_gain"] == 140.
+    assert record["native_consumption_proven"] is True
+    assert record["native_health_damage_proven"] is False
+    assert record["native_health_damage"] == {
+        "observed": True, "damage_taken": 0., "damage_events": 0}
+    assert record["status"] == "NO_NATIVE_INCOMING_PLAYER_DAMAGE"
+    assert len(record["native_incoming_player_damage_by_target"]) == 8
+    assert all(window["damage_taken"] is None and window["damage_events"] is None
+               for window in record["native_incoming_player_damage_by_target"])
     assert record["seconds_per_mob"] is None
     assert record["native_2d_paid_objective_eligible"] is False
