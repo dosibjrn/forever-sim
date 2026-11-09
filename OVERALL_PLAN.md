@@ -1,7 +1,7 @@
-# WoW Forever — OVERALL PLAN v8 (APPROVED)
+# WoW Forever — OVERALL PLAN v9 (APPROVED)
 
-**Date:** 2026-11-04  
-**Status:** **OWNER-APPROVED.** v8 reduces redundant acceptance obligations; v7 remains the single-source architecture decision, v6 retires P1/P2. Git history contains all earlier approvals.
+**Date:** 2026-11-09  
+**Status:** **OWNER-APPROVED.** v9 adds the owner-selected M0.5 Warlock product milestone and clarifies dual-spec optionality; v8 retains acceptance rules, v7 the single-source architecture, v6 the retirement of P1/P2. Git history contains earlier approvals.
 **Purpose:** Define WHAT is built, the end-state and precisely when DONE DONE occurs. No gate implementation procedure or changeable milestone ordering belongs here; those live in PROCESS and milestone plans.
 
 ## Owner-approved v8 acceptance simplification (2026-11-04)
@@ -25,6 +25,18 @@ Retire P1 ability and P2 talent gates from formal checkpoint acceptance. The act
 Build a generic, source-driven WoW Forever 1–60 solo leveling simulator/optimizer for all nine classes. Given class, level, legal constraints and a pinned Forever ruleset, automatically discover and explain the best **known executable** combination of talents, equipment, combat/rotation policy, pull strategy and paid recovery/survival. Optimize comparable **real elapsed time per mob/route**, not only DPS, arbitrary XP proxies, or a preset guide build.
 
 A user must be able to inspect actual selected gear with item identities and scored alternatives; talent ranks and next talent; the actual legal actions/rotations and their measured score; stat weights; encounter, survival and recovery; and why the chosen configuration beat benchmark alternatives. The engine must be generic; game facts and the optimizer's available alternatives come from the exact-SHA-pinned MythicSim Rust source of truth, not class-specific Python catalogues or hardcoded winner builds.
+
+## M0.5 — Warlock real gates and continuous optimal leveling strategy (owner-approved 2026-11-09)
+
+**Near-term outcome milestone, not an extra acceptance gate or replacement for M1.** Make Warlock the first end-to-end playable demonstration of the intended generic source-native optimizer. Earn the real existing **Warlock L20, L30, L40 and L60 × unrestricted/Affliction/Demonology/Destruction** checkpoint results (16 checkpoints, 144 active P3–P7.5 gate results) using the existing contracts and Merge-owned M1 ledger, while separately delivering a coherent, source-grounded **level 10–60** Warlock leveling simulation and human-playable guide. Intermediate checkpoints do not by themselves prove a full leveling journey. Preserve the established **148-checkpoint/1,332-gate** first-phase DONE DONE target and nine gate predicates exactly.
+
+**What the full Warlock route must answer:** an overall elapsed-leveling-time-optimal *known executable* strategy across levels, with one consistent legal talent-point path, gear/spell/pet/rotation/pull/recovery choices, paid eating/drinking, survival, movement, XP and level progression. At **level 40**, consider dual spec jointly with the continuing primary path: choose legal progression for **both** independently maintained talent trees, which one to activate for each relevant segment/encounter, and any sourced purchase/training/respec/switching costs or restrictions. Output level-by-level talent choices, gear upgrades, pet and APL/pull/regen policy, switch guidance, measured route objective, comparable baseline and reproducible native-backed progression evidence. A proxy, unrelated per-level fastest builds or stitched checkpoint winners is **not** an executed full route.
+
+**Dual-spec dominance principle (owner clarification):** **an optional free second talent spec can only improve or tie the best single-spec optimum**, never worsen it, because the single-spec path remains available without switching. This weak dominance is a property of the feasible strategy space, **not proof of a strictly positive gain, nor a requirement to use/switch specs**. The meaningful optimization problem is the best pair of legal evolving talent builds, their activation schedule and the **incremental elapsed-time benefit**. If Forever's actual dual-spec unlock, purchase, training, switching or respec has a genuine sourced cost/restriction, compare net benefit and preserve the legal **do not acquire dual spec** option. Report gross benefit without those costs separately from net benefit; a negative *gross* benefit with a free optional spec indicates a solver/model bug or incomparable scoring, not a real strategy disadvantage.
+
+**Architecture:** Forever/gsim owns world/level progression, scenario orchestration, route optimization and dual-spec decisions. The exact-SHA-pinned MythicSim Rust is authoritative for game choices, build legality and **native execution of each requested combat/recovery scenario**, returning real outcomes; it does **not** own a second 10–60 route planner or decide active spec across levels. Keep genuine spatial world/native causality for P4–P6. Reuse/refactor the existing Decisions path/dual-spec solver, but ensure legal talent continuity and correct source-backed switching costs. Advance from real complete retained-actor **100 distinct-mob** runs with recovery through level-specific frontiers, to one **real end-to-end gsim-driven native-backed 10–60 replay**. All gaps stay explicitly provisional until actually run.
+
+**Completion:** (1) Warlock's existing **144/144** active gate PASSes genuinely recorded under M1, and (2) a reproducible, executed, continuous Warlock 10–60 route with legal L40 dual-spec choices and a readable game strategy, including baseline comparison and actual source-backed costs. These are product/milestone deliverables, not an added predicate for accepting any individual M1 gate. Detailed order, ownership and execution slices live in [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md).
 
 ## Current first DONE DONE target — 148 certified checkpoints
 
@@ -63,7 +75,7 @@ A milestone report can be updated by agents. A sacred-process or overall-goal ch
 
 ## Current known planning state
 
-As of the source records inspected 2026-10-15, strictly certified coverage was **0/148**, with earlier Druid L20/L30 results retained as diagnostic/previous-contract evidence rather than deleted. Those states are temporal bookkeeping, not permanent plan definitions. The current priority set by user is Druid L20 → Druid L30 → Mage L30; subsequent order and slices belong in the editable milestone plan.
+As of the source records inspected 2026-10-15, strictly certified coverage was **0/148**, with earlier Druid L20/L30 results retained as diagnostic/previous-contract evidence rather than deleted. Those states are temporal bookkeeping, not permanent plan definitions. That Druid L20 → Druid L30 → Mage L30 priority was historical. The owner-selected current near-term priority is **M0.5 Warlock**, as defined above; concrete work dispatch remains in the editable milestone/priority plan.
 
 ## Approval record
 
@@ -71,4 +83,5 @@ As of the source records inspected 2026-10-15, strictly certified coverage was *
 - **v6 owner-approved 2026-11-03:** retire P1/P2 formal acceptance; keep 148 checkpoint identities and the remaining nine active gates.
 - **v7 owner-approved 2026-11-04:** pinned MythicSim Rust supplies available optimizer alternatives and owns game-data/legality; Forever handles scenario/search/scoring, removes GameIR and redundant source rules.
 - **v8 owner-approved 2026-11-04:** remove redundant P3–P7 proof and search costs while preserving the same nine gates, 148 checkpoints, native engine and genuine leveling/DPS results.
+- **v9 owner-approved 2026-11-09:** add M0.5 Warlock first and clarify that free optional dual spec weakly dominates single-spec (but sourced acquisition/switching costs can change net optimal adoption); preserve the v8 acceptance scope.
 - All approved revisions require the user's explicit authorization; historical approval texts are retained in Git history.
