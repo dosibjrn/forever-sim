@@ -1,6 +1,8 @@
 """Read-only quota inventory pagination and fail-closed scope tests."""
 import importlib.util
+import io
 from pathlib import Path
+import urllib.error
 
 import pytest
 
@@ -193,3 +195,64 @@ def test_live_storage_guard_skips_pin_api_only_when_no_delete_can_be_planned():
     assert workflow.index(fast_noop) < workflow.index("collect_local_references(")
     assert workflow.index(fast_noop) < workflow.index('gh_collection("issues?state=all")')
     assert workflow.index(fast_noop) < workflow.index('request(f"artifacts/{aid}", "DELETE")')
+
+
+def test_public_fork_artifacts_retry_anonymously_after_scoped_token_404(monkeypatch, capsys):
+    """Do not treat public Rust-fork bytes as unknown solely due to repo-scoped auth."""
+    monkeypatch.setenv("GH_TOKEN", "only-current-repository")
+    requests = []
+
+    def urlopen(request, timeout):
+        requests.append(request)
+        assert timeout == 25
+        if len(requests) == 1:
+            assert request.get_header("Authorization") == "Bearer only-current-repository"
+            raise urllib.error.HTTPError(request.full_url, 404, "scoped token", {}, None)
+        assert request.get_header("Authorization") is None
+        return io.BytesIO(b'{"total_count":1,"artifacts":[{"id":9,"size_in_bytes":1234}]}')
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    assert module.inventory(
+        "dosibjrn/mythicsim-forever-engine", module.github_page) == (1, 1234)
+    assert len(requests) == 2
+    assert "PUBLIC_READ_FALLBACK repo=mythicsim-forever-engine" in capsys.readouterr().out
+
+
+def test_failed_anonymous_retry_does_not_report_public_fork_headroom(monkeypatch, capsys):
+    """If both token and anonymous public reads fail, scope remains incomplete."""
+    monkeypatch.setenv("GH_TOKEN", "only-current-repository")
+    monkeypatch.setattr(module, "github_owner_page", lambda page: [
+        {"full_name": repo, "private": False} for repo in module.REPOSITORIES])
+    calls = []
+
+    def urlopen(request, timeout):
+        calls.append(request)
+        if "forever-sim/actions" in request.full_url:
+            return io.BytesIO(b'{"total_count":0,"artifacts":[]}')
+        raise urllib.error.HTTPError(request.full_url, 404, "unavailable", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    assert module.main() == 1
+    output = capsys.readouterr().out
+    assert "RETAINED_SCOPE=INCOMPLETE" in output
+    assert "RETAINED_PUBLIC_OWNER_REPOS count=" not in output
+    # One authenticated attempt and exactly one unauthenticated public retry.
+    fork_requests = [req for req in calls if "mythicsim-forever-engine" in req.full_url]
+    assert len(fork_requests) == 2
+    assert fork_requests[0].get_header("Authorization")
+    assert fork_requests[1].get_header("Authorization") is None
+
+
+def test_non_public_artifact_url_never_retries_anonymously(monkeypatch):
+    """Restrict fallback to known public owner artifact-list GETs."""
+    monkeypatch.setenv("GH_TOKEN", "scoped-token")
+    calls = []
+
+    def urlopen(request, timeout):
+        calls.append(request)
+        raise urllib.error.HTTPError(request.full_url, 404, "not found", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    with pytest.raises(urllib.error.HTTPError):
+        module._github_json("https://api.github.com/repos/another/private/actions/artifacts")
+    assert len(calls) == 1

@@ -124,8 +124,29 @@ def _github_json(url: str):
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=25) as response:
-        return json.load(response)
+    try:
+        with urllib.request.urlopen(request, timeout=25) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as exc:
+        # A workflow's GITHUB_TOKEN has access to its own repository, but may
+        # receive 403/404 for another public repository owned by the same user.
+        # The footprint monitor only reads public artifact listings; retry
+        # those GETs anonymously rather than silently losing the Rust fork.
+        # Never use this fallback for arbitrary URLs, private data or writes.
+        public_artifacts = (
+            url.startswith(f"https://api.github.com/repos/{OWNER}/")
+            and url.split("?", 1)[0].endswith("/actions/artifacts")
+        )
+        if not (token and public_artifacts and exc.code in (403, 404)):
+            raise
+        anonymous_headers = {
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        anonymous_request = urllib.request.Request(url, headers=anonymous_headers)
+        with urllib.request.urlopen(anonymous_request, timeout=25) as response:
+            print(f"PUBLIC_READ_FALLBACK repo={url.split('/')[5]}")
+            return json.load(response)
 
 
 def github_owner_page(page: int) -> list[dict]:
