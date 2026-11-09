@@ -37,7 +37,7 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
     for folder in ("docs", "evidence", "gate_evidence", "gate_sources"):
         for pattern in ("*.md", "*.json", "*.tsv"):
             for path in (root / folder).rglob(pattern):
-                record_references(path.read_text(encoding="utf-8", errors="replace"),
+                record_references(path.read_text(encoding="utf-8"),
                                   runs, artifacts)
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
                  "docs/planning/M1_PASSES.tsv"):
