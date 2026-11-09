@@ -104,8 +104,12 @@ jobs:
           options="$RUNNER_TEMP/feral-p3/options.json"
           prepared="$RUNNER_TEMP/feral-p3/prepared.json"
           report="$RUNNER_TEMP/feral-p3/p3.json"
+          # Auxiliary item-options is a diagnostic, never a precondition for
+          # executing the actual selected-native P3 gate.
+          options_rc=0
           "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" item-options \
-            --class druid --level 60 --spec unrestricted --slot all > "$options"
+            --class druid --level 60 --spec unrestricted --slot all \
+            > "$options" 2> "$RUNNER_TEMP/feral-p3/item-options.stderr" || options_rc=$?
           prepare_rc=0
           "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" prepare \
             --request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
@@ -115,15 +119,22 @@ jobs:
           gate_rc=0
           timeout 300s python tools/wf_gate.py --class druid --level 60 \
             --spec feral --gate P3 --out "$report" || gate_rc=$?
-          python - "$options" "$prepared" "$report" "$prepare_rc" "$gate_rc" <<'PY'
+          python - "$options" "$prepared" "$report" "$prepare_rc" "$gate_rc" "$options_rc" <<'PY'
           import json, sys
           from pathlib import Path
-          options = json.loads(Path(sys.argv[1]).read_text())
+          # Item-options may refuse or fail to emit JSON on this pin. Its
+          # failure must not hide the real gate's PASS/FAIL/BLOCKED outcome.
+          try:
+              options = json.loads(Path(sys.argv[1]).read_text())
+              if not isinstance(options, dict):
+                  raise ValueError("options diagnostic is not a JSON object")
+          except (OSError, ValueError) as exc:
+              options = {"status": "DIAGNOSTIC_UNAVAILABLE",
+                         "refusal": {"error": type(exc).__name__}}
           prepared_path = Path(sys.argv[2])
           gate = json.loads(Path(sys.argv[3]).read_text())
-          prepare_rc, gate_rc = map(int, sys.argv[4:6])
+          prepare_rc, gate_rc, options_rc = map(int, sys.argv[4:7])
           prepared = json.loads(prepared_path.read_text()) if prepared_path.exists() else {}
-          assert options["class"] == "druid" and options["level"] == 60, options
           assert gate["class"] == "druid" and gate["level"] == 60, gate
           assert gate["spec"] == "feral" and gate["gate"] == "P3", gate
           assert gate["status"] in ("PASS", "FAIL", "BLOCKED"), gate
@@ -136,7 +147,8 @@ jobs:
           if prepare_rc == 0:
               actor = prepared.get("player") or {}
               print("FERAL_PREPARED_ACTOR", actor.get("class"), actor.get("level"))
-          print("FERAL_L60_P3_NO_RECORD", "item_options", options["status"],
+          print("FERAL_L60_P3_NO_RECORD", "item_options_rc", options_rc,
+                "item_options", options.get("status", "unknown"),
                 "native_refusal", options.get("refusal"),
                 "prepare_rc", prepare_rc,
                 "gate", gate["status"], "reasons", row.get("reasons", gate.get("reasons", [])),

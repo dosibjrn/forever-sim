@@ -27,9 +27,10 @@ def _reader() -> str:
 
 
 def _run(tmp_path, monkeypatch, *, status: str, options_status: str = "ok",
-         rows=None, gate_rc: int | None = None, level: int = 60):
+         rows=None, gate_rc: int | None = None, level: int = 60,
+         options_json: str | None = None, options_rc: int = 0):
     options = tmp_path / "options.json"
-    options.write_text(json.dumps({
+    options.write_text(options_json if options_json is not None else json.dumps({
         "class": "druid", "level": 60, "status": options_status,
         "refusal": {"code": "UNSUPPORTED"} if options_status == "refused" else None,
     }), encoding="utf-8")
@@ -44,6 +45,7 @@ def _run(tmp_path, monkeypatch, *, status: str, options_status: str = "ok",
     rc = (0 if status == "PASS" else 1) if gate_rc is None else gate_rc
     monkeypatch.setattr(sys, "argv", [
         "-", str(options), str(prepared), str(report), "1", str(rc),
+        str(options_rc),
     ])
     exec(compile(_reader(), str(WORKFLOW), "exec"), {"__name__": "__main__"})
 
@@ -71,3 +73,29 @@ def test_feral_no_record_rejects_wrong_exit_code(tmp_path, monkeypatch):
 def test_feral_no_record_rejects_wrong_checkpoint(tmp_path, monkeypatch):
     with pytest.raises(AssertionError):
         _run(tmp_path, monkeypatch, status="FAIL", level=20)
+
+
+@pytest.mark.parametrize("options_json,options_rc", [
+    ("", 1),                   # Native command exited before writing JSON.
+    ("{not-json", 1),          # Native process emitted a partial payload.
+    ("[]", 0),                 # Unexpected JSON type is diagnostic-only.
+])
+def test_feral_gate_survives_broken_optional_options_probe(
+        options_json, options_rc, tmp_path, monkeypatch, capsys):
+    _run(tmp_path, monkeypatch, status="PASS",
+         rows=[{"native_equipped_paid_attempts": 17}],
+         options_json=options_json, options_rc=options_rc)
+    output = capsys.readouterr().out
+    assert "gate PASS" in output
+    assert "item_options DIAGNOSTIC_UNAVAILABLE" in output
+    assert f"item_options_rc {options_rc}" in output
+    assert "paid 17" in output
+
+
+def test_feral_optional_probe_failure_is_shell_nonfatal():
+    # This command runs before the P3 producer under bash -e. Preserve the
+    # failure capture so a native diagnostic refusal cannot suppress P3.
+    section = WORKFLOW.read_text(encoding="utf-8").split(
+        f"      - name: {STEP}", 1)[1].split("      - name:", 1)[0]
+    assert "|| options_rc=$?" in section
+    assert '2> "$RUNNER_TEMP/feral-p3/item-options.stderr"' in section
