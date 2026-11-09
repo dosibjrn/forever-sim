@@ -2,17 +2,19 @@ name: Work2 — Warlock L20 unseeded native 30/300 cold search
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
     branches: [main]
     paths:
       - .github/workflows/work2-warlock-l20-paid-cold.yml
+      - tests/test_work2_warlock_native_cold_cli.py
   workflow_dispatch:
 
 permissions:
   contents: read
 
 # Preserve a started paid run. This workflow only auto-launches on the
-# initial PR; subsequent edits use focused PR CI, not a second cold search.
+# initial PR or a corrective change to this paid workflow/CLI fixture.
+# Unrelated production edits run focused PR CI without restarting paid search.
 concurrency:
   group: work2-warlock-l20-paid-cold
   cancel-in-progress: false
