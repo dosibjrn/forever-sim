@@ -245,6 +245,15 @@ def main() -> None:
                 result, args.targets, recovery_policy=args.recovery_policy,
                 require_native_consumption=args.require_native_consumption,
                 require_native_health_damage=args.require_native_health_damage)
+            # Independent transport proofs: a native health-damage refusal
+            # must not erase genuine paid food/water evidence, or vice versa.
+            # Neither individual proof grants an accepted chain objective.
+            _, consumption_complete = classify_native_chain(
+                result, args.targets, recovery_policy=args.recovery_policy,
+                require_native_consumption=args.require_native_consumption)
+            _, health_complete = classify_native_chain(
+                result, args.targets, recovery_policy=args.recovery_policy,
+                require_native_health_damage=args.require_native_health_damage)
             record.update(
                 status=status,
                 killed=killed,
@@ -270,9 +279,9 @@ def main() -> None:
                 native_food_health_gain=result.get("native_food_health_gain_total"),
                 native_water_mana_gain=result.get("native_water_mana_gain_total"),
                 native_consumption_proof_required=args.require_native_consumption,
-                native_consumption_proven=complete and args.require_native_consumption,
+                native_consumption_proven=(consumption_complete and args.require_native_consumption),
                 native_health_damage=result.get("native_health_damage"),
-                native_health_damage_proven=complete and args.require_native_health_damage,
+                native_health_damage_proven=(health_complete and args.require_native_health_damage),
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
                 # Frozen-build screen only: never promote it to cold-search
