@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Multiple *distinct* gsim 2D mob kills on one source-Rust actor/ACK timeline.
 
-This is a bounded production integration regression, not paid recovery,
-a 100-mob run, or P4/P5/P6 acceptance. Damage and Warcraft actions originate
+This is a native↔2D ACK integration, not by itself a P4/P5/P6 acceptance.
+Explicit recovery policy is executed on the retained Rust actor and clock. Damage and Warcraft actions originate
 only in the pinned Rust engine; gsim applies them to real 2D world targets.
 """
 from __future__ import annotations
@@ -284,7 +284,46 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> di
     }
 
 
-def _native_health_damage_summary(windows: list[dict], *,
+def _native_food_water_receipts(windows: list[dict], *, required: bool) -> dict:
+    """Forward native Decisions consumption, never synthesize food/water in Python."""
+    keys = ("food_seconds", "water_seconds", "food_health_gain",
+            "water_mana_gain", "decisions_full_recovery")
+    present = [isinstance(w, dict) and all(key in w for key in keys)
+               for w in windows]
+    if not all(present):
+        if required or any(present) or any(
+                isinstance(w, dict) and any(key in w for key in keys)
+                for w in windows):
+            raise AssertionError("RUST_WORLD_NATIVE_FOOD_WATER_RECEIPT_INCOMPLETE")
+        return {"native_food_water_observed": False}
+    rows = []
+    for index, window in enumerate(windows):
+        values = [window[key] for key in keys[:4]]
+        if (any(type(value) not in (float, int) or not isfinite(value)
+                or value < 0 for value in values)
+                or type(window["decisions_full_recovery"]) is not bool):
+            raise AssertionError("RUST_WORLD_NATIVE_FOOD_WATER_RECEIPT_INVALID")
+        food_s, water_s, food_hp, water_mana = values
+        recovery_s = window.get("native_passive_recovery_ns")
+        if (type(recovery_s) is not int or recovery_s < 0
+                or food_s > recovery_s / 1e9 + 1e-6
+                or water_s > recovery_s / 1e9 + 1e-6
+                or (food_hp > 0 and food_s == 0)
+                or (water_mana > 0 and water_s == 0)
+                or (index == 0 and any(values))):
+            raise AssertionError("RUST_WORLD_NATIVE_FOOD_WATER_CLOCK_INVALID")
+        rows.append({key: window[key] for key in keys})
+    return {
+        "native_food_water_observed": True,
+        "native_food_water_by_target": rows,
+        "native_food_seconds_total": sum(row["food_seconds"] for row in rows),
+        "native_water_seconds_total": sum(row["water_seconds"] for row in rows),
+        "native_food_health_gain_total": sum(row["food_health_gain"] for row in rows),
+        "native_water_mana_gain_total": sum(row["water_mana_gain"] for row in rows),
+    }
+
+
+def _native_health_damage_summary(windows: list[dict], *
                                   require_positive: bool,
                                   require_zero: bool = False) -> dict:
     """Carry actual per-target Rust damage-taken resource receipts into 2D results.
@@ -410,12 +449,41 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False,
-        rng_mode: str = "stochastic") -> dict:
-    """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+        rng_mode: str = "stochastic",
+        recovery_policy: str | None = None,
+        recovery_seconds: int | None = None,
+        health_threshold: float = 0.5,
+        mana_threshold: float = 0.1) -> dict:
+    """Execute N world kills; retain one Rust process, actor and ACK lineage.
+
+    No policy means the existing native default. Explicit fixed/Decisions
+    requests use only the Rust CLI; Python never grants resource recovery.
+    """
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
+    requested_mode = recovery_policy or ("fixed" if recovery_seconds is not None else None)
+    if requested_mode not in (None, "fixed", "decisions"):
+        raise ValueError("RUST_WORLD_RECOVERY_POLICY_INVALID")
+    native_recovery_args = []
+    if requested_mode == "fixed":
+        seconds = 12 if recovery_seconds is None else recovery_seconds
+        if type(seconds) is not int or not 1 <= seconds <= 120:
+            raise ValueError("RUST_WORLD_RECOVERY_SECONDS_INVALID")
+        native_recovery_args = ["--recovery-seconds", str(seconds)]
+    elif requested_mode == "decisions":
+        if recovery_seconds is not None:
+            raise ValueError("RUST_WORLD_RECOVERY_POLICY_CONFLICT")
+        if (any(type(value) not in (int, float) or not isfinite(value)
+                or not 0 <= value <= 1
+                for value in (health_threshold, mana_threshold))):
+            raise ValueError("RUST_WORLD_DECISIONS_THRESHOLDS_INVALID")
+        native_recovery_args = [
+            "--recovery-policy", "decisions",
+            "--health-threshold", str(health_threshold),
+            "--mana-threshold", str(mana_threshold),
+        ]
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
@@ -469,7 +537,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
          str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", rng_mode],
+         "--rng-mode", rng_mode, *native_recovery_args],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -604,6 +672,16 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         native_mana = _native_mana_continuity(
             result["windows"], target_count)
         recovery = _native_paid_recovery_receipts(result["windows"], kills)
+        food_water = _native_food_water_receipts(
+            result["windows"], required=requested_mode == "decisions")
+        if requested_mode is not None:
+            expected_mode = ("fixed_passive" if requested_mode == "fixed"
+                             else "decisions_food_water")
+            if result.get("recovery_mode") != expected_mode:
+                raise AssertionError("RUST_WORLD_NATIVE_RECOVERY_POLICY_NOT_APPLIED")
+            if (requested_mode == "fixed"
+                    and result.get("recovery_seconds_per_gap") != seconds):
+                raise AssertionError("RUST_WORLD_NATIVE_RECOVERY_DURATION_NOT_APPLIED")
         if result["paid_recovery"] is not recovery["paid_recovery"]:
             raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
         native_health_damage = _native_health_damage_summary(
@@ -621,6 +699,21 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "minimum_native_actor_health": min_native_health,
             **native_mana,
             **recovery,
+            **food_water,
+            "native_recovery_mode": result.get("recovery_mode"),
+            "native_recovery_seconds_per_gap": result.get("recovery_seconds_per_gap"),
+            "native_recovery_thresholds": result.get("thresholds"),
+            "native_passive_recovery_elapsed_seconds": (
+                sum(recovery["native_passive_recovery_ns_by_target"]) / 1e9
+                if recovery["native_passive_recovery_observed"] else None),
+            # Only a native-confirmed paid recovery grants this elapsed
+            # objective. The existing diagnostic clock field remains intact.
+            "world_seconds_per_target_paid_recovery": (
+                elapsed["world_elapsed_seconds"] / target_count
+                if recovery["paid_recovery"] else None),
+            "world_per_target_elapsed_seconds_paid_recovery": (
+                elapsed["world_per_target_elapsed_seconds_without_paid_recovery"]
+                if recovery["paid_recovery"] else None),
             "native_health_damage": native_health_damage,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
