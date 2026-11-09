@@ -242,9 +242,9 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
 
     # One shared native baseline. Try the second Rust-supplied item when
     # the first is refused, unscored, or has exactly the same measured score
-    # as the baseline. A finite zero response is real evidence, but is not
-    # sensitivity; a second genuine native score may reveal it. Keep every
-    # evaluation, including refusals, under the same paid budget.
+    # as the baseline. If both source alternatives refuse, attempt the third
+    # source-proposed item before leaving an occupied slot unscored. All
+    # evaluations, including refusals, debit the same paid budget.
     rows = [score_request("baseline", reference)]
     requested_slots = []
     # A refused/failed native baseline has no comparable objective. Preserve
@@ -258,7 +258,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             continue
         alternatives = []
         # A native option may already be equipped in the reference. Skip it
-        # without consuming one of P3's two *distinct* item alternatives.
+        # without consuming a paid comparison.
         for item_id in ids:
             alternative, item_swap = first_equipped_proposal(
                 reference, {slot: {"selected_ids": [item_id]}},
@@ -266,19 +266,25 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             if (alternative is not None and item_swap["to_id"] not in [
                     swap_row["to_id"] for _, swap_row in alternatives]):
                 alternatives.append((alternative, item_swap))
-                if len(alternatives) == 2:
+                if len(alternatives) == 3:
                     break
         if not alternatives:
             continue
         requested_slots.append(slot)
-        for alternative, item_swap in alternatives:
+        valid_slot_score = False
+        for candidate_index, (alternative, item_swap) in enumerate(alternatives):
+            # A third paid probe is warranted only when the first two native
+            # outcomes have not scored this occupied slot at all.
+            if candidate_index >= 2 and valid_slot_score:
+                break
             if len(rows) >= max_paid_attempts:
                 break
             row = score_request("equipped", alternative, item_swap)
             rows.append(row)
-            if (row["status"] == "VALID"
-                    and row["score"] != rows[0]["score"]):
-                break
+            if row["status"] == "VALID":
+                valid_slot_score = True
+                if row["score"] != rows[0]["score"]:
+                    break
     if reference != original:
         raise AssertionError("Native evaluation modified source reference")
     baseline_valid = rows[0]["status"] == "VALID"
