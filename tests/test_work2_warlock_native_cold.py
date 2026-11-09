@@ -1230,3 +1230,53 @@ def test_distinct_native_talent_proposal_survives_source_baseline_filter(
     domain = cold.native_candidate_domain(reference, native, seed=11)
     assert domain["talents"] == ["101-0-0"]
     assert cold.actor(reference)["talentsString"] == "110-0-0"
+
+
+def test_unseeded_native_fixture_can_propose_gear_without_a_saved_winner(monkeypatch):
+    """Empty native equipment must not collapse the cold gear axis to zero."""
+    reference = source()
+    player = cold.actor(reference)
+    player["talentsString"] = "0-0-0"
+    player["equipment"]["items"] = []
+    player["rotation"]["priorityList"] = [
+        {"action": {"castSpell": {"spellId": {"spellId": 686}}}}
+    ]
+    frozen = copy.deepcopy(reference)
+    monkeypatch.setattr(cold, "proposals_from_native_talents",
+                        lambda *_args: iter(()))
+    domain = cold.native_candidate_domain(reference, options(), seed=9)
+    assert domain["gear"] == {}
+    assert {row["id"] for row in domain["gear_insertions"]} == {
+        100, 101, 300,
+    }  # including Rust-source proficiency-unverified proposals
+
+    # No saved gear or talent winner is injected as the first paid candidate.
+    only_native_gear = {
+        "gear": {}, "gear_insertions": domain["gear_insertions"],
+        "talents": [], "apl": [], "pets": [], "recovery": [],
+    }
+    propose, mutate = cold.candidate_factory(reference, only_native_gear)
+    first = propose(random.Random(4))
+    second = propose(random.Random(4))
+    assert first["source"] == frozen
+    assert second["source"] != frozen
+    assert len(cold.actor(second["source"])["equipment"]["items"]) == 1
+    assert cold.actor(second["source"])["equipment"]["items"][0] in (
+        domain["gear_insertions"])
+    # Elite recombination can add a second native item; Rust decides legality.
+    combined = None
+    for seed in range(40):
+        challenger = mutate(second, random.Random(seed))
+        if len(cold.actor(challenger["source"])["equipment"]["items"]) == 2:
+            combined = challenger
+            break
+    assert combined is not None
+    assert reference == frozen
+
+def test_cold_workflow_inputs_are_unoptimized_native_actor_not_saved_winner():
+    """The paid Actions producer must not bootstrap from prior best-paid gear."""
+    workflow = (cold.ROOT / ".github/workflows/native-session-ack-regressions.yml"
+                ).read_text()
+    job = workflow.split("  warlock-l20-cold-30-300:", 1)[1]
+    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" in job
+    assert "warlock-l20-troll-best-paid.request.json" not in job
