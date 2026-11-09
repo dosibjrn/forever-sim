@@ -941,7 +941,9 @@ def test_paid_world_refusal_receipt_identifies_actual_hostile_target(
         }}))
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    def native_refusal(*_args, **_kwargs):
+    world_requests = []
+    def native_refusal(*_args, **kwargs):
+        world_requests.append(kwargs)
         raise RuntimeError("simulated native transport refusal")
 
     monkeypatch.setattr(paid_world.subprocess, "run", native_prepare)
@@ -959,6 +961,8 @@ def test_paid_world_refusal_receipt_identifies_actual_hostile_target(
     submitted = json.loads(
         (out / "best_apl/source_request.json").read_text()
     )["encounter"]["targets"][0]
+    assert world_requests[0]["mob_health"] == 765
+    assert world_requests[0]["classic_mob_level"] is None
     assert submitted["stats"][32] == receipt["mob_hp_native_scenario"] == 765
     assert receipt["mob_hp_classic_proxy"] is None
     assert receipt["scenario_min_base_damage"] == 4
