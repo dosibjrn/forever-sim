@@ -96,6 +96,6 @@ def test_feral_optional_probe_failure_is_shell_nonfatal():
     # This command runs before the P3 producer under bash -e. Preserve the
     # failure capture so a native diagnostic refusal cannot suppress P3.
     section = WORKFLOW.read_text(encoding="utf-8").split(
-        f"      - name: {STEP}\\n", 1)[1].split("\\n      - name:", 1)[0]
+        f"      - name: {STEP}", 1)[1].split("      - name:", 1)[0]
     assert "|| options_rc=$?" in section
     assert '2> "$RUNNER_TEMP/feral-p3/item-options.stderr"' in section
