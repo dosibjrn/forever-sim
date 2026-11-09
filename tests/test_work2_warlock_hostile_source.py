@@ -209,3 +209,56 @@ def test_cold_scorer_requires_actual_hostile_native_receipt(
             cold.paid_chain(
                 binary, candidate, tmp_path / "attempt",
                 targets=targets, timeout=20)
+
+def test_partial_hostile_world_refusal_keeps_acked_native_actions_not_a_score(
+    tmp_path, monkeypatch
+):
+    """A dying native actor preserves real player/pet effects, not P4 credit."""
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_request()), encoding="utf-8")
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native executable fixture")
+    out = tmp_path / "out"
+
+    def prepare(command, **_kwargs):
+        assert command[1] == "prepare"
+        dest = Path(command[command.index("--outfile") + 1])
+        dest.write_text(json.dumps({
+            "player": {
+                "class": "ClassWarlock", "race": "RaceTroll", "level": 20,
+                "stats": {"Health": 600.0, "Mana": 700.0},
+            },
+            "enemy": {"prepared_by_rust": True},
+            "request_sha256": "a" * 64,
+        }))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    def dead_native_actor(_binary, _prepared, **kwargs):
+        assert kwargs["target_count"] == 100
+        assert kwargs["recovery_policy"] == "decisions"
+        counts = {"player": {"Spell-686": 60}, "pet": {"Pet-1": 20}}
+        raise chain.NativeWorldChainFailure(
+            "RUST_TWO_WORLD_NATIVE_FAILED", 1, "actor died mid-chain",
+            47, 80, counts)
+
+    monkeypatch.setattr(chain.subprocess, "run", prepare)
+    monkeypatch.setattr(chain, "native_world_chain", dead_native_actor)
+    monkeypatch.setattr(sys, "argv", [
+        "wf_warlock_l20_100mob.py", "--binary", str(binary),
+        "--source", str(source), "--out", str(out),
+        "--variant", "best_apl", "--targets", "100",
+        "--recovery-policy", "decisions", "--hostile-player-tank",
+    ])
+    with pytest.raises(SystemExit, match="No variant completed"):
+        chain.main()
+
+    attempt = json.loads((out / "best_apl/summary.json").read_text())
+    assert attempt["status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
+    assert attempt["native_world_ack_kills_before_refusal"] == 47
+    assert attempt["native_damage_events_before_refusal"] == 80
+    assert attempt["native_source_damage_effects_by_caster"] == {
+        "player": {"Spell-686": 60}, "pet": {"Pet-1": 20}}
+    assert attempt["native_2d_paid_objective_eligible"] is False
+    assert "seconds_per_mob" not in attempt
+    assert json.loads((out / "summary.json").read_text())[
+        "p4_p5_p6_pass"] is False
