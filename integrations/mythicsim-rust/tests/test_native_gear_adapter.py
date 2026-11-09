@@ -440,8 +440,10 @@ class NativeGearAdapterTests(unittest.TestCase):
         first, audit1 = adapter.mutate_one(random.Random(11))
         # Exclude all choices at the first index so the next mutation must
         # exercise a different source-verified position.
-        blocked = {(audit1["source_slot_index"], item_id)
-                   for item_id in (item["id"] for item in adapter.variants[audit1["source_slot_index"]])}
+        blocked = {
+            (audit1["source_slot_index"], item["id"])
+            for item in adapter.variants[audit1["source_slot_index"]]
+        }
         second, audit2 = adapter.mutate_from(first, random.Random(22),
                                               excluded_swaps=blocked)
         self.assertNotEqual(audit1["source_slot_index"], audit2["source_slot_index"])
