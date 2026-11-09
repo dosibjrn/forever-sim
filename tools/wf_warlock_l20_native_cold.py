@@ -27,6 +27,7 @@ from native_options import native_equipment_proposals, query_native_options  # n
 from tools.wf_warlock_l20_talent_apl_optimizer import (  # noqa: E402
     proposals_from_native_talents,
 )
+from tools.wf_warlock_l20_100mob import guarded_life_tap_action  # noqa: E402
 
 
 def actor(request: dict) -> dict:
@@ -59,15 +60,28 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     for spell in options["spells"]:
         spell_id = spell.get("spell_id") if isinstance(spell, dict) else None
         if type(spell_id) is int and spell_id > 0:
-            action = {"action": {"castSpell": {
-                "spellId": {"spellId": spell_id}}}}
-            native_actions.append(action)
-            apl_variants.append([copy.deepcopy(action), *copy.deepcopy(apl)])
-            apl_variants.append([copy.deepcopy(action)])
-            for index in range(len(apl)):
-                proposal = copy.deepcopy(apl)
-                proposal[index] = copy.deepcopy(action)
-                apl_variants.append(proposal)
+            # Source spells can include Life Tap ranks. Unconditional Life Tap
+            # can kill a retained actor even against a stationary target, so
+            # propose only health-guarded native APL policies for this action.
+            # The name and ID come from Rust; actual cast/legality remains
+            # Rust's decision. Explore both mana demand and HP safety margins.
+            if str(spell.get("name", "")).casefold().strip() == "life tap":
+                actions = [
+                    guarded_life_tap_action(
+                        spell_id, mana_percent=mana, health_percent=health)
+                    for mana in (20, 40) for health in (50, 70)
+                ]
+            else:
+                actions = [{"action": {"castSpell": {
+                    "spellId": {"spellId": spell_id}}}}]
+            for action in actions:
+                native_actions.append(action)
+                apl_variants.append([copy.deepcopy(action), *copy.deepcopy(apl)])
+                apl_variants.append([copy.deepcopy(action)])
+                for index in range(len(apl)):
+                    proposal = copy.deepcopy(apl)
+                    proposal[index] = copy.deepcopy(action)
+                    apl_variants.append(proposal)
     unique_apl = list({json.dumps(x, sort_keys=True): x
                        for x in apl_variants}.values())
     unique_actions = list({json.dumps(x, sort_keys=True): x
