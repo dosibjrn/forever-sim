@@ -62,7 +62,7 @@ jobs:
         working-directory: project
         run: |
           set -euo pipefail
-          python -u tools/wf_warlock_l20_native_cold.py \
+          python -u -m tools.wf_warlock_l20_native_cold \
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --out ../warlock-l20-two-target-paid \
