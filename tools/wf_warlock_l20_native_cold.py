@@ -282,6 +282,65 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     return report
 
 
+def run_paid_two_target_screen(reference: dict, *, binary: Path, out: Path,
+                               health_threshold: float = 0.5,
+                               mana_threshold: float = 0.1,
+                               timeout: float = 120.0,
+                               clock=time.monotonic,
+                               chain=paid_chain) -> dict:
+    """Measure one actual 2-target paid source run, without starting a cold gate.
+
+    This is a bounded production-path latency diagnostic. It does not rank
+    candidates, freeze a 30-second winner or replay 100-target finalists.
+    """
+    if (not math.isfinite(timeout) or timeout <= 0
+            or not all(math.isfinite(x) and 0 <= x <= 1
+                       for x in (health_threshold, mana_threshold))):
+        raise ValueError("INVALID_PAID_SCREEN_ARGUMENT")
+    out.mkdir(parents=True, exist_ok=True)
+    candidate = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": health_threshold,
+                     "mana_threshold": mana_threshold},
+    }
+    started = clock()
+    receipt = None
+    reason = None
+    try:
+        receipt = chain(binary, candidate, out / "paid", targets=2,
+                        timeout=timeout)
+        status = "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+    except NativeUnscoredCandidate as exc:
+        status = "NATIVE_TWO_TARGET_SCREEN_UNSCORED"
+        reason = str(exc)
+        receipt = exc.raw_response
+    except subprocess.TimeoutExpired as exc:
+        status = "NATIVE_TWO_TARGET_SCREEN_TIMEOUT"
+        reason = str(exc)
+    except (RuntimeError, ValueError) as exc:
+        status = "NATIVE_TWO_TARGET_SCREEN_ERROR"
+        reason = str(exc)
+    elapsed = max(0.0, clock() - started)
+    report = {
+        "kind": "warlock_l20_single_paid_two_target_diagnostic",
+        "status": status,
+        "elapsed_wall_s": elapsed,
+        "completed_by_30s": (status == "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+                             and elapsed <= 30.0),
+        "source_request_sha256": identity(reference),
+        "engine_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "screen_targets": 2,
+        "recovery": candidate["recovery"],
+        "native_receipt": receipt,
+        "reason": reason,
+        "gate_recorded": False,
+        "p4_p5_p6_pass": False,
+    }
+    (out / "two_target_screen_summary.json").write_text(
+        json.dumps(report, indent=2, allow_nan=False) + "\n")
+    return report
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
@@ -290,9 +349,29 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261109)
     parser.add_argument("--budget", type=float, default=300.0)
     parser.add_argument("--snapshot", type=float, default=30.0)
+    parser.add_argument("--two-target-screen", action="store_true",
+                        help="Measure one real paid 2-target candidate only; no cold gate")
+    parser.add_argument("--screen-timeout", type=float, default=120.0)
+    parser.add_argument("--health-threshold", type=float, default=0.5)
+    parser.add_argument("--mana-threshold", type=float, default=0.1)
     args = parser.parse_args()
-    options = query_native_options(args.binary, "warlock", 20)
     source = json.loads(args.source.read_text())
+    if args.two_target_screen:
+        result = run_paid_two_target_screen(
+            source, binary=args.binary, out=args.out,
+            timeout=args.screen_timeout,
+            health_threshold=args.health_threshold,
+            mana_threshold=args.mana_threshold)
+        print("WARLOCK_NATIVE_TWO_TARGET_PAID_DIAGNOSTIC", json.dumps({
+            "status": result["status"],
+            "elapsed_wall_s": result["elapsed_wall_s"],
+            "completed_by_30s": result["completed_by_30s"],
+            "summary": str(args.out / "two_target_screen_summary.json"),
+        }), flush=True)
+        if result["status"] != "COMPLETED_2_REAL_NATIVE_GSIM_KILLS":
+            raise SystemExit(1)
+        return
+    options = query_native_options(args.binary, "warlock", 20)
     result = run_cold(source, options, binary=args.binary, out=args.out,
                       seed=args.seed, budget_s=args.budget,
                       snapshot_s=args.snapshot)
