@@ -104,13 +104,20 @@ def candidate_factory(reference: dict, domain: dict):
         value = {"source": copy.deepcopy(reference),
                  "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}
                  } if cold else copy.deepcopy(candidate)
-        axes = ("gear", "talents", "apl", "recovery")
+        # Empty Rust-returned dimensions are not candidate moves; selecting
+        # one used to raise IndexError before a paid native evaluation.
+        # This is proposal sampling, never a Python build-legality veto.
+        axes = tuple(axis for axis in ("gear", "talents", "apl", "recovery")
+                     if domain.get(axis))
         if domain.get("pets"):
             axes += ("pet",)
-        # A cold proposal changes multiple axes; subsequent mutation explores
-        # both local and joint moves using the generic search scheduler.
-        selected = rng.sample(axes, rng.randint(2, len(axes)) if cold
-                              else rng.randint(1, min(3, len(axes))))
+        if not axes:
+            return value
+        # Preserve joint cold moves when possible; one legal proposal axis
+        # still deserves a real native evaluation when options are sparse.
+        minimum = min(2, len(axes)) if cold else 1
+        maximum = len(axes) if cold else min(3, len(axes))
+        selected = rng.sample(axes, rng.randint(minimum, maximum))
         player = actor(value["source"])
         for axis in selected:
             if axis == "gear" and domain["gear"]:

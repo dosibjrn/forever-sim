@@ -120,6 +120,37 @@ def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch)
                if action["action"]["castSpell"]["spellId"]["spellId"] == 686)
 
 
+def test_cold_proposals_use_single_nonempty_native_recovery_dimension():
+    """Sparse Rust options cannot veto paid recovery sampling in Python."""
+    reference = source()
+    unchanged = copy.deepcopy(reference)
+    domain = {"gear": {}, "talents": [], "apl": [], "pets": [],
+              "recovery": [(0.7, 0.25)]}
+    propose, mutate = cold.candidate_factory(reference, domain)
+    first = propose(random.Random(3))
+    assert first["source"] == unchanged
+    second = propose(random.Random(3))
+    assert second["source"] == unchanged
+    assert second["recovery"] == {
+        "health_threshold": 0.7, "mana_threshold": 0.25}
+    assert mutate(first, random.Random(5))["recovery"] == second["recovery"]
+    assert reference == unchanged
+
+
+def test_no_native_mutation_options_preserves_source_without_crashing():
+    """No alternative is not a Python invalid-build verdict or IndexError."""
+    reference = source()
+    saved = copy.deepcopy(reference)
+    domain = {"gear": {}, "talents": [], "apl": [], "pets": [],
+              "recovery": []}
+    propose, mutate = cold.candidate_factory(reference, domain)
+    frozen = propose(random.Random(1))
+    again = propose(random.Random(2))
+    assert again == frozen
+    assert mutate(frozen, random.Random(3)) == frozen
+    assert reference == saved
+
+
 def test_native_spell_candidates_can_replace_or_stand_alone_in_apl(monkeypatch):
     """Search may replace the saved filler; only Rust judges executable casts."""
     reference = source()
