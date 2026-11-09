@@ -52,13 +52,20 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     if len(apl) > 1:
         apl_variants.append(list(reversed(apl)))
     # Candidate spell IDs come only from get_options, and Rust still decides
-    # whether a spell is executable at this level/talent/build.
+    # whether a spell is executable at this level/talent/build. A prefix-only
+    # proposal cannot replace an existing filler or try a new standalone APL:
+    # both are genuine candidate-search dimensions, not Python spell rules.
     for spell in options["spells"]:
         spell_id = spell.get("spell_id") if isinstance(spell, dict) else None
         if type(spell_id) is int and spell_id > 0:
-            proposal = [{"action": {"castSpell": {
-                "spellId": {"spellId": spell_id}}}}, *copy.deepcopy(apl)]
-            apl_variants.append(proposal)
+            action = {"action": {"castSpell": {
+                "spellId": {"spellId": spell_id}}}}
+            apl_variants.append([copy.deepcopy(action), *copy.deepcopy(apl)])
+            apl_variants.append([copy.deepcopy(action)])
+            for index in range(len(apl)):
+                proposal = copy.deepcopy(apl)
+                proposal[index] = copy.deepcopy(action)
+                apl_variants.append(proposal)
     unique_apl = list({json.dumps(x, sort_keys=True): x
                        for x in apl_variants}.values())
     return {"gear": gear, "talents": talents or [player.get("talentsString", "0-0-0")],
