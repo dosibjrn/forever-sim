@@ -16,6 +16,7 @@ def _report():
     return {
         "native_search": {"status": "RAN"},
         "native_paid_screen_count": 2,
+        "unseeded_cold_start": True,
         "cold_300_reached": True,
         "snapshot_30": {"candidate_sha256": "early"},
         "final_300": {"candidate_sha256": "late"},
