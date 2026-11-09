@@ -382,49 +382,90 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     on_time_rows = [row for row in paid_rows if row["eligible_at_300s"]]
     final = max(on_time_rows, key=lambda row: -row["screen_paid_s_per_mob"],
                 default=None)
-    # Only frozen winners, not an arbitrary list of short screens, earn
-    # separate 100/100 native/world receipts. Identical winners reuse only
-    # when their exact request and recovery policy also match.
+    # Two-target paid screens are only a ranking proxy for the real
+    # continuous 100-mob objective. A fast screen can run dry or die before
+    # 100 targets. In that case, try the next DISTINCT candidate already
+    # paid for within the SAME frozen 30s / 300s window. Do not rerun the
+    # cold search, smuggle in a post-snapshot build, or score partial kills.
+    # A bounded replay shortlist controls real 100-mob compute; exhaustion
+    # remains an honest incomplete finalist, never an invented PASS.
+    replay_limit = 3
+    finalist_pools = {
+        "30s": [row for row in on_time_rows
+                if row["paid_completed_elapsed_s"] <= snapshot_s],
+        "300s": on_time_rows,
+    }
+    replay_cache = {}
+    replay_attempts = {}
     finalists = {}
-    for label, winner in (("30s", early), ("300s", final)):
-        if winner is None:
+    for label, pool in finalist_pools.items():
+        ranked = sorted(pool, key=lambda row: row["screen_paid_s_per_mob"])
+        distinct = []
+        seen = set()
+        for row in ranked:
+            key = row["candidate_sha256"]
+            if key not in seen:
+                seen.add(key)
+                distinct.append(row)
+        if not distinct:
             finalists[label] = {"status": "NO_PAID_SCREEN_WINNER"}
+            replay_attempts[label] = []
             continue
-        key = winner["candidate_sha256"]
-        if key not in finalists.get("_by_sha", {}):
-            try:
-                receipt = chain(binary, winner["candidate"],
-                                out / "finalists" / key, targets=100,
-                                timeout=1800.0)
-                result = {"status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
-                          "seconds_per_mob": receipt["seconds_per_mob"],
-                          "native_receipt": receipt}
-            except NativeUnscoredCandidate as exc:
-                # A paid native chain can ACK some targets and then refuse.
-                # Preserve its actual killed/recovery/source receipt without
-                # treating an incomplete replay as a scored 100-mob finalist.
-                raw = exc.raw_response
-                result = {
-                    "status": "INCOMPLETE_100_NATIVE_FINALIST",
-                    "reason": str(exc)[-1200:],
-                    "native_response_status": (
-                        raw.get("status") if isinstance(raw, dict) else None),
-                    "native_receipt": copy.deepcopy(raw) if isinstance(raw, dict)
-                    else None,
-                }
-            except (RuntimeError, subprocess.TimeoutExpired, ValueError) as exc:
-                result = {"status": "INCOMPLETE_100_NATIVE_FINALIST",
-                          "reason": str(exc)[-1200:]}
-            # A path is evidence only if the paid subprocess actually wrote it.
-            receipt_path = out / "finalists" / key / "world" / "summary.json"
-            if receipt_path.is_file():
-                result["native_receipt_path"] = str(receipt_path.relative_to(out))
-            finalists.setdefault("_by_sha", {})[key] = result
-        finalists[label] = {"candidate_sha256": key,
-                            "screen_paid_s_per_mob": winner["screen_paid_s_per_mob"],
-                            "paid_completed_elapsed_s": winner["paid_completed_elapsed_s"],
-                            **finalists["_by_sha"][key]}
-    finalists.pop("_by_sha", None)
+        attempts = []
+        selected = distinct[0]
+        for winner in distinct[:replay_limit]:
+            key = winner["candidate_sha256"]
+            if key not in replay_cache:
+                try:
+                    receipt = chain(binary, winner["candidate"],
+                                    out / "finalists" / key, targets=100,
+                                    timeout=1800.0)
+                    result = {"status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+                              "seconds_per_mob": receipt["seconds_per_mob"],
+                              "native_receipt": receipt}
+                except NativeUnscoredCandidate as exc:
+                    # Preserve the actual partial native ACK and refusal;
+                    # no number of incomplete kills is a scoreable finalist.
+                    raw = exc.raw_response
+                    result = {
+                        "status": "INCOMPLETE_100_NATIVE_FINALIST",
+                        "reason": str(exc)[-1200:],
+                        "native_response_status": (
+                            raw.get("status") if isinstance(raw, dict) else None),
+                        "native_receipt": copy.deepcopy(raw)
+                        if isinstance(raw, dict) else None,
+                    }
+                except (RuntimeError, subprocess.TimeoutExpired, ValueError) as exc:
+                    result = {"status": "INCOMPLETE_100_NATIVE_FINALIST",
+                              "reason": str(exc)[-1200:]}
+                receipt_path = out / "finalists" / key / "world" / "summary.json"
+                if receipt_path.is_file():
+                    result["native_receipt_path"] = str(
+                        receipt_path.relative_to(out))
+                replay_cache[key] = result
+            result = replay_cache[key]
+            attempts.append({"candidate_sha256": key,
+                             "status": result["status"],
+                             "screen_paid_s_per_mob": winner["screen_paid_s_per_mob"],
+                             "paid_completed_elapsed_s":
+                                 winner["paid_completed_elapsed_s"],
+                             "native_receipt_path":
+                                 result.get("native_receipt_path")})
+            if result["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
+                selected = winner
+                break
+        replay_attempts[label] = attempts
+        key = selected["candidate_sha256"]
+        finalists[label] = {
+            "candidate_sha256": key,
+            "screen_paid_s_per_mob": selected["screen_paid_s_per_mob"],
+            "paid_completed_elapsed_s": selected["paid_completed_elapsed_s"],
+            **replay_cache[key],
+        }
+        if label == "30s":
+            early = selected
+        else:
+            final = selected
     # Diagnostic only: these are the real retained-actor, paid 100-mob
     # objectives for the two frozen builds, not a shadow P6 gate verdict.
     p6_comparison = None
