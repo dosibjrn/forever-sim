@@ -911,6 +911,40 @@ def test_paid_world_scenario_uses_proxy_attacks_only_when_not_supplied():
     assert "swingSpeed" not in reference["encounter"]["targets"][0]
 
 
+
+@pytest.mark.parametrize("source_hp,observed_hp,scorable", [
+    (765.0, 765.0, True),  # exact source-selected hostile target
+    (765.0, 484.0, False),  # old Classic proxy must not be scored as hostile
+    (765.0, None, False),  # missing world HP cannot prove scenario identity
+    (765.0, float("nan"), False),
+    (484.0, 484.0, True),  # unchanged legacy proxy remains supported
+])
+def test_paid_world_receipt_requires_actual_world_hp_match_source(
+    source_hp, observed_hp, scorable
+):
+    """Classify the Forever-owned native/2D HP transport, not Rust mechanics."""
+    from tools import wf_warlock_l20_100mob as paid_world
+
+    receipt = {
+        "world_targets_killed": 100,
+        "world_seconds_per_target_paid_recovery": 12.0,
+        "world_target_hp": observed_hp,
+        "paid_recovery": False,
+        "native_recovery_clock_accounted": True,
+        "native_recovery_mode": "decisions_food_water",
+        "native_food_water_observed": True,
+        "native_food_seconds_total": 0,
+        "native_water_seconds_total": 0,
+        "native_food_health_gain_total": 0,
+        "native_water_mana_gain_total": 0,
+    }
+    status, completed = paid_world.classify_native_chain(
+        receipt, 100, recovery_policy="decisions", expected_world_hp=source_hp)
+    assert completed is scorable
+    assert status == ("COMPLETED_100_REAL_NATIVE_GSIM_KILLS" if scorable
+                      else "NATIVE_WORLD_TARGET_HEALTH_MISMATCH")
+
+
 def test_paid_world_refusal_receipt_identifies_actual_hostile_target(
     tmp_path, monkeypatch
 ):
