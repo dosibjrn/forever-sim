@@ -164,13 +164,16 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
         minimum = min(2, len(axes)) if cold else 1
         maximum = len(axes) if cold else min(3, len(axes))
         selected = rng.sample(axes, rng.randint(minimum, maximum))
-        # Empty starter equipment repeatedly produced zero-lethal Rust screens.
-        # Include a Rust-supplied gear proposal in every *cold* neutral actor
-        # draw; vary all other axes normally. This is sampling, NOT a Python
-        # assertion that the source-supplied equipment is equip-legal.
-        if (cold and "gear" in axes and "gear" not in selected
-                and not actor(reference)["equipment"]["items"]):
-            selected[-1] = "gear"
+        # The selected neutral L20 actor has no equipment and only one APL
+        # action (1088). Real source-paid two-target #42663949470 equipped
+        # 17 Rust-slot items but retained that one action: 3 ACKed damage
+        # events, 0 kills. Pay genuinely changed native APL AND equipment
+        # proposals on a cold neutral actor; leave other axes stochastic.
+        # This is sampling, never Python legality or a lethality verdict.
+        if cold and not actor(reference)["equipment"]["items"]:
+            for required in ("gear", "apl"):
+                if required in axes and required not in selected:
+                    selected.append(required)
         player = actor(value["source"])
         for axis in selected:
             if axis == "gear":
@@ -225,7 +228,20 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
                 player["talentsString"] = rng.choice(domain["talents"])
             elif axis == "apl":
                 actions = domain.get("apl_actions") or []
-                if not cold and actions and rng.random() < 0.75:
+                if cold:
+                    # A singleton native spell-only APL often runs out of
+                    # available damage before the world can ACK a kill.
+                    # Explore source-proposed additive policies ahead of
+                    # standalone replacements on neutral cold starts. Preserve
+                    # the original action as fallback; native remains sole
+                    # authority for casts, resources, and lethal outcomes.
+                    baseline = player["rotation"]["priorityList"]
+                    extended = [proposal for proposal in domain["apl"]
+                                if len(proposal) > len(baseline)
+                                and proposal[0] not in baseline]
+                    player["rotation"]["priorityList"] = copy.deepcopy(
+                        rng.choice(extended or domain["apl"]))
+                elif actions and rng.random() < 0.75:
                     # Recombine source-returned actions in the current elite.
                     # A whole-APL replacement alone cannot accumulate two new
                     # spells, so a valid multi-spell challenger is unreachable.
