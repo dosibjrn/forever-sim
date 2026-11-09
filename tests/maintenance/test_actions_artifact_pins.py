@@ -165,7 +165,7 @@ def test_live_gc_fetches_comments_before_eligible_deletion():
     workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
         encoding="utf-8"
     )
-    assert "from tools.actions_artifact_pins import collect_local_references, record_references" in workflow
+    assert "from tools.actions_artifact_pins import (artifact_run_id, collect_local_references, record_references)" in workflow
     assert 'gh_collection("issues?state=all")' in workflow
     assert '"issues/comments?sort=created&direction=desc"' in workflow
     assert '"pulls/comments?sort=created&direction=desc"' in workflow
