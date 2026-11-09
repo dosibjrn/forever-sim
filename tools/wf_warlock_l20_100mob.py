@@ -33,6 +33,32 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def guarded_life_tap_action(spell_id: int, *,
+                            mana_percent: int, health_percent: int) -> dict:
+    """Propose native APL conditions, never Python Life Tap mechanics.
+
+    Rust evaluates both conditions before casting; these are tunable
+    candidate-policy thresholds, not new Warcraft source rules.
+    """
+    if (type(spell_id) is not int or spell_id <= 0
+            or not 0 < mana_percent <= 100
+            or not 0 < health_percent < 100):
+        raise ValueError("INVALID_LIFE_TAP_APL_CANDIDATE")
+    return {"action": {
+        "castSpell": {"spellId": {"spellId": spell_id}},
+        "condition": {"and": {"vals": [
+            {"cmp": {
+                "lhs": {"currentManaPercent": {}},
+                "op": "OpLt", "rhs": {"const": {"val": f"{mana_percent}%"}},
+            }},
+            {"cmp": {
+                "lhs": {"currentHealthPercent": {}},
+                "op": "OpGt", "rhs": {"const": {"val": f"{health_percent}%"}},
+            }},
+        ]}},
+    }}
+
+
 def create_scenario(request: dict, *, variant: str) -> dict:
     scenario = copy.deepcopy(request)
     encounter = scenario["encounter"]
@@ -68,19 +94,8 @@ def create_scenario(request: dict, *, variant: str) -> dict:
         # for mana. The native APL engine evaluates both resources before
         # every cast; this is a search policy, not a Python combat rule.
         threshold = 20 if variant == "life_tap_20" else 40
-        tap = {"action": {
-            "castSpell": {"spellId": {"spellId": 1455}},
-            "condition": {"and": {"vals": [
-                {"cmp": {
-                    "lhs": {"currentManaPercent": {}},
-                    "op": "OpLt", "rhs": {"const": {"val": str(threshold) + "%"}},
-                }},
-                {"cmp": {
-                    "lhs": {"currentHealthPercent": {}},
-                    "op": "OpGt", "rhs": {"const": {"val": "50%"}},
-                }},
-            ]}},
-        }}
+        tap = guarded_life_tap_action(
+            1455, mana_percent=threshold, health_percent=50)
         actor["rotation"]["priorityList"] = [tap] + rotation
     else:
         raise ValueError("unsupported APL variant")
