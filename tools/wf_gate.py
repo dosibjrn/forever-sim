@@ -138,15 +138,20 @@ def main(argv=None) -> int:
             parser.error(f"--{name} requires a lower-case source key")
     if not 1 <= a.level <= 60:
         parser.error("--level must be within 1..60")
-    # One explicitly requested official Priest cold search, independently
-    # evaluated for P4 and P5; no cache or composite mode in normal probes.
+    # Explicit heavy pairing, never a second/third independent paid cold search.
+    # Ordinary single-gate probes still use their existing cheap providers.
     if a.gate in ("P4+P5", "P4+P5+P6"):
         import os
-        if ((a.class_key, a.level, a.spec) != ("priest", 20, "unrestricted")
-                or os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") != "1"):
-            parser.error("paired Priest P4/P5/P6 requires explicit native cold producer")
-        from tools.wf_gate_p4_p5_partial import set_priest_l20_p4_p5_shared_cold
-        set_priest_l20_p4_p5_shared_cold(True)
+        if ((a.class_key, a.level, a.spec) == ("warlock", 20, "unrestricted")
+                and os.environ.get("FOREVER_P4_P5_WARLOCK_L20_COLD_SEARCH") == "1"):
+            from tools.wf_warlock_l20_gate_bridge import set_shared_warlock_l20_cold
+            set_shared_warlock_l20_cold(True)
+        elif ((a.class_key, a.level, a.spec) == ("priest", 20, "unrestricted")
+              and os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1"):
+            from tools.wf_gate_p4_p5_partial import set_priest_l20_p4_p5_shared_cold
+            set_priest_l20_p4_p5_shared_cold(True)
+        else:
+            parser.error("paired P4/P5/P6 requires explicit source-native cold producer")
     targets = (GATES if a.gate == "all" else
                tuple(f"P7.{n}" for n in range(1, 6)) if a.gate == "P7"
                else ("P4", "P5", "P6") if a.gate == "P4+P5+P6"
