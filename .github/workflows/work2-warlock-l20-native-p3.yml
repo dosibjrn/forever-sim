@@ -147,3 +147,5 @@ jobs:
           name: work2-warlock-l20-p3-no-record
           path: ${{ runner.temp }}/warlock-l20-native-p3/
           if-no-files-found: ignore
+
+          retention-days: 30
