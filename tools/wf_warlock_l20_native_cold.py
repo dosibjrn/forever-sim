@@ -183,13 +183,19 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
                         timeout=max(0.05, deadline - clock()))
         completed_at = clock() - start
         score = -float(receipt["seconds_per_mob"])
+        # A native call admitted just before a deadline can finish after it.
+        # Only paid evaluations completed by the actual wall-clock boundary
+        # are eligible for the frozen P4/P5 winner. Preserve late receipts
+        # diagnostically instead of retroactively awarding their scores.
+        within_budget = completed_at <= budget_s
         row = {"candidate": copy.deepcopy(candidate),
                "candidate_sha256": identity(candidate),
                "screen_paid_s_per_mob": -score,
                "paid_completed_elapsed_s": completed_at,
+               "eligible_at_300s": within_budget,
                "native_receipt": receipt}
         paid_rows.append(row)
-        if completed_at <= snapshot_s and (
+        if within_budget and completed_at <= snapshot_s and (
                 early is None or score > -early["screen_paid_s_per_mob"]):
             early = row
         return score
@@ -201,7 +207,8 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         and isinstance(c.get("recovery"), dict),
         evaluate=evaluate, seconds=budget_s, iterations=1, seed=seed,
         clock=clock)
-    final = max(paid_rows, key=lambda row: -row["screen_paid_s_per_mob"],
+    on_time_rows = [row for row in paid_rows if row["eligible_at_300s"]]
+    final = max(on_time_rows, key=lambda row: -row["screen_paid_s_per_mob"],
                 default=None)
     # Only frozen winners, not an arbitrary list of short screens, earn
     # separate 100/100 native/world receipts. Identical winners reuse only
@@ -230,6 +237,21 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
                             "paid_completed_elapsed_s": winner["paid_completed_elapsed_s"],
                             **finalists["_by_sha"][key]}
     finalists.pop("_by_sha", None)
+    # Diagnostic only: these are the real retained-actor, paid 100-mob
+    # objectives for the two frozen builds, not a shadow P6 gate verdict.
+    p6_comparison = None
+    if all(finalists[label].get("status") ==
+           "COMPLETED_100_REAL_NATIVE_GSIM_KILLS" for label in ("30s", "300s")):
+        t30 = finalists["30s"]["seconds_per_mob"]
+        t300 = finalists["300s"]["seconds_per_mob"]
+        p6_comparison = {
+            "status": "MEASURED_PAID_100_MOB_FINALISTS",
+            "t30_seconds_per_mob": t30,
+            "t300_seconds_per_mob": t300,
+            "t30_over_t300": t30 / t300,
+            "within_one_percent": t30 <= 1.01 * t300,
+            "gate_recorded": False,
+        }
     report = {
         "kind": "warlock_l20_cold_native_world_candidate_search",
         "source_revision": options.get("source_revision"),
@@ -242,9 +264,10 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "budget_s": budget_s, "snapshot_s": snapshot_s,
         "elapsed_search_s": search["elapsed_s"],
         "cold_300_reached": search["elapsed_s"] >= budget_s,
-        "native_paid_screen_count": len(paid_rows),
+        "native_paid_screen_count": len(on_time_rows),
+        "late_paid_screen_count": len(paid_rows) - len(on_time_rows),
         "distinct_paid_candidates": len({
-            row["candidate_sha256"] for row in paid_rows}),
+            row["candidate_sha256"] for row in on_time_rows}),
         "native_search": {k: v for k, v in search.items()
                           if k not in ("best_candidate",)},
         "snapshot_30": ({k: v for k, v in early.items() if k != "native_receipt"}
@@ -252,6 +275,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "final_300": ({k: v for k, v in final.items() if k != "native_receipt"}
                       if final else None),
         "finalists": finalists,
+        "p6_comparison": p6_comparison,
         "gate_recorded": False, "p4_p5_p6_pass": False,
     }
     (out / "cold_summary.json").write_text(json.dumps(report, indent=2) + "\n")
