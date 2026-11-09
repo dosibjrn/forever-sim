@@ -1,0 +1,54 @@
+name: Actions artifact disposable deletion smoke
+
+on:
+  push:
+    paths:
+      - .github/workflows/actions-storage-clean-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  disposable-artifact-delete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create tiny disposable proof
+        shell: bash
+        run: printf 'Disposable Actions storage test for run %s\n' "$GITHUB_RUN_ID" > "$RUNNER_TEMP/actions-storage-probe.txt"
+
+      - name: Upload one-day disposable proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: actions-storage-disposable-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/actions-storage-probe.txt
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: List, delete and verify only this run's disposable artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: actions-storage-disposable-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100")"
+          artifact_id="$(jq -er --arg name "$ARTIFACT_NAME" '[.artifacts[] | select(.name == $name) | .id] | if length == 1 then .[0] else error("expected exactly one own artifact") end' <<< "$artifacts")"
+          bytes="$(jq -er --argjson id "$artifact_id" '.artifacts[] | select(.id == $id) | .size_in_bytes' <<< "$artifacts")"
+          test "$bytes" -gt 0
+
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id"
+          status="$(curl --silent --show-error --output "$RUNNER_TEMP/delete.response" --write-out '%{http_code}' --request DELETE --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' "$api")"
+          test "$status" = 204 || { echo "DELETE failed with HTTP $status"; cat "$RUNNER_TEMP/delete.response"; exit 1; }
+
+          status="$(curl --silent --show-error --output "$RUNNER_TEMP/get.response" --write-out '%{http_code}' --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' "$api")"
+          test "$status" = 404 || { echo "Expected GET 404 after deletion, received $status"; exit 1; }
+
+          remaining="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100")"
+          if jq -e --argjson id "$artifact_id" '[.artifacts[] | select(.id == $id)] | length == 0' <<< "$remaining"; then
+            echo "PASS: created, listed and deleted own disposable artifact id=$artifact_id ($bytes bytes); GET=404 and absent from run artifacts."
+          else
+            echo "FAIL: deleted artifact still listed"; exit 1
+          fi
