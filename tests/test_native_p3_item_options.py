@@ -529,7 +529,7 @@ def test_selected_engine_p3_workflow_has_no_diagnostic_source_count_vetoes():
     assert 'assert unknown == 0' not in workflow
     # Merge #1063 already repaired this historical Mage L30 diagnostic NameError.
     assert '"excluded_non_client", excluded,' not in workflow
-    assert '"excluded_non_client", row.get("native_excluded_non_client_item_count", 0),' in workflow
+    assert '"NO_RECORD_NATIVE_P3_OBSERVED mage:30"' in workflow
 
 
 def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():
@@ -540,10 +540,12 @@ def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():
     )[1].split("Upload no-record native P3 reports", 1)[0]
     assert "--class mage --level 30" in mage30
     assert '--spec unrestricted --gate P3 --out "$report"' in mage30
-    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in mage30
-    assert 'row["native_item_options_status"]' in mage30
-    assert 'row["native_unverified_candidate_count"]' in mage30
-    assert 'row["real_catalogue_legal_items"]' in mage30
+    assert 'assert (report["class"], report["level"], report["spec"], report["gate"]) ==' in mage30
+    assert 'assert rc == (0 if report["status"] == "PASS" else 1)' in mage30
+    assert 'row.get("native_item_options_status")' in mage30
+    assert '"NO_RECORD_NATIVE_P3_OBSERVED mage:30"' in mage30
+    assert 'row["native_item_options_status"] == "ok"' not in mage30
+    assert 'source.startswith("mythicsim:")' not in mage30
     assert "--record-pass" not in mage30
 
 def test_native_mage_spell_coefficients_are_read_from_prepared_v2(tmp_path):
@@ -875,10 +877,12 @@ def test_selected_engine_workflow_executes_rogue_native_and_real_p3_no_record():
     assert "--class rogue --level 20 --spec unrestricted --slot all" in rogue
     assert "python tools/wf_gate.py --class rogue --level 20" in rogue
     assert "--spec unrestricted --gate P3 --out" in rogue
-    assert '"P3_NATIVE_ITEM_OPTIONS_REFUSED:" + refusal' in rogue
-    assert 'row["real_source_search_evaluated"] == 0' in rogue
-    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in rogue
-    assert '"P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", [])' in rogue
+    assert 'assert (gate["class"], gate["level"], gate["spec"], gate["gate"]) ==' in rogue
+    assert 'assert rc == (0 if gate["status"] == "PASS" else 1)' in rogue
+    assert '"native_refusal", (native.get("refusal") or {}).get("code")' in rogue
+    assert '"NO_RECORD_NATIVE_P3_OBSERVED rogue:20"' in rogue
+    assert '"P3_NATIVE_ITEM_OPTIONS_REFUSED:" + refusal' not in rogue
+    assert 'p3_native_pair_reserved_attempts' not in rogue
     assert "--record-pass" not in rogue
 
 
