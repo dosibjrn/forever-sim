@@ -586,7 +586,12 @@ def main(argv=None) -> int:
         a.out.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n",
                          encoding="utf-8")
     if a.gate in ("P4+P5", "P4+P5+P6"):
-        set_priest_l20_p4_p5_shared_cold(False)
+        if (a.class_key, a.level, a.spec) == ("warlock", 20, "unrestricted"):
+            from tools.wf_warlock_l20_gate_bridge import set_shared_warlock_l20_cold
+            set_shared_warlock_l20_cold(False)
+        else:
+            from tools.wf_gate_p4_p5_partial import set_priest_l20_p4_p5_shared_cold
+            set_priest_l20_p4_p5_shared_cold(False)
     return 0 if verdict == "PASS" else 1
 
 if __name__ == "__main__":
