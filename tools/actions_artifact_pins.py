@@ -28,6 +28,15 @@ _RUN_ID_FIELD = re.compile(
     r"""["'](?:run_id|workflow_run_id|github_run_id|engine_build_run_id)["']\s*:\s*"""
     r"""(?:["']([1-9]\d*)["']|([1-9]\d*))\s*(?=[,}])""")
 
+# Raw CI and native receipt logs also use key=value IDs (not JSON or
+# prose: "artifact_id=123", "workflow_run_id=456"). Pin these before GC.
+# Explicit field names avoid guessing from unrelated numbers.
+_ARTIFACT_ASSIGNMENT_ID = re.compile(r"\bartifact_id\s*=\s*([1-9]\d*)\b")
+_RUN_ASSIGNMENT_ID = re.compile(
+    r"\b(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"
+    r"\s*=\s*([1-9]\d*)\b"
+)
+
 # Issue/PR discussions also cite Actions runs without URLs or JSON fields:
 # "Actions run #123", "workflow run ID: 123", and "run #123".
 # Require the explicit hash or ID marker; generic "run 42" is ambiguous.
@@ -45,6 +54,8 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     artifacts.update(int(match) for match in _ARTIFACT.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_ID_FIELD.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_PROSE_ID.findall(text))
+    artifacts.update(int(match) for match in _ARTIFACT_ASSIGNMENT_ID.findall(text))
+    runs.update(int(match) for match in _RUN_ASSIGNMENT_ID.findall(text))
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
     runs.update(int(match) for match in _RUN_PROSE_ID.findall(text))
 
