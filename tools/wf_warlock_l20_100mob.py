@@ -271,7 +271,13 @@ def main() -> None:
             print("CHAIN_STARTED", json.dumps(record), flush=True)
             result = native_world_chain(
                 args.binary, prepared_path, target_count=args.targets,
-                classic_mob_level=20, rng_mode="balanced",
+                # World target HP must match the explicit source scenario used
+                # in native prepare, not silently revert to the L20 proxy.
+                # Keep the original sourced Classic proxy on zero-HP fixtures.
+                mob_health=(chosen_target["stats"][32]
+                            if source_health != 0 else None),
+                classic_mob_level=(20 if source_health == 0 else None),
+                rng_mode="balanced",
                 # Collect the native health receipt even when damage is zero.
                 # The strict positive-damage criterion is applied below by
                 # classify_native_chain to preserve real ACK/recovery evidence
