@@ -80,6 +80,20 @@ def artifact_run_id(artifact: dict) -> int | None:
 
 
 
+
+def protects_open_pr_artifact(artifact: dict, open_branches: set[str]) -> bool:
+    """Protect every still-unmerged PR-branch artifact, not only its latest two.
+
+    An absent or malformed origin branch is not proof that no open PR owns
+    the receipt; keep it rather than authorize irreversible deletion.
+    """
+    origin = artifact.get("workflow_run")
+    if not isinstance(origin, dict):
+        return True
+    branch = origin.get("head_branch")
+    return not isinstance(branch, str) or not branch or branch in open_branches
+
+
 def completed_run_candidates(
         candidates: list[dict], fetch_run, *,
         expected_workflow: str | None = None,
