@@ -62,7 +62,11 @@ def first_equipped_proposal(reference: dict, selection: dict, *, expected_class=
         if not isinstance(previous, dict):
             raise ValueError("P3_NATIVE_EQUIPPED_BASE_ITEM_INVALID")
         before_id = previous.get("id", 0)
-        for item_id in item_ids[:2]:
+        # Skip unchanged/invalid source entries before selecting the first
+        # distinct proposal. The *paid* scorer separately caps two distinct
+        # proposals per slot; slicing here could falsely claim no alternative
+        # when the first native IDs were duplicates of the equipped item.
+        for item_id in item_ids:
             if type(item_id) is not int or item_id <= 0 or item_id == before_id:
                 continue
             candidate = copy.deepcopy(reference)
