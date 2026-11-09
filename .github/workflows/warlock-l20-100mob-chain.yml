@@ -1,4 +1,4 @@
-name: Warlock L20 optimized APL 100 real mob chain
+name: Warlock L20 hostile Decisions 100-mob native world
 
 on:
   push:
@@ -24,13 +24,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 84bb2e76748fd62e74ecf838c4bca434000952ea
+          ref: febc1d703e022265ed61ede3fec9b05416282536
           path: engine
       - name: Record exact Rust and world implementations
         run: |
           git -C engine rev-parse HEAD
           git -C project rev-parse HEAD
-          test "$(git -C engine rev-parse HEAD)" = "84bb2e76748fd62e74ecf838c4bca434000952ea"
+          test "$(git -C engine rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
           test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -41,7 +41,7 @@ jobs:
       - name: Build selected real Rust engine
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Run real 100 consecutive L20 mobs on each optimized APL candidate
+      - name: Run one hostile 100-mob retained-actor Decisions paid candidate
         working-directory: project
         run: |
           set -euo pipefail
@@ -49,12 +49,14 @@ jobs:
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --out ../warlock-100mob-output \
-            --targets 100 --recovery-seconds 12
+            --targets 100 --variant best_apl \
+            --hostile-player-tank --recovery-policy decisions \
+            --health-threshold 0.7 --mana-threshold 0.25
       - name: Preserve exact requests, prepared native actors and world kill evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: warlock-l20-100-real-native-mobs
+          name: warlock-l20-100-hostile-decisions-native-mobs
           path: warlock-100mob-output/
           if-no-files-found: warn
           retention-days: 14
