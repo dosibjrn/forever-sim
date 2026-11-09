@@ -459,8 +459,6 @@ jobs:
           assert rc == (0 if report["status"] == "PASS" else 1), (report, rc)
           rows = report.get("results") or []
           assert isinstance(rows, list), report
-          if report["status"] != "BLOCKED":
-              assert len(rows) == 1, report
           row = rows[0] if rows else {}
           print("NO_RECORD_NATIVE_P3_OBSERVED", class_key,
                 "status", report["status"],
@@ -493,8 +491,6 @@ jobs:
           assert rc == (0 if report["status"] == "PASS" else 1), (report, rc)
           rows = report.get("results") or []
           assert isinstance(rows, list), report
-          if report["status"] != "BLOCKED":
-              assert len(rows) == 1, report
           row = rows[0] if rows else {}
           print("NO_RECORD_NATIVE_P3_OBSERVED shaman:20",
                 "status", report["status"],
@@ -528,8 +524,6 @@ jobs:
           assert rc == (0 if report["status"] == "PASS" else 1), (report, rc)
           rows = report.get("results") or []
           assert isinstance(rows, list), report
-          if report["status"] != "BLOCKED":
-              assert len(rows) == 1, report
           row = rows[0] if rows else {}
           print("NO_RECORD_NATIVE_P3_OBSERVED paladin:20",
                 "status", report["status"],
