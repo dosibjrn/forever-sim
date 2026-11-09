@@ -231,8 +231,16 @@ def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
     inserted = mutate(combined, AplOnlyRng(999, 2, "insert"))
     assert len(cold.actor(inserted["source"])["rotation"]["priorityList"]) == 3
 
-    # Cold proposals still start from Rust-sourced whole APL candidates.
-    assert cold.actor(propose(random.Random(5))["source"])["rotation"]["priorityList"] in domain["apl"]
+    # The first paid proposal is the frozen source, not a pretend mutation.
+    assert cold.actor(propose(random.Random(5))["source"])[
+        "rotation"]["priorityList"] == cold.actor(reference)[
+        "rotation"]["priorityList"]
+    # With an actual APL-only Rust domain, the next cold proposal changes it.
+    apl_only = dict(domain, gear={}, talents=[], pets=[], recovery=[])
+    propose_apl, _ = cold.candidate_factory(reference, apl_only)
+    propose_apl(random.Random(5))  # genuine frozen first paid proposal
+    assert cold.actor(propose_apl(random.Random(5))["source"])[
+        "rotation"]["priorityList"] in domain["apl"]
 
 
 
