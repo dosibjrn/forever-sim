@@ -475,3 +475,28 @@ def test_artifact_prose_parser_does_not_pin_unlabelled_numbers():
         runs, artifacts)
     assert runs == set()
     assert artifacts == set()
+
+
+@pytest.mark.parametrize(("reference", "expected_run"), [
+    ("Only available Actions run #42573178806 has the native receipt.", 42573178806),
+    ("The workflow run ID: 42573346755 must be preserved.", 42573346755),
+    ("Reproduce from run #42573539316 before removing diagnostics.", 42573539316),
+    ("GitHub Actions run id=42574670709 is the original evidence.", 42574670709),
+])
+def test_explicit_prose_actions_run_ids_pin_origin_artifacts(reference, expected_run):
+    """An issue/PR prose-only run reference must protect all of its artifacts."""
+    runs, artifacts = set(), set()
+    record_references(reference, runs, artifacts)
+    assert runs == {expected_run}
+    assert artifacts == set()
+
+
+def test_actions_run_prose_requires_unambiguous_id_marker():
+    """Do not invent a pin for generic counts, issue numbers or malformed IDs."""
+    runs, artifacts = set(), set()
+    record_references(
+        "run 42; issue #1052; run #0; workflow run: 12345; "
+        "2026 runs; version 9876; generic workflow 321",
+        runs, artifacts)
+    assert runs == set()
+    assert artifacts == set()
