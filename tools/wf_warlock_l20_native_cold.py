@@ -65,7 +65,9 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     gear_native_slots = {}
     if not items:
         for row in options["items"]:
-            native = row.get("native") if isinstance(row, dict) else None
+            if not isinstance(row, dict):
+                continue
+            native = row.get("native")
             if (row.get("eligibility") == "native_eligible"
                     and isinstance(native, dict)
                     and isinstance(native.get("slot"), str)
