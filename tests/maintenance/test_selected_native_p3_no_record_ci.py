@@ -28,7 +28,7 @@ def _reader(step: str) -> str:
     workflow = WORKFLOW.read_text(encoding="utf-8")
     section = workflow.split(f"      - name: {step}\n", 1)[1]
     match = re.search(
-        r"(?ms)^          python - [^\n]+ <<'PY'\n(.*?)\n          PY$",
+        r"(?ms)^ {10,12}python - [^\n]+ <<'PY'\n(.*?)\n          PY$",
         section,
     )
     assert match, f"missing real no-record reader for {step}"
