@@ -49,6 +49,37 @@ def options():
     }
 
 
+def test_cold_search_proposes_original_native_request_first_then_challengers():
+    """A paid 30s search may try the supplied build before any Rust proposal.
+
+    This schedules an actual native evaluation; it does not grant the baseline
+    a score or make it legal in Python. Subsequent proposals remain exploratory.
+    """
+    reference = source()
+    unchanged = copy.deepcopy(reference)
+    action = {"action": {"castSpell": {"spellId": {"spellId": 999}}}}
+    domain = {
+        "gear": {}, "talents": ["101-0-0"], "apl": [[action]],
+        "recovery": [(0.7, 0.25)],
+    }
+    propose, _mutate = cold.candidate_factory(reference, domain)
+
+    first = propose(random.Random(41))
+    assert first == {
+        "source": unchanged,
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+    # Neither the submitted candidate nor subsequent exploration may modify
+    # the caller's frozen, source-selected reference.
+    first["source"]["raid"]["parties"][0]["players"][0]["talentsString"] = "other"
+    challengers = [propose(random.Random(seed)) for seed in range(20)]
+    assert any(challenger["source"] != unchanged
+               or challenger["recovery"] != {
+                   "health_threshold": 0.5, "mana_threshold": 0.1,
+               } for challenger in challengers)
+    assert reference == unchanged
+
+
 def test_native_spell_candidates_can_replace_or_stand_alone_in_apl(monkeypatch):
     """Search may replace the saved filler; only Rust judges executable casts."""
     reference = source()
