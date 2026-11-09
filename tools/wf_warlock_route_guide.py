@@ -191,6 +191,9 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
             or summary.get("target_count_requested") != 100
             or summary.get("native_recovery_requested", {}).get("recovery_policy") != "decisions"):
         raise ValueError("expected 100-target paid native Decisions/gsim producer summary")
+    level = summary.get("actor_level", 20)  # Historical receipts predate this field.
+    if type(level) is not int or not 10 <= level <= 60:
+        raise ValueError("invalid native producer actor level")
     binary = summary.get("native_binary_sha256")
     if not isinstance(binary, str) or len(binary) != 64:
         raise ValueError("native executable fingerprint missing")
@@ -203,11 +206,18 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
         if not isinstance(result, dict) or not isinstance(result.get("variant"), str):
             raise ValueError("malformed native producer candidate")
         status = result.get("status")
+        if level != 20 and result.get("actor_level") != level:
+            raise ValueError("adjacent-level attempt lacks matching native actor-level request")
         if status != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
-            refusals.append({"variant": result["variant"], "status": status,
+            refusals.append({"variant": result["variant"], "level": level,
+                             "status": status,
                              "error": result.get("error"), "killed": result.get("killed"),
                              "native_exit_code": result.get("native_exit_code")})
             continue
+        if level != 20 and (
+                not isinstance(result.get("native_actor"), dict)
+                or result["native_actor"].get("level") != level):
+            raise ValueError("adjacent-level measured receipt lacks matching Rust-prepared actor")
         if not (result.get("killed") == 100
                 and result.get("target_count_requested") == 100
                 and result.get("native_binary_sha256") == binary
@@ -233,9 +243,9 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
             raise ValueError("executed native candidate has no source actor") from exc
         rows.append({
             "id": f"{trial}-{result['variant']}",
-            "level": 20, "trial": trial,
+            "level": level, "trial": trial,
             "candidate": f"paid native {result['variant']} ({request_sha[:12]})",
-            "scenario": (f"Hostile retained-actor L20 native/gsim world, "
+            "scenario": (f"Hostile retained-actor L{level} native/gsim world, "
                          f"HP {result.get('mob_hp_native_scenario')}, "
                          f"damage {result.get('scenario_min_base_damage')}/"
                          f"{result.get('scenario_swing_speed')}s; binary {binary}"),
@@ -269,18 +279,20 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
     return rows, refusals
 
 
-def execute_native_l20(*, binary: Path, source: Path, out: Path,
-                       health_threshold: float = 0.7,
-                       mana_threshold: float = 0.25) -> Path:
+def execute_native_level(*, binary: Path, source: Path, out: Path,
+                         actor_level: int = 20,
+                         health_threshold: float = 0.7,
+                         mana_threshold: float = 0.25) -> Path:
     """Invoke existing Rust/gsim producer once, then consume its persisted receipt."""
     if not binary.is_file() or not source.is_file():
         raise ValueError("native --binary and --source must be existing files")
-    native_out = out / "native_l20"
+    native_out = out / f"native_l{actor_level}"
     cmd = [
         sys.executable, str(ROOT / "tools/wf_warlock_l20_100mob.py"),
         "--binary", str(binary.resolve()), "--source", str(source.resolve()),
         "--out", str(native_out.resolve()),
         "--targets", "100", "--variant", "best_apl",
+        "--actor-level", str(actor_level),
         "--hostile-player-tank", "--recovery-policy", "decisions",
         "--health-threshold", str(health_threshold),
         "--mana-threshold", str(mana_threshold),
@@ -455,10 +467,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--observations", type=Path, help="Native observation manifest (default: historical L20 evidence)")
     parser.add_argument("--cold-summary", type=Path, help="Read actual native cold_summary.json finalists instead")
-    parser.add_argument("--native-summary", type=Path, help="Consume existing paid Warlock L20 native/gsim 100-target summary.json")
-    parser.add_argument("--execute-native", action="store_true", help="Execute one paid hostile Warlock L20 100-target Rust/gsim scenario and publish its result")
+    parser.add_argument("--native-summary", type=Path, action="append",
+                        help="Import paid native 100-target summary.json; repeat for different levels")
+    parser.add_argument("--execute-native", action="store_true",
+                        help="Execute one real paid hostile Warlock 100-target Rust/gsim scenario")
+    parser.add_argument("--actor-level", type=int, default=20,
+                        help="Native actor level (10..60) for --execute-native")
     parser.add_argument("--binary", type=Path, help="Selected compiled native Rust binary for --execute-native")
-    parser.add_argument("--source", type=Path, help="Exact native Warlock L20 source request for --execute-native")
+    parser.add_argument("--source", type=Path,
+                        help="Exact native Warlock source request for --execute-native")
     parser.add_argument("--health-threshold", type=float, default=0.7,
                         help="Native Decisions recovery health threshold for --execute-native")
     parser.add_argument("--mana-threshold", type=float, default=0.25,
@@ -470,6 +487,10 @@ def main(argv: list[str] | None = None) -> int:
     if sum(bool(x) for x in (args.observations, args.cold_summary,
                              args.native_summary, args.execute_native)) > 1:
         parser.error("choose one input: --observations, --cold-summary, --native-summary, or --execute-native")
+    if args.execute_native and not 10 <= args.actor_level <= 60:
+        parser.error("--actor-level must be in 10..60")
+    if not args.execute_native and args.actor_level != 20:
+        parser.error("--actor-level requires --execute-native")
     if args.execute_native and not (0 < args.health_threshold <= 1 and
                                     0 < args.mana_threshold <= 1):
         parser.error("Decisions recovery thresholds must be in (0, 1]")
@@ -492,15 +513,25 @@ def main(argv: list[str] | None = None) -> int:
                 run_url=args.run_url, trial=args.trial),
         }
     elif args.native_summary or args.execute_native:
-        native_path = (execute_native_l20(
+        paths = ([execute_native_level(
             binary=args.binary, source=args.source, out=args.out,
-            health_threshold=args.health_threshold, mana_threshold=args.mana_threshold)
-                       if args.execute_native else args.native_summary)
-        rows, refusals = observations_from_native_chain_summary(
-            json.loads(native_path.read_text()), summary_path=native_path,
-            run_url=args.run_url, trial=args.trial)
-        # A failed paid run must still produce a usable refusal/coverage dossier,
-        # not just a native summary hidden behind a Python exception.
+            actor_level=args.actor_level,
+            health_threshold=args.health_threshold, mana_threshold=args.mana_threshold)]
+                 if args.execute_native else args.native_summary)
+        rows, refusals = [], []
+        for index, native_path in enumerate(paths):
+            summary = json.loads(native_path.read_text())
+            # Each level/receipt is a separate trial. Comparing their 100-mob
+            # times directly would mix distinct actors and world scenarios.
+            trial = (f"{args.trial}-L{summary.get('actor_level', 20)}-{index}"
+                     if len(paths) > 1 else args.trial)
+            measured, rejected = observations_from_native_chain_summary(
+                summary, summary_path=native_path,
+                run_url=args.run_url, trial=trial)
+            rows.extend(measured)
+            refusals.extend(rejected)
+        # Preserve completed L20 evidence even when the adjacent L21 producer
+        # has a native refusal; never fabricate an L21 score from that refusal.
         refused_only = not rows
         payload = {"schema_version": 1, "class": "warlock",
                    "start_level": 10, "end_level": 60,
