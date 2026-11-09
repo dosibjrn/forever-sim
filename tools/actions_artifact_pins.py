@@ -46,7 +46,8 @@ def completed_run_candidates(
         candidates: list[dict], fetch_run, *,
         expected_workflow: str | None = None,
         expected_name_prefix: str | None = None,
-        allowed_events: tuple[str, ...] | None = None) -> tuple[list[dict], int]:
+        allowed_events: tuple[str, ...] | None = None,
+        require_success_conclusion: bool = False) -> tuple[list[dict], int]:
     """Keep only artifacts from confirmed completed workflow runs.
 
     Query each distinct originating run once. A missing/malformed/mismatched
@@ -58,6 +59,9 @@ def completed_run_candidates(
     name, embedded origin SHA and fetched run SHA to agree, before deletion.
     Restricting allowed_events preserves deliberately manually dispatched full
     evidence artifacts; absent or unknown event metadata is deferred safely.
+    When require_success_conclusion is set, retain all non-success outcomes:
+    failed native-sweep artifacts can be the only available failure evidence.
+    A missing or ambiguous conclusion also fails closed.
     """
     runs_by_id: dict[int, dict] = {}
     ready: list[dict] = []
@@ -96,9 +100,12 @@ def completed_run_candidates(
                 raise ValueError(
                     f"run {run_id}: artifact commit provenance does not match "
                     "origin run HEAD and artifact name")
-        if run["status"] == "completed":
+        if run["status"] == "completed" and (
+                not require_success_conclusion or run.get("conclusion") == "success"):
             ready.append(artifact)
         else:
+            # A failed/cancelled native sweep may have the only failure
+            # reproduction; only a positive success can make it disposable.
             deferred += 1
     return ready, deferred
 
