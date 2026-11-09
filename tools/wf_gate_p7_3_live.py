@@ -303,5 +303,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "cold_winner_talents": winner["raid"]["parties"][0]["players"][0][
             "talentsString"],
         "winner_native_dps": score,
+        # The entire native-paid build is necessary to inspect the frozen
+        # equipment/APL/encounter, not just a talent string and hash.
+        "cold_winner_request": winner,
         **shared,
     }
