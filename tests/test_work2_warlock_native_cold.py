@@ -288,3 +288,73 @@ def test_candidate_scorer_uses_existing_native_decisions_and_refuses_unpaid(
                 targets=targets, timeout=10.)
     assert len(observed) == 1
     assert (tmp_path / "attempt/candidate.request.json").exists()
+
+
+def test_one_real_paid_two_target_diagnostic_preserves_wall_and_receipt(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"test native binary")
+    now = [9.0]
+    calls = []
+
+    def native_chain(_binary, candidate, output, *, targets, timeout):
+        calls.append((targets, timeout, candidate["recovery"], output))
+        now[0] = 34.0
+        return {"status": "COMPLETED_2_REAL_NATIVE_GSIM_KILLS",
+                "world_targets_killed": 2, "seconds_per_mob": 15.0,
+                "native_actor_continuity_receipt_complete": True,
+                "native_recovery_clock_accounted": True}
+
+    result = cold.run_paid_two_target_screen(
+        source(), binary=binary, out=tmp_path / "measured",
+        timeout=90.0, clock=lambda: now[0], chain=native_chain)
+    assert calls[0][:3] == (2, 90.0, {
+        "health_threshold": 0.5, "mana_threshold": 0.1})
+    assert result["elapsed_wall_s"] == 25.0
+    assert result["completed_by_30s"] is True
+    assert result["native_receipt"]["world_targets_killed"] == 2
+    assert result["gate_recorded"] is False
+    assert result["p4_p5_p6_pass"] is False
+    persisted = json.loads((tmp_path / "measured/two_target_screen_summary.json").read_text())
+    assert persisted["status"] == "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+    assert persisted["elapsed_wall_s"] == 25.0
+
+
+def test_two_target_diagnostic_refusal_is_not_reported_as_snapshot(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"test native binary")
+    now = [0.0]
+
+    def refused(_binary, _candidate, _out, *, targets, timeout):
+        now[0] = 4.0
+        raise cold.NativeUnscoredCandidate(
+            "native refused original build",
+            raw_response={"status": "INCOMPLETE_UNPAID_NATIVE_RECOVERY",
+                          "world_targets_killed": 1})
+
+    result = cold.run_paid_two_target_screen(
+        source(), binary=binary, out=tmp_path / "refused",
+        clock=lambda: now[0], chain=refused)
+    assert result["status"] == "NATIVE_TWO_TARGET_SCREEN_UNSCORED"
+    assert result["native_receipt"]["world_targets_killed"] == 1
+    assert result["completed_by_30s"] is False
+    assert json.loads((tmp_path / "refused/two_target_screen_summary.json").read_text())[
+        "gate_recorded"] is False
+
+
+def test_two_target_diagnostic_late_completion_is_measured_not_backdated(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"test native binary")
+    now = [4.0]
+
+    def slow_paid(_binary, _candidate, _out, *, targets, timeout):
+        now[0] = 36.0
+        return {"status": "COMPLETED_2_REAL_NATIVE_GSIM_KILLS",
+                "world_targets_killed": 2, "seconds_per_mob": 7.0}
+
+    result = cold.run_paid_two_target_screen(
+        source(), binary=binary, out=tmp_path / "late",
+        clock=lambda: now[0], chain=slow_paid)
+    assert result["status"] == "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+    assert result["elapsed_wall_s"] == 32.0
+    assert result["completed_by_30s"] is False
+
