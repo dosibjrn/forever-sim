@@ -1,0 +1,197 @@
+{
+  "encounter": {
+    "duration": 12,
+    "targets": [
+      {
+        "level": 20,
+        "name": "Stationary L20 native APL smoke",
+        "stats": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "raid": {
+    "parties": [
+      {
+        "players": [
+          {
+            "class": "ClassWarlock",
+            "distanceFromTarget": 25,
+            "equipment": {
+              "items": [
+                {
+                  "id": 10826
+                },
+                {
+                  "id": 253897
+                },
+                {
+                  "id": 4343
+                },
+                {
+                  "id": 270022
+                },
+                {
+                  "id": 21318
+                },
+                {
+                  "id": 3603
+                },
+                {
+                  "id": 19120
+                },
+                {
+                  "id": 275827
+                },
+                {
+                  "id": 286737
+                },
+                {
+                  "id": 4125
+                },
+                {
+                  "id": 4963
+                },
+                {
+                  "id": 277988
+                },
+                {
+                  "id": 23324
+                },
+                {
+                  "id": 20590
+                },
+                {
+                  "id": 15856
+                },
+                {
+                  "id": 5604
+                },
+                {
+                  "id": 275836
+                }
+              ]
+            },
+            "name": "Warlock L20 Troll native",
+            "race": "RaceTroll",
+            "rotation": {
+              "priorityList": [
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 1014
+                      }
+                    },
+                    "condition": {
+                      "not": {
+                        "val": {
+                          "dotIsActive": {
+                            "spellId": {
+                              "spellId": 1014
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 442226
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 6222
+                      }
+                    },
+                    "condition": {
+                      "not": {
+                        "val": {
+                          "dotIsActive": {
+                            "spellId": {
+                              "spellId": 6222
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 1088
+                      }
+                    }
+                  }
+                }
+              ],
+              "type": "TypeAPL"
+            },
+            "talentsString": "121-1112-02",
+            "warlock": {
+              "options": {
+                "classOptions": {}
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "simOptions": {
+    "debugFirstIteration": true,
+    "iterations": 1,
+    "randomSeed": "42"
+  }
+}

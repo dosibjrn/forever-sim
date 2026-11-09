@@ -1,0 +1,73 @@
+name: Work2 — Warlock L20 native talent-unlock paid probe
+
+on:
+  push:
+    branches:
+      - work2/warlock-l20-native-unlock-probe-20261109-2100
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One bounded native prepare discovery and at most two paid 2-mob
+# Decisions routes; this is not a 300s cold search, recorder or P4 PASS.
+# Replay the exact 30s cold finalist that completed 100/100 hostile native
+# world kills in #42669041997 (artifact 13698202699); unlike the earlier
+# single-spell fixture, this freezes its *entire* lethal gear + APL + talents.
+# Rust still prepares/refuses the candidate talent-action difference.
+concurrency:
+  group: work2-warlock-l20-talent-unlock
+  cancel-in-progress: false
+
+jobs:
+  native-talent-unlock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact Forever HEAD
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout source-native engine on tested P4-P6 pin
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: febc1d703e022265ed61ede3fec9b05416282536
+          path: engine
+      - name: Verify engine pin and tested branch
+        run: |
+          set -euo pipefail
+          git -C project rev-parse HEAD
+          test "$(git -C engine rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused regression dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify exact new Forever forwarding and refusal regression
+        working-directory: project
+        run: python -m pytest -q tests/test_work2_warlock_unlock_probe.py
+      - name: Build source-native engine
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Pay matched native 2-target talent-action comparison if Rust registers an action
+        working-directory: project
+        run: |
+          python -u tools/wf_warlock_l20_native_cold.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source fixtures/warlock-l20-native-paid-30s.request.json \
+            --out ../warlock-l20-unlock-probe \
+            --two-target-talent-unlock --screen-timeout 180 --seed 20261109
+      - name: Retain concise source/native receipt or exact refusal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l20-native-unlock
+          path: |
+            warlock-l20-unlock-probe/unlock_probe_summary.json
+            warlock-l20-unlock-probe/source_equipped.request.json
+            warlock-l20-unlock-probe/candidate.request.json
+            warlock-l20-unlock-probe/baseline/world/summary.json
+            warlock-l20-unlock-probe/talent_action/world/summary.json
+          if-no-files-found: warn
+          retention-days: 3

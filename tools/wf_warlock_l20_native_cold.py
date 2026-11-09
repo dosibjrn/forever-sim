@@ -961,6 +961,8 @@ def main() -> None:
     parser.add_argument("--unseeded", action="store_true",
                         help="Start with a source-native mutation, never pay the input reference as a saved winner")
     mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--two-target-talent-unlock", action="store_true",
+                      help="Pay matched native two-target talent-action probe; not a cold gate")
     mode.add_argument("--two-target-screen", action="store_true",
                       help="Measure one real paid 2-target candidate only; no cold gate")
     mode.add_argument("--two-target-cold-proposal", action="store_true",
@@ -969,10 +971,43 @@ def main() -> None:
                       help="Pay one frozen 100-target Decisions build; no cold search")
     parser.add_argument("--baseline-timeout", type=float, default=1800.0)
     parser.add_argument("--screen-timeout", type=float, default=120.0)
+    parser.add_argument("--talent-unlock-equipment-reference", type=Path,
+                        help="Existing executed source actor to copy equipment from "
+                             "for the bounded P4 talent-unlock probe only; Rust "
+                             "still prepares and executes the combined actor")
     parser.add_argument("--health-threshold", type=float, default=0.5)
     parser.add_argument("--mana-threshold", type=float, default=0.1)
     args = parser.parse_args()
     source = json.loads(args.source.read_text())
+    if (args.talent_unlock_equipment_reference is not None
+            and not args.two_target_talent_unlock):
+        parser.error("--talent-unlock-equipment-reference requires --two-target-talent-unlock")
+    if args.two_target_talent_unlock:
+        from tools.wf_warlock_l20_unlock_probe import (
+            overlay_recorded_equipment, run_probe,
+        )
+        if args.talent_unlock_equipment_reference is not None:
+            recorded = json.loads(
+                args.talent_unlock_equipment_reference.read_text())
+            source = overlay_recorded_equipment(source, recorded)
+        args.out.mkdir(parents=True, exist_ok=True)
+        # Retain the exact executed baseline even when the input is already
+        # a proven source-paid equipped fixture (no overlay requested).
+        (args.out / "source_equipped.request.json").write_text(
+            json.dumps(source, indent=2) + "\n")
+        options = query_native_options(args.binary, "warlock", 20)
+        result = run_probe(
+            source, options, binary=args.binary, out=args.out,
+            seed=args.seed, timeout=args.screen_timeout)
+        print("WARLOCK_NATIVE_TALENT_UNLOCK_PAID_PROBE", json.dumps({
+            "status": result["status"],
+            "talent_prepares_attempted": result["talent_prepares_attempted"],
+            "summary": str(args.out / "unlock_probe_summary.json"),
+            "p4_pass": False,
+        }), flush=True)
+        if result["status"] != "NATIVE_PAID_2_TARGET_POLICIES_COMPARED":
+            raise SystemExit(1)
+        return
     if args.two_target_cold_proposal:
         options = query_native_options(args.binary, "warlock", 20)
         result = run_paid_cold_two_target_proposal(
