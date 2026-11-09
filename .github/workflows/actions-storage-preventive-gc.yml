@@ -102,7 +102,7 @@ jobs:
 
           # Protect accepted M1 URLs as well as prose references.
           # Missing local evidence must fail closed before any deletion.
-          from tools.actions_artifact_pins import collect_local_references, record_references
+          from tools.actions_artifact_pins import (artifact_run_id, collect_local_references, record_references)
           pinned_runs, pinned_artifacts = collect_local_references(pathlib.Path("."))
 
           def gh_collection(endpoint):
@@ -175,20 +175,25 @@ jobs:
           # Protect newest two outputs on every still-open PR branch.
           active_branch_counts = {}
           for a in stage5:
-              branch = (a.get("workflow_run") or {}).get("head_branch")
+              run = a.get("workflow_run")
+              branch = run.get("head_branch") if isinstance(run, dict) else None
               if branch in open_branches and active_branch_counts.get(branch, 0) < 2:
                   keep_recent.add(int(a["id"]))
                   active_branch_counts[branch] = active_branch_counts.get(branch, 0) + 1
           candidates = []
-          protected = {"newest-or-active-head": 0, "project-or-issue-linked": 0, "younger-than-72h": 0}
+          protected = {"newest-or-active-head": 0, "project-or-issue-linked": 0,
+                       "unknown-run-provenance": 0, "younger-than-72h": 0}
           for a in reversed(stage5):
               aid = int(a["id"])
-              run = a.get("workflow_run") or {}
-              run_id = int(run.get("id") or 0)
+              run_id = artifact_run_id(a)
               if aid in keep_recent:
                   protected["newest-or-active-head"] += 1
-              elif run_id in pinned_runs or aid in pinned_artifacts:
+              elif aid in pinned_artifacts or (run_id is not None and run_id in pinned_runs):
                   protected["project-or-issue-linked"] += 1
+              elif run_id is None:
+                  # Never delete an artifact whose originating run cannot be
+                  # checked against evidence pins, even if it looks old.
+                  protected["unknown-run-provenance"] += 1
               elif created(a) >= cutoff:
                   protected["younger-than-72h"] += 1
               else:
