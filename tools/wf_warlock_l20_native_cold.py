@@ -171,6 +171,14 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
         if (cold and "gear" in axes and "gear" not in selected
                 and not actor(reference)["equipment"]["items"]):
             selected[-1] = "gear"
+        if (cold and "gear" in axes and "apl" in axes
+                and not actor(reference)["equipment"]["items"]
+                and "apl" not in selected):
+            # The source-neutral actor's unchanged one-action APL already
+            # produced only three damage ACKs and zero kills in paid #42663949470.
+            # Explore native APL alternatives *with* the multi-slot gear trial,
+            # not a second expensive unchanged one-action request.
+            selected.append("apl")
         player = actor(value["source"])
         for axis in selected:
             if axis == "gear":
@@ -225,7 +233,23 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
                 player["talentsString"] = rng.choice(domain["talents"])
             elif axis == "apl":
                 actions = domain.get("apl_actions") or []
-                if not cold and actions and rng.random() < 0.75:
+                if cold and actions:
+                    # A one-spell replacement discarded the only source APL
+                    # fallback in the first paid cold trial. Compose a bounded
+                    # set of DISTINCT Rust-returned actions ahead of the source
+                    # rotation instead; Rust alone decides which execute.
+                    rotation = player["rotation"]["priorityList"]
+                    alternatives = [action for action in actions
+                                    if action not in rotation]
+                    if alternatives:
+                        additions = rng.sample(
+                            alternatives, min(2, len(alternatives)))
+                        player["rotation"]["priorityList"] = [
+                            *copy.deepcopy(additions), *copy.deepcopy(rotation)]
+                    elif domain.get("apl"):
+                        player["rotation"]["priorityList"] = copy.deepcopy(
+                            rng.choice(domain["apl"]))
+                elif not cold and actions and rng.random() < 0.75:
                     # Recombine source-returned actions in the current elite.
                     # A whole-APL replacement alone cannot accumulate two new
                     # spells, so a valid multi-spell challenger is unreachable.

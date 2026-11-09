@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - work2/warlock-l20-unseeded-paid-cold-20261109
+      - work2/warlock-l20-native-apl-composition-20261109
     paths:
       - tools/wf_warlock_l20_native_cold.py
       - tests/test_work2_warlock_native_cold.py

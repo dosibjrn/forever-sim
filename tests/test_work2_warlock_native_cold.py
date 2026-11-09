@@ -210,6 +210,41 @@ def test_neutral_actor_still_proposes_unverified_native_items_for_rust():
     assert cold.actor(reference)["equipment"]["items"] == []
 
 
+def test_neutral_cold_source_apl_composes_distinct_native_actions_with_gear():
+    """The first paid neutral-actor challenger must not erase its source APL.
+
+    This is proposal forwarding, not a Python Warcraft-legality or damage
+    assertion; the Rust runner still accepts/refuses the complete build.
+    """
+    reference = source()
+    original_action = {"action": {"castSpell": {"spellId": {"spellId": 1088}}}}
+    cold.actor(reference)["equipment"]["items"] = []
+    cold.actor(reference)["rotation"]["priorityList"] = [original_action]
+    saved = copy.deepcopy(reference)
+    first = {"action": {"castSpell": {"spellId": {"spellId": 686}}}}
+    second = {"action": {"castSpell": {"spellId": {"spellId": 172}}}}
+    domain = {
+        "gear": {}, "gear_insertions": [],
+        "gear_native_slots": {
+            "head": [{"id": 100}], "chest": [{"id": 201}],
+        },
+        "talents": [], "apl": [[first], [second]],
+        "apl_actions": [first, second], "pets": [],
+        "recovery": [(0.7, 0.25)],
+    }
+    propose, _ = cold.candidate_factory(reference, domain, unseeded=True)
+    for seed in (3, 17, 20261109):
+        candidate = propose(random.Random(seed))
+        player = cold.actor(candidate["source"])
+        assert player["equipment"]["items"] == [{"id": 100}, {"id": 201}]
+        policy = player["rotation"]["priorityList"]
+        assert policy[-1] == original_action
+        assert len(policy) == 3
+        assert {entry["action"]["castSpell"]["spellId"]["spellId"]
+                for entry in policy[:-1]} == {686, 172}
+    assert reference == saved
+
+
 def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch):
     """Search must not create an unconditional Life Tap from native options."""
     reference = source()
