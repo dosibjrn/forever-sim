@@ -38,12 +38,16 @@ def create_scenario(request: dict, *, variant: str) -> dict:
     encounter = scenario["encounter"]
     target = encounter["targets"][0]
     target["level"] = 20
-    target["name"] = "CMaNGOS Classic-proxy ordinary L20 enemy"
+    # Preserve explicit source labels and hostile attack parameters when the
+    # candidate supplies them. The legacy stationary source has no attack
+    # fields, so only that caller receives proxy defaults. In particular a
+    # paid changed-hostile request must reach native with its own swing/damage
+    # values instead of being silently replaced by the old proxy scenario.
+    target.setdefault("name", "CMaNGOS Classic-proxy ordinary L20 enemy")
     target["stats"][32] = representative_hp(20)
-    # This encounter attack is explicitly a test assumption, not an
-    # unsupported assertion of a specific WoW Forever mob's true damage.
-    target["minBaseDamage"] = 20.0
-    target["swingSpeed"] = 2.0
+    # Defaults are scenario assumptions, not facts about WoW Forever mobs.
+    target.setdefault("minBaseDamage", 20.0)
+    target.setdefault("swingSpeed", 2.0)
     encounter["duration"] = 30
     scenario["simOptions"]["iterations"] = 8
     scenario["simOptions"]["randomSeed"] = "4242"
