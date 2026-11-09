@@ -41,6 +41,6 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
                                   runs, artifacts)
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
                  "docs/planning/M1_PASSES.tsv"):
-        record_references((root / name).read_text(encoding="utf-8", errors="replace"),
+        record_references((root / name).read_text(encoding="utf-8"),
                           runs, artifacts)
     return runs, artifacts
