@@ -93,6 +93,30 @@ def artifact_run_id(artifact: dict) -> int | None:
 
 
 
+def unmerged_pr_branch_refs(pull_requests: list[dict], repository: str) -> set[str]:
+    """Protect open and closed-without-merge local PR origin branches.
+
+    A closed unmerged PR may still own unique native/failure artifacts.
+    GitHub's pulls?state=all exposes merged_at for merged PRs; state=closed
+    alone does not make evidence disposable.
+    """
+    branches: set[str] = set()
+    for pr in pull_requests:
+        if pr.get("merged_at") is not None:
+            continue
+        head = pr.get("head")
+        if not isinstance(head, dict):
+            continue
+        head_repo = head.get("repo")
+        if not isinstance(head_repo, dict) or head_repo.get("full_name") != repository:
+            continue
+        ref = head.get("ref")
+        if not isinstance(ref, str) or not ref:
+            raise ValueError("unmerged local PR has no trustworthy head branch")
+        branches.add(ref)
+    return branches
+
+
 def protects_open_pr_artifact(artifact: dict, open_branches: set[str]) -> bool:
     """Protect every still-unmerged PR-branch artifact, not only its latest two.
 

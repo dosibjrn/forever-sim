@@ -4,10 +4,40 @@ from pathlib import Path
 import pytest
 
 from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
-                                         completed_run_candidates, record_references, protects_open_pr_artifact)
+                                         completed_run_candidates, record_references, protects_open_pr_artifact,
+                                         unmerged_pr_branch_refs)
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_gc_protects_closed_but_never_merged_pr_evidence():
+    """Closed without merge is not a license to delete old native receipts."""
+    repo = "dosibjrn/forever-sim"
+
+    def pr(state, branch, merged_at=None, owner=repo):
+        return {"state": state, "merged_at": merged_at,
+                "head": {"ref": branch, "repo": {"full_name": owner}}}
+
+    branches = unmerged_pr_branch_refs([
+        pr("open", "work/live"),
+        pr("closed", "work/closed-unmerged"),
+        pr("closed", "work/merged", "2026-11-09T12:00:00Z"),
+        pr("open", "work/forked", owner="other/repo"),
+    ], repo)
+    assert branches == {"work/live", "work/closed-unmerged"}
+    assert protects_open_pr_artifact(
+        {"workflow_run": {"head_branch": "work/closed-unmerged"}}, branches)
+    assert not protects_open_pr_artifact(
+        {"workflow_run": {"head_branch": "work/merged"}}, branches)
+
+
+def test_gc_unmerged_local_pr_with_missing_ref_fails_closed():
+    with pytest.raises(ValueError, match="trustworthy head branch"):
+        unmerged_pr_branch_refs([
+            {"state": "closed", "merged_at": None,
+             "head": {"ref": None, "repo": {"full_name": "dosibjrn/forever-sim"}}}
+        ], "dosibjrn/forever-sim")
 
 
 def test_local_evidence_includes_merge_owned_ledger_and_document_links(tmp_path):
@@ -202,7 +232,7 @@ def test_gc_scans_submitted_reviews_and_fails_closed_before_deleting():
     assert workflow.index('record_references(review.get("body")') < workflow.index(
         'candidates = []'
     )
-    assert 'if p.get("state") == "open"' in workflow
+    assert "unmerged_pr_branch_refs(all_prs, repo)" in workflow
     assert 'result = subprocess.run(["gh", "api", url], capture_output=True, text=True, check=True)' in workflow
 
 
@@ -218,7 +248,8 @@ def test_live_gc_fetches_comments_before_eligible_deletion():
         encoding="utf-8"
     )
     assert "from tools.actions_artifact_pins import (artifact_run_id, collect_local_references," in workflow
-    assert "completed_run_candidates, record_references, protects_open_pr_artifact)" in workflow
+    assert "completed_run_candidates, record_references, protects_open_pr_artifact," in workflow
+    assert "unmerged_pr_branch_refs)" in workflow
     assert 'gh_collection("issues?state=all")' in workflow
     assert '"issues/comments?sort=created&direction=desc"' in workflow
     assert '"pulls/comments?sort=created&direction=desc"' in workflow
@@ -583,7 +614,7 @@ def test_gc_no_longer_limits_unmerged_branch_protection_to_two_artifacts():
         {"work/unmerged"})
     workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
         encoding="utf-8")
-    assert "if protects_open_pr_artifact(a, open_branches):" in workflow
+    assert "if protects_open_pr_artifact(a, unmerged_branches):" in workflow
     assert "active_branch_counts" not in workflow
     assert workflow.index("if protects_open_pr_artifact(") < workflow.index(
         "candidates = []")
@@ -634,8 +665,8 @@ def test_gc_confirms_open_pr_protection_with_authoritative_run_branch(
 def test_live_gc_enforces_branch_crosscheck_before_its_delete_plan():
     workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml"
                 ).read_text(encoding="utf-8")
-    assert "protected_branches=open_branches)" in workflow
-    assert workflow.index("protected_branches=open_branches)") < workflow.index(
+    assert "protected_branches=unmerged_branches)" in workflow
+    assert workflow.index("protected_branches=unmerged_branches)") < workflow.index(
         "planned = []")
     assert workflow.index("planned = []") < workflow.index(
         'request(f"artifacts/{aid}", "DELETE")')

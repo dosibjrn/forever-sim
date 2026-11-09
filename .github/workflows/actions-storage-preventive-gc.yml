@@ -116,7 +116,8 @@ jobs:
           # Protect accepted M1 URLs as well as prose references.
           # Missing local evidence must fail closed before any deletion.
           from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
-                                                   completed_run_candidates, record_references, protects_open_pr_artifact)
+                                                   completed_run_candidates, record_references, protects_open_pr_artifact,
+                                                   unmerged_pr_branch_refs)
           pinned_runs, pinned_artifacts = collect_local_references(pathlib.Path("."))
 
           def gh_collection(endpoint):
@@ -182,15 +183,15 @@ jobs:
                       record_references(review.get("body"), pinned_runs, pinned_artifacts)
                       review_count += 1
           print(f"PIN_SCAN prs={len(all_prs)} pr_reviews={review_count}")
-          open_branches = {p["head"]["ref"] for p in all_prs
-                           if p.get("state") == "open"
-                           and p.get("head", {}).get("repo", {}).get("full_name") == repo}
+          # Both open and closed-but-never-merged PRs may own unique native
+          # receipts. A closed PR is not proof its artifacts are disposable.
+          unmerged_branches = unmerged_pr_branch_refs(all_prs, repo)
           keep_recent = {int(a["id"]) for a in stage5[:5]}
           # Do not delete ANY receipt from an unmerged PR branch. Two newest
           # were insufficient: older paid/failing runs may be the only
           # unmerged evidence. Ambiguous origin-branch metadata also stays.
           for a in stage5:
-              if protects_open_pr_artifact(a, open_branches):
+              if protects_open_pr_artifact(a, unmerged_branches):
                   keep_recent.add(int(a["id"]))
           candidates = []
           protected = {"newest-or-active-head": 0, "project-or-issue-linked": 0,
@@ -210,7 +211,7 @@ jobs:
                   protected["younger-than-72h"] += 1
               else:
                   candidates.append(a)
-          print(f"PROTECTED {protected}; known linked run IDs={len(pinned_runs)}; linked artifact IDs={len(pinned_artifacts)}; open PR branches={len(open_branches)}")
+          print(f"PROTECTED {protected}; known linked run IDs={len(pinned_runs)}; linked artifact IDs={len(pinned_artifacts)}; unmerged PR branches={len(unmerged_branches)}")
           # Check origin-run completion before building ANY artifact deletion
           # plan. Errors, missing IDs and malformed replies fail closed.
           def fetch_origin_run(run_id):
@@ -230,7 +231,7 @@ jobs:
               allowed_events=("pull_request", "push"),
               require_success_conclusion=True,
               require_single_attempt=True,
-              protected_branches=open_branches)
+              protected_branches=unmerged_branches)
           print(f"RUN_COMPLETION eligible_finished={len(candidates)} deferred_unsafe={unfinished}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
