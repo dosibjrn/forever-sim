@@ -525,6 +525,29 @@ def run_paid_two_target_screen(reference: dict, *, binary: Path, out: Path,
     return report
 
 
+def cold_search_has_paid_finalist_evidence(report: dict) -> bool:
+    """CLI completion means observable paid finalists, not a gate PASS.
+
+    A measured P6 ratio outside 1% is still useful evidence of a real
+    completed search. Missing 30s/300s snapshots or native 100-target
+    receipts are not a successfully completed cold evidence producer.
+    """
+    finalists = report.get("finalists")
+    comparison = report.get("p6_comparison")
+    return (
+        report.get("cold_300_reached") is True
+        and isinstance(report.get("snapshot_30"), dict)
+        and isinstance(report.get("final_300"), dict)
+        and isinstance(finalists, dict)
+        and all(isinstance(finalists.get(label), dict)
+                and finalists[label].get("status")
+                == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+                for label in ("30s", "300s"))
+        and isinstance(comparison, dict)
+        and comparison.get("status") == "MEASURED_PAID_100_MOB_FINALISTS"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
@@ -578,12 +601,20 @@ def main() -> None:
     result = run_cold(source, options, binary=args.binary, out=args.out,
                       seed=args.seed, budget_s=args.budget,
                       snapshot_s=args.snapshot)
+    complete = cold_search_has_paid_finalist_evidence(result)
     print("WARLOCK_NATIVE_COLD_PAID_SEARCH", json.dumps({
         "status": result["native_search"]["status"],
+        "evidence_status": ("COMPLETED_PAID_FINALISTS" if complete
+                            else "INCOMPLETE_PAID_FINALIST_EVIDENCE"),
         "native_paid_screen_count": result["native_paid_screen_count"],
         "finalists": {k: row["status"] for k, row in result["finalists"].items()},
+        "p6_within_one_percent": (
+            result["p6_comparison"].get("within_one_percent")
+            if isinstance(result.get("p6_comparison"), dict) else None),
         "summary": str(args.out / "cold_summary.json"),
     }), flush=True)
+    if not complete:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
