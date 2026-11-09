@@ -97,14 +97,14 @@ jobs:
               for file in pathlib.Path(folder).rglob("*.md"):
                   try:
                       body = file.read_text(errors="replace")
-                      pinned_runs.update(map(int, re.findall(r"actions/runs/(\\d+)", body)))
-                      pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\\d+)", body)))
+                      pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", body)))
+                      pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\d+)", body)))
                   except OSError:
                       pass
           for file in ("OVERALL_PLAN.md", "PROCESS.md", "README.md"):
               body = pathlib.Path(file).read_text(errors="replace")
-              pinned_runs.update(map(int, re.findall(r"actions/runs/(\\d+)", body)))
-              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\\d+)", body)))
+              pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", body)))
+              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\d+)", body)))
 
           def gh_collection(endpoint):
               entries = []
@@ -124,8 +124,8 @@ jobs:
           issues = gh_collection("issues?state=all")
           for issue in issues:
               body = issue.get("body") or ""
-              pinned_runs.update(map(int, re.findall(r"actions/runs/(\\d+)", body)))
-              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\\d+)", body)))
+              pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", body)))
+              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\d+)", body)))
           open_prs = gh_collection("pulls?state=open")
           open_branches = {p["head"]["ref"] for p in open_prs
                            if p.get("head", {}).get("repo", {}).get("full_name") == repo}
