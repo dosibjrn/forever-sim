@@ -91,6 +91,33 @@ def _source_request():
     }
 
 
+@pytest.mark.parametrize("variant,mana_limit", [
+    ("life_tap_20", "20%"), ("life_tap_40", "40%"),
+])
+def test_life_tap_candidates_require_native_health_reserve(variant, mana_limit):
+    """A low-mana state alone must never trigger repeated self-damaging taps."""
+    reference = _source_request()
+    rotation = reference["raid"]["parties"][0]["players"][0]["rotation"][
+        "priorityList"]
+    rotation.append({"action": {"castSpell": {"spellId": {"spellId": 686}}}})
+    scenario = _WARLOCK["create_scenario"](reference, variant=variant)
+    modified = scenario["raid"]["parties"][0]["players"][0]["rotation"][
+        "priorityList"]
+    assert modified[1] == rotation[0]
+    assert rotation == [{"action": {"castSpell": {"spellId": {"spellId": 686}}}}]
+    assert modified[0]["action"]["castSpell"]["spellId"]["spellId"] == 1455
+    assert modified[0]["action"]["condition"] == {"and": {"vals": [
+        {"cmp": {"lhs": {"currentManaPercent": {}}, "op": "OpLt",
+                 "rhs": {"const": {"val": mana_limit}}}},
+        {"cmp": {"lhs": {"currentHealthPercent": {}}, "op": "OpGt",
+                 "rhs": {"const": {"val": "50%"}}}},
+    ]}}
+    # No Life Tap or pre-existing APL was rewritten in the reference request.
+    original = _WARLOCK["create_scenario"](reference, variant="best_apl")
+    assert original["raid"]["parties"][0]["players"][0]["rotation"][
+        "priorityList"] == rotation
+
+
 @pytest.mark.parametrize("targets,paid", [
     (2, True), (8, True), (100, True),
     (2, False), (8, False), (100, False),
