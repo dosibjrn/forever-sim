@@ -25,6 +25,7 @@ on:
       - integrations/mythicsim-rust/tests/test_native_matrix_contract.py
       - tools/wf_warlock_l20_native_cold.py
       - tests/test_work2_warlock_native_cold.py
+      - tests/test_work2_warlock_native_cold_cli.py
 
 permissions:
   contents: read
@@ -61,4 +62,4 @@ jobs:
           python integrations/mythicsim-rust/tests/test_native_source_donors.py -v
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py -v
           python integrations/mythicsim-rust/tests/test_native_matrix_contract.py -v
-          python -m pytest -q tests/test_work2_warlock_native_cold.py
+          python -m pytest -q tests/test_work2_warlock_native_cold.py tests/test_work2_warlock_native_cold_cli.py
