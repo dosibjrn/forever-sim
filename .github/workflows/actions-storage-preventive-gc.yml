@@ -208,7 +208,11 @@ jobs:
                   raise RuntimeError(f"run {run_id}: completion read HTTP {status}: {str(payload)[:160]}")
               return payload
 
-          candidates, unfinished = completed_run_candidates(candidates, fetch_origin_run)
+          # Artifact name alone is insufficient: another workflow can use
+          # the same name. Fail closed on an unexpected origin before DELETE.
+          candidates, unfinished = completed_run_candidates(
+              candidates, fetch_origin_run,
+              expected_workflow=".github/workflows/native-joint-28-sweep.yml")
           print(f"RUN_COMPLETION eligible_finished={len(candidates)} deferred_unfinished={unfinished}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
