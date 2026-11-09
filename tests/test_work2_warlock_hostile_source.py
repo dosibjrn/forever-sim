@@ -210,10 +210,14 @@ def test_cold_scorer_requires_actual_hostile_native_receipt(
                 binary, candidate, tmp_path / "attempt",
                 targets=targets, timeout=20)
 
+@pytest.mark.parametrize("reason, exit_code, detail", [
+    ("RUST_TWO_WORLD_NATIVE_FAILED", 1, "actor died mid-chain"),
+    ("RUST_TWO_WORLD_KILLS_NOT_COMPLETED", 0, "clean exit, incomplete kills"),
+])
 def test_partial_hostile_world_refusal_keeps_acked_native_actions_not_a_score(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, reason, exit_code, detail
 ):
-    """A dying native actor preserves real player/pet effects, not P4 credit."""
+    """Both failed native paths preserve ACKed effects, never P4 credit."""
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_request()), encoding="utf-8")
     binary = tmp_path / "engine"
@@ -238,8 +242,7 @@ def test_partial_hostile_world_refusal_keeps_acked_native_actions_not_a_score(
         assert kwargs["recovery_policy"] == "decisions"
         counts = {"player": {"Spell-686": 60}, "pet": {"Pet-1": 20}}
         raise chain.NativeWorldChainFailure(
-            "RUST_TWO_WORLD_NATIVE_FAILED", 1, "actor died mid-chain",
-            47, 80, counts)
+            reason, exit_code, detail, 47, 80, counts)
 
     monkeypatch.setattr(chain.subprocess, "run", prepare)
     monkeypatch.setattr(chain, "native_world_chain", dead_native_actor)
@@ -254,6 +257,8 @@ def test_partial_hostile_world_refusal_keeps_acked_native_actions_not_a_score(
 
     attempt = json.loads((out / "best_apl/summary.json").read_text())
     assert attempt["status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
+    assert attempt["native_chain_failure_reason"] == reason
+    assert attempt["native_exit_code"] == exit_code
     assert attempt["native_world_ack_kills_before_refusal"] == 47
     assert attempt["native_damage_events_before_refusal"] == 80
     assert attempt["native_source_damage_effects_by_caster"] == {
