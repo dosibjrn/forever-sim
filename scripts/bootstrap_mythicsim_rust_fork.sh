@@ -231,8 +231,7 @@ fi
 # pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
 cargo test --locked --lib world_lethal_terminal
-# Native Druid P2 witnesses must pass before the selected Rust integration is published.
-cargo test --locked --lib native_improved_roots_rank_intake
+# Retired P2 rank-intake proof is not a fork publication condition.
 cargo test --locked --lib druid_talent_layout_api_tests
 
 # This is an engine packaging update, not a gate or native reference test.

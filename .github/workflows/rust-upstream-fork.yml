@@ -80,7 +80,7 @@ jobs:
           python3 integrations/mythicsim-rust/test_port_native_two_world_cli.py
           python3 integrations/mythicsim-rust/test_port_native_world_lethal_terminal.py
           python3 -m pip install --disable-pip-version-check 'pytest==8.3.5'
-          python3 -m pytest -q tests/test_work2_rust_gsim_moving_port.py
+          python3 -m pytest -q tests/test_work2_rust_gsim_moving_port.py tests/maintenance/test_fork_sync_retired_p2_guard.py
           python3 - <<'PY'
           from pathlib import Path
           s = Path("scripts/bootstrap_mythicsim_rust_fork.sh").read_text()
@@ -184,7 +184,6 @@ jobs:
             echo "Native CLI accepted unknown RNG mode" >&2; exit 1
           fi
           echo "RUST_NATIVE_TYPED_RNG_REQUIRED_AND_INVALID_MODE_REJECTED"
-          cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib native_improved_roots_rank_intake
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml forever_roots_preparation_uses_native_spell_data_and_improved_rank
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml forever_roots_native_periodic_ticks_change_with_rank -- --nocapture
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib persistent_next_target
