@@ -47,6 +47,56 @@ def _cold_talents(base: dict, rng: random.Random, proposals, *, reference_parent
     return candidate
 
 
+def _native_source_talent_candidates(root: Path, binary: Path, base: dict,
+                                     class_key: str, level: int) -> list[dict]:
+    """Propose changed rank strings using positions returned by Rust options.
+
+    The frozen Warlock reference has zero spent talents. String-budget
+    mutation cannot move or lower ranks from 0-0-0, so offer one rank in
+    native-disclosed positions. This is NOT an eligibility check: even a
+    proposal at a listed position may be refused by native PREPARE/SIM.
+    """
+    source = _source_module(
+        root / "integrations/mythicsim-rust/native_options.py",
+        "p73_selected_native_options").query_native_options(
+            binary, class_key, level)
+    trees = source["talents"]["trees"]
+    if not isinstance(trees, list) or len(trees) != 3:
+        raise ValueError("P7_3_NATIVE_TALENT_TREE_SHAPE_MISSING")
+    positions = []
+    for tree in trees:
+        rows = tree.get("talents") if isinstance(tree, dict) else None
+        if not isinstance(rows, list):
+            raise ValueError("P7_3_NATIVE_TALENT_POSITIONS_MISSING")
+        indices = set()
+        for row in rows:
+            index = row.get("index") if isinstance(row, dict) else None
+            if type(index) is not int or not 0 <= index < 128:
+                raise ValueError("P7_3_NATIVE_TALENT_POSITION_INVALID")
+            indices.add(index)
+        positions.append(sorted(indices))
+    widths = [max(indices, default=-1) + 1 for indices in positions]
+    original = base["raid"]["parties"][0]["players"][0]["talentsString"]
+    candidates = []
+    # Interleave source-index positions across trees; don't exclude tiers or
+    # assert that any of these allocations is playable before Rust judges it.
+    for index in range(max(widths, default=0)):
+        for tree_id, indices in enumerate(positions):
+            if index not in indices:
+                continue
+            ranks = [["0"] * width for width in widths]
+            ranks[tree_id][index] = "1"
+            encoded = "-".join("".join(tree).rstrip("0") or "0"
+                               for tree in ranks)
+            if encoded == original:
+                continue
+            candidate = copy.deepcopy(base)
+            candidate["raid"]["parties"][0]["players"][0][
+                "talentsString"] = encoded
+            candidates.append(candidate)
+    return candidates
+
+
 def _native_refusal(exc: Exception) -> tuple[str, str]:
     """Forward the structured Rust preparation refusal instead of calling it an engine error.
 
@@ -96,6 +146,19 @@ def run_live(root: Path, class_key: str, level: int, *,
         root / "integrations/mythicsim-rust/live_world_probe.py",
         "p73_selected_native_scorer")
     original = base["raid"]["parties"][0]["players"][0]["talentsString"]
+    warlock_l20 = (class_key, level, spec) == (
+        "warlock", 20, "unrestricted")
+    if warlock_l20:
+        try:
+            native_candidates = _native_source_talent_candidates(
+                root, binary, base, class_key, level)
+        except (RuntimeError, ValueError, OSError, KeyError, TypeError,
+                subprocess.SubprocessError) as exc:
+            return {"status": "BLOCKED", "reasons": [
+                "P7_3_NATIVE_TALENT_OPTIONS_UNAVAILABLE"],
+                "native_options_error": type(exc).__name__ + ":" + str(exc)[:240]}
+    else:
+        native_candidates = []
     # Probe native with minimal source-reference deltas before spending time on
     # large mutations. This changes serialized ranks only; no Python game
     # legality or source-specific tree ordering is inferred.
@@ -113,10 +176,14 @@ def run_live(root: Path, class_key: str, level: int, *,
     best = None
     start = time.monotonic()
     # P7.3 is a changed-talent axis smoke, never a 300s joint search.
-    while proposals < len(minimal) + len(transfers) + 8:
+    attempt_limit = (min(len(native_candidates), 24) if warlock_l20
+                     else len(minimal) + len(transfers) + 8)
+    while proposals < attempt_limit:
         proposals += 1
         try:
-            if proposals <= len(minimal):
+            if warlock_l20:
+                candidate = native_candidates[proposals - 1]
+            elif proposals <= len(minimal):
                 candidate = copy.deepcopy(base)
                 candidate["raid"]["parties"][0]["players"][0][
                     "talentsString"] = minimal[proposals - 1]
@@ -130,7 +197,11 @@ def run_live(root: Path, class_key: str, level: int, *,
                     reference_parent=(
                         proposals <= len(minimal) + len(transfers) + 4))
             player = candidate["raid"]["parties"][0]["players"][0]
-            # A no-op is not an independently changed talent candidate.
+            # A no-op or modified non-talent axis is never P7.3 evidence.
+            frozen = base["raid"]["parties"][0]["players"][0]
+            if (player["equipment"] != frozen["equipment"]
+                    or player["rotation"] != frozen["rotation"]):
+                raise ValueError("P7_3_CHANGED_FIXED_EQUIPMENT_OR_APL")
             if player["talentsString"] == original:
                 continue
             sha = hashlib.sha256(json.dumps(
@@ -143,6 +214,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 path.write_text(json.dumps(candidate))
                 try:
                     native_options = {"go_rules": True} if spec == "feral" else {}
+                    if level != 60:
+                        native_options["actor_level"] = level
                     native = production.native_source_control(
                         binary, path, 3, rng_mode="balanced", **native_options)
                 except Exception as exc:
@@ -194,6 +267,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_legal_cold_candidates_paid": executed,
         "minimal_reference_delta_proposals": len(minimal),
         "point_preserving_delta_proposals": len(transfers),
+        "native_source_talent_proposals": len(native_candidates),
         "cold_unique_source_requests": len(seen),
         "native_invalid_candidates": invalid,
         "native_unsupported_candidates": unsupported,
@@ -208,8 +282,13 @@ def run_live(root: Path, class_key: str, level: int, *,
         "selected_validation": "3_native_balanced_fights_per_distinct_talents",
     }
     if best is None:
-        return {"status": "FAIL",
-                "reasons": ["P7_3_NO_NATIVE_PAID_CHANGED_TALENT_CANDIDATE"],
+        all_refused = bool(seen) and not errors and (
+            invalid + unsupported + unscored == len(seen))
+        return {"status": "BLOCKED" if all_refused else "FAIL",
+                "reasons": [
+                    "P7_3_NATIVE_REFUSED_SAMPLED_TALENT_CHALLENGERS"
+                    if all_refused else
+                    "P7_3_NO_NATIVE_PAID_CHANGED_TALENT_CANDIDATE"],
                 **shared}
     score, sha, winner = best
     return {
