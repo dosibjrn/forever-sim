@@ -23,6 +23,8 @@ on:
       - integrations/mythicsim-rust/tests/test_native_joint_composition.py
       - integrations/mythicsim-rust/tests/test_native_source_donors.py
       - integrations/mythicsim-rust/tests/test_native_matrix_contract.py
+      - tools/wf_warlock_l20_native_cold.py
+      - tests/test_work2_warlock_native_cold.py
 
 permissions:
   contents: read
@@ -46,6 +48,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install bounded Forever transport test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+
       - name: Run native JOINT Python contract tests
         run: |
           python integrations/mythicsim-rust/tests/test_native_joint_two_class.py -v
@@ -56,3 +61,4 @@ jobs:
           python integrations/mythicsim-rust/tests/test_native_source_donors.py -v
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py -v
           python integrations/mythicsim-rust/tests/test_native_matrix_contract.py -v
+          python -m pytest -q tests/test_work2_warlock_native_cold.py
