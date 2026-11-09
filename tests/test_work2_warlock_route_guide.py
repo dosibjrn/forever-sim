@@ -163,3 +163,144 @@ def test_native_cold_request_fingerprint_mismatch_is_rejected():
         observations_from_cold_summary(
             native, run_url="https://github.com/dosibjrn/forever-sim/actions/runs/11",
             trial="native-test")
+
+
+
+def native_chain_summary(tmp_path):
+    """Minimal *producer transport* fixture, not a simulated Warcraft fight."""
+    import hashlib
+    actor = {
+        "talentsString": "1-0-0",
+        "equipment": {"items": [{"id": 101}]},
+        "rotation": {"priorityList": [{"action": {"castSpell": {"spellId": {"spellId": 686}}}}]},
+        "warlockOptions": {"summon": 2},
+    }
+    source = {"raid": {"parties": [{"players": [actor]}]}}
+    candidate_dir = tmp_path / "best_apl"
+    candidate_dir.mkdir(parents=True, exist_ok=True)
+    request = candidate_dir / "source_request.json"
+    request.write_text(json.dumps(source) + "\n")
+    sha = hashlib.sha256(request.read_bytes()).hexdigest()
+    receipt = {
+        "variant": "best_apl",
+        "status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+        "killed": 100,
+        "target_count_requested": 100,
+        "native_binary_sha256": "a" * 64,
+        "source_request_sha256": sha,
+        "native_actor_continuity_receipt_complete": True,
+        "paid_recovery": True,
+        "native_recovery_clock_accounted": True,
+        "native_recovery_mode": "decisions_food_water",
+        "native_2d_paid_objective_eligible": True,
+        "world_target_hp_matches_request": True,
+        "native_food_water_observed": True,
+        "seconds_per_mob": 12.7,
+        "mob_hp_native_scenario": 484,
+        "scenario_min_base_damage": 20,
+        "scenario_swing_speed": 2,
+        "recovery_request": {"recovery_policy": "decisions", "health_threshold": 0.5},
+        "final_hp": 370,
+        "final_mana": 220,
+        "native_health_damage": {"observed": True, "damage_taken": 308},
+        "native_food_seconds": 125,
+        "native_water_seconds": 250,
+    }
+    summary = {
+        "kind": "real_100_target_source_native_world_attempts",
+        "target_count_requested": 100,
+        "native_binary_sha256": "a" * 64,
+        "native_recovery_requested": {"recovery_policy": "decisions"},
+        "results": [receipt],
+    }
+    path = tmp_path / "summary.json"
+    path.write_text(json.dumps(summary))
+    return path, summary
+
+
+def test_native_chain_adapter_consumes_exact_source_and_real_paid_receipts(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    path, summary = native_chain_summary(tmp_path)
+    rows, refusals = observations_from_native_chain_summary(summary, summary_path=path)
+    assert not refusals
+    report = build_route_report(payload(*rows))
+    assert report["measured_levels"] == [20]
+    assert report["full_10_60_native_replay_executed"] is False
+    assert rows[0]["gear"] == [{"id": 101}]
+    assert rows[0]["pet"] == {"summon": 2}
+    assert rows[0]["native_final_hp"] == 370
+    assert rows[0]["native_food_seconds"] == 125
+    assert rows[0]["run_url"] is None
+    assert "Local receipt:" in render_guide(report)
+    assert "not a claimed executed 10" in render_guide(report)
+
+
+def test_native_chain_adapter_refuses_unpaid_or_swapped_requests(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    path, summary = native_chain_summary(tmp_path)
+    summary["results"][0]["native_recovery_clock_accounted"] = False
+    with pytest.raises(ValueError, match="complete paid"):
+        observations_from_native_chain_summary(summary, summary_path=path)
+    summary["results"][0]["native_recovery_clock_accounted"] = True
+    (tmp_path / "best_apl" / "source_request.json").write_text('{"swapped": true}')
+    with pytest.raises(ValueError, match="source request bytes differ"):
+        observations_from_native_chain_summary(summary, summary_path=path)
+
+
+def test_native_summary_cli_preserves_real_refusals_and_local_provenance(tmp_path):
+    path, summary = native_chain_summary(tmp_path / "input")
+    summary["results"].append({
+        "variant": "life_tap_40", "status": "INCOMPLETE_OR_NATIVE_REFUSAL",
+        "killed": 37, "native_exit_code": 1, "error": "NATIVE_ACTOR_DIED",
+    })
+    path.write_text(json.dumps(summary))
+    out = tmp_path / "report"
+    assert main(["--native-summary", str(path), "--out", str(out)]) == 0
+    report = json.loads((out / "route.json").read_text())
+    assert len(report["observations"]) == 1
+    assert report["native_refusals"][0]["killed"] == 37
+    guide = (out / "GUIDE.md").read_text()
+    assert "NATIVE_ACTOR_DIED" in guide
+    assert "Local receipt:" in guide
+
+
+def test_one_invocation_calls_real_producer_and_publishes_its_saved_summary(tmp_path, monkeypatch):
+    from tools import wf_warlock_route_guide as guide
+    import subprocess
+    binary = tmp_path / "native-engine"
+    source = tmp_path / "input.json"
+    binary.write_bytes(b"native-binary-placeholder")
+    source.write_text("{}")
+    commands = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        assert "--targets" in cmd and cmd[cmd.index("--targets") + 1] == "100"
+        assert "--hostile-player-tank" in cmd
+        assert "--require-native-health-damage" in cmd
+        assert cmd[cmd.index("--recovery-policy") + 1] == "decisions"
+        native_chain_summary(tmp_path / "guide" / "native_l20")
+        return subprocess.CompletedProcess(cmd, 0, stdout="CHAIN_COMPLETED")
+
+    monkeypatch.setattr(guide.subprocess, "run", fake_run)
+    out = tmp_path / "guide"
+    assert main(["--execute-native", "--binary", str(binary),
+                 "--source", str(source), "--out", str(out)]) == 0
+    assert len(commands) == 1
+    data = json.loads((out / "route.json").read_text())
+    assert data["measured_levels"] == [20]
+    assert data["observations"][0]["receipt_path"].endswith("/native_l20/summary.json")
+    assert data["observations"][0]["run_url"] is None
+    assert data["elapsed_10_60_seconds"] is None
+
+
+def test_no_paid_native_candidate_cannot_publish_a_measured_route(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    path, summary = native_chain_summary(tmp_path)
+    summary["results"][0].update(status="INCOMPLETE_OR_NATIVE_REFUSAL", killed=42, error="NATIVE_ACTOR_DIED")
+    rows, refusals = observations_from_native_chain_summary(summary, summary_path=path)
+    assert rows == []
+    assert refusals[0]["killed"] == 42
+    path.write_text(json.dumps(summary))
+    with pytest.raises(ValueError, match="no complete paid native"):
+        main(["--native-summary", str(path), "--out", str(tmp_path / "guide")])
