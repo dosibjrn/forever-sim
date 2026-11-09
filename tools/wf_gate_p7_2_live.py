@@ -74,8 +74,9 @@ def _cold_apl(base: dict, rng: random.Random, mutation, *,
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
                            spec: str, gate: str, *, require_world: bool = True):
     """One exact-source native preflight shared by P7 discovery gates."""
-    if (class_key, level, spec, gate) == (
-            "druid", 30, "unrestricted", "P7.2"):
+    if (class_key, level, spec, gate) in (
+            ("druid", 30, "unrestricted", "P7.2"),
+            ("warlock", 20, "unrestricted", "P7.2")):
         # The selected L30 reference is a distinct frozen native request, not
         # an L60 Balance donor. Reuse its authenticated stochastic receipt and
         # native PREPARE without charging another 1,000-fight sample.
@@ -153,6 +154,43 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     return (base, meta, binary)
 
 
+def _native_source_apl_proposals(root: Path, binary: Path, base: dict,
+                                 class_key: str, level: int) -> list[dict]:
+    """Build one-axis APL challengers from native get_options spell proposals.
+
+    The frozen Warlock reference has only one priority action, so the generic
+    mutator's two-action grammar cannot start from it. Rust supplies proposed
+    spell IDs and remains the sole authority on their actual execution.
+    """
+    options = _source_module(
+        root / "integrations/mythicsim-rust/native_options.py",
+        "p72_selected_native_options").query_native_options(
+            binary, class_key, level)
+    player = base["raid"]["parties"][0]["players"][0]
+    original = player["rotation"]["priorityList"]
+    original_ids = {
+        entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId")
+        for entry in original
+    }
+    candidates = []
+    seen = set()
+    for spell in options["spells"]:
+        spell_id = spell.get("spell_id") if isinstance(spell, dict) else None
+        if (type(spell_id) is not int or spell_id <= 0
+                or spell_id in original_ids or spell_id in seen):
+            continue
+        seen.add(spell_id)
+        # Only the exact native-returned identity is proposed. No Python
+        # ranking, rank/learnability gate, or original gear/talent mutation.
+        action = {"action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+        for apl in ([action, *copy.deepcopy(original)], [action]):
+            changed = copy.deepcopy(base)
+            changed["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"] = copy.deepcopy(apl)
+            candidates.append(changed)
+    return candidates
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(
@@ -164,8 +202,22 @@ def run_live(root: Path, class_key: str, level: int, *,
     source_sha = meta.get("source_request_raw_sha256",
                           SAVED_FERAL_RAW_SHA if feral else SAVED_BALANCE_RAW_SHA)
     native_rules = "go_reference" if feral else "forever"
-    mutation = _source_module(root / "integrations/mythicsim-rust/apl_mutation.py",
-                              "p72_source_apl_mutator")
+    warlock_l20 = (class_key, level, spec) == (
+        "warlock", 20, "unrestricted")
+    if warlock_l20:
+        try:
+            native_proposals = _native_source_apl_proposals(
+                root, binary, base, class_key, level)
+        except (ValueError, RuntimeError, OSError, subprocess.SubprocessError,
+                KeyError, TypeError) as exc:
+            return {**_blocked("P7_2_NATIVE_SOURCE_OPTIONS_UNAVAILABLE"),
+                    "native_options_error": type(exc).__name__ + ":" + str(exc)[:240]}
+        mutation = None
+    else:
+        native_proposals = []
+        mutation = _source_module(
+            root / "integrations/mythicsim-rust/apl_mutation.py",
+            "p72_source_apl_mutator")
     production = _source_module(
         root / "integrations/mythicsim-rust/live_world_probe.py",
         "p72_selected_native_scorer")
@@ -182,12 +234,16 @@ def run_live(root: Path, class_key: str, level: int, *,
     proposals = 0
     search_start = time.monotonic()
     # One genuinely changed native-paid APL is sufficient for P7.2.
-    while proposals < 4:
+    # Bounded Rust-source attempts let the single-action Warlock reference
+    # reach alternatives without manufacturing a Python spell catalogue.
+    attempt_limit = min(len(native_proposals), 16) if warlock_l20 else 4
+    while proposals < attempt_limit:
         proposals += 1
         try:
-            candidate = _cold_apl(
-                base, rng, mutation, reference_parent=(proposals <= 2),
-                preserve_source_conditions=feral)
+            candidate = (native_proposals[proposals - 1] if warlock_l20
+                         else _cold_apl(
+                             base, rng, mutation, reference_parent=(proposals <= 2),
+                             preserve_source_conditions=feral))
             changed_apl = candidate["raid"]["parties"][0]["players"][0][
                 "rotation"]["priorityList"]
             if changed_apl == original_apl:
