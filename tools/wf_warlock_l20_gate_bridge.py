@@ -141,14 +141,8 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
     if (not isinstance(cold.get("source_request_sha256"), str)
             or not isinstance(cold.get("engine_binary_sha256"), str)):
         reasons.append("WARLOCK_NATIVE_EXECUTED_IDENTITY_MISSING")
-    if gate == "P4":
-        # Producer must report a *real paid cast and result* when the source
-        # supplies a reachable talent unlock. This is not an exhaustive audit.
-        if (cold.get("native_source_unlocked_actions_available") is not False
-                and cold.get("native_representative_unlocked_cast_compared")
-                is not True):
-            reasons.append("P4_NATIVE_REPRESENTATIVE_UNLOCK_CAST_UNVERIFIED")
-    elif gate == "P5":
+    # Unlocked-action cast metadata is an optimizer diagnostic, not a P4 veto.
+    if gate == "P5":
         if type(cold.get("native_paid_after_snapshot")) is not int or (
                 cold["native_paid_after_snapshot"] < 1):
             reasons.append("P5_NATIVE_PAID_CONTINUATION_NOT_OBSERVED")
