@@ -53,6 +53,29 @@ def test_native_hostile_scenario_assigns_player_tank_without_mutating_source():
         "Stationary L20 native APL smoke")
 
 
+@pytest.mark.parametrize("items", [
+    [],
+    [{"id": 100}],
+    [{"id": i} for i in range(1, 18)],
+])
+def test_native_cold_actor_equipment_reaches_prepare_without_python_slot_veto(items):
+    """The genuine unseeded cold source must reach Rust unchanged, even empty.
+
+    A former exactly-17-equipment assertion in create_scenario rejected both
+    the first unseeded baseline and one-item gear insertions before prepare.
+    Python must not pad gear or judge a build's source legality.
+    """
+    source = _request()
+    source["raid"]["parties"][0]["players"][0]["equipment"]["items"] = copy.deepcopy(items)
+    frozen = copy.deepcopy(source)
+    scenario = chain.create_scenario(
+        source, variant="best_apl", hostile_player_tank=True)
+    forwarded = scenario["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    assert forwarded == items
+    assert scenario["raid"]["tanks"] == [{"type": "Player", "index": 0}]
+    assert source == frozen
+
+
 def test_hostile_request_without_native_prepared_enemy_is_a_real_refusal(
     tmp_path, monkeypatch
 ):
