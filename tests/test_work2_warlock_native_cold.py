@@ -158,6 +158,58 @@ def test_unseeded_receipt_reflects_first_actual_paid_native_proposal(
     assert report["gate_recorded"] is False
 
 
+def test_neutral_actor_can_get_joint_gear_from_native_verified_slots(
+    monkeypatch
+):
+    """Cold source options must reach more than one equipment position."""
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    saved = copy.deepcopy(reference)
+    opts = options()
+    opts["items"] = [
+        {"item_id": 100, "eligibility": "native_eligible",
+         "native": {"item_id": 100, "slot": "head"}},
+        {"item_id": 101, "eligibility": "native_eligible",
+         "native": {"item_id": 101, "slot": "head"}},
+        {"item_id": 201, "eligibility": "native_eligible",
+         "native": {"item_id": 201, "slot": "chest"}},
+        {"item_id": 301, "eligibility": "proficiency_unverified",
+         "native": None},
+    ]
+    monkeypatch.setattr(cold, "proposals_from_native_talents",
+                        lambda *_args: iter([]))
+    domain = cold.native_candidate_domain(reference, opts, seed=5)
+    assert set(domain["gear_native_slots"]) == {"head", "chest"}
+    assert {"id": 301} in domain["gear_insertions"]
+
+    # Isolate the native equipment dimension; no Python item source or
+    # legality facts determine the proposed slots.
+    domain.update(talents=[], apl=[], pets=[], recovery=[])
+    propose, _ = cold.candidate_factory(reference, domain, unseeded=True)
+    candidate = propose(random.Random(11))
+    equipped = cold.actor(candidate["source"])["equipment"]["items"]
+    assert len(equipped) == 2
+    assert equipped[0] in ({"id": 100}, {"id": 101})
+    assert equipped[1] == {"id": 201}
+    assert reference == saved
+
+
+def test_neutral_actor_still_proposes_unverified_native_items_for_rust():
+    """No verified slots means a proposed bundle, not a Python veto."""
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    options_from_rust = [{"id": x} for x in range(100, 112)]
+    domain = {"gear": {}, "gear_insertions": options_from_rust,
+              "gear_native_slots": {}, "talents": [], "apl": [],
+              "pets": [], "recovery": []}
+    propose, _ = cold.candidate_factory(reference, domain, unseeded=True)
+    candidate = propose(random.Random(9))
+    equipped = cold.actor(candidate["source"])["equipment"]["items"]
+    assert len(equipped) == 8
+    assert all(item in options_from_rust for item in equipped)
+    assert cold.actor(reference)["equipment"]["items"] == []
+
+
 def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch):
     """Search must not create an unconditional Life Tap from native options."""
     reference = source()
