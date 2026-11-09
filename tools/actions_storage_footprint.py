@@ -149,6 +149,25 @@ def verify_deleted_artifacts_absent(deleted_ids, list_artifacts, *,
 
 
 
+def gc_planning_reference(local_bytes: int, public_owner_bytes: str | None) -> tuple[int, bool]:
+    """Use complete public-owner retained bytes for safe GC planning when known.
+
+    An absent, malformed or stale prior owner snapshot falls back to the
+    repository-local policy. The signal is NOT billed account usage and never
+    grants permission to remove evidence.
+    """
+    if type(local_bytes) is not int or local_bytes < 0:
+        raise ValueError("invalid local retained bytes")
+    if (not isinstance(public_owner_bytes, str)
+            or not public_owner_bytes.isascii()
+            or not public_owner_bytes.isdecimal()):
+        return local_bytes, False
+    public = int(public_owner_bytes)
+    if public < local_bytes:
+        return local_bytes, False
+    return public, True
+
+
 def inventory(repository: str, fetch_page) -> tuple[int, int]:
     """Count bytes only from a verified complete retained-artifact snapshot."""
     artifacts = verified_artifacts(repository, fetch_page)
@@ -277,6 +296,11 @@ def main() -> int:
               "of the nominal 0.5 GB included-storage reference; "
               "check actual account billing/budgets and protected evidence")
     print("BILLING_METER=UNKNOWN; public retained bytes are not billed GB-months; private repos/packages/caches omitted")
+    # Only a fully enumerated public-owner snapshot is exported to GC.
+    # Incomplete scans return earlier without publishing a false safe total.
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+            stream.write(f"retained_public_bytes={total}\\n".replace("\\n", "\n"))
     return 0
 
 
