@@ -45,7 +45,8 @@ def artifact_run_id(artifact: dict) -> int | None:
 def completed_run_candidates(
         candidates: list[dict], fetch_run, *,
         expected_workflow: str | None = None,
-        expected_name_prefix: str | None = None) -> tuple[list[dict], int]:
+        expected_name_prefix: str | None = None,
+        allowed_events: tuple[str, ...] | None = None) -> tuple[list[dict], int]:
     """Keep only artifacts from confirmed completed workflow runs.
 
     Query each distinct originating run once. A missing/malformed/mismatched
@@ -55,6 +56,8 @@ def completed_run_candidates(
     different workflow being deleted as if they were sweep diagnostics.
     When a commit-labelled name prefix is supplied, also require the artifact
     name, embedded origin SHA and fetched run SHA to agree, before deletion.
+    Restricting allowed_events preserves deliberately manually dispatched full
+    evidence artifacts; absent or unknown event metadata is deferred safely.
     """
     runs_by_id: dict[int, dict] = {}
     ready: list[dict] = []
@@ -77,6 +80,11 @@ def completed_run_candidates(
                     f"does not match {expected_workflow!r}")
             runs_by_id[run_id] = run
         run = runs_by_id[run_id]
+        if allowed_events is not None and run.get("event") not in allowed_events:
+            # A manual sweep explicitly opted into retaining full native
+            # request/response evidence. Do not treat it as disposable PR CI.
+            deferred += 1
+            continue
         if expected_name_prefix is not None:
             run_sha = run.get("head_sha")
             origin_sha = artifact["workflow_run"].get("head_sha")
