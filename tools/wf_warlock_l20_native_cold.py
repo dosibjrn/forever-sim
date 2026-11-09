@@ -20,6 +20,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# The paid workflow invokes this file directly, not as a package module.
+# Make the project-root tools namespace importable in that documented CLI.
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "integrations/mythicsim-rust"))
 
 from native_matrix import NativeUnscoredCandidate, search_native  # noqa: E402
@@ -210,6 +213,7 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
         "--binary", str(binary.resolve()), "--source", str(source.resolve()),
         "--out", str((out / "world").resolve()),
         "--targets", str(targets), "--variant", "best_apl",
+        "--hostile-player-tank",
         "--recovery-policy", "decisions",
         "--health-threshold", str(policy["health_threshold"]),
         "--mana-threshold", str(policy["mana_threshold"]),
@@ -249,6 +253,8 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
             "engine or paid recovery policy",
             raw_response=receipt, request_sha256=identity(candidate))
     if (receipt.get("target_count_requested") != targets
+            or receipt.get("hostile_player_tank_requested") is not True
+            or receipt.get("native_enemy_attack_prepared") is not True
             or receipt.get("status") != f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
             or receipt.get("native_actor_continuity_receipt_complete") is not True
             or receipt.get("native_recovery_clock_accounted") is not True

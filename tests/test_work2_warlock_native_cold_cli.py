@@ -94,3 +94,17 @@ def test_cold_cli_exit_code_matches_actual_paid_evidence(
               else "INCOMPLETE_PAID_FINALIST_EVIDENCE")
     assert status in stdout
     assert '"p6_within_one_percent": false' in stdout
+
+
+def test_direct_cold_cli_imports_project_tools_outside_repo(tmp_path):
+    """CI/user direct-script invocation must reach paid search, not fail imports."""
+    import subprocess
+    from pathlib import Path
+
+    completed = subprocess.run(
+        [sys.executable, str(Path(cold.__file__).resolve()), "--help"],
+        cwd=tmp_path, capture_output=True, text=True, check=False, timeout=30,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "--budget" in completed.stdout
+    assert "--snapshot" in completed.stdout

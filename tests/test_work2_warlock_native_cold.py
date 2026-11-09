@@ -577,6 +577,8 @@ def test_candidate_scorer_uses_existing_native_decisions_and_refuses_unpaid(
         out.mkdir(parents=True)
         candidate_source = Path(cmd[cmd.index("--source") + 1])
         row = {"target_count_requested": targets,
+               "hostile_player_tank_requested": True,
+               "native_enemy_attack_prepared": True,
                "original_source_sha256": cold.hashlib.sha256(
                    candidate_source.read_bytes()).hexdigest(),
                "native_binary_sha256": cold.hashlib.sha256(
@@ -1140,6 +1142,8 @@ def test_cold_paid_chain_scores_complete_zero_hit_route_without_extra_gate(
         out.mkdir(parents=True, exist_ok=True)
         row = {
             "target_count_requested": targets,
+            "hostile_player_tank_requested": True,
+            "native_enemy_attack_prepared": True,
             "original_source_sha256": cold.hashlib.sha256(
                 source_path.read_bytes()).hexdigest(),
             "native_binary_sha256": cold.hashlib.sha256(

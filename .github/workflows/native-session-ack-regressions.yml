@@ -173,20 +173,20 @@ jobs:
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
             --targets 2
 
-  warlock-l20-paid-hundred:
-    # Run the first real 100-target Decisions/world attempt on an exact
-    # previously tested native source. The strict eight-target preflight is
-    # NOT an approved prerequisite. Restrict this paid diagnostic to Work2's
-    # Warlock implementation branches, not every unrelated native PR.
+  warlock-l20-cold-30-300:
+    # The hostile 100/100 frozen Decisions receipt was measured on this exact
+    # Rust source in run 42632306093. Spend the NEXT paid run on the actual
+    # cold 30/300 whole-build search and distinct 100-target finalists, not a
+    # duplicate of that frozen baseline. This branch job does not record M1.
     if: startsWith(github.head_ref, 'work2/warlock-l20-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
-      - name: Checkout exact Work2 PR client
+      - name: Checkout exact Work2 cold-search client
         uses: actions/checkout@v4
         with:
           path: project
-      - name: Checkout tested Warlock Decisions and world ACK Rust
+      - name: Checkout native source from measured hostile 100/100
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
@@ -195,7 +195,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install 2D world Python dependency
+      - name: Install existing 2D world dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
       - name: Build and fingerprint exact native source
         working-directory: engine
@@ -204,39 +204,42 @@ jobs:
           test "$(git rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
           cargo build --locked --bin forever-engine
           sha256sum target/debug/forever-engine fixtures/warlock-l20-troll-best-paid.request.json
-      - name: Execute 100 distinct-target Warlock Decisions/native-world paid objective
+      - name: Execute real cold 30s snapshot, 300s continuation and paid 100-target finalists
         working-directory: project
         run: |
           set -euo pipefail
-          python -u tools/wf_warlock_l20_100mob.py \
+          python -u tools/wf_warlock_l20_native_cold.py \
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
-            --out ../warlock-l20-decisions-hundred \
-            --variant best_apl --targets 100 --recovery-policy decisions \
-            --health-threshold 1.0 --mana-threshold 1.0
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          receipt = json.loads(Path("../warlock-l20-decisions-hundred/summary.json").read_text())
-          row, = receipt["results"]
-          assert row["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS", row
-          assert row["killed"] == 100, row
-          assert row["native_recovery_clock_accounted"] is True, row
-          assert row["native_actor_continuity_receipt_complete"] is True, row
-          assert row["native_2d_paid_objective_eligible"] is True, row
-          assert receipt["p4_p5_p6_pass"] is False, receipt
-          print("WARLOCK_L20_100_NATIVE_DECISIONS_ELAPSED_NOT_COLD_SEARCH",
-                json.dumps(row, sort_keys=True), flush=True)
-          PY
-      - name: Show complete native refusal or real paid result
+            --out ../warlock-l20-cold-paid \
+            --budget 300 --snapshot 30 --seed 20261109
+      - name: Show exact cold-search receipt or native refusal
         if: always()
         run: |
-          test ! -f warlock-l20-decisions-hundred/summary.json || cat warlock-l20-decisions-hundred/summary.json
-      - name: Preserve 100-target paid Decisions native refusal and traces
+          if test -f warlock-l20-cold-paid/cold_summary.json; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('warlock-l20-cold-paid/cold_summary.json').read_text())
+          print('WARLOCK_L20_COLD_RESULT', json.dumps({
+              'cold_300_reached': data.get('cold_300_reached'),
+              'paid_screens': data.get('native_paid_screen_count'),
+              'unscored_screens': data.get('native_screen_unscored_count'),
+              'snapshot_30': data.get('snapshot_30'),
+              'final_300': data.get('final_300'),
+              'finalists': data.get('finalists'),
+              'p6_comparison': data.get('p6_comparison'),
+              'gate_recorded': data.get('gate_recorded'),
+          }, sort_keys=True), flush=True)
+          PY
+          else
+            echo "NO_COLD_SUMMARY: see native source/refusal logs"
+          fi
+      - name: Preserve paid native cold screens and 100-mob finalist evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: warlock-l20-decisions-hundred
-          path: warlock-l20-decisions-hundred/
+          name: warlock-l20-cold-paid
+          path: warlock-l20-cold-paid/
           if-no-files-found: warn
           retention-days: 3

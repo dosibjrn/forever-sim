@@ -59,7 +59,8 @@ def guarded_life_tap_action(spell_id: int, *,
     }}
 
 
-def create_scenario(request: dict, *, variant: str) -> dict:
+def create_scenario(request: dict, *, variant: str,
+                    hostile_player_tank: bool = False) -> dict:
     scenario = copy.deepcopy(request)
     encounter = scenario["encounter"]
     target = encounter["targets"][0]
@@ -79,6 +80,15 @@ def create_scenario(request: dict, *, variant: str) -> dict:
     # Defaults are scenario assumptions, not facts about WoW Forever mobs.
     target.setdefault("minBaseDamage", 20.0)
     target.setdefault("swingSpeed", 2.0)
+    if hostile_player_tank:
+        # The selected Rust source only registers enemy swings when a target
+        # is assigned to a raid tank. The old stationary fixture supplied
+        # swing damage/speed but NO tank assignment, so it never attacked.
+        # This is an explicit hostile test scenario, not Python combat rules.
+        scenario["raid"]["tanks"] = [{"type": "Player", "index": 0}]
+        target["tankIndex"] = 0
+        if "stationary" in target["name"].casefold():
+            target["name"] = "Hostile L20 player-tanked native world enemy"
     encounter["duration"] = 30
     scenario["simOptions"]["iterations"] = 8
     scenario["simOptions"]["randomSeed"] = "4242"
@@ -221,6 +231,9 @@ def main() -> None:
     p.add_argument("--targets", type=int, choices=(2, 8, 100), default=100)
     p.add_argument("--variant", choices=("all", "best_apl", "life_tap_20",
                                          "life_tap_40"), default="all")
+    p.add_argument("--hostile-player-tank", action="store_true",
+                   help="Assign the single Warlock as target tank in the native "
+                        "source request; require a prepared Rust enemy swing")
     p.add_argument("--recovery-policy", choices=("fixed", "decisions"),
                    default="fixed")
     p.add_argument("--recovery-seconds", type=int)
@@ -256,7 +269,9 @@ def main() -> None:
                 if args.variant == "all" else (args.variant,))
 
     for variant in variants:
-        scenario = create_scenario(original, variant=variant)
+        scenario = create_scenario(
+            original, variant=variant,
+            hostile_player_tank=args.hostile_player_tank)
         base = args.out / variant
         base.mkdir(parents=True, exist_ok=True)
         source_path = base / "source_request.json"
@@ -276,6 +291,7 @@ def main() -> None:
                   "scenario_swing_speed": chosen_target["swingSpeed"],
                   "scenario_target_name": chosen_target["name"],
                   "recovery_request": native_recovery,
+                  "hostile_player_tank_requested": args.hostile_player_tank,
                   "native_2d_paid_objective_eligible": False,
                   "native_health_damage_proof_required": args.require_native_health_damage}
         try:
@@ -299,6 +315,11 @@ def main() -> None:
             }
             if player["level"] != 20 or player["class"] != "ClassWarlock":
                 raise RuntimeError("Wrong real native prepared actor")
+            # Trust the Rust-prepared enemy actor, not presence of source
+            # minBaseDamage/swingSpeed or a player-hit positivity proxy.
+            record["native_enemy_attack_prepared"] = prepared.get("enemy") is not None
+            if args.hostile_player_tank and not record["native_enemy_attack_prepared"]:
+                raise RuntimeError("NATIVE_HOSTILE_ENEMY_ATTACK_NOT_PREPARED")
             print("CHAIN_STARTED", json.dumps(record), flush=True)
             result = native_world_chain(
                 args.binary, prepared_path, target_count=args.targets,
@@ -446,6 +467,7 @@ def main() -> None:
         "native_binary_sha256": binary_sha256,
         "original_source_sha256": original_source_sha256,
         "native_recovery_requested": native_recovery,
+        "hostile_player_tank_requested": args.hostile_player_tank,
         "native_consumption_proof_required": args.require_native_consumption,
         "native_health_damage_proof_required": args.require_native_health_damage,
         "cold_30_300_search_executed": False,
