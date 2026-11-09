@@ -465,7 +465,15 @@ def test_candidate_scorer_uses_existing_native_decisions_and_refuses_unpaid(
         assert cmd[cmd.index("--variant") + 1] == "best_apl"
         out = Path(cmd[cmd.index("--out") + 1])
         out.mkdir(parents=True)
+        candidate_source = Path(cmd[cmd.index("--source") + 1])
         row = {"target_count_requested": targets,
+               "original_source_sha256": cold.hashlib.sha256(
+                   candidate_source.read_bytes()).hexdigest(),
+               "native_binary_sha256": cold.hashlib.sha256(
+                   binary.read_bytes()).hexdigest(),
+               "recovery_request": {
+                   "recovery_policy": "decisions",
+                   "health_threshold": 0.7, "mana_threshold": 0.25},
                "status": (f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
                           if complete else "INCOMPLETE_UNPAID_NATIVE_RECOVERY"),
                "native_actor_continuity_receipt_complete": complete,
@@ -625,3 +633,68 @@ def test_native_refusal_preserves_its_screen_directory_and_next_paid_receipt(
     assert result["finalists"]["30s"]["status"] == (
         "COMPLETED_100_REAL_NATIVE_GSIM_KILLS")
     assert result["p4_p5_p6_pass"] is False
+
+
+
+def test_paid_chain_does_not_consume_previous_successful_run_receipt(
+    tmp_path, monkeypatch
+):
+    """An old completed 100-mob receipt cannot stand in for a new paid run."""
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"engine-current")
+    out = tmp_path / "retry"
+    world = out / "world"
+    world.mkdir(parents=True)
+    summary = world / "summary.json"
+    summary.write_text(json.dumps({"results": [{
+        "status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+        "seconds_per_mob": 1.0}]}))
+    monkeypatch.setattr(
+        cold.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0, stdout="", stderr=""))
+    candidate = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    with pytest.raises(RuntimeError, match="did not emit a structured receipt"):
+        cold.paid_chain(binary, candidate, out, targets=100, timeout=10.0)
+    assert not summary.exists()
+
+
+@pytest.mark.parametrize("wrong_field", [
+    "original_source_sha256", "native_binary_sha256", "recovery_request"
+])
+def test_paid_chain_refuses_mismatched_native_paid_provenance(
+    tmp_path, monkeypatch, wrong_field
+):
+    """Only exact current source, engine and paid-policy receipts are scored."""
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-engine-current")
+    candidate = {"source": source(), "recovery": {
+        "health_threshold": 0.7, "mana_threshold": 0.25}}
+    def runner(cmd, **_kwargs):
+        candidate_source = Path(cmd[cmd.index("--source") + 1])
+        out = Path(cmd[cmd.index("--out") + 1])
+        out.mkdir(parents=True, exist_ok=True)
+        row = {
+            "target_count_requested": 100,
+            "status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+            "native_actor_continuity_receipt_complete": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "native_2d_paid_objective_eligible": True,
+            "seconds_per_mob": 11.0,
+            "original_source_sha256": cold.hashlib.sha256(
+                candidate_source.read_bytes()).hexdigest(),
+            "native_binary_sha256": cold.hashlib.sha256(
+                binary.read_bytes()).hexdigest(),
+            "recovery_request": {
+                "recovery_policy": "decisions",
+                "health_threshold": 0.7, "mana_threshold": 0.25},
+        }
+        row[wrong_field] = "from-an-incompatible-run"
+        (out / "summary.json").write_text(json.dumps({"results": [row]}))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+    monkeypatch.setattr(cold.subprocess, "run", runner)
+    with pytest.raises(cold.NativeUnscoredCandidate, match="provenance") as exc:
+        cold.paid_chain(binary, candidate, tmp_path / "candidate",
+                        targets=100, timeout=10.0)
+    assert exc.value.raw_response[wrong_field] == "from-an-incompatible-run"
