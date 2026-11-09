@@ -1280,3 +1280,145 @@ def test_cold_workflow_inputs_are_unoptimized_native_actor_not_saved_winner():
     job = workflow.split("  warlock-l20-cold-30-300:", 1)[1]
     assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" in job
     assert "warlock-l20-troll-best-paid.request.json" not in job
+
+
+def test_native_paid_cold_fallback_uses_only_eligible_frozen_candidates(
+    tmp_path, monkeypatch
+):
+    """A 47/100-mob native refusal must not strand a second paid survivor.
+
+    The challenger already completed its real screening within 30s; this
+    retries the same engine/world 100-target chain rather than a second cold
+    search or scoring 47 kills as 100. The same genuine receipt is reused at
+    300s when the selected builds match.
+    """
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"source-native test engine")
+    now = [0.0]
+    dying = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    surviving = copy.deepcopy(dying)
+    cold.actor(surviving["source"])["talentsString"] = "101-0-0"
+    paid = []
+
+    def chain(_binary, candidate, _out, *, targets, timeout):
+        paid.append((targets, cold.identity(candidate)))
+        if targets == 2:
+            return {"seconds_per_mob": 4.0 if candidate == dying else 7.0}
+        if candidate == dying:
+            raise cold.NativeUnscoredCandidate(
+                "native actor died after 47 source-ACKed kills",
+                raw_response={
+                    "status": "INCOMPLETE_OR_NATIVE_REFUSAL",
+                    "native_exit_code": 1,
+                    "native_world_ack_kills_before_refusal": 47,
+                })
+        return {"seconds_per_mob": 8.0}
+
+    def search(**kwargs):
+        now[0] = 10.0
+        kwargs["evaluate"](dying, iterations=1, seed=3, rng_mode="balanced")
+        now[0] = 20.0
+        kwargs["evaluate"](surviving, iterations=1, seed=3, rng_mode="balanced")
+        now[0] = 300.0
+        return {"elapsed_s": 300.0, "paid_candidates": 2}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [],
+        "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=chain)
+
+    survivor_sha = cold.identity(surviving)
+    assert result["snapshot_30"]["candidate_sha256"] == survivor_sha
+    assert result["final_300"]["candidate_sha256"] == survivor_sha
+    assert result["finalists"]["30s"]["seconds_per_mob"] == 8.0
+    assert result["finalists"]["300s"]["candidate_sha256"] == survivor_sha
+    assert result["p6_comparison"]["t30_over_t300"] == 1.0
+    assert [targets for targets, _ in paid] == [2, 2, 100, 100]
+    attempted = result["native_100mob_replay_attempts"]
+    assert [row["status"] for row in attempted["30s"]] == [
+        "INCOMPLETE_100_NATIVE_FINALIST",
+        "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+    ]
+    assert attempted["30s"][0]["native_response_status"] == (
+        "INCOMPLETE_OR_NATIVE_REFUSAL")
+    assert attempted["300s"][0]["candidate_sha256"] == cold.identity(dying)
+    assert attempted["300s"][1]["candidate_sha256"] == survivor_sha
+    assert result["gate_recorded"] is False
+    assert result["p4_p5_p6_pass"] is False
+
+
+def test_native_paid_cold_selects_fastest_completed_hundred_mob_route(
+    tmp_path, monkeypatch
+):
+    """Two-target ranking is not the genuine 100-mob paid leveling objective.
+
+    A slower 2-target screen may finish 100 distinct native/world targets
+    faster, and a third screened challenger may refuse midway. Both frozen
+    windows should use the best COMPLETE measured 100-target route, with
+    exact-request replays shared rather than rerun for the later window.
+    """
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"source-native test engine")
+    now = [0.0]
+    baseline = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    faster_chain = copy.deepcopy(baseline)
+    cold.actor(faster_chain["source"])["talentsString"] = "101-0-0"
+    refused = copy.deepcopy(baseline)
+    cold.actor(refused["source"])["talentsString"] = "102-0-0"
+    paid = []
+
+    def chain(_binary, candidate, _out, *, targets, timeout):
+        paid.append((targets, cold.identity(candidate)))
+        if targets == 2:
+            return {"seconds_per_mob": {
+                cold.identity(baseline): 4.0,
+                cold.identity(faster_chain): 7.0,
+                cold.identity(refused): 9.0,
+            }[cold.identity(candidate)]}
+        if candidate == refused:
+            raise cold.NativeUnscoredCandidate(
+                "native 100-target replay stopped at mob 60",
+                raw_response={"status": "INCOMPLETE_OR_NATIVE_REFUSAL",
+                              "native_world_ack_kills_before_refusal": 60})
+        return {"seconds_per_mob": 20.0 if candidate == baseline else 8.0}
+
+    def search(**kwargs):
+        for elapsed, candidate in [
+            (10.0, baseline), (20.0, faster_chain), (25.0, refused),
+        ]:
+            now[0] = elapsed
+            kwargs["evaluate"](candidate, iterations=1, seed=7,
+                               rng_mode="balanced")
+        now[0] = 300.0
+        return {"elapsed_s": 300.0, "paid_candidates": 3}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [], "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=chain)
+
+    winner = cold.identity(faster_chain)
+    assert result["snapshot_30"]["candidate_sha256"] == winner
+    assert result["final_300"]["candidate_sha256"] == winner
+    assert result["finalists"]["30s"]["seconds_per_mob"] == 8.0
+    assert result["finalists"]["300s"]["seconds_per_mob"] == 8.0
+    assert result["p6_comparison"]["within_one_percent"] is True
+    assert [targets for targets, _ in paid] == [2, 2, 2, 100, 100, 100]
+    attempts = result["native_100mob_replay_attempts"]
+    assert [row["native_100mob_seconds_per_mob"] for row in attempts["30s"]] == [
+        20.0, 8.0, None,
+    ]
+    assert [row["status"] for row in attempts["300s"]] == [
+        "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+        "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+        "INCOMPLETE_100_NATIVE_FINALIST",
+    ]
+    assert result["gate_recorded"] is False
+    assert result["p4_p5_p6_pass"] is False
