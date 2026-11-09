@@ -41,6 +41,38 @@ def artifact_run_id(artifact: dict) -> int | None:
     return run_id if type(run_id) is int and run_id > 0 else None
 
 
+
+def completed_run_candidates(
+        candidates: list[dict], fetch_run) -> tuple[list[dict], int]:
+    """Keep only artifacts from confirmed completed workflow runs.
+
+    Query each distinct originating run once. A missing/malformed/mismatched
+    response aborts the entire planning phase before any DELETE request;
+    queued, in-progress, waiting and other non-completed runs stay protected.
+    """
+    finished_by_run: dict[int, bool] = {}
+    ready: list[dict] = []
+    deferred = 0
+    for artifact in candidates:
+        run_id = artifact_run_id(artifact)
+        if run_id is None:
+            raise ValueError("cannot delete an artifact without a valid run ID")
+        if run_id not in finished_by_run:
+            run = fetch_run(run_id)
+            if (not isinstance(run, dict)
+                    or type(run.get("id")) is not int
+                    or run["id"] != run_id
+                    or not isinstance(run.get("status"), str)
+                    or not run["status"]):
+                raise ValueError(f"run {run_id}: missing or mismatched completion status")
+            finished_by_run[run_id] = run["status"] == "completed"
+        if finished_by_run[run_id]:
+            ready.append(artifact)
+        else:
+            deferred += 1
+    return ready, deferred
+
+
 def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
     """Read evidence in working tree; unreadable files fail closed."""
     runs: set[int] = set()
