@@ -20,6 +20,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# The paid workflow invokes this file directly, not as a package module.
+# Make the project-root tools namespace importable in that documented CLI.
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "integrations/mythicsim-rust"))
 
 from native_matrix import NativeUnscoredCandidate, search_native  # noqa: E402
