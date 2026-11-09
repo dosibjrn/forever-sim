@@ -514,9 +514,10 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
     request = json.loads(prepared.read_text())
-    if require_native_health_damage and (not isinstance(request.get("enemy"), dict)
-            or request.get("target", {}).get("auto_swing_melee") is not True):
-        raise ValueError("RUST_WORLD_NATIVE_ATTACK_SOURCE_MISSING")
+    # PreparedV2 has a native "target" attack actor, not an "enemy" key.
+    # Never pre-veto its real source-health probe using a Python shape guess.
+    # The actual native per-window damage receipt must still be observed and
+    # strictly positive when require_native_health_damage is requested.
     source_hash = request["request_sha256"]
     if not isinstance(source_hash, str) or len(source_hash) != 64:
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
