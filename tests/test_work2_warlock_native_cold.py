@@ -485,6 +485,36 @@ def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
 
 
 
+def test_elite_mutations_sample_prepared_and_broad_rust_apl_actions():
+    """Later native search explores both prepared actions and broad alternatives.
+
+    Source preparation ranks proposals but does not become a new Python
+    legality gate or exclude unseen source-backed action IDs.
+    """
+    reference = source()
+    frozen = copy.deepcopy(reference)
+    prepared = {"action": {"castSpell": {"spellId": {"spellId": 6222}}}}
+    broad = {"action": {"castSpell": {"spellId": {"spellId": 1219479}}}}
+    domain = {
+        "gear": {}, "talents": [], "apl": [[broad]],
+        "apl_actions": [broad], "prepared_apl_actions": [prepared],
+        "pets": [], "recovery": [],
+    }
+    _, mutate = cold.candidate_factory(reference, domain)
+    baseline = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+    rotations = [
+        cold.actor(mutate(baseline, random.Random(seed))["source"])[
+            "rotation"]["priorityList"]
+        for seed in range(120)
+    ]
+    assert any(prepared in rotation for rotation in rotations)
+    assert any(broad in rotation for rotation in rotations)
+    assert reference == frozen
+
+
 def test_native_apl_elite_mutations_reorder_and_remove_without_resetting():
     """An elite can reposition/prune Rust-action proposals in one paid trial."""
     reference = source()
