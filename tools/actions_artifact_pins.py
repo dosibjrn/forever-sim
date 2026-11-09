@@ -12,6 +12,13 @@ _RUN = re.compile(r"actions/runs/(\d+)")
 _ARTIFACT = re.compile(r"/artifacts/(\d+)")
 # Accepted native receipts may preserve an artifact only by its JSON ID.
 _ARTIFACT_ID_FIELD = re.compile(r'"artifact_id"\s*:\s*"?([0-9]+)"?')
+# Human prose in retained evidence and issue/PR discussion often records only
+# "artifact #123" or "artifact ID: 123", without a URL or JSON field.
+# Those are explicit artifact references and must pin the original evidence.
+_ARTIFACT_PROSE_ID = re.compile(
+    r"\bartifact\s+(?:#\s*|id\s*[:=#]?\s*)([1-9]\d*)\b",
+    flags=re.IGNORECASE,
+)
 # Machine-readable receipts can reference a workflow run only by numeric ID.
 # Non-numeric internal runtime-proof IDs must not be treated as Actions runs.
 _RUN_ID_FIELD = re.compile(
@@ -25,6 +32,7 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     runs.update(int(match) for match in _RUN.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_ID_FIELD.findall(text))
+    artifacts.update(int(match) for match in _ARTIFACT_PROSE_ID.findall(text))
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
 
 
