@@ -437,3 +437,41 @@ def test_live_gc_does_not_delete_manually_opted_in_full_sweep_evidence():
     assert 'allowed_events=("pull_request", "push")' in workflow
     assert workflow.index('allowed_events=("pull_request", "push")') < workflow.index(
         "planned = []")
+
+
+def test_human_artifact_prose_references_pin_issue_and_review_evidence():
+    """A referenced artifact ID does not need a link or JSON property."""
+    runs, artifacts = set(), set()
+    record_references(
+        "Native failure artifact #12940323970; replay artifact ID: 9876; "
+        "additional ARTIFACT id=42. Not issue #1052 or 2026 logs.",
+        runs, artifacts)
+    assert runs == set()
+    assert artifacts == {12940323970, 9876, 42}
+
+
+def test_local_prose_only_artifact_id_survives_pin_scan(tmp_path):
+    """The real GC scans retained markdown as well as GitHub discussions."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    evidence = tmp_path / "docs/evidence/p7/receipt.md"
+    evidence.parent.mkdir(parents=True, exist_ok=True)
+    evidence.write_text(
+        "Preserved frozen holdout: artifact #12940323970; no link recorded.",
+        encoding="utf-8")
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == set()
+    assert artifacts == {12940323970}
+
+
+def test_artifact_prose_parser_does_not_pin_unlabelled_numbers():
+    runs, artifacts = set(), set()
+    record_references(
+        "Issue #12940323970, run 42, version 9876, "
+        "a generic artifact without an ID; malformed artifact #0.",
+        runs, artifacts)
+    assert runs == set()
+    assert artifacts == set()
