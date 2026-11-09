@@ -47,6 +47,15 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     player = actor(reference)
     items = player["equipment"]["items"]
     gear = native_equipment_proposals(options, items)
+    # A source-native cold actor can start with no equipped items. The usual
+    # replacement proposals require an occupied structural position, so expose
+    # Rust-returned items as insertions for this case. Native prepare/combat
+    # alone decides which inserted or combined items are legal and executable.
+    gear_insertions = (list({row["item_id"]: {"id": row["item_id"]}
+                             for row in options["items"]
+                             if isinstance(row, dict)
+                             and type(row.get("item_id")) is int}.values())
+                       if not items else [])
     source_talents = player.get("talentsString", "0-0-0")
     # The frozen request is already submitted first as a real paid baseline.
     # Do not advertise it again as a native talent mutation when Rust supplied
@@ -102,7 +111,8 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
         row["proto_enum_value"] for row in options.get("pets", [])
         if isinstance(row, dict) and type(row.get("proto_enum_value")) is int
     ))
-    return {"gear": gear, "talents": talents,
+    return {"gear": gear, "gear_insertions": gear_insertions,
+            "talents": talents,
             "apl": unique_apl, "apl_actions": unique_actions, "pets": pets,
             # These are recovery *policy proposals*, not Python regen mechanics.
             "recovery": [(0.35, 0.10), (0.50, 0.10),
@@ -119,7 +129,8 @@ def candidate_factory(reference: dict, domain: dict):
         # one used to raise IndexError before a paid native evaluation.
         # This is proposal sampling, never a Python build-legality veto.
         axes = tuple(axis for axis in ("gear", "talents", "apl", "recovery")
-                     if domain.get(axis))
+                     if domain.get(axis) or
+                     (axis == "gear" and domain.get("gear_insertions")))
         if domain.get("pets"):
             axes += ("pet",)
         if not axes:
@@ -131,10 +142,21 @@ def candidate_factory(reference: dict, domain: dict):
         selected = rng.sample(axes, rng.randint(minimum, maximum))
         player = actor(value["source"])
         for axis in selected:
-            if axis == "gear" and domain["gear"]:
-                position = rng.choice(list(domain["gear"]))
-                player["equipment"]["items"][position] = copy.deepcopy(
-                    rng.choice(domain["gear"][position]))
+            if axis == "gear":
+                equipped = player["equipment"]["items"]
+                insertions = domain.get("gear_insertions") or []
+                # Source-native empty gear has no replacement positions. An
+                # insertion can be recombined with a later insertion/replace
+                # without constructing a Python equipment legality catalogue.
+                if insertions and (not equipped or rng.random() < 0.6):
+                    equipped.append(copy.deepcopy(rng.choice(insertions)))
+                elif insertions:
+                    equipped[rng.randrange(len(equipped))] = copy.deepcopy(
+                        rng.choice(insertions))
+                elif domain.get("gear"):
+                    position = rng.choice(list(domain["gear"]))
+                    equipped[position] = copy.deepcopy(
+                        rng.choice(domain["gear"][position]))
             elif axis == "talents":
                 player["talentsString"] = rng.choice(domain["talents"])
             elif axis == "apl":
