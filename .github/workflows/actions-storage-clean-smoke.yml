@@ -64,3 +64,6 @@ jobs:
           awk -F '\t' '{n++; total += $3} END {printf "Active artifact bytes: %.0f (%.2f MiB) from %d artifacts\\n", total, total/1048576, n}' "$RUNNER_TEMP/actions-artifacts.tsv"
           echo 'Largest currently retained artifacts (id, name, bytes, created_at, run):'
           sort -t "$(printf '\t')" -k3,3nr "$RUNNER_TEMP/actions-artifacts.tsv" | sed -n '1,15p'
+          echo 'Largest artifact families (size MiB, count, prefix):'
+          awk -F '\t' '{name=$2; sub(/-[0-9a-f]{40}$/, "", name); total[name]+=$3; count[name]++} END {for(name in total) printf "%.2f\t%d\t%s\\n", total[name]/1048576, count[name], name}' "$RUNNER_TEMP/actions-artifacts.tsv" | sort -k1,1nr | sed -n '1,25p'
+
