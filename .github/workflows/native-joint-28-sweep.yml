@@ -2,6 +2,12 @@ name: Work2 — Native Rust joint 28-profile stage-5 sweep
 
 on:
   workflow_dispatch:
+    inputs:
+      retain_full_evidence:
+        description: 'Opt in to uploading the entire ~20-60 MB native request/response directory'
+        type: boolean
+        default: false
+        required: false
   pull_request:
     branches:
       - main
@@ -146,11 +152,22 @@ jobs:
             cat artifacts/native-joint-28-stage5/provenance.json >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Upload exact native paid requests, responses and 28-row matrix
+      - name: Upload compact native matrix and provenance
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-joint-28-summary-${{ github.sha }}
+          path: |
+            project/artifacts/native-joint-28-stage5/matrix.md
+            project/artifacts/native-joint-28-stage5/provenance.json
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Upload full native paid request-response evidence when explicitly requested
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.retain_full_evidence }}
         uses: actions/upload-artifact@v4
         with:
           name: native-joint-28-stage5-${{ github.sha }}
           path: project/artifacts/native-joint-28-stage5/
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 7
