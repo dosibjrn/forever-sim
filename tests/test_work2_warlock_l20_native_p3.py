@@ -685,3 +685,32 @@ def test_warlock_p3_pays_second_native_item_when_first_scores_equal():
     assert capped["paid_attempts"] == 2
     assert capped["status"] == "PAID_NATIVE_EQUAL"
     assert capped["comparison"]["delta_dps"] == 0.0
+
+
+def test_warlock_p3_skips_duplicate_equipped_ids_before_native_paid_cap():
+    """Source duplicates must not hide a later distinct, paid Rust proposal."""
+    original = source()
+    seen = []
+
+    def evaluator(binary, request, iterations, seed, mode, deadline, **kwargs):
+        assert mode == "balanced"
+        assert kwargs["actor_level"] == 20
+        assert kwargs["objective"] == "DPS"
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
+        seen.append(item_id)
+        return (9.0 if item_id == 901 else 10.0), {}, 0.01, f"paid-{item_id}"
+
+    receipt = compare_equipped_native(
+        "selected-engine", original,
+        {"head": {"selected_ids": [100, 100, 900, 901]}},
+        class_key="warlock", level=20, max_paid_attempts=3,
+        evaluator=evaluator, preparer=prepared)
+
+    assert seen == [100, 900, 901]
+    assert receipt["paid_attempts"] == 3
+    assert receipt["native_slots_requested"] == 1
+    assert receipt["native_slots_valid"] == 2
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["comparison"]["delta_dps"] == -1.0
+    assert receipt["swap"]["to_id"] == 901
+    assert original == source()
