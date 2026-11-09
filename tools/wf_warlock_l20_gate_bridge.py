@@ -49,7 +49,8 @@ def _execute() -> dict:
         cold = run_cold(
             request, options, binary=binary, out=output,
             seed=int(os.environ.get("FOREVER_P4_P5_WARLOCK_L20_SEED",
-                                    "20261109")))
+                                    "20261109")),
+            unseeded=True)
     except Exception as exc:
         return _rejected("WARLOCK_NATIVE_COLD_EXECUTION_REFUSED:"
                          + type(exc).__name__ + ":" + str(exc)[-400:])
@@ -105,6 +106,10 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
         },
     }
     reasons = []
+    # P4/P5 require an unseeded cold start. A paid reference winner is a
+    # genuine native run, but cannot substitute for cold discovery.
+    if cold.get("unseeded_cold_start") is not True:
+        reasons.append("P4_P5_NATIVE_COLD_UNSEEDED_START_NOT_OBSERVED")
     first = cold.get("snapshot_30")
     last = cold.get("final_300")
     if cold.get("cold_300_reached") is not True:
