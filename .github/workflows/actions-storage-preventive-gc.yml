@@ -122,8 +122,9 @@ jobs:
           # Submitted review *bodies* are not inline review comments. Collect
           # every PR's review references before deletion. Batch GraphQL to avoid
           # 1,000+ individual REST requests against GITHUB_TOKEN's hourly limit.
-          # GraphQL errors or missing pages fail closed; overflow falls back to
-          # the paginated REST reader, never silently truncates review evidence.
+          # Ten reviews/PR keep GraphQL points low; overflow falls back to
+          # full REST pagination. GraphQL errors or missing pages fail closed.
+          # Never silently truncate review evidence.
           all_prs = gh_collection("pulls?state=all")
           owner, name = repo.split("/", 1)
           review_count = 0
@@ -131,7 +132,7 @@ jobs:
               batch = all_prs[offset:offset + 20]
               fields = " ".join(
                   f"p{i}: pullRequest(number: {int(pr['number'])}) "
-                  "{ reviews(first: 100) { nodes { body } "
+                  "{ reviews(first: 10) { nodes { body } "
                   "pageInfo { hasNextPage } } }"
                   for i, pr in enumerate(batch))
               query = (f'query {{ repository(owner: "{owner}", name: "{name}") '
