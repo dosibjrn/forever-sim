@@ -119,8 +119,12 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                          (0.50, 0.25), (0.70, 0.25)]}
 
 
-def candidate_factory(reference: dict, domain: dict):
-    """Cold whole-build proposals and native-sourced mutations, never seeded scores."""
+def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
+    """Cold whole-build proposals and native-sourced mutations, never seeded scores.
+
+    For approved cold gates, the first proposal must also be a native-sourced
+    mutation, not a replay of a previously selected reference winner.
+    """
     def mutate(candidate: dict, rng: random.Random, *, cold: bool = False) -> dict:
         value = {"source": copy.deepcopy(reference),
                  "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}
@@ -209,7 +213,7 @@ def candidate_factory(reference: dict, domain: dict):
 
     def propose(rng):
         nonlocal reference_proposed
-        if not reference_proposed:
+        if not reference_proposed and not unseeded:
             reference_proposed = True
             return {
                 "source": copy.deepcopy(reference),
@@ -295,7 +299,7 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
 def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
              seed: int = 20261109, budget_s: float = 300.0,
              snapshot_s: float = 30.0, clock=time.monotonic,
-             chain=paid_chain) -> dict:
+             chain=paid_chain, unseeded: bool = False) -> dict:
     """One 30/300s cold search; snapshot only paid results completed by 30s.
 
     All screening calls execute actual retained-actor native/world Decisions
@@ -310,7 +314,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         raise ValueError("WRONG_NATIVE_WARLOCK_L20_SOURCE")
     out.mkdir(parents=True, exist_ok=True)
     domain = native_candidate_domain(reference, options, seed)
-    propose, mutate = candidate_factory(reference, domain)
+    propose, mutate = candidate_factory(reference, domain, unseeded=unseeded)
     start = clock()
     deadline = start + budget_s
     early = None
@@ -505,6 +509,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "budget_s": budget_s, "snapshot_s": snapshot_s,
         "elapsed_search_s": search["elapsed_s"],
         "search_seed": seed,
+        "unseeded_cold_start": unseeded,
         # Actual completed native-paid comparisons either side of the
         # 30s cut; attempted/refused and late payments are not credited.
         "native_paid_before_snapshot": sum(
@@ -689,6 +694,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261109)
     parser.add_argument("--budget", type=float, default=300.0)
     parser.add_argument("--snapshot", type=float, default=30.0)
+    parser.add_argument("--unseeded", action="store_true",
+                        help="Start with a source-native mutation, never pay the input reference as a saved winner")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--two-target-screen", action="store_true",
                       help="Measure one real paid 2-target candidate only; no cold gate")
@@ -733,13 +740,14 @@ def main() -> None:
     options = query_native_options(args.binary, "warlock", 20)
     result = run_cold(source, options, binary=args.binary, out=args.out,
                       seed=args.seed, budget_s=args.budget,
-                      snapshot_s=args.snapshot)
+                      snapshot_s=args.snapshot, unseeded=args.unseeded)
     complete = cold_search_has_paid_finalist_evidence(result)
     print("WARLOCK_NATIVE_COLD_PAID_SEARCH", json.dumps({
         "status": result["native_search"]["status"],
         "evidence_status": ("COMPLETED_PAID_FINALISTS" if complete
                             else "INCOMPLETE_PAID_FINALIST_EVIDENCE"),
         "native_paid_screen_count": result["native_paid_screen_count"],
+        "unseeded_cold_start": result["unseeded_cold_start"],
         "finalists": {k: row["status"] for k, row in result["finalists"].items()},
         "p6_within_one_percent": (
             result["p6_comparison"].get("within_one_percent")
