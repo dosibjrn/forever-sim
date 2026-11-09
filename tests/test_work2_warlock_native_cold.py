@@ -404,8 +404,12 @@ def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
     apl_only = dict(domain, gear={}, talents=[], pets=[], recovery=[])
     propose_apl, _ = cold.candidate_factory(reference, apl_only)
     propose_apl(random.Random(5))  # genuine frozen first paid proposal
-    assert cold.actor(propose_apl(random.Random(5))["source"])[
-        "rotation"]["priorityList"] in domain["apl"]
+    composed = cold.actor(propose_apl(random.Random(5))["source"])[
+        "rotation"]["priorityList"]
+    baseline = cold.actor(reference)["rotation"]["priorityList"]
+    assert composed[-len(baseline):] == baseline
+    assert {a["action"]["castSpell"]["spellId"]["spellId"]
+            for a in composed[:-len(baseline)]} == {998, 999}
 
 
 
