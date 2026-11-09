@@ -444,8 +444,9 @@ def render_guide(report: dict) -> str:
         lines += ["## Native refusals (not scored)", ""]
         for refused in report["native_refusals"]:
             lines.append(f"- {refused['variant']}: {refused['status']}, "
-                         f"killed={refused.get('killed')}, "
-                         f"error={refused.get('error')}")
+                         + (f"L{refused['level']}, " if refused.get("level") else "")
+                         + f"killed={refused.get('killed')}, "
+                         + f"error={refused.get('error')}")
         lines.append("")
     lines += [
         "## Route and dual spec",
@@ -463,12 +464,41 @@ def render_guide(report: dict) -> str:
     return "\n".join(lines)
 
 
+def refusal_from_native_proposal(proposal: dict) -> dict:
+    """Keep native actor/source refusals as unmeasured route evidence."""
+    if (not isinstance(proposal, dict) or
+            proposal.get("kind") != "adjacent_native_warlock_candidate" or
+            proposal.get("status") not in (
+                "NATIVE_ACTOR_LEVEL_UNSUPPORTED",
+                "NATIVE_PREPARE_REFUSED_ALL_PROPOSALS")):
+        raise ValueError("expected refused adjacent native Warlock proposal")
+    level = proposal.get("to_level")
+    refusals = proposal.get("native_refusals")
+    if (type(level) is not int or not 10 <= level <= 60
+            or not isinstance(refusals, list) or not refusals):
+        raise ValueError("native proposal refusal lacks level or actual native details")
+    first = refusals[0]
+    if not isinstance(first, dict) or not first.get("reason"):
+        raise ValueError("native proposal refusal lacks source reason")
+    return {
+        "variant": f"native_actor_L{level}", "level": level,
+        "status": proposal["status"], "error": first["reason"],
+        "native_refusal_code": first.get("native_refusal_code"),
+        "native_binary_sha256": proposal.get("native_binary_sha256"),
+        "original_source_sha256": proposal.get("original_source_sha256"),
+        "attempted": proposal.get("attempted", len(refusals)),
+        "native_refusals": refusals, "killed": None,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--observations", type=Path, help="Native observation manifest (default: historical L20 evidence)")
     parser.add_argument("--cold-summary", type=Path, help="Read actual native cold_summary.json finalists instead")
     parser.add_argument("--native-summary", type=Path, action="append",
                         help="Import paid native 100-target summary.json; repeat for different levels")
+    parser.add_argument("--native-proposal", type=Path,
+                        help="Publish a native-refused adjacent level as unmeasured, not a 100-kill result")
     parser.add_argument("--baseline-observations", type=Path,
                         help="Append previously published source-native observations to the new paid receipt")
     parser.add_argument("--execute-native", action="store_true",
@@ -487,8 +517,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     if sum(bool(x) for x in (args.observations, args.cold_summary,
-                             args.native_summary, args.execute_native)) > 1:
-        parser.error("choose one input: --observations, --cold-summary, --native-summary, or --execute-native")
+                             args.native_summary, args.execute_native,
+                             args.native_proposal)) > 1:
+        parser.error("choose one input: --observations, --cold-summary, --native-summary, --native-proposal, or --execute-native")
     if args.execute_native and not 10 <= args.actor_level <= 60:
         parser.error("--actor-level must be in 10..60")
     if not args.execute_native and args.actor_level != 20:
@@ -500,8 +531,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--execute-native requires --binary and --source")
     if not args.execute_native and (args.binary or args.source):
         parser.error("--binary/--source require --execute-native")
-    if args.baseline_observations and not (args.native_summary or args.execute_native):
-        parser.error("--baseline-observations requires --native-summary or --execute-native")
+    if args.baseline_observations and not (args.native_summary or args.execute_native or args.native_proposal):
+        parser.error("--baseline-observations requires --native-summary, --native-proposal or --execute-native")
     if (args.native_summary or args.execute_native) and args.run_url is None:
         # Local receipts are first-class and must never pretend to be an old CI run.
         pass
@@ -516,6 +547,21 @@ def main(argv: list[str] | None = None) -> int:
                 json.loads(args.cold_summary.read_text()),
                 run_url=args.run_url, trial=args.trial),
         }
+    elif args.native_proposal:
+        refusal = refusal_from_native_proposal(json.loads(args.native_proposal.read_text()))
+        rows = []
+        prior_refusals = []
+        if args.baseline_observations:
+            baseline = build_route_report(json.loads(args.baseline_observations.read_text()))
+            if baseline["start_level"] != 10 or baseline["end_level"] != 60:
+                raise ValueError("baseline observations must cover the same L10-60 report scope")
+            rows = list(baseline["observations"])
+            prior_refusals = list(baseline["native_refusals"])
+        payload = {"schema_version": 1, "class": "warlock",
+                   "start_level": 10, "end_level": 60,
+                   "observations": rows,
+                   "native_refusals": prior_refusals + [refusal]}
+        refused_only = True
     elif args.native_summary or args.execute_native:
         paths = ([execute_native_level(
             binary=args.binary, source=args.source, out=args.out,
