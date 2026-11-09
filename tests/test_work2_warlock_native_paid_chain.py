@@ -407,7 +407,9 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
     assert record["native_consumption_proof_required"] is True
     assert record["native_consumption_proven"] is False
     assert record["native_health_damage_proof_required"] is True
-    assert record["native_health_damage_proven"] is False
+    # Independent native health proof remains true despite a failed
+    # food/water requirement; no combined completion is earned.
+    assert record["native_health_damage_proven"] is True
     assert record["native_health_damage"]["damage_taken"] == 35.
     assert record["seconds_per_mob"] is None
     assert record["native_2d_paid_objective_eligible"] is False
@@ -473,6 +475,8 @@ def test_strict_health_refusal_retains_real_eight_target_decisions_receipt(
     assert record["native_food_seconds"] == 6.
     assert record["native_water_seconds"] == 10.
     assert record["native_water_mana_gain"] == 140.
+    assert record["native_consumption_proven"] is True
+    assert record["native_health_damage_proven"] is False
     assert record["native_health_damage"] == {
         "observed": True, "damage_taken": 0., "damage_events": 0}
     assert record["status"] == "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT"
