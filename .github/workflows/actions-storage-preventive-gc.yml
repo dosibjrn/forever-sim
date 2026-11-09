@@ -17,6 +17,8 @@ on:
 permissions:
   contents: read
   actions: write
+  issues: read
+  pull-requests: read
 
 concurrency:
   group: clean-actions-artifact-gc
@@ -40,6 +42,7 @@ jobs:
           import os
           import pathlib
           import re
+          import subprocess
           import urllib.error
           import urllib.request
 
@@ -89,34 +92,66 @@ jobs:
           print(f"STAGE5 count={len(stage5)} bytes={stage5_bytes} MiB={stage5_bytes/1048576:.2f}")
 
           pinned_runs = set()
+          pinned_artifacts = set()
           for folder in ("docs", "evidence"):
               for file in pathlib.Path(folder).rglob("*.md"):
                   try:
-                      pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", file.read_text(errors="replace"))))
+                      body = file.read_text(errors="replace")
+                      pinned_runs.update(map(int, re.findall(r"actions/runs/(\\d+)", body)))
+                      pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\\d+)", body)))
                   except OSError:
                       pass
           for file in ("OVERALL_PLAN.md", "PROCESS.md", "README.md"):
-              pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", pathlib.Path(file).read_text(errors="replace"))))
+              body = pathlib.Path(file).read_text(errors="replace")
+              pinned_runs.update(map(int, re.findall(r"actions/runs/(\\d+)", body)))
+              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\\d+)", body)))
 
+          def gh_collection(endpoint):
+              entries = []
+              for page in range(1, 100):
+                  url = f"repos/{repo}/{endpoint}&per_page=100&page={page}"
+                  result = subprocess.run(["gh", "api", url], capture_output=True, text=True, check=True)
+                  batch = json.loads(result.stdout)
+                  if not isinstance(batch, list):
+                      raise RuntimeError(f"Expected list from {endpoint}")
+                  entries.extend(batch)
+                  if len(batch) < 100:
+                      return entries
+              raise RuntimeError(f"Too many pages of {endpoint}")
+
+          # Protect issue/PR-referenced run artifacts; do not treat a closed
+          # PR as proof its exact native evidence is disposable.
+          issues = gh_collection("issues?state=all")
+          for issue in issues:
+              body = issue.get("body") or ""
+              pinned_runs.update(map(int, re.findall(r"actions/runs/(\\d+)", body)))
+              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\\d+)", body)))
+          open_prs = gh_collection("pulls?state=open")
+          open_branches = {p["head"]["ref"] for p in open_prs
+                           if p.get("head", {}).get("repo", {}).get("full_name") == repo}
           keep_recent = {int(a["id"]) for a in stage5[:5]}
+          # Protect newest two outputs on every still-open PR branch.
+          active_branch_counts = {}
+          for a in stage5:
+              branch = (a.get("workflow_run") or {}).get("head_branch")
+              if branch in open_branches and active_branch_counts.get(branch, 0) < 2:
+                  keep_recent.add(int(a["id"]))
+                  active_branch_counts[branch] = active_branch_counts.get(branch, 0) + 1
           candidates = []
-          protected = {"recent-five": 0, "project-linked": 0, "non-main-branch": 0, "younger-than-72h": 0}
+          protected = {"newest-or-active-head": 0, "project-or-issue-linked": 0, "younger-than-72h": 0}
           for a in reversed(stage5):
               aid = int(a["id"])
               run = a.get("workflow_run") or {}
               run_id = int(run.get("id") or 0)
-              branch = run.get("head_branch")
               if aid in keep_recent:
-                  protected["recent-five"] += 1
-              elif run_id in pinned_runs:
-                  protected["project-linked"] += 1
-              elif branch != "main":
-                  protected["non-main-branch"] += 1
+                  protected["newest-or-active-head"] += 1
+              elif run_id in pinned_runs or aid in pinned_artifacts:
+                  protected["project-or-issue-linked"] += 1
               elif created(a) >= cutoff:
                   protected["younger-than-72h"] += 1
               else:
                   candidates.append(a)
-          print(f"PROTECTED {protected}; known linked run IDs={len(pinned_runs)}")
+          print(f"PROTECTED {protected}; known linked run IDs={len(pinned_runs)}; linked artifact IDs={len(pinned_artifacts)}; open PR branches={len(open_branches)}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
               print(f"CANDIDATE id={a['id']} bytes={a['size_in_bytes']} run={(a.get('workflow_run') or {}).get('id')} age={a['created_at']}")
