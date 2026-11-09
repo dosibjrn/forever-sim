@@ -413,3 +413,5 @@ jobs:
           name: live-gsim-go-world-effect-ack-not-p7
           path: evidence/
           if-no-files-found: warn
+
+          retention-days: 7
