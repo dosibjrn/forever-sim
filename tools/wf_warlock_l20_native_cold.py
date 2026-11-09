@@ -105,12 +105,27 @@ def candidate_factory(reference: dict, domain: dict):
                     # spells, so a valid multi-spell challenger is unreachable.
                     # Rust remains the only judge of executable rotations.
                     rotation = player["rotation"]["priorityList"]
-                    action = copy.deepcopy(rng.choice(actions))
-                    operation = rng.choice(("replace", "insert"))
-                    if operation == "replace" and rotation:
-                        rotation[rng.randrange(len(rotation))] = action
+                    if len(rotation) > 1 and rng.random() > 0.70:
+                        # Reorder/prune an evolved policy in one mutation:
+                        # replacing its whole APL loses previously discovered
+                        # Rust actions, while elite-only search cannot rely on
+                        # keeping a worse intermediate edit. Never delete the
+                        # last action; Rust judges executable candidates.
+                        operation = rng.choice(("move", "remove"))
+                        index = rng.randrange(len(rotation))
+                        if operation == "move":
+                            entry = rotation.pop(index)
+                            rotation.insert(rng.randrange(len(rotation) + 1),
+                                            entry)
+                        else:
+                            rotation.pop(index)
                     else:
-                        rotation.insert(rng.randrange(len(rotation) + 1), action)
+                        action = copy.deepcopy(rng.choice(actions))
+                        operation = rng.choice(("replace", "insert"))
+                        if operation == "replace" and rotation:
+                            rotation[rng.randrange(len(rotation))] = action
+                        else:
+                            rotation.insert(rng.randrange(len(rotation) + 1), action)
                 else:
                     player["rotation"]["priorityList"] = copy.deepcopy(
                         rng.choice(domain["apl"]))
