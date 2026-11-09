@@ -881,12 +881,14 @@ def test_paid_world_scenario_preserves_explicit_hostile_source_parameters():
         "minBaseDamage": 4,
         "tankIndex": 0,
     })
+    target["stats"][32] = 765.0  # source-provided HP, not the generic proxy
     before = copy.deepcopy(reference)
     scenario = paid_world.create_scenario(reference, variant="best_apl")
     native_target = scenario["encounter"]["targets"][0]
     assert native_target["name"] == "Explicit attacking source L20 target"
     assert native_target["swingSpeed"] == 0.75
     assert native_target["minBaseDamage"] == 4
+    assert native_target["stats"][32] == 765.0
     assert native_target["tankIndex"] == 0
     assert scenario["encounter"]["duration"] == 30
     assert reference == before  # no source mutation across paid candidates
@@ -904,4 +906,64 @@ def test_paid_world_scenario_uses_proxy_attacks_only_when_not_supplied():
     assert native_target["name"] == "CMaNGOS Classic-proxy ordinary L20 enemy"
     assert native_target["swingSpeed"] == 2.0
     assert native_target["minBaseDamage"] == 20.0
+    assert native_target["stats"][32] == paid_world.representative_hp(20)
+    assert reference["encounter"]["targets"][0]["stats"][32] == 0
     assert "swingSpeed" not in reference["encounter"]["targets"][0]
+
+
+def test_paid_world_refusal_receipt_identifies_actual_hostile_target(
+    tmp_path, monkeypatch
+):
+    """Even on a native refusal, the saved request must not claim proxy HP/damage."""
+    from tools import wf_warlock_l20_100mob as paid_world
+
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = [{"id": 100}] * 17
+    target = reference["encounter"]["targets"][0]
+    target.update({
+        "name": "Source-selected hostile",
+        "stats": [0] * 40,
+        "minBaseDamage": 4,
+        "swingSpeed": 0.75,
+    })
+    target["stats"][32] = 765
+    request = tmp_path / "hostile.json"
+    request.write_text(json.dumps(reference))
+    binary = tmp_path / "native-engine"
+    binary.write_bytes(b"native selected source test stub")
+    out = tmp_path / "paid"
+
+    def native_prepare(command, **_kwargs):
+        prepared_path = Path(command[command.index("--outfile") + 1])
+        prepared_path.write_text(json.dumps({"player": {
+            "class": "ClassWarlock", "race": "RaceTroll", "level": 20,
+            "stats": {"Health": 1894, "Mana": 2173},
+        }}))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    def native_refusal(*_args, **_kwargs):
+        raise RuntimeError("simulated native transport refusal")
+
+    monkeypatch.setattr(paid_world.subprocess, "run", native_prepare)
+    monkeypatch.setattr(paid_world, "native_world_chain", native_refusal)
+    monkeypatch.setattr(paid_world.sys, "argv", [
+        "wf_warlock_l20_100mob.py", "--binary", str(binary),
+        "--source", str(request), "--out", str(out),
+        "--variant", "best_apl", "--targets", "100",
+        "--recovery-policy", "decisions",
+    ])
+    with pytest.raises(SystemExit, match="No variant completed"):
+        paid_world.main()
+
+    receipt = json.loads((out / "summary.json").read_text())["results"][0]
+    submitted = json.loads(
+        (out / "best_apl/source_request.json").read_text()
+    )["encounter"]["targets"][0]
+    assert submitted["stats"][32] == receipt["mob_hp_native_scenario"] == 765
+    assert receipt["mob_hp_classic_proxy"] is None
+    assert receipt["scenario_min_base_damage"] == 4
+    assert receipt["scenario_swing_speed"] == 0.75
+    assert receipt["scenario_target_name"] == "Source-selected hostile"
+    assert receipt["status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
+    assert receipt["native_2d_paid_objective_eligible"] is False
+    assert reference["encounter"]["targets"][0]["stats"][32] == 765

@@ -44,7 +44,12 @@ def create_scenario(request: dict, *, variant: str) -> dict:
     # paid changed-hostile request must reach native with its own swing/damage
     # values instead of being silently replaced by the old proxy scenario.
     target.setdefault("name", "CMaNGOS Classic-proxy ordinary L20 enemy")
-    target["stats"][32] = representative_hp(20)
+    # A zero source-HP slot is the legacy ordinary-mob placeholder. When a
+    # caller supplies actual target health, keep that hostile scenario intact
+    # for the selected Rust prepare/world executor instead of silently
+    # replacing it with the generic L20 proxy.
+    if target["stats"][32] == 0:
+        target["stats"][32] = representative_hp(20)
     # Defaults are scenario assumptions, not facts about WoW Forever mobs.
     target.setdefault("minBaseDamage", 20.0)
     target.setdefault("swingSpeed", 2.0)
@@ -226,12 +231,19 @@ def main() -> None:
         source_path = base / "source_request.json"
         prepared_path = base / "prepared.json"
         source_path.write_text(json.dumps(scenario, indent=2) + "\n")
+        source_health = original["encounter"]["targets"][0]["stats"][32]
+        chosen_target = scenario["encounter"]["targets"][0]
         record = {"variant": variant, "target_count_requested": args.targets,
                   "native_binary_sha256": binary_sha256,
                   "original_source_sha256": original_source_sha256,
                   "source_request_sha256": file_sha256(source_path),
-                  "mob_level": 20, "mob_hp_classic_proxy": representative_hp(20),
-                  "synthetic_min_base_damage": 20,
+                  "mob_level": 20,
+                  "mob_hp_classic_proxy": (representative_hp(20)
+                                           if source_health == 0 else None),
+                  "mob_hp_native_scenario": chosen_target["stats"][32],
+                  "scenario_min_base_damage": chosen_target["minBaseDamage"],
+                  "scenario_swing_speed": chosen_target["swingSpeed"],
+                  "scenario_target_name": chosen_target["name"],
                   "recovery_request": native_recovery,
                   "native_2d_paid_objective_eligible": False,
                   "native_health_damage_proof_required": args.require_native_health_damage}
