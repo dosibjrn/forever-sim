@@ -1,0 +1,126 @@
+name: Work2 Warlock L20 native P7.1 reference (no M1)
+
+on:
+  push:
+    branches:
+      - work2/warlock-l20-p71-native-reference-20261109-2030
+    paths:
+      - .github/workflows/work2-warlock-l20-p71-native.yml
+      - fixtures/warlock-l20-p71.request.json
+      - tools/wf_p7_native_reference.py
+      - tools/wf_gate_p7_1_live.py
+      - tests/test_work2_warlock_l20_p71.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work2-warlock-l20-p71-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONHASHSEED: "0"
+      FOREVER_MYTHICSIM_RUST_BIN: integrations/mythicsim-rust/engine/target/release/forever-engine
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+    steps:
+      - name: Checkout Work2 code and selected Rust source
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+          fetch-depth: 1
+
+      - name: Verify exact gitlink, source actor and frozen scenario
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$recorded" == "$actual" ]] || {
+            echo "NATIVE_ENGINE_GITLINK_DIVERGED recorded=$recorded actual=$actual" >&2
+            exit 1
+          }
+          test -s "$engine/fixtures/warlock-l20-troll-source-equipped.request.json"
+          test -s fixtures/warlock-l20-p71.request.json
+          echo "Forever HEAD: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Selected Rust SHA: $actual" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install focused Forever test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+
+      - name: Test Warlock P7.1 transport and existing native reference contract
+        run: >-
+          python -m pytest -q tests/test_work2_warlock_l20_p71.py
+          tests/test_work1_p71_native_generated.py
+          tests/test_work1_p7_1_live_entry.py
+
+      - name: Build exact selected Rust engine
+        working-directory: integrations/mythicsim-rust/engine
+        run: cargo build --locked --release --bin forever-engine
+
+      - name: Native PREPARE Warlock L20 stationary source
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$FOREVER_MYTHICSIM_RUST_BIN" prepare \
+            --request fixtures/warlock-l20-p71.request.json \
+            --actor-level 20 > warlock-l20-p71-prepared.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          prepared = json.loads(Path("warlock-l20-p71-prepared.json").read_text())
+          actor = prepared.get("player", {})
+          assert actor.get("class") == "ClassWarlock", prepared
+          assert actor.get("level") == 20, prepared
+          print("NATIVE_PREPARED_ACTOR", actor["class"], actor["level"])
+          PY
+
+      - name: Pay one genuine native 1000-stochastic reference and no-record P7.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          frozen=docs/evidence/native-references/warlock-l20-unrestricted
+          if [[ -e "$frozen/request.json" || -e "$frozen/reference.json" ]]; then
+            test -s "$frozen/request.json" && test -s "$frozen/reference.json" || {
+              echo "INCOMPLETE_FROZEN_REFERENCE" >&2
+              exit 1
+            }
+            echo "Reusing authentic pinned stochastic sample"
+          else
+            python tools/wf_p7_native_reference.py \
+              --class warlock --level 20 --spec unrestricted --verify \
+              | tee warlock-l20-reference-producer.json
+          fi
+          python tools/wf_gate.py \
+            --class warlock --level 20 --spec unrestricted --gate P7.1 \
+            --out warlock-l20-p71-gate.json \
+            | tee warlock-l20-p71-gate-stdout.json
+
+      - name: Retain native exact-source stochastic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l20-p71-native-no-record
+          path: |
+            fixtures/warlock-l20-p71.request.json
+            warlock-l20-p71-prepared.json
+            docs/evidence/native-references/warlock-l20-unrestricted/request.json
+            docs/evidence/native-references/warlock-l20-unrestricted/reference.json
+            warlock-l20-reference-producer.json
+            warlock-l20-p71-gate.json
+            warlock-l20-p71-gate-stdout.json
+          if-no-files-found: warn
+          retention-days: 7
