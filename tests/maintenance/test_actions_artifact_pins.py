@@ -73,6 +73,38 @@ def test_retained_plaintext_log_pins_artifact_and_run_before_gc(tmp_path):
     assert artifacts == {12998142923}
 
 
+def test_key_value_native_log_receipts_pin_evidence_before_gc(tmp_path):
+    """Shell-style ID fields in retained native logs must protect run artifacts."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    log = tmp_path / "evidence/native/p4-hostile.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text(
+        "artifact_id=12998142923 run_id=42574670709\\n"
+        "workflow_run_id=42573346755 github_run_id=42573178806 "
+        "engine_build_run_id=40969635587\\n",
+        encoding="utf-8",
+    )
+    runs, artifacts = collect_local_references(tmp_path)
+    assert artifacts == {12998142923}
+    assert runs == {42574670709, 42573346755, 42573178806, 40969635587}
+
+
+def test_key_value_pin_parser_ignores_unrelated_or_malformed_ids():
+    runs, artifacts = set(), set()
+    record_references(
+        "not_artifact_id=88 not_run_id=99 artifact_id=0 "
+        "artifact_id=123abc workflow_run_id=999abc run_id=0 "
+        "github_run_id=notnumeric detached_id=1234",
+        runs, artifacts,
+    )
+    assert runs == set()
+    assert artifacts == set()
+
+
 def test_numeric_actions_run_ids_in_json_pin_evidence_without_url():
     runs, artifacts = set(), set()
     record_references(
