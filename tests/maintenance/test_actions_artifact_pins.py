@@ -614,7 +614,7 @@ def test_gc_no_longer_limits_unmerged_branch_protection_to_two_artifacts():
         {"work/unmerged"})
     workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
         encoding="utf-8")
-    assert "if protects_open_pr_artifact(a, open_branches):" in workflow
+    assert "if protects_open_pr_artifact(a, unmerged_branches):" in workflow
     assert "active_branch_counts" not in workflow
     assert workflow.index("if protects_open_pr_artifact(") < workflow.index(
         "candidates = []")
@@ -650,7 +650,7 @@ def test_gc_confirms_open_pr_protection_with_authoritative_run_branch(
         allowed_events=("pull_request", "push"),
         require_success_conclusion=True,
         require_single_attempt=True,
-        protected_branches=unmerged_branches,
+        protected_branches=open_branches,
     )
     if expected == "mismatch":
         with pytest.raises(ValueError, match="artifact branch .* does not match run branch"):
