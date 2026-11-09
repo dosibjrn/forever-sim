@@ -84,6 +84,9 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
     """Check existing P4-P6 criteria against the one source-paid receipt."""
     if "status" in cold and cold["status"] in ("FAIL", "BLOCKED"):
         return cold
+    finalists = cold.get("finalists") or {}
+    if not isinstance(finalists, dict):
+        finalists = {}
     base = {
         "production_component": "tools.wf_warlock_l20_native_cold.run_cold",
         "production_engine": "mythicsim-rust-native-world",
@@ -96,16 +99,14 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
         "distinct_paid_candidates": cold.get("distinct_paid_candidates"),
         "native_paid_after_snapshot": cold.get("native_paid_after_snapshot"),
         "selected_paid_winners": {
-            label: cold.get("finalists", {}).get(label, {}).get("candidate_sha256")
+            label: (finalists.get(label) or {}).get("candidate_sha256")
+            if isinstance(finalists.get(label), dict) else None
             for label in ("30s", "300s")
         },
     }
     reasons = []
     first = cold.get("snapshot_30")
     last = cold.get("final_300")
-    finalists = cold.get("finalists") or {}
-    if not isinstance(finalists, dict):
-        finalists = {}
     if cold.get("cold_300_reached") is not True:
         reasons.append("P4_P5_NATIVE_COLD_300S_NOT_REACHED")
     if (not isinstance(first, dict)
@@ -117,14 +118,21 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
     elif (type(last.get("paid_completed_elapsed_s")) not in (int, float)
           or last["paid_completed_elapsed_s"] > 300):
         reasons.append("P5_NATIVE_PAID_WINNER_OUTSIDE_BUDGET")
-    if not _completed_finalist(finalists.get("30s")):
+    # The two winner legs are independently payable. A missing P5 finalist
+    # does not invent a P4 failure when its own 30s build survived, and vice
+    # versa; P6 must have both genuinely comparable paid routes.
+    if gate in ("P4", "P6") and not _completed_finalist(finalists.get("30s")):
         reasons.append("P4_NATIVE_100MOB_FINALIST_INCOMPLETE")
-    if not _completed_finalist(finalists.get("300s")):
+    if gate in ("P5", "P6") and not _completed_finalist(finalists.get("300s")):
         reasons.append("P5_NATIVE_100MOB_FINALIST_INCOMPLETE")
-    if (not isinstance(first, dict) or not isinstance(last, dict)
-            or first.get("candidate_sha256") != finalists.get("30s", {}).get("candidate_sha256")
-            or last.get("candidate_sha256") != finalists.get("300s", {}).get("candidate_sha256")):
-        reasons.append("WARLOCK_NATIVE_FROZEN_WINNER_RECEIPT_MISMATCH")
+    if (gate in ("P4", "P6") and isinstance(first, dict)
+            and first.get("candidate_sha256") !=
+            (finalists.get("30s") or {}).get("candidate_sha256")):
+        reasons.append("P4_NATIVE_FROZEN_WINNER_RECEIPT_MISMATCH")
+    if (gate in ("P5", "P6") and isinstance(last, dict)
+            and last.get("candidate_sha256") !=
+            (finalists.get("300s") or {}).get("candidate_sha256")):
+        reasons.append("P5_NATIVE_FROZEN_WINNER_RECEIPT_MISMATCH")
     if (not isinstance(cold.get("source_request_sha256"), str)
             or not isinstance(cold.get("engine_binary_sha256"), str)):
         reasons.append("WARLOCK_NATIVE_EXECUTED_IDENTITY_MISSING")
@@ -144,8 +152,8 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
             reasons.append("P5_NATIVE_DISTINCT_PAID_BUILDS_NOT_DEMONSTRATED")
     elif gate == "P6":
         comparison = cold.get("p6_comparison") or {}
-        first_s = finalists.get("30s", {}).get("seconds_per_mob")
-        last_s = finalists.get("300s", {}).get("seconds_per_mob")
+        first_s = (finalists.get("30s") or {}).get("seconds_per_mob")
+        last_s = (finalists.get("300s") or {}).get("seconds_per_mob")
         if (not isinstance(comparison, dict)
                 or comparison.get("status") != "MEASURED_PAID_100_MOB_FINALISTS"
                 or type(first_s) not in (int, float)
