@@ -35,7 +35,9 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
     # Machine-readable receipts also contain the only link/ID to some paid
     # native runs. Read them before deciding that an artifact is disposable.
     for folder in ("docs", "evidence", "gate_evidence", "gate_sources"):
-        for pattern in ("*.md", "*.json", "*.tsv"):
+        # Raw retained gate/paid run logs can be the sole evidence link.
+        # Treat a damaged log like a damaged JSON receipt: abort deletion.
+        for pattern in ("*.md", "*.json", "*.tsv", "*.log"):
             for path in (root / folder).rglob(pattern):
                 record_references(path.read_text(encoding="utf-8"),
                                   runs, artifacts)
