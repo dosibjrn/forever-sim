@@ -231,8 +231,16 @@ def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
     inserted = mutate(combined, AplOnlyRng(999, 2, "insert"))
     assert len(cold.actor(inserted["source"])["rotation"]["priorityList"]) == 3
 
-    # Cold proposals still start from Rust-sourced whole APL candidates.
-    assert cold.actor(propose(random.Random(5))["source"])["rotation"]["priorityList"] in domain["apl"]
+    # The first paid proposal is the frozen source, not a pretend mutation.
+    assert cold.actor(propose(random.Random(5))["source"])[
+        "rotation"]["priorityList"] == cold.actor(reference)[
+        "rotation"]["priorityList"]
+    # With an actual APL-only Rust domain, the next cold proposal changes it.
+    apl_only = dict(domain, gear={}, talents=[], pets=[], recovery=[])
+    propose_apl, _ = cold.candidate_factory(reference, apl_only)
+    propose_apl(random.Random(5))  # genuine frozen first paid proposal
+    assert cold.actor(propose_apl(random.Random(5))["source"])[
+        "rotation"]["priorityList"] in domain["apl"]
 
 
 
@@ -1158,3 +1166,63 @@ def test_cold_paid_chain_scores_complete_zero_hit_route_without_extra_gate(
     assert receipt["native_health_damage"]["damage_events"] == 0
     assert receipt["native_2d_paid_objective_eligible"] is (targets == 100)
     assert len(submitted) == 1
+
+
+def test_real_native_domain_with_no_changed_source_options_is_recovery_only(
+    monkeypatch,
+):
+    """The production domain builder must not disguise the saved APL/talents
+    as native challenger axes when Rust supplies no distinct alternative.
+    Recovery remains a genuine paid candidate policy change.
+    """
+    reference = source()
+    saved = copy.deepcopy(reference)
+    player = cold.actor(reference)
+    player["rotation"]["priorityList"] = player["rotation"]["priorityList"][:1]
+    saved = copy.deepcopy(reference)
+    native = options()
+    native["items"] = []
+    native["spells"] = []
+    native["pets"] = []
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([
+            {"talents": player["talentsString"]},
+            {"talents": player["talentsString"]},
+        ]),
+    )
+    domain = cold.native_candidate_domain(reference, native, seed=19)
+    assert domain["gear"] == {}
+    assert domain["talents"] == []
+    assert domain["apl"] == []
+    assert domain["apl_actions"] == []
+    assert domain["pets"] == []
+
+    propose, mutate = cold.candidate_factory(reference, domain)
+    baseline = propose(random.Random(7))
+    assert baseline["source"] == saved
+    challenger = propose(random.Random(7))
+    assert challenger["source"] == saved
+    assert challenger["recovery"] != baseline["recovery"]
+    assert mutate(baseline, random.Random(7))["recovery"] != baseline["recovery"]
+    assert reference == saved
+
+
+def test_distinct_native_talent_proposal_survives_source_baseline_filter(
+    monkeypatch,
+):
+    reference = source()
+    native = options()
+    native["items"] = []
+    native["spells"] = []
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([
+            {"talents": "110-0-0"},
+            {"talents": "101-0-0"},
+            {"talents": "101-0-0"},
+        ]),
+    )
+    domain = cold.native_candidate_domain(reference, native, seed=11)
+    assert domain["talents"] == ["101-0-0"]
+    assert cold.actor(reference)["talentsString"] == "110-0-0"
