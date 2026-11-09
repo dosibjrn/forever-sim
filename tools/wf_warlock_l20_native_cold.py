@@ -213,13 +213,25 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
 
     def propose(rng):
         nonlocal reference_proposed
+        reference_candidate = {
+            "source": copy.deepcopy(reference),
+            "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+        }
         if not reference_proposed and not unseeded:
             reference_proposed = True
-            return {
-                "source": copy.deepcopy(reference),
-                "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
-            }
-        return mutate({}, rng, cold=True)
+            return reference_candidate
+        # Sparse native options can include only the already selected
+        # recovery policy (or randomly sample that same policy). Spend cheap
+        # in-memory proposal attempts before consuming a paid native slot on
+        # an unchanged cold reference. If Rust exposes no distinct proposal,
+        # still forward it rather than invent a Python source-legality veto;
+        # the report below must then mark the cold start as NOT unseeded.
+        candidate = reference_candidate
+        for _ in range(16):
+            candidate = mutate({}, rng, cold=True)
+            if candidate != reference_candidate:
+                break
+        return candidate
 
     def change(previous, rng):
         return mutate(previous, rng)
@@ -320,13 +332,25 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     early = None
     paid_rows = []
     screen_attempts = []
+    reference_candidate = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+    first_paid_candidate_sha256 = None
+    first_paid_changed_reference = False
     def evaluate(candidate: dict, *, iterations: int, seed: int,
                  rng_mode: str) -> float:
-        nonlocal early
+        nonlocal early, first_paid_candidate_sha256, first_paid_changed_reference
         # The kernel provides the shared balanced search protocol. Real-world
         # scoring is an independent native/world 2-target run, not native DPS.
         if rng_mode != "balanced":
             raise ValueError("BALANCED_NATIVE_SCREEN_REQUIRED")
+        # An unseeded request is not proof of an unseeded execution. Observe
+        # the FIRST actual paid native proposal, including a refused one.
+        # This is structural search provenance, never a Warcraft legality check.
+        if first_paid_candidate_sha256 is None:
+            first_paid_candidate_sha256 = identity(candidate)
+            first_paid_changed_reference = candidate != reference_candidate
         # Count *all* attempted native calls, including rejected builds. Using
         # len(paid_rows) would reuse an old screen directory after a refusal:
         # the next subprocess could overwrite the failed request or consume
@@ -509,7 +533,9 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "budget_s": budget_s, "snapshot_s": snapshot_s,
         "elapsed_search_s": search["elapsed_s"],
         "search_seed": seed,
-        "unseeded_cold_start": unseeded,
+        "unseeded_cold_requested": unseeded,
+        "cold_first_paid_candidate_sha256": first_paid_candidate_sha256,
+        "unseeded_cold_start": unseeded and first_paid_changed_reference,
         # Actual completed native-paid comparisons either side of the
         # 30s cut; attempted/refused and late payments are not credited.
         "native_paid_before_snapshot": sum(
