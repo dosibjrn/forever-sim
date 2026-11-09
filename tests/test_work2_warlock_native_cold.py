@@ -1552,3 +1552,119 @@ def test_native_paid_cold_selects_fastest_completed_hundred_mob_route(
     ]
     assert result["gate_recorded"] is False
     assert result["p4_p5_p6_pass"] is False
+
+
+def test_empty_cold_start_always_sends_rust_proposed_gear_for_native_execution():
+    """The observed naked 2-mob failures must not waste gear-omitting draws."""
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    original = copy.deepcopy(reference)
+    domain = {
+        "gear": {}, "gear_insertions": [
+            {"id": 100}, {"id": 101}, {"id": 200}],
+        "gear_native_slots": {
+            "head": [{"id": 100}, {"id": 101}],
+            "chest": [{"id": 200}],
+        },
+        "talents": ["101-0-0"],
+        "apl": [[{"action": {"castSpell": {
+            "spellId": {"spellId": 999}}}}]],
+        "pets": [1, 2],
+        "recovery": [(0.7, 0.25)],
+    }
+    propose, _ = cold.candidate_factory(reference, domain, unseeded=True)
+    for seed in range(50):
+        candidate = propose(random.Random(seed))
+        equipment = cold.actor(candidate["source"])["equipment"]["items"]
+        assert len(equipment) == 2
+        assert equipment[0] in ({"id": 100}, {"id": 101})
+        assert equipment[1] == {"id": 200}
+        assert candidate["source"] != reference
+    assert reference == original
+
+
+def test_native_slot_followup_mutation_preserves_multislot_actor():
+    """An elite can explore source slots without repeatedly losing its gear."""
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    domain = {
+        "gear": {}, "gear_insertions": [],
+        "gear_native_slots": {
+            "head": [{"id": 100}, {"id": 101}],
+            "chest": [{"id": 200}],
+        },
+        "talents": [], "apl": [], "pets": [], "recovery": [],
+    }
+    propose, mutate = cold.candidate_factory(reference, domain, unseeded=True)
+    full = propose(random.Random(5))
+    saw_changed_head = False
+    for seed in range(50):
+        candidate = mutate(full, random.Random(seed))
+        gear = cold.actor(candidate["source"])["equipment"]["items"]
+        assert len(gear) == 2
+        assert gear[0] in ({"id": 100}, {"id": 101})
+        assert gear[1] == {"id": 200}
+        saw_changed_head |= gear[0] != cold.actor(full["source"])["equipment"]["items"][0]
+    assert saw_changed_head
+
+
+def test_one_paid_native_cold_proposal_forwards_full_source_candidate(
+    tmp_path, monkeypatch,
+):
+    """A bounded diagnostic pays the exact candidate, not the neutral template."""
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    native = options()
+    native["items"] = [
+        {"item_id": 100, "eligibility": "native_eligible",
+         "native": {"item_id": 100, "slot": "head"}},
+        {"item_id": 200, "eligibility": "native_eligible",
+         "native": {"item_id": 200, "slot": "chest"}},
+    ]
+    monkeypatch.setattr(cold, "proposals_from_native_talents",
+                        lambda *_args: iter(()))
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-engine")
+    calls = []
+    def native_chain(_binary, candidate, out, *, targets, timeout):
+        calls.append((copy.deepcopy(candidate), targets, timeout))
+        return {"status": "COMPLETED_2_REAL_NATIVE_GSIM_KILLS",
+                "seconds_per_mob": 12.0}
+
+    report = cold.run_paid_cold_two_target_proposal(
+        reference, native, binary=binary, out=tmp_path / "probe",
+        seed=17, timeout=20.0, chain=native_chain)
+    assert len(calls) == 1
+    assert calls[0][1:] == (2, 20.0)
+    assert len(cold.actor(calls[0][0]["source"])["equipment"]["items"]) == 2
+    assert calls[0][0]["source"] == json.loads(
+        (tmp_path / "probe/cold_proposal.request.json").read_text())
+    assert report["cold_candidate_changed_reference"] is True
+    assert report["status"] == "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+    assert report["gate_recorded"] is False
+    assert report["p4_p5_p6_pass"] is False
+    assert (tmp_path / "probe/two_target_screen_summary.json").is_file()
+
+
+def test_one_paid_cold_native_refusal_keeps_exact_candidate_and_failure(
+    tmp_path, monkeypatch,
+):
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    native = options()
+    monkeypatch.setattr(cold, "proposals_from_native_talents",
+                        lambda *_args: iter(()))
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-engine")
+    def refused(_binary, candidate, _out, *, targets, timeout):
+        raise cold.NativeUnscoredCandidate(
+            "native two target incomplete",
+            raw_response={"status": "RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL"})
+    report = cold.run_paid_cold_two_target_proposal(
+        reference, native, binary=binary, out=tmp_path / "probe",
+        chain=refused)
+    assert report["status"] == "NATIVE_TWO_TARGET_SCREEN_UNSCORED"
+    assert report["native_receipt"]["status"] == (
+        "RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL")
+    assert report["gate_recorded"] is False
+    assert (tmp_path / "probe/cold_proposal.request.json").is_file()
