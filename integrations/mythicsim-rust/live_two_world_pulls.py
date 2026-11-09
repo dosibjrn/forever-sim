@@ -567,6 +567,10 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     kills = []
     walks = []
     events = 0
+    # Source-action IDs are emitted by the selected Rust combat boundary.
+    # Retain only damage events actually applied/ACKed by the 2D world;
+    # these are observed effects, NOT an inferred spell-cast count.
+    native_source_damage_effects_by_caster = {}
     ticks = 0
     native_moving_ticks = 0
     native_moving_receipts = 0
@@ -648,6 +652,18 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             events += len(ack["applied_event_ids"])
             if corrupt_ack and events:
                 ack["applied_event_ids"] = []
+            applied = set(ack["applied_event_ids"])
+            for effect in receipt["native_damage_events"]:
+                if effect["event_id"] not in applied:
+                    continue
+                # Keep the original Rust identity and caster attribution.
+                # A periodic tick is a native effect, not a distinct cast;
+                # only an explicit native cast receipt can prove P4's unlock.
+                action_id = effect.get("source_action_id")
+                caster = effect.get("native_caster_type")
+                if isinstance(action_id, str) and action_id and isinstance(caster, str):
+                    counts = native_source_damage_effects_by_caster.setdefault(caster, {})
+                    counts[action_id] = counts.get(action_id, 0) + 1
             proc.stdin.write(json.dumps(ack, sort_keys=True, allow_nan=False) + "\n")
             proc.stdin.flush()
             previous_ack = ack["world_after_sha256"]
@@ -768,7 +784,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 elapsed["world_per_target_elapsed_seconds_without_paid_recovery"]
                 if native_recovery_clock_accounted else None),
             "native_health_damage": native_health_damage,
-            "native_damage_events": events, "world_ticks": ticks,
+            "native_damage_events": events,
+            "native_source_damage_effects_by_caster": native_source_damage_effects_by_caster,
+            "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
             "native_moving_receipts": native_moving_receipts,
             "native_movement_cast_legal": native_moving_receipts == ticks,
