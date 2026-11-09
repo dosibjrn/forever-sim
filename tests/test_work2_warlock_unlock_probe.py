@@ -115,9 +115,9 @@ def test_native_workflow_uses_the_existing_source_equipped_actor():
     workflow = (Path(__file__).resolve().parents[1] /
                 ".github/workflows/work2-warlock-l20-talent-unlock.yml")
     text = workflow.read_text()
-    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" in text
-    assert "--talent-unlock-equipment-reference fixtures/warlock-l20-p71.request.json" in text
-    assert "--source ../engine/fixtures/warlock-l20-troll-source-equipped.request.json" not in text
+    assert "--source fixtures/warlock-l20-native-paid-30s.request.json" in text
+    assert "--talent-unlock-equipment-reference" not in text
+    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" not in text
 
 
 def test_refused_native_chain_keeps_actual_acked_effects_not_inferred_cast(tmp_path):
@@ -200,3 +200,34 @@ def test_recorded_p71_fixture_native_raid_shape_is_forwarded_exactly():
     assert probe.player(changed)["equipment"] == probe.player(recorded)["equipment"]
     assert len(probe.player(changed)["equipment"]["items"]) > 0
     assert probe.player(neutral)["equipment"] == {"items": []}
+
+
+def test_real_native_world_ack_format_is_preserved_without_cast_inference():
+    native = {"native_source_damage_effects_by_caster": {
+        "": {
+            'ActionId { spell_id: 17877, item_id: 0, other_id: "", tag: 0 }': 3,
+            'ActionId { spell_id: 1088, item_id: 0, other_id: "", tag: 0 }': 6,
+        }}}
+    assert probe.native_acked_player_effect_count(native, 17877) == 3
+    assert probe.native_acked_player_effect_count(native, 1088) == 6
+    assert probe.native_acked_player_effect_count(native, 1787) is None
+    assert probe.native_acked_player_effect_count(
+        {"native_source_damage_effects_by_caster": {
+            "player": {"Spell-17877": 2}}}, 17877) == 2
+
+
+def test_cold_native_paid_baseline_is_exact_archived_100_kill_build():
+    """Frozen native-success receipt #42669041997, not generated game legality."""
+    import hashlib
+    fixture = Path(__file__).resolve().parents[1] / (
+        "fixtures/warlock-l20-native-paid-30s.request.json")
+    source = json.loads(fixture.read_text())
+    canonical = json.dumps(source, sort_keys=True, separators=(",", ":"))
+    assert hashlib.sha256(canonical.encode()).hexdigest() == (
+        "16ef5f9443410637a51b6b819c259088d38de868450ce8a7f81329ca20b05c2f")
+    actor = probe.player(source)
+    assert actor["class"] == "ClassWarlock"
+    assert actor["race"] == "RaceTroll"
+    assert actor["talentsString"] == "121-1112-02"
+    assert len(actor["equipment"]["items"]) == 17
+    assert len(actor["rotation"]["priorityList"]) == 4

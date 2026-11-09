@@ -148,6 +148,37 @@ def find_native_registered_unlock(reference: dict, options: dict, *,
     }
 
 
+def native_acked_player_effect_count(response: dict, action_id: int) -> int | None:
+    """Forward the selected Rust world's player damage-ACK count, not casts.
+
+    Native world receipts serialize their sole player's caster label as "" and
+    their action as "ActionId { spell_id: N, ... }". Older scorer fixtures use
+    "player" and "Spell-N". Accept both exact action identities without a
+    game-rules interpretation or treating ACKs as successful casts.
+    """
+    effects = response.get("native_source_damage_effects_by_caster", {})
+    if not isinstance(effects, dict):
+        return None
+    for caster in ("player", ""):
+        actions = effects.get(caster)
+        if not isinstance(actions, dict):
+            continue
+        counts = []
+        for key, count in actions.items():
+            native_id = (
+                isinstance(key, str)
+                and key.startswith("ActionId { spell_id: ")
+                and key.split(",", 1)[0] == f"ActionId {{ spell_id: {action_id}"
+                and key.endswith(" }")
+            )
+            if (key == f"Spell-{action_id}" or native_id) and (
+                    type(count) is int and count >= 0):
+                counts.append(count)
+        if counts:
+            return sum(counts)
+    return None
+
+
 def run_probe(reference: dict, options: dict, *, binary: Path, out: Path,
               seed: int = 20261109, max_talents: int = 48,
               timeout: float = 120.0, prepare=prepared_apl_ids,
@@ -215,13 +246,9 @@ def run_probe(reference: dict, options: dict, *, binary: Path, out: Path,
         challenger = results["talent_action"]
         native_response = (challenger.get("native_receipt")
                            or challenger.get("native_response") or {})
-        native_effects = native_response.get(
-            "native_source_damage_effects_by_caster", {})
         action_id = selected["new_native_registered_action_id"]
         summary["new_native_action_acked_damage_effects"] = (
-            native_effects.get("player", {}).get(f"Spell-{action_id}")
-            if isinstance(native_effects, dict)
-            and isinstance(native_effects.get("player"), dict) else None)
+            native_acked_player_effect_count(native_response, action_id))
         summary["native_cast_result_evidence_complete"] = False
     (out / "unlock_probe_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n")

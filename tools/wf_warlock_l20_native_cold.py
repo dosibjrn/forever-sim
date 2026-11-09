@@ -990,9 +990,11 @@ def main() -> None:
             recorded = json.loads(
                 args.talent_unlock_equipment_reference.read_text())
             source = overlay_recorded_equipment(source, recorded)
-            args.out.mkdir(parents=True, exist_ok=True)
-            (args.out / "source_equipped.request.json").write_text(
-                json.dumps(source, indent=2) + "\n")
+        args.out.mkdir(parents=True, exist_ok=True)
+        # Retain the exact executed baseline even when the input is already
+        # a proven source-paid equipped fixture (no overlay requested).
+        (args.out / "source_equipped.request.json").write_text(
+            json.dumps(source, indent=2) + "\n")
         options = query_native_options(args.binary, "warlock", 20)
         result = run_probe(
             source, options, binary=args.binary, out=args.out,

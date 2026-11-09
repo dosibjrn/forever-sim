@@ -11,9 +11,10 @@ permissions:
 
 # One bounded native prepare discovery and at most two paid 2-mob
 # Decisions routes; this is not a 300s cold search, recorder or P4 PASS.
-# Start from the selected Rust native actor and copy the already recorded
-# source-equipped P7 reference's gear (17 selected-source items) into that
-# actor. Both paid branches freeze the resulting input; Rust judges builds.
+# Replay the exact 30s cold finalist that completed 100/100 hostile native
+# world kills in #42669041997 (artifact 13698202699); unlike the earlier
+# single-spell fixture, this freezes its *entire* lethal gear + APL + talents.
+# Rust still prepares/refuses the candidate talent-action difference.
 concurrency:
   group: work2-warlock-l20-talent-unlock
   cancel-in-progress: false
@@ -54,8 +55,7 @@ jobs:
         run: |
           python -u tools/wf_warlock_l20_native_cold.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../engine/fixtures/warlock-l20-troll-native.request.json \
-            --talent-unlock-equipment-reference fixtures/warlock-l20-p71.request.json \
+            --source fixtures/warlock-l20-native-paid-30s.request.json \
             --out ../warlock-l20-unlock-probe \
             --two-target-talent-unlock --screen-timeout 180 --seed 20261109
       - name: Retain concise source/native receipt or exact refusal
