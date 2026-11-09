@@ -52,3 +52,15 @@ jobs:
           else
             echo "FAIL: deleted artifact still listed"; exit 1
           fi
+
+      - name: Inventory repository artifact footprint (read only)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" --jq '.artifacts[] | [.id,.name,.size_in_bytes,.created_at,.workflow_run.id] | @tsv' > "$RUNNER_TEMP/actions-artifacts.tsv"
+          echo "Active artifact count: $(wc -l < "$RUNNER_TEMP/actions-artifacts.tsv")"
+          awk -F '\t' '{n++; total += $3} END {printf "Active artifact bytes: %.0f (%.2f MiB) from %d artifacts\\n", total, total/1048576, n}' "$RUNNER_TEMP/actions-artifacts.tsv"
+          echo 'Largest currently retained artifacts (id, name, bytes, created_at, run):'
+          sort -t "$(printf '\t')" -k3,3nr "$RUNNER_TEMP/actions-artifacts.tsv" | sed -n '1,15p'
