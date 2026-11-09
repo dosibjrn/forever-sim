@@ -44,7 +44,8 @@ def artifact_run_id(artifact: dict) -> int | None:
 
 def completed_run_candidates(
         candidates: list[dict], fetch_run, *,
-        expected_workflow: str | None = None) -> tuple[list[dict], int]:
+        expected_workflow: str | None = None,
+        expected_name_prefix: str | None = None) -> tuple[list[dict], int]:
     """Keep only artifacts from confirmed completed workflow runs.
 
     Query each distinct originating run once. A missing/malformed/mismatched
@@ -52,15 +53,17 @@ def completed_run_candidates(
     queued, in-progress, waiting and other non-completed runs stay protected.
     The optional origin constraint prevents name-colliding artifacts from a
     different workflow being deleted as if they were sweep diagnostics.
+    When a commit-labelled name prefix is supplied, also require the artifact
+    name, embedded origin SHA and fetched run SHA to agree, before deletion.
     """
-    finished_by_run: dict[int, bool] = {}
+    runs_by_id: dict[int, dict] = {}
     ready: list[dict] = []
     deferred = 0
     for artifact in candidates:
         run_id = artifact_run_id(artifact)
         if run_id is None:
             raise ValueError("cannot delete an artifact without a valid run ID")
-        if run_id not in finished_by_run:
+        if run_id not in runs_by_id:
             run = fetch_run(run_id)
             if (not isinstance(run, dict)
                     or type(run.get("id")) is not int
@@ -72,8 +75,20 @@ def completed_run_candidates(
                 raise ValueError(
                     f"run {run_id}: workflow origin {run.get('path')!r} "
                     f"does not match {expected_workflow!r}")
-            finished_by_run[run_id] = run["status"] == "completed"
-        if finished_by_run[run_id]:
+            runs_by_id[run_id] = run
+        run = runs_by_id[run_id]
+        if expected_name_prefix is not None:
+            run_sha = run.get("head_sha")
+            origin_sha = artifact["workflow_run"].get("head_sha")
+            artifact_name = artifact.get("name")
+            if (not isinstance(run_sha, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", run_sha) is None
+                    or origin_sha != run_sha
+                    or artifact_name != f"{expected_name_prefix}{run_sha}"):
+                raise ValueError(
+                    f"run {run_id}: artifact commit provenance does not match "
+                    "origin run HEAD and artifact name")
+        if run["status"] == "completed":
             ready.append(artifact)
         else:
             deferred += 1

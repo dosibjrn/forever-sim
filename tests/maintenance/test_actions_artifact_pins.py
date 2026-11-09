@@ -311,3 +311,65 @@ def test_gc_accepts_completed_artifacts_from_exact_sweep_workflow():
     assert [artifact["id"] for artifact in ready] == [1, 2]
     assert deferred == 0
     assert calls == [100]
+
+
+def test_gc_accepts_matching_artifact_and_run_commit_provenance():
+    """A finished sweep receipt is deletable only at its genuine originating SHA."""
+    sha = "a" * 40
+    prefix = "native-joint-28-stage5-"
+    artifacts = [
+        {"id": 1, "name": prefix + sha,
+         "workflow_run": {"id": 100, "head_sha": sha}},
+        {"id": 2, "name": prefix + sha,
+         "workflow_run": {"id": 100, "head_sha": sha}},
+    ]
+    calls = []
+
+    def fetch(run_id):
+        calls.append(run_id)
+        return {"id": run_id, "status": "completed",
+                "path": ".github/workflows/native-joint-28-sweep.yml",
+                "head_sha": sha}
+
+    ready, deferred = completed_run_candidates(
+        artifacts, fetch,
+        expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+        expected_name_prefix=prefix)
+    assert [a["id"] for a in ready] == [1, 2]
+    assert deferred == 0
+    assert calls == [100]
+
+
+@pytest.mark.parametrize(("artifact_sha", "name_sha", "run_sha"), [
+    ("b" * 40, "a" * 40, "a" * 40),
+    ("a" * 40, "b" * 40, "a" * 40),
+    ("a" * 40, "a" * 40, "b" * 40),
+    (None, "a" * 40, "a" * 40),
+    ("a" * 40, None, "a" * 40),
+    ("a" * 40, "a" * 40, None),
+    ("a" * 40, "a" * 40, "not-a-sha"),
+])
+def test_gc_refuses_mismatched_commit_provenance(
+        artifact_sha, name_sha, run_sha):
+    """Fail before deletion if artifact/run metadata or name are inconsistent."""
+    prefix = "native-joint-28-stage5-"
+    artifact = {
+        "id": 1,
+        "name": prefix + name_sha if name_sha is not None else None,
+        "workflow_run": {"id": 100, "head_sha": artifact_sha},
+    }
+    with pytest.raises(ValueError, match="commit provenance"):
+        completed_run_candidates(
+            [artifact],
+            lambda run_id: {"id": run_id, "status": "completed",
+                            "path": ".github/workflows/native-joint-28-sweep.yml",
+                            "head_sha": run_sha},
+            expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+            expected_name_prefix=prefix)
+
+
+def test_live_gc_requires_matching_artifact_and_run_sha_before_plan():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml"
+                ).read_text(encoding="utf-8")
+    assert 'expected_name_prefix="native-joint-28-stage5-"' in workflow
+    assert workflow.index("completed_run_candidates(") < workflow.index("planned = []")

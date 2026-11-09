@@ -212,7 +212,8 @@ jobs:
           # the same name. Fail closed on an unexpected origin before DELETE.
           candidates, unfinished = completed_run_candidates(
               candidates, fetch_origin_run,
-              expected_workflow=".github/workflows/native-joint-28-sweep.yml")
+              expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+              expected_name_prefix="native-joint-28-stage5-")
           print(f"RUN_COMPLETION eligible_finished={len(candidates)} deferred_unfinished={unfinished}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
