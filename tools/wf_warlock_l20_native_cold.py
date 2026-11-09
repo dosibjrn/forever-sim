@@ -620,7 +620,26 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         attempts = []
         selected = None
         best_paid_100_s_per_mob = math.inf
-        for winner in distinct[:replay_limit]:
+        shortlist = distinct[:replay_limit]
+        if label == "300s":
+            # The 300s pool contains every on-time 30s proposal. Retain the
+            # *already paid* 30s 100-mob winner even when later, faster
+            # two-target screens push it outside the bounded replay shortlist.
+            # Without this, the measured 300s objective can regress despite
+            # having the earlier faster complete route available. The cache
+            # reuses its exact native receipt; no extra paid replay is added.
+            early_paid = finalists.get("30s", {})
+            if (early_paid.get("status") ==
+                    "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"):
+                incumbent = next(
+                    (row for row in distinct
+                     if row["candidate_sha256"] ==
+                     early_paid["candidate_sha256"]), None)
+                if (incumbent is not None and all(
+                        row["candidate_sha256"] !=
+                        incumbent["candidate_sha256"] for row in shortlist)):
+                    shortlist.append(incumbent)
+        for winner in shortlist:
             key = winner["candidate_sha256"]
             if key not in replay_cache:
                 try:
