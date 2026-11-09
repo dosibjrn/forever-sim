@@ -384,6 +384,61 @@ def test_live_gc_invokes_bounded_complete_post_delete_verification():
                     encoding="utf-8")
     assert "verify_deleted_artifacts_absent)" in workflow
     assert "after_artifacts = verify_deleted_artifacts_absent(" in workflow
-    assert "deleted, list_artifacts, attempts=12, delay_seconds=5)" in workflow
+    assert "deleted, list_artifacts, attempts=12, delay_seconds=5," in workflow
+    assert "fetch_deleted_status=deleted_artifact_get_status)" in workflow
+    assert 'status, _ = request(f"artifacts/{artifact_id}")' in workflow
     assert workflow.index('request(f"artifacts/{aid}", "DELETE")') < workflow.index(
         "after_artifacts = verify_deleted_artifacts_absent(")
+
+
+def test_post_delete_direct_get_must_converge_to_404_as_well_as_list_absence():
+    """A temporarily stale GET=200 cannot certify the vanished list entry."""
+    gets = []
+    sleeps = []
+    responses = iter((200, 404))
+
+    def artifact_status(artifact_id):
+        gets.append(artifact_id)
+        return next(responses)
+
+    after = module.verify_deleted_artifacts_absent(
+        [55], lambda: [{"id": 70, "size_in_bytes": 5}],
+        attempts=3, delay_seconds=2, sleep=sleeps.append,
+        fetch_deleted_status=artifact_status)
+    assert after == [{"id": 70, "size_in_bytes": 5}]
+    assert gets == [55, 55]
+    assert sleeps == [2]
+
+
+def test_post_delete_does_not_get_or_certify_ids_still_in_inventory():
+    """Direct GET cannot override an incomplete post-DELETE list."""
+    gets = []
+    with pytest.raises(RuntimeError, match="last-visible IDs=\\[55\\]"):
+        module.verify_deleted_artifacts_absent(
+            [55], lambda: [{"id": 55, "size_in_bytes": 5}],
+            attempts=2, delay_seconds=0, sleep=lambda _seconds: None,
+            fetch_deleted_status=lambda artifact_id: gets.append(artifact_id) or 404)
+    assert gets == []
+
+
+@pytest.mark.parametrize("status", [401, 403, 429, 500, None, "404"])
+def test_post_delete_unexpected_direct_get_status_fails_closed(status):
+    """Only HTTP 404 certifies gone; rate limits and auth failures never pass."""
+    with pytest.raises(RuntimeError, match="unexpected GET HTTP"):
+        module.verify_deleted_artifacts_absent(
+            [55], lambda: [], attempts=3, delay_seconds=0,
+            sleep=lambda _seconds: None,
+            fetch_deleted_status=lambda _artifact_id: status)
+
+
+def test_post_delete_checks_every_id_and_retries_only_pending_gets():
+    calls = []
+    responses = {7: [404, 404], 8: [200, 404]}
+    def get(artifact_id):
+        calls.append(artifact_id)
+        return responses[artifact_id].pop(0)
+
+    assert module.verify_deleted_artifacts_absent(
+        [7, 8], lambda: [], attempts=3, delay_seconds=0,
+        sleep=lambda _seconds: None, fetch_deleted_status=get) == []
+    assert calls == [7, 8, 7, 8]
