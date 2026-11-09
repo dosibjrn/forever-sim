@@ -96,7 +96,11 @@ def classify_native_chain(result: dict, requested_targets: int, *,
     killed = result.get("world_targets_killed")
     seconds_per_mob = result.get("world_seconds_per_target_paid_recovery")
     paid = result.get("paid_recovery") is True
-    if (killed != requested_targets or not paid
+    # On Decisions, native no-rest gaps are valid if the complete native
+    # recovery/food/water clock is accounted. Fixed must still pay every gap.
+    accounted = (result.get("native_recovery_clock_accounted") is True
+                 if recovery_policy == "decisions" else paid)
+    if (killed != requested_targets or not accounted
             or type(seconds_per_mob) not in (float, int)
             or not isfinite(seconds_per_mob) or seconds_per_mob <= 0):
         return "INCOMPLETE_UNPAID_NATIVE_RECOVERY", False
@@ -230,6 +234,8 @@ def main() -> None:
                 final_hp=result["native_windows"][-1]["actor_health"],
                 final_mana=result["native_actor_mana_after_world_kills"][-1],
                 paid_recovery=paid,
+                native_recovery_clock_accounted=result.get(
+                    "native_recovery_clock_accounted"),
                 native_recovery_mode=result.get("native_recovery_mode"),
                 native_recovery_seconds=result.get(
                     "native_passive_recovery_elapsed_seconds"),
