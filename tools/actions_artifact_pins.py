@@ -28,6 +28,19 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
 
 
+def artifact_run_id(artifact: dict) -> int | None:
+    """Return a usable GitHub Actions run ID; unknown provenance stays protected.
+
+    Artifact inventory can have missing or malformed workflow_run metadata.
+    Without this check an unpinned-run test might silently use ID zero.
+    """
+    workflow_run = artifact.get("workflow_run")
+    if not isinstance(workflow_run, dict):
+        return None
+    run_id = workflow_run.get("id")
+    return run_id if type(run_id) is int and run_id > 0 else None
+
+
 def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
     """Read evidence in working tree; unreadable files fail closed."""
     runs: set[int] = set()
