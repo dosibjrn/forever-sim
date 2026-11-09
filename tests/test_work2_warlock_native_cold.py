@@ -194,6 +194,63 @@ def test_native_apl_elite_mutations_reorder_and_remove_without_resetting():
 
 
 
+def test_rust_pet_options_reach_cold_and_elite_native_requests(monkeypatch):
+    """Only source enum values enter native protojson; Rust judges eligibility."""
+    reference = source()
+    player = cold.actor(reference)
+    player["warlock"] = {"options": {"classOptions": {
+        "summon": 1, "sacrificeSummon": False}}}
+    saved = copy.deepcopy(reference)
+    native = options()
+    native["pets"] = [
+        {"summon": "NoSummon", "proto_enum_value": 0,
+         "eligibility": "native_prepare_and_combat_required"},
+        {"summon": "Felhunter", "proto_enum_value": 4,
+         "eligibility": "native_prepare_and_combat_required"},
+        {"summon": "Felhunter", "proto_enum_value": 4,
+         "eligibility": "native_prepare_and_combat_required"},
+    ]
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([{"talents": "110-0-0"}]))
+    domain = cold.native_candidate_domain(reference, native, seed=17)
+    assert domain["pets"] == [0, 4]  # zero is a real native enum option
+    propose, mutate = cold.candidate_factory(reference, domain)
+
+    class PetOnlyRng:
+        def randint(self, _lo, _hi):
+            return 1
+
+        def sample(self, axes, count):
+            assert count == 1 and "pet" in axes
+            return ["pet"]
+
+        def choice(self, values):
+            assert values is domain["pets"]
+            return 4
+
+    candidate = {"source": copy.deepcopy(reference),
+                 "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}}
+    changed = mutate(candidate, PetOnlyRng())
+    selected = cold.actor(changed["source"])["warlock"]["options"]["classOptions"]
+    assert selected == {"summon": 4, "sacrificeSummon": False}
+    assert cold.actor(candidate["source"])["warlock"]["options"][
+        "classOptions"]["summon"] == 1
+    assert reference == saved
+    assert changed["recovery"] == candidate["recovery"]
+    # Real cold proposals, not only an isolated mutation, explore the pet axis.
+    assert any(cold.actor(propose(random.Random(seed))["source"])["warlock"][
+        "options"]["classOptions"].get("summon") in (0, 4)
+        and cold.actor(propose(random.Random(seed))["source"])["warlock"][
+            "options"]["classOptions"].get("summon") != 1
+        for seed in range(40))
+
+    no_pets = dict(domain, pets=[])
+    without, _ = cold.candidate_factory(reference, no_pets)
+    assert cold.actor(without(random.Random(3))["source"])["warlock"] == (
+        player["warlock"])
+
+
 def test_unverified_items_enter_cold_native_candidate_proposals():
     requests = native_equipment_proposals(options(), cold.actor(source())[
         "equipment"]["items"])
