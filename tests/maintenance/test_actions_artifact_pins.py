@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.actions_artifact_pins import collect_local_references, record_references
+from tools.actions_artifact_pins import artifact_run_id, collect_local_references, record_references
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -171,3 +171,33 @@ def test_live_gc_fetches_comments_before_eligible_deletion():
     assert '"pulls/comments?sort=created&direction=desc"' in workflow
     assert workflow.index('record_references(comment.get("body")') < workflow.index('candidates = []')
     assert "if not apply:" in workflow
+
+
+@pytest.mark.parametrize("workflow_run", [
+    None,
+    {},
+    [],
+    "not-a-run",
+    {"id": None},
+    {"id": 0},
+    {"id": -1},
+    {"id": True},
+    {"id": 42.0},
+    {"id": "42"},
+])
+def test_artifact_without_trustworthy_run_provenance_cannot_be_pruned(workflow_run):
+    assert artifact_run_id({"workflow_run": workflow_run}) is None
+
+
+def test_artifact_run_id_accepts_only_positive_native_numeric_id():
+    assert artifact_run_id({"workflow_run": {"id": 42, "head_branch": "main"}}) == 42
+
+
+def test_live_gc_excludes_unknown_run_provenance_before_age_based_deletion():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+        encoding="utf-8")
+    assert "run_id = artifact_run_id(a)" in workflow
+    assert 'elif run_id is None:' in workflow
+    assert 'protected["unknown-run-provenance"] += 1' in workflow
+    assert workflow.index('elif run_id is None:') < workflow.index('elif created(a) >= cutoff:')
+    assert 'candidates.append(a)' in workflow
