@@ -587,3 +587,55 @@ def test_gc_no_longer_limits_unmerged_branch_protection_to_two_artifacts():
     assert "active_branch_counts" not in workflow
     assert workflow.index("if protects_open_pr_artifact(") < workflow.index(
         "candidates = []")
+
+
+@pytest.mark.parametrize(("artifact_branch", "actual_branch", "open_branches", "expected"), [
+    ("work/open", "work/open", {"work/open"}, "protected"),
+    ("main", "work/open", {"work/open"}, "mismatch"),
+    ("main", "main", {"work/open"}, "eligible"),
+    ("work/old", None, {"work/open"}, "protected"),
+    (None, "work/open", {"work/open"}, "protected"),
+])
+def test_gc_confirms_open_pr_protection_with_authoritative_run_branch(
+        artifact_branch, actual_branch, open_branches, expected):
+    """A stale/mislabelled artifact branch cannot authorize evidence deletion."""
+    sha = "a" * 40
+    artifact = {
+        "id": 31, "name": "native-joint-28-stage5-" + sha,
+        "workflow_run": {
+            "id": 900, "head_sha": sha, "head_branch": artifact_branch,
+        },
+    }
+    def fetch(run_id):
+        return {
+            "id": run_id, "status": "completed", "conclusion": "success",
+            "event": "pull_request", "run_attempt": 1,
+            "path": ".github/workflows/native-joint-28-sweep.yml",
+            "head_sha": sha, "head_branch": actual_branch,
+        }
+    options = dict(
+        expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+        expected_name_prefix="native-joint-28-stage5-",
+        allowed_events=("pull_request", "push"),
+        require_success_conclusion=True,
+        require_single_attempt=True,
+        protected_branches=open_branches,
+    )
+    if expected == "mismatch":
+        with pytest.raises(ValueError, match="artifact branch .* does not match run branch"):
+            completed_run_candidates([artifact], fetch, **options)
+    else:
+        ready, deferred = completed_run_candidates([artifact], fetch, **options)
+        assert ([a["id"] for a in ready], deferred) == (
+            ([31], 0) if expected == "eligible" else ([], 1)
+        )
+
+
+def test_live_gc_enforces_branch_crosscheck_before_its_delete_plan():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml"
+                ).read_text(encoding="utf-8")
+    assert "protected_branches=open_branches)" in workflow
+    assert workflow.index("protected_branches=open_branches)") < workflow.index(
+        "planned = []")
+    assert workflow.index("planned = []") < workflow.index(
+        'request(f"artifacts/{aid}", "DELETE")')
