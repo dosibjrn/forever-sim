@@ -2,7 +2,7 @@ name: Work2 — Warlock L20 unseeded native 30/300 cold search
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened]
     branches: [main]
     paths:
       - .github/workflows/work2-warlock-l20-paid-cold.yml
