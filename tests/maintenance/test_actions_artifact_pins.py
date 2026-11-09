@@ -270,8 +270,44 @@ def test_scheduled_gc_looks_up_origin_completion_before_any_delete_plan():
     assert "completed_run_candidates, record_references" in workflow
     assert 'status, payload = request(f"runs/{run_id}")' in workflow
     assert 'if status != 200:' in workflow
-    assert "candidates, unfinished = completed_run_candidates(candidates, fetch_origin_run)" in workflow
-    assert workflow.index("completed_run_candidates(candidates, fetch_origin_run)") < workflow.index(
+    assert "candidates, unfinished = completed_run_candidates(" in workflow
+    assert 'expected_workflow=".github/workflows/native-joint-28-sweep.yml"' in workflow
+    assert workflow.index("completed_run_candidates(") < workflow.index(
         "planned = []")
-    assert workflow.index("completed_run_candidates(candidates, fetch_origin_run)") < workflow.index(
+    assert workflow.index("completed_run_candidates(") < workflow.index(
         'request(f"artifacts/{aid}", "DELETE")')
+
+
+def test_gc_refuses_name_colliding_artifact_from_other_workflow():
+    """A stage5-looking name cannot authorize deletion from a different job."""
+    artifact = {"id": 1, "name": "native-joint-28-stage5-" + "a" * 40,
+                "workflow_run": {"id": 100}}
+    expected = ".github/workflows/native-joint-28-sweep.yml"
+    with pytest.raises(ValueError, match="workflow origin"):
+        completed_run_candidates(
+            [artifact],
+            lambda run_id: {"id": run_id, "status": "completed",
+                            "path": ".github/workflows/other.yml"},
+            expected_workflow=expected)
+    with pytest.raises(ValueError, match="workflow origin"):
+        completed_run_candidates(
+            [artifact],
+            lambda run_id: {"id": run_id, "status": "completed"},
+            expected_workflow=expected)
+
+
+def test_gc_accepts_completed_artifacts_from_exact_sweep_workflow():
+    expected = ".github/workflows/native-joint-28-sweep.yml"
+    artifacts = [{"id": 1, "workflow_run": {"id": 100}},
+                 {"id": 2, "workflow_run": {"id": 100}}]
+    calls = []
+
+    def fetch(run_id):
+        calls.append(run_id)
+        return {"id": run_id, "status": "completed", "path": expected}
+
+    ready, deferred = completed_run_candidates(
+        artifacts, fetch, expected_workflow=expected)
+    assert [artifact["id"] for artifact in ready] == [1, 2]
+    assert deferred == 0
+    assert calls == [100]
