@@ -80,6 +80,23 @@ def test_cold_search_proposes_original_native_request_first_then_challengers():
     assert reference == unchanged
 
 
+def test_true_unseeded_cold_start_pays_native_mutation_not_reference_winner():
+    """Do not re-enter a saved winner as the first paid 30-second candidate."""
+    reference = source()
+    saved = copy.deepcopy(reference)
+    domain = {"gear": {}, "talents": [], "apl": [], "pets": [],
+              "recovery": [(0.7, 0.25)]}
+    propose, _change = cold.candidate_factory(reference, domain, unseeded=True)
+    first = propose(random.Random(3))
+    assert first["source"] == saved
+    assert first["recovery"] == {
+        "health_threshold": 0.7, "mana_threshold": 0.25}
+    assert first != {"source": reference,
+                     "recovery": {"health_threshold": 0.5,
+                                  "mana_threshold": 0.1}}
+    assert reference == saved
+
+
 def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch):
     """Search must not create an unconditional Life Tap from native options."""
     reference = source()
