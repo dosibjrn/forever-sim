@@ -56,7 +56,7 @@ def test_native_refusal_or_zero_candidates_do_not_make_diagnostic_ci_fail(
         "class": class_key, "level": 20, "spec": "unrestricted",
         "gate": "P3", "status": status,
         "reasons": ["NATIVE_ITEM_OPTIONS_UNSUPPORTED"],
-        "results": [] if status == "BLOCKED" else [{
+        "results": [] if status in ("BLOCKED", "FAIL") else [{
             "native_item_options_status": "partial_level_unknown",
             "native_item_options_source": "mythicsim:unrecognized-version",
             "native_equipped_paid_attempts": 0,
