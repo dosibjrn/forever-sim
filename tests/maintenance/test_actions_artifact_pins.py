@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
-                                         completed_run_candidates, record_references)
+                                         completed_run_candidates, record_references, protects_open_pr_artifact)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -554,3 +554,36 @@ def test_actions_run_prose_requires_unambiguous_id_marker():
         runs, artifacts)
     assert runs == set()
     assert artifacts == set()
+
+
+@pytest.mark.parametrize(("origin", "protected"), [
+    ({"id": 1, "head_branch": "work/unmerged"}, True),
+    ({"id": 2, "head_branch": "main"}, False),
+    ({"id": 3, "head_branch": "work/merged"}, False),
+    ({"id": 4, "head_branch": None}, True),
+    ({"id": 5}, True),
+    ({"id": 6, "head_branch": 7}, True),
+    (None, True),
+])
+def test_gc_keeps_all_open_pr_evidence_and_unknown_branch_origins(origin, protected):
+    artifact = {"workflow_run": origin}
+    assert protects_open_pr_artifact(artifact, {"work/unmerged"}) is protected
+
+
+def test_gc_no_longer_limits_unmerged_branch_protection_to_two_artifacts():
+    """An older unmerged native receipt must survive even when newer runs exist."""
+    artifacts = [
+        {"id": i, "workflow_run": {"id": 100 + i,
+                                  "head_branch": "work/unmerged"}}
+        for i in range(5)
+    ]
+    assert all(protects_open_pr_artifact(a, {"work/unmerged"}) for a in artifacts)
+    assert not protects_open_pr_artifact(
+        {"workflow_run": {"id": 200, "head_branch": "main"}},
+        {"work/unmerged"})
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+        encoding="utf-8")
+    assert "if protects_open_pr_artifact(a, open_branches):" in workflow
+    assert "active_branch_counts" not in workflow
+    assert workflow.index("if protects_open_pr_artifact(") < workflow.index(
+        "candidates = []")
