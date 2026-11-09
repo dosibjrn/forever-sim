@@ -383,19 +383,30 @@ jobs:
           mkdir -p "$RUNNER_TEMP/native-p3-no-record"
           native="$RUNNER_TEMP/native-p3-no-record/rogue-l20-item-options.json"
           report="$RUNNER_TEMP/native-p3-no-record/rogue-l20-p3.json"
+          # This auxiliary native catalogue query is diagnostic only. The real
+          # P3 gate owns native proposals, execution and verdict.
+          native_rc=0
           "$FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN" item-options \
-            --class rogue --level 20 --spec unrestricted --slot all > "$native"
+            --class rogue --level 20 --spec unrestricted --slot all > "$native" \
+            2> "$RUNNER_TEMP/native-p3-no-record/rogue-l20-item-options.stderr" || native_rc=$?
           rc=0
           timeout 600s python tools/wf_gate.py --class rogue --level 20 \
             --spec unrestricted --gate P3 --out "$report" || rc=$?
-          python - "$native" "$report" "$rc" <<'PY'
+          python - "$native" "$report" "$rc" "$native_rc" <<'PY'
           import json, sys
           from pathlib import Path
-          native = json.loads(Path(sys.argv[1]).read_text())
+          # Missing, refused or malformed auxiliary output must not mask
+          # the already-executed P3 PASS/FAIL/BLOCKED receipt.
+          try:
+              native = json.loads(Path(sys.argv[1]).read_text())
+              if not isinstance(native, dict):
+                  native = {"status": "non_object_diagnostic"}
+          except (OSError, ValueError):
+              native = {"status": "unavailable"}
+          if not isinstance(native.get("refusal"), dict):
+              native["refusal"] = {}
           gate = json.loads(Path(sys.argv[2]).read_text())
           rc = int(sys.argv[3])
-          assert (native["class"], native["level"], native["spec"], native["slot"]) == (
-              "rogue", 20, "unrestricted", "all"), native
           assert (gate["class"], gate["level"], gate["spec"], gate["gate"]) == (
               "rogue", 20, "unrestricted", "P3"), gate
           # No-record CI verifies Forever request/response transport. Native refusals,
@@ -408,6 +419,7 @@ jobs:
           row = rows[0] if rows else {}
           print("NO_RECORD_NATIVE_P3_OBSERVED rogue:20",
                 "native_status", native.get("status"),
+                "native_probe_exit", int(sys.argv[4]),
                 "native_refusal", (native.get("refusal") or {}).get("code"),
                 "gate_status", gate["status"],
                 "reasons", row.get("reasons", gate.get("reasons", [])),
