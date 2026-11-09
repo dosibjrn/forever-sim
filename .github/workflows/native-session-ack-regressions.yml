@@ -172,12 +172,14 @@ jobs:
             --source-request docs/evidence/druid-l60-feral/p7.1/saved_811_request.json \
             --targets 2
 
-  warlock-l20-paid-eight:
-    # Independent paid eight-target diagnostic using a fixed native SHA;
-    # not a strict preflight/acceptance requirement for the real 100-target gate.
-    # Preserve exact native observations, including legitimate zero incoming hits.
+  warlock-l20-paid-hundred:
+    # Run the first real 100-target Decisions/world attempt on an exact
+    # previously tested native source. The strict eight-target preflight is
+    # NOT an approved prerequisite. Restrict this paid diagnostic to Work2's
+    # Warlock implementation branches, not every unrelated native PR.
+    if: startsWith(github.head_ref, 'work2/warlock-l20-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - name: Checkout exact Work2 PR client
         uses: actions/checkout@v4
@@ -201,43 +203,39 @@ jobs:
           test "$(git rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
           cargo build --locked --bin forever-engine
           sha256sum target/debug/forever-engine fixtures/warlock-l20-troll-best-paid.request.json
-      - name: Verify actual eight-target Decisions ACK and charged recovery (not gate)
+      - name: Execute 100 distinct-target Warlock Decisions/native-world paid objective
         working-directory: project
         run: |
           set -euo pipefail
           python -u tools/wf_warlock_l20_100mob.py \
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
-            --out ../warlock-l20-decisions-eight \
-            --variant best_apl --targets 8 --recovery-policy decisions \
+            --out ../warlock-l20-decisions-hundred \
+            --variant best_apl --targets 100 --recovery-policy decisions \
             --health-threshold 1.0 --mana-threshold 1.0
           python - <<'PY'
           import json
           from pathlib import Path
-          receipt = json.loads(Path("../warlock-l20-decisions-eight/summary.json").read_text())
+          receipt = json.loads(Path("../warlock-l20-decisions-hundred/summary.json").read_text())
           row, = receipt["results"]
-          assert row["status"] == "COMPLETED_8_REAL_NATIVE_GSIM_KILLS", row
-          assert row["killed"] == 8 and row["native_recovery_clock_accounted"] is True, row
-          assert row["native_consumption_proof_required"] is False, row
-          assert row["native_health_damage_proof_required"] is False, row
-          assert row["native_2d_paid_objective_eligible"] is False, row
+          assert row["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS", row
+          assert row["killed"] == 100, row
+          assert row["native_recovery_clock_accounted"] is True, row
+          assert row["native_actor_continuity_receipt_complete"] is True, row
+          assert row["native_2d_paid_objective_eligible"] is True, row
           assert receipt["p4_p5_p6_pass"] is False, receipt
-          print("WARLOCK_L20_EIGHT_NATIVE_DECISIONS_DIAGNOSTIC_NOT_GATE",
+          print("WARLOCK_L20_100_NATIVE_DECISIONS_ELAPSED_NOT_COLD_SEARCH",
                 json.dumps(row, sort_keys=True), flush=True)
           PY
-      - name: Show full native refusal or paid receipt after the run
+      - name: Show complete native refusal or real paid result
         if: always()
         run: |
-          test ! -f warlock-l20-decisions-eight/summary.json || cat warlock-l20-decisions-eight/summary.json
-      - name: Preserve distinct 8-target Decisions requests and native receipt
+          test ! -f warlock-l20-decisions-hundred/summary.json || cat warlock-l20-decisions-hundred/summary.json
+      - name: Preserve 100-target paid Decisions native refusal and traces
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: warlock-l20-decisions-eight-diagnostic
-          path: warlock-l20-decisions-eight/
+          name: warlock-l20-decisions-hundred
+          path: warlock-l20-decisions-hundred/
           if-no-files-found: warn
           retention-days: 3
-
-      # The frozen fixed-rest 100/100 baseline already passed in Actions
-      # #42577136919. Never re-run it here. A subsequent distinct 100-target
-      # Decisions chain and cold 300s finalists require separate real receipts.
