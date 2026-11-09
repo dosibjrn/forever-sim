@@ -72,13 +72,14 @@ def test_cold_cli_exit_code_matches_actual_paid_evidence(
     def fake_run_cold(reference, options, **kwargs):
         assert reference == {"native_source": "input-only"}
         assert options == {"source_revision": "native-test"}
+        assert kwargs["unseeded"] is True
         return copy.deepcopy(report)
 
     monkeypatch.setattr(cold, "query_native_options",
                         lambda *args: {"source_revision": "native-test"})
     monkeypatch.setattr(cold, "run_cold", fake_run_cold)
     monkeypatch.setattr(sys, "argv", [
-        "wf_warlock_l20_native_cold.py", "--binary", str(binary),
+        "wf_warlock_l20_native_cold.py", "--unseeded", "--binary", str(binary),
         "--source", str(source), "--out", str(tmp_path / "receipts"),
     ])
     if complete:
