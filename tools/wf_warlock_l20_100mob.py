@@ -93,6 +93,27 @@ def native_failure_receipt(exc: BaseException) -> dict:
     }
 
 
+def native_actor_receipt_complete(result: dict, requested_targets: int) -> bool:
+    """Require the full per-kill retained-actor trace before scoring a chain.
+
+    This verifies only the native transport shape, not Warcraft combat rules:
+    Rust is authoritative for survival, resource changes and kill semantics.
+    An ACK count without the corresponding actor state is not a comparable
+    100-mob objective receipt.
+    """
+    windows = result.get("native_windows")
+    mana = result.get("native_actor_mana_after_world_kills")
+    return (
+        isinstance(windows, list) and len(windows) == requested_targets
+        and all(isinstance(window, dict)
+                and type(window.get("actor_health")) in (int, float)
+                and isfinite(window["actor_health"]) for window in windows)
+        and isinstance(mana, list) and len(mana) == requested_targets
+        and all(type(value) in (int, float) and isfinite(value)
+                for value in mana)
+    )
+
+
 def classify_native_chain(result: dict, requested_targets: int, *,
                           recovery_policy: str,
                           require_native_consumption: bool = False,
@@ -251,6 +272,10 @@ def main() -> None:
                 result, args.targets, recovery_policy=args.recovery_policy,
                 require_native_consumption=args.require_native_consumption,
                 require_native_health_damage=args.require_native_health_damage)
+            actor_receipt_complete = native_actor_receipt_complete(
+                result, args.targets)
+            if complete and not actor_receipt_complete:
+                status, complete = "INCOMPLETE_NATIVE_ACTOR_CONTINUITY_RECEIPT", False
             # Independent transport proofs: a native health-damage refusal
             # must not erase genuine paid food/water evidence, or vice versa.
             # Neither individual proof grants an accepted chain objective.
@@ -271,8 +296,15 @@ def main() -> None:
                 seconds_per_mob=(seconds_per_mob if complete else None),
                 min_hp=result["minimum_native_actor_health"],
                 min_mana=result["minimum_native_actor_mana"],
-                final_hp=result["native_windows"][-1]["actor_health"],
-                final_mana=result["native_actor_mana_after_world_kills"][-1],
+                final_hp=(result["native_windows"][-1]["actor_health"]
+                          if actor_receipt_complete else None),
+                final_mana=(result["native_actor_mana_after_world_kills"][-1]
+                            if actor_receipt_complete else None),
+                native_actor_continuity_receipt_complete=actor_receipt_complete,
+                native_actor_health_windows_recorded=len(
+                    result.get("native_windows", [])),
+                native_actor_mana_windows_recorded=len(
+                    result.get("native_actor_mana_after_world_kills", [])),
                 paid_recovery=paid,
                 native_recovery_clock_accounted=result.get(
                     "native_recovery_clock_accounted"),
@@ -289,7 +321,9 @@ def main() -> None:
                 native_food_health_gain=result.get("native_food_health_gain_total"),
                 native_water_mana_gain=result.get("native_water_mana_gain_total"),
                 native_consumption_proof_required=args.require_native_consumption,
-                native_consumption_proven=(consumption_complete and args.recovery_policy == "decisions"),
+                native_consumption_proven=(actor_receipt_complete
+                                           and consumption_complete
+                                           and args.recovery_policy == "decisions"),
                 native_health_damage=result.get("native_health_damage"),
                 # Transport the existing source-native per-mob attack receipt.
                 # A world damage-to-target event is not incoming player damage.
@@ -302,7 +336,8 @@ def main() -> None:
                      "damage_events": window.get("native_health_damage_events")}
                     for window in result["native_windows"]
                 ],
-                native_health_damage_proven=health_complete,
+                native_health_damage_proven=(actor_receipt_complete
+                                            and health_complete),
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
                 # Frozen-build screen only: never promote it to cold-search
@@ -312,7 +347,7 @@ def main() -> None:
             print("CHAIN_COMPLETED" if complete else "CHAIN_INCOMPLETE",
                   json.dumps(record), flush=True)
         except (AssertionError, RuntimeError, ValueError, OSError,
-                subprocess.TimeoutExpired, KeyError, TypeError) as exc:
+                subprocess.TimeoutExpired, KeyError, IndexError, TypeError) as exc:
             # The live driver embeds genuine completed-ACK count on a native
             # nonzero exit; preserve the precise result, not a fake score.
             record["status"] = "INCOMPLETE_OR_NATIVE_REFUSAL"
