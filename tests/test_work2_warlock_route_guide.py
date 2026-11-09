@@ -432,3 +432,27 @@ def test_adjacent_execute_forwards_level_to_real_native_producer(tmp_path, monke
     report = json.loads((out / "route.json").read_text())
     assert report["measured_levels"] == [21]
     assert 20 in report["unmeasured_levels"]
+
+
+def test_baseline_l20_retained_through_l21_native_result_and_refusal(tmp_path):
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(payload(paid("historical-l20", "real-prior-trial"))))
+    l21, summary = native_chain_summary(tmp_path / "l21", level=21)
+    out = tmp_path / "measured"
+    assert main(["--native-summary", str(l21),
+                 "--baseline-observations", str(baseline), "--out", str(out)]) == 0
+    report = json.loads((out / "route.json").read_text())
+    assert report["measured_levels"] == [20, 21]
+    assert len(report["comparisons"]) == 2
+    assert report["full_10_60_native_replay_executed"] is False
+    summary["results"][0].update(
+        status="INCOMPLETE_OR_NATIVE_REFUSAL", killed=7,
+        error="NATIVE_PREPARE_OR_WORLD_REFUSAL")
+    l21.write_text(json.dumps(summary))
+    refused_out = tmp_path / "refused"
+    assert main(["--native-summary", str(l21),
+                 "--baseline-observations", str(baseline), "--out", str(refused_out)]) == 2
+    report = json.loads((refused_out / "route.json").read_text())
+    assert report["measured_levels"] == [20]
+    assert 21 in report["unmeasured_levels"]
+    assert report["native_refusals"][0]["level"] == 21
