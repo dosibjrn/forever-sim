@@ -11,7 +11,10 @@ import re
 _RUN = re.compile(r"actions/runs/(\d+)")
 _ARTIFACT = re.compile(r"/artifacts/(\d+)")
 # Accepted native receipts may preserve an artifact only by its JSON ID.
-_ARTIFACT_ID_FIELD = re.compile(r'"artifact_id"\s*:\s*"?([0-9]+)"?')
+# Retained .log receipts may contain Python repr dictionaries with single
+# quotes rather than strict JSON. Both must pin before irreversible GC.
+_ARTIFACT_ID_FIELD = re.compile(
+    r"""["']artifact_id["']\s*:\s*["']?([1-9]\d*)["']?\s*(?=[,}])""")
 # Human prose in retained evidence and issue/PR discussion often records only
 # "artifact #123" or "artifact ID: 123", without a URL or JSON field.
 # Those are explicit artifact references and must pin the original evidence.
@@ -22,8 +25,8 @@ _ARTIFACT_PROSE_ID = re.compile(
 # Machine-readable receipts can reference a workflow run only by numeric ID.
 # Non-numeric internal runtime-proof IDs must not be treated as Actions runs.
 _RUN_ID_FIELD = re.compile(
-    r'"(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"\s*:\s*'
-    r'(?:"([1-9]\d*)"|([1-9]\d*))\s*(?=[,}])')
+    r"""["'](?:run_id|workflow_run_id|github_run_id|engine_build_run_id)["']\s*:\s*"""
+    r"""(?:["']([1-9]\d*)["']|([1-9]\d*))\s*(?=[,}])""")
 
 # Issue/PR discussions also cite Actions runs without URLs or JSON fields:
 # "Actions run #123", "workflow run ID: 123", and "run #123".

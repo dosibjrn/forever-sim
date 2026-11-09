@@ -86,6 +86,25 @@ def test_numeric_actions_run_ids_in_json_pin_evidence_without_url():
 
 
 
+def test_python_repr_receipts_pin_artifacts_and_origin_runs(tmp_path):
+    """Paid native .log dictionaries use single quotes, not JSON quoting."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    log = tmp_path / "evidence/native/paid-hostile.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text(
+        "{'artifact_id': 12998142923, 'run_id': 42574670709, "
+        "'workflow_run_id': '42573539316', 'not_a_run_id': 777, "
+        "'artifact_id': '12998142924'}", encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42574670709, 42573539316}
+    assert artifacts == {12998142923, 12998142924}
+
+
 @pytest.mark.parametrize("damaged_path", [
     "docs/evidence/damaged-receipt.json",
     "evidence/native/damaged-paid.log",
