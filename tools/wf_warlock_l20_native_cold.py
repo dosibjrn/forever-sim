@@ -51,6 +51,7 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     apl_variants = [apl]
     if len(apl) > 1:
         apl_variants.append(list(reversed(apl)))
+    native_actions = []
     # Candidate spell IDs come only from get_options, and Rust still decides
     # whether a spell is executable at this level/talent/build. A prefix-only
     # proposal cannot replace an existing filler or try a new standalone APL:
@@ -60,6 +61,7 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
         if type(spell_id) is int and spell_id > 0:
             action = {"action": {"castSpell": {
                 "spellId": {"spellId": spell_id}}}}
+            native_actions.append(action)
             apl_variants.append([copy.deepcopy(action), *copy.deepcopy(apl)])
             apl_variants.append([copy.deepcopy(action)])
             for index in range(len(apl)):
@@ -68,8 +70,10 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                 apl_variants.append(proposal)
     unique_apl = list({json.dumps(x, sort_keys=True): x
                        for x in apl_variants}.values())
+    unique_actions = list({json.dumps(x, sort_keys=True): x
+                           for x in native_actions}.values())
     return {"gear": gear, "talents": talents or [player.get("talentsString", "0-0-0")],
-            "apl": unique_apl,
+            "apl": unique_apl, "apl_actions": unique_actions,
             # These are recovery *policy proposals*, not Python regen mechanics.
             "recovery": [(0.35, 0.10), (0.50, 0.10),
                          (0.50, 0.25), (0.70, 0.25)]}
@@ -94,8 +98,22 @@ def candidate_factory(reference: dict, domain: dict):
             elif axis == "talents":
                 player["talentsString"] = rng.choice(domain["talents"])
             elif axis == "apl":
-                player["rotation"]["priorityList"] = copy.deepcopy(
-                    rng.choice(domain["apl"]))
+                actions = domain.get("apl_actions") or []
+                if not cold and actions and rng.random() < 0.75:
+                    # Recombine source-returned actions in the current elite.
+                    # A whole-APL replacement alone cannot accumulate two new
+                    # spells, so a valid multi-spell challenger is unreachable.
+                    # Rust remains the only judge of executable rotations.
+                    rotation = player["rotation"]["priorityList"]
+                    action = copy.deepcopy(rng.choice(actions))
+                    operation = rng.choice(("replace", "insert"))
+                    if operation == "replace" and rotation:
+                        rotation[rng.randrange(len(rotation))] = action
+                    else:
+                        rotation.insert(rng.randrange(len(rotation) + 1), action)
+                else:
+                    player["rotation"]["priorityList"] = copy.deepcopy(
+                        rng.choice(domain["apl"]))
             elif axis == "recovery":
                 hp, mana = rng.choice(domain["recovery"])
                 value["recovery"] = {"health_threshold": hp, "mana_threshold": mana}
