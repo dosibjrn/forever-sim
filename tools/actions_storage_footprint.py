@@ -14,10 +14,10 @@ REPOSITORIES = ("dosibjrn/forever-sim", "dosibjrn/mythicsim-forever-engine")
 PAGE_LIMIT = 100
 
 
-def inventory(repository: str, fetch_page) -> tuple[int, int]:
-    """Require complete, nonduplicate pagination; fail rather than undercount."""
+def verified_artifacts(repository: str, fetch_page) -> list[dict]:
+    """Return a complete stable artifact snapshot; never approve partial GC input."""
     seen: set[int] = set()
-    total_bytes = 0
+    artifacts: list[dict] = []
     expected = None
     for page in range(1, PAGE_LIMIT + 1):
         payload = fetch_page(repository, page)
@@ -28,7 +28,12 @@ def inventory(repository: str, fetch_page) -> tuple[int, int]:
             raise ValueError(f"{repository}: invalid total_count on page {page}")
         if expected is None:
             expected = count
-        for artifact in payload["artifacts"]:
+        elif count != expected:
+            raise ValueError(f"{repository}: total_count changed during pagination: {expected} -> {count}")
+        batch = payload["artifacts"]
+        if len(batch) > 100:
+            raise ValueError(f"{repository}: oversized artifact page {page}")
+        for artifact in batch:
             if not isinstance(artifact, dict):
                 raise ValueError(f"{repository}: malformed artifact on page {page}")
             aid, size = artifact.get("id"), artifact.get("size_in_bytes")
@@ -36,12 +41,18 @@ def inventory(repository: str, fetch_page) -> tuple[int, int]:
                     or type(size) is not int or size < 0):
                 raise ValueError(f"{repository}: duplicate/invalid artifact on page {page}")
             seen.add(aid)
-            total_bytes += size
-        if len(payload["artifacts"]) < 100:
+            artifacts.append(artifact)
+        if len(batch) < 100:
             if len(seen) != expected:
                 raise ValueError(f"{repository}: pagination changed: {len(seen)} != {expected}")
-            return len(seen), total_bytes
+            return artifacts
     raise ValueError(f"{repository}: pagination exceeded {PAGE_LIMIT} pages")
+
+
+def inventory(repository: str, fetch_page) -> tuple[int, int]:
+    """Count bytes only from a verified complete retained-artifact snapshot."""
+    artifacts = verified_artifacts(repository, fetch_page)
+    return len(artifacts), sum(a["size_in_bytes"] for a in artifacts)
 
 
 def github_page(repository: str, page: int) -> dict:

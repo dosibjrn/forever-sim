@@ -53,3 +53,26 @@ def test_both_repos_report_retained_not_billing(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "RETAINED_KNOWN_TWO_REPOS bytes=1024" in out
     assert "BILLING_METER=UNKNOWN" in out
+
+
+def test_inventory_rejects_total_count_changing_mid_scan():
+    """An incomplete 101-of-102 page series must not authorize GC deletion."""
+    def page(_repository, number):
+        if number == 1:
+            return {"total_count": 101, "artifacts": [
+                {"id": i, "size_in_bytes": 10} for i in range(1, 101)]}
+        return {"total_count": 102, "artifacts": [
+            {"id": 101, "size_in_bytes": 10}]}
+
+    with pytest.raises(ValueError, match="total_count changed"):
+        module.verified_artifacts("owner/repo", page)
+
+
+def test_deletion_workflow_uses_complete_verified_inventory():
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    assert "from tools.actions_storage_footprint import verified_artifacts" in workflow
+    assert "return verified_artifacts(repo, fetch_page)" in workflow
+    assert workflow.index("return verified_artifacts(repo, fetch_page)") < workflow.index(
+        "candidates = []")
