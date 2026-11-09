@@ -1264,11 +1264,19 @@ def test_unseeded_native_fixture_can_propose_gear_without_a_saved_winner(monkeyp
     assert cold.actor(second["source"])["equipment"]["items"][0] in (
         domain["gear_insertions"])
     # Elite recombination can add a second native item; Rust decides legality.
-    combined = next(
-        (candidate for seed in range(40)
-         if len(cold.actor(candidate := mutate(second, random.Random(seed)))["source"][
-             "equipment"]["items"]) == 2),
-        None,
-    )
+    combined = None
+    for seed in range(40):
+        challenger = mutate(second, random.Random(seed))
+        if len(cold.actor(challenger["source"])["equipment"]["items"]) == 2:
+            combined = challenger
+            break
     assert combined is not None
     assert reference == frozen
+
+def test_cold_workflow_inputs_are_unoptimized_native_actor_not_saved_winner():
+    """The paid Actions producer must not bootstrap from prior best-paid gear."""
+    workflow = (cold.ROOT / ".github/workflows/native-session-ack-regressions.yml"
+                ).read_text()
+    job = workflow.split("  warlock-l20-cold-30-300:", 1)[1]
+    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" in job
+    assert "warlock-l20-troll-best-paid.request.json" not in job
