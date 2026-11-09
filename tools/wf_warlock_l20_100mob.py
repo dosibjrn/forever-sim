@@ -434,6 +434,11 @@ def main() -> None:
                                             and health_complete),
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
+                # Actual source-action effects ACKed by gsim, grouped by
+                # the Rust-provided caster and action IDs. Periodic effects
+                # are NOT assumed to be distinct casts or talent unlocks.
+                native_source_damage_effects_by_caster=result.get(
+                    "native_source_damage_effects_by_caster", {}),
                 # Frozen-build screen only: never promote it to cold-search
                 # P4/P5/P6 acceptance, even after 100 paid kills.
                 native_2d_paid_objective_eligible=complete and args.targets == 100,
