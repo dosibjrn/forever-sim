@@ -42,6 +42,70 @@ def identity(value: dict) -> str:
                           .encode("utf-8")).hexdigest()
 
 
+
+def native_prepared_apl_hints(binary: Path, reference: dict, out: Path,
+                              runner=subprocess.run) -> list[dict]:
+    """Prioritize Rust-registered source actions; never grant Python legality.
+
+    The broad native `get_options` source list includes spell IDs that an
+    exact prepared L20 actor does not register. The paid #42666734317
+    requested two such spells and native executed only the old filler.
+    A cheap real `prepare` supplies the actor's *registered* APL spell
+    alternatives. This is a proposal-ranking hint, NOT a pre-evaluation
+    veto: if prepare fails or these hints are absent, the regular complete
+    Rust-source options remain available for native evaluation.
+    """
+    out.mkdir(parents=True, exist_ok=True)
+    request = out / "source.request.json"
+    prepared_path = out / "source.prepared.json"
+    request.write_text(json.dumps(reference, sort_keys=True) + "\n")
+    prepared_path.unlink(missing_ok=True)
+    command = [
+        str(binary.resolve()), "prepare", "--request",
+        str(request.resolve()), "--actor-level", "20",
+        "--outfile", str(prepared_path.resolve()),
+    ]
+    try:
+        process = runner(command, capture_output=True, text=True,
+                         timeout=60, check=False)
+        if process.returncode or not prepared_path.exists():
+            return []
+        prepared = json.loads(prepared_path.read_text())
+        spells = prepared.get("player", {}).get("spells", [])
+        if not isinstance(spells, list):
+            return []
+    except (OSError, subprocess.TimeoutExpired, ValueError, TypeError,
+            AttributeError):
+        return []
+    periodic = []
+    direct = []
+    seen = set()
+    for spell in spells:
+        if not isinstance(spell, dict):
+            continue
+        action = spell.get("action_id")
+        spell_id = action.get("spell_id") if isinstance(action, dict) else None
+        if (type(spell_id) is not int or spell_id <= 0
+                or spell_id in seen
+                or "SpellFlagAPL" not in spell.get("flags", [])):
+            continue
+        entry = {"action": {"castSpell": {
+            "spellId": {"spellId": spell_id}}}}
+        if isinstance(spell.get("dot"), dict):
+            # Native actor reports this as an active periodic effect; offer
+            # an ordinary native APL condition as a search policy, not a
+            # second model of its damage, cost or legality.
+            entry["action"]["condition"] = {"not": {"val": {
+                "dotIsActive": {"spellId": {"spellId": spell_id}}}}}
+            periodic.append(entry)
+        elif isinstance(spell.get("damage_effect"), dict):
+            direct.append(entry)
+        else:
+            continue
+        seen.add(spell_id)
+    return periodic + direct
+
+
 def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     """Only source-returned alternatives; no Python game eligibility judgment."""
     player = actor(reference)
@@ -234,13 +298,17 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
             elif axis == "apl":
                 actions = domain.get("apl_actions") or []
                 if cold and actions:
-                    # A one-spell replacement discarded the only source APL
-                    # fallback in the first paid cold trial. Compose a bounded
-                    # set of DISTINCT Rust-returned actions ahead of the source
-                    # rotation instead; Rust alone decides which execute.
+                    # Source-wide options can contain spells that the exact
+                    # prepared actor has not registered. Prefer *native
+                    # prepared* periodic/direct action hints before sampling
+                    # the broad source list; never veto the rest in Python.
                     rotation = player["rotation"]["priorityList"]
-                    alternatives = [action for action in actions
+                    prepared_actions = domain.get("prepared_apl_actions") or []
+                    alternatives = [action for action in prepared_actions
                                     if action not in rotation]
+                    if not alternatives:
+                        alternatives = [action for action in actions
+                                        if action not in rotation]
                     if alternatives:
                         additions = rng.sample(
                             alternatives, min(2, len(alternatives)))
@@ -395,7 +463,8 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
 def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
              seed: int = 20261109, budget_s: float = 300.0,
              snapshot_s: float = 30.0, clock=time.monotonic,
-             chain=paid_chain, unseeded: bool = False) -> dict:
+             chain=paid_chain, unseeded: bool = False,
+             prepared_apl_actions: list[dict] | None = None) -> dict:
     """One 30/300s cold search; snapshot only paid results completed by 30s.
 
     All screening calls execute actual retained-actor native/world Decisions
@@ -410,6 +479,8 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         raise ValueError("WRONG_NATIVE_WARLOCK_L20_SOURCE")
     out.mkdir(parents=True, exist_ok=True)
     domain = native_candidate_domain(reference, options, seed)
+    if prepared_apl_actions:
+        domain["prepared_apl_actions"] = prepared_apl_actions
     propose, mutate = candidate_factory(reference, domain, unseeded=unseeded)
     start = clock()
     deadline = start + budget_s
@@ -786,6 +857,11 @@ def run_paid_cold_two_target_proposal(
     """
     out.mkdir(parents=True, exist_ok=True)
     domain = native_candidate_domain(reference, options, seed)
+    # This hint comes from the real source actor's prepared spell registry.
+    # A native prepare refusal never blocks the actual paid candidate.
+    hints = native_prepared_apl_hints(binary, reference, out / "native_apl_hints")
+    if hints:
+        domain["prepared_apl_actions"] = hints
     propose, _ = candidate_factory(reference, domain, unseeded=True)
     candidate = propose(random.Random(seed))
     (out / "cold_proposal.request.json").write_text(
@@ -901,9 +977,12 @@ def main() -> None:
             raise SystemExit(1)
         return
     options = query_native_options(args.binary, "warlock", 20)
+    hints = native_prepared_apl_hints(
+        args.binary, source, args.out / "native_apl_hints")
     result = run_cold(source, options, binary=args.binary, out=args.out,
                       seed=args.seed, budget_s=args.budget,
-                      snapshot_s=args.snapshot, unseeded=args.unseeded)
+                      snapshot_s=args.snapshot, unseeded=args.unseeded,
+                      prepared_apl_actions=hints)
     complete = cold_search_has_paid_finalist_evidence(result)
     print("WARLOCK_NATIVE_COLD_PAID_SEARCH", json.dumps({
         "status": result["native_search"]["status"],
