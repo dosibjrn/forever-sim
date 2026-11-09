@@ -505,3 +505,85 @@ def test_strict_health_refusal_retains_real_eight_target_decisions_receipt(
                for window in record["native_incoming_player_damage_by_target"])
     assert record["seconds_per_mob"] is None
     assert record["native_2d_paid_objective_eligible"] is False
+
+
+@pytest.mark.parametrize("incomplete_trace", [
+    "missing_health_window", "missing_mana_window",
+    "nonfinite_health", "nonfinite_mana",
+])
+def test_hundred_kills_without_complete_native_actor_trace_cannot_be_scored(
+    tmp_path, monkeypatch, incomplete_trace
+):
+    """Native 100/100 ACK alone cannot replace the 100 retained-actor states."""
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine")
+    out = tmp_path / "out"
+
+    def prepare(cmd, **kwargs):
+        Path(cmd[cmd.index("--outfile") + 1]).write_text(json.dumps({
+            "player": {"class": "ClassWarlock", "race": "RaceTroll",
+                       "level": 20, "stats": {"Health": 600., "Mana": 700.}}}))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    def native(_binary, _prepared, **kwargs):
+        assert kwargs["target_count"] == 100
+        assert kwargs["recovery_policy"] == "decisions"
+        windows = [{"actor_health": 500.}] * 100
+        mana = [250.] * 100
+        if incomplete_trace == "missing_health_window":
+            windows.pop()
+        elif incomplete_trace == "missing_mana_window":
+            mana.pop()
+        elif incomplete_trace == "nonfinite_health":
+            windows[-1] = {"actor_health": float("nan")}
+        else:
+            mana[-1] = float("inf")
+        return {
+            "world_targets_killed": 100,
+            "world_elapsed_seconds": 1400.,
+            "world_seconds_per_target_paid_recovery": 14.,
+            "minimum_native_actor_health": 500.,
+            "minimum_native_actor_mana": 250.,
+            "native_windows": windows,
+            "native_actor_mana_after_world_kills": mana,
+            "paid_recovery": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "native_passive_recovery_elapsed_seconds": 300.,
+            "native_passive_recovery_ns_by_target": [0] * 100,
+            "native_passive_recovery_ticks_by_target": [0] * 100,
+            "native_food_water_observed": True,
+            "native_food_seconds_total": 0.,
+            "native_water_seconds_total": 80.,
+            "native_food_health_gain_total": 0.,
+            "native_water_mana_gain_total": 500.,
+            "gsim_route_paid_movement_s": 140.,
+            "native_damage_events": 150,
+            "native_health_damage": {
+                "observed": True, "damage_taken": 40., "damage_events": 2},
+        }
+
+    main = _WARLOCK["main"]
+    monkeypatch.setitem(main.__globals__, "native_world_chain", native)
+    monkeypatch.setattr(main.__globals__["subprocess"], "run", prepare)
+    monkeypatch.setattr(sys, "argv", [
+        "driver", "--binary", str(tmp_path / "engine"),
+        "--source", str(source), "--out", str(out),
+        "--targets", "100", "--variant", "best_apl",
+        "--recovery-policy", "decisions",
+    ])
+    with pytest.raises(SystemExit, match="No variant completed 100"):
+        main()
+
+    record = json.loads((out / "best_apl/summary.json").read_text())
+    assert record["killed"] == 100
+    assert record["status"] == "INCOMPLETE_NATIVE_ACTOR_CONTINUITY_RECEIPT"
+    assert record["native_actor_continuity_receipt_complete"] is False
+    assert record["seconds_per_mob"] is None
+    assert record["native_2d_paid_objective_eligible"] is False
+    assert record["native_consumption_proven"] is False
+    assert record["native_health_damage_proven"] is False
+    assert record["final_hp"] is None
+    assert record["final_mana"] is None
+    assert json.loads((out / "summary.json").read_text())["p4_p5_p6_pass"] is False
