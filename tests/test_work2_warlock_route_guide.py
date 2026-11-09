@@ -205,6 +205,11 @@ def native_chain_summary(tmp_path):
         "native_health_damage": {"observed": True, "damage_taken": 308},
         "native_food_seconds": 125,
         "native_water_seconds": 250,
+        "native_food_health_gain": 145.5,
+        "native_water_mana_gain": 300.0,
+        "native_recovery_seconds": 375.0,
+        "walk_paid_s": 257.75,
+        "native_damage_events": 24,
     }
     summary = {
         "kind": "real_100_target_source_native_world_attempts",
@@ -230,6 +235,14 @@ def test_native_chain_adapter_consumes_exact_source_and_real_paid_receipts(tmp_p
     assert rows[0]["pet"] == {"summon": 2}
     assert rows[0]["native_final_hp"] == 370
     assert rows[0]["native_food_seconds"] == 125
+    assert rows[0]["native_water_mana_gain"] == 300
+    assert rows[0]["native_recovery_seconds"] == 375
+    assert rows[0]["native_walk_paid_seconds"] == 257.75
+    guide = render_guide(report)
+    assert "native_final_hp: 370" in guide
+    assert "native_water_seconds: 250" in guide
+    assert "native_walk_paid_seconds: 257.75" in guide
+    assert "source_request_sha256:" in guide
     assert rows[0]["run_url"] is None
     assert "Local receipt:" in render_guide(report)
     assert "not a claimed executed 10" in render_guide(report)
@@ -277,8 +290,10 @@ def test_one_invocation_calls_real_producer_and_publishes_its_saved_summary(tmp_
         commands.append(cmd)
         assert "--targets" in cmd and cmd[cmd.index("--targets") + 1] == "100"
         assert "--hostile-player-tank" in cmd
-        assert "--require-native-health-damage" in cmd
+        assert "--require-native-health-damage" not in cmd
         assert cmd[cmd.index("--recovery-policy") + 1] == "decisions"
+        assert cmd[cmd.index("--health-threshold") + 1] == "0.7"
+        assert cmd[cmd.index("--mana-threshold") + 1] == "0.25"
         native_chain_summary(tmp_path / "guide" / "native_l20")
         return subprocess.CompletedProcess(cmd, 0, stdout="CHAIN_COMPLETED")
 
@@ -302,5 +317,45 @@ def test_no_paid_native_candidate_cannot_publish_a_measured_route(tmp_path):
     assert rows == []
     assert refusals[0]["killed"] == 42
     path.write_text(json.dumps(summary))
-    with pytest.raises(ValueError, match="no complete paid native"):
-        main(["--native-summary", str(path), "--out", str(tmp_path / "guide")])
+    out = tmp_path / "guide"
+    assert main(["--native-summary", str(path), "--out", str(out)]) == 2
+    report = json.loads((out / "route.json").read_text())
+    assert report["status"] == "native_refusal_only_no_measured_chain"
+    assert report["measured_levels"] == []
+    assert len(report["unmeasured_levels"]) == 51
+    assert report["observations"] == []
+    assert report["native_refusals"][0]["killed"] == 42
+    assert "NATIVE_ACTOR_DIED" in (out / "GUIDE.md").read_text()
+    assert "L10-60" in (out / "GUIDE.md").read_text()
+
+
+def test_executed_route_forwards_custom_decisions_thresholds(tmp_path, monkeypatch):
+    from tools import wf_warlock_route_guide as guide
+    import subprocess
+    binary = tmp_path / "engine"
+    source = tmp_path / "request.json"
+    binary.write_bytes(b"native engine test placeholder")
+    source.write_text("{}")
+    def fake_run(cmd, **kwargs):
+        assert cmd[cmd.index("--health-threshold") + 1] == "0.65"
+        assert cmd[cmd.index("--mana-threshold") + 1] == "0.3"
+        native_chain_summary(tmp_path / "route" / "native_l20")
+        return subprocess.CompletedProcess(cmd, 0)
+    monkeypatch.setattr(guide.subprocess, "run", fake_run)
+    out = tmp_path / "route"
+    assert main(["--execute-native", "--binary", str(binary),
+                 "--source", str(source), "--out", str(out),
+                 "--health-threshold", "0.65", "--mana-threshold", "0.3"]) == 0
+    assert json.loads((out / "route.json").read_text())["measured_levels"] == [20]
+
+
+def test_zero_incoming_damage_is_observed_not_extra_route_gate(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    path, summary = native_chain_summary(tmp_path)
+    summary["results"][0]["native_health_damage"] = {
+        "observed": True, "damage_taken": 0, "damage_events": 0}
+    summary["results"][0]["native_damage_events"] = 0
+    rows, refusals = observations_from_native_chain_summary(summary, summary_path=path)
+    assert len(rows) == 1 and not refusals
+    assert rows[0]["native_health_damage"]["damage_taken"] == 0
+    assert "damage_taken" in render_guide(build_route_report(payload(*rows)))
