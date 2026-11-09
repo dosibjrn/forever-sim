@@ -49,6 +49,46 @@ def options():
     }
 
 
+def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch):
+    """Search must not create an unconditional Life Tap from native options."""
+    reference = source()
+    saved = copy.deepcopy(reference)
+    opts = options()
+    opts["spells"] = [
+        {"spell_id": 1455, "name": "Life Tap"},
+        {"spell_id": 686, "name": "Shadow Bolt"},
+    ]
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _opts, _source, _seed: iter([{"talents": "110-0-0"}]))
+    domain = cold.native_candidate_domain(reference, opts, seed=3)
+    life_taps = [
+        action for action in domain["apl_actions"]
+        if action["action"]["castSpell"]["spellId"]["spellId"] == 1455
+    ]
+    assert len(life_taps) == 4
+    expected = {(20, 50), (20, 70), (40, 50), (40, 70)}
+    observed = set()
+    for action in life_taps:
+        terms = action["action"]["condition"]["and"]["vals"]
+        assert len(terms) == 2
+        mana, health = (terms[0]["cmp"], terms[1]["cmp"])
+        assert mana["lhs"] == {"currentManaPercent": {}}
+        assert mana["op"] == "OpLt"
+        assert health["lhs"] == {"currentHealthPercent": {}}
+        assert health["op"] == "OpGt"
+        observed.add((
+            int(mana["rhs"]["const"]["val"].rstrip("%")),
+            int(health["rhs"]["const"]["val"].rstrip("%")),
+        ))
+        assert [action] in domain["apl"]  # real reachable standalone candidate
+    assert observed == expected
+    assert reference == saved
+    assert any("condition" not in action["action"]
+               for action in domain["apl_actions"]
+               if action["action"]["castSpell"]["spellId"]["spellId"] == 686)
+
+
 def test_native_spell_candidates_can_replace_or_stand_alone_in_apl(monkeypatch):
     """Search may replace the saved filler; only Rust judges executable casts."""
     reference = source()
