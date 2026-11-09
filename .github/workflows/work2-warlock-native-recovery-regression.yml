@@ -1,0 +1,30 @@
+name: Work2 paid Decisions no-refill transport regression
+
+on:
+  push:
+    branches: [work2/warlock-l21-real-native-no-refill-travel-20261109]
+  pull_request:
+    paths:
+      - integrations/mythicsim-rust/live_two_world_pulls.py
+      - tests/test_work1_native_decisions_vendor_recovery.py
+      - tests/test_work2_warlock_native_paid_chain.py
+      - .github/workflows/work2-warlock-native-recovery-regression.yml
+
+permissions:
+  contents: read
+
+jobs:
+  actual-clock-receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Test native no-refill paid travel, vendor recovery and Warlock transport
+        run: |
+          python -m pytest -q \
+            tests/test_work1_native_decisions_vendor_recovery.py \
+            tests/test_work2_warlock_native_paid_chain.py
