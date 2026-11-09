@@ -498,6 +498,26 @@ def _native_recovery_cli_args(recovery_policy: str | None,
     return requested_mode, native_recovery_args
 
 
+def accumulate_acked_native_source_effects(
+        counts: dict, native_receipt: dict, world_ack: dict) -> None:
+    """Forward only Rust damage effects that the 2D world actually ACKed.
+
+    This is a transport/accounting observation, not a Warcraft source audit,
+    individual spell cast count, or P4 unlock acceptance verdict.
+    """
+    applied = set(world_ack["applied_event_ids"])
+    for effect in native_receipt["native_damage_events"]:
+        if effect["event_id"] not in applied:
+            continue
+        # Preserve source-native identities and caster types verbatim. In
+        # particular, pet effects must not count as player spell effects.
+        action_id = effect.get("source_action_id")
+        caster = effect.get("native_caster_type")
+        if isinstance(action_id, str) and action_id and isinstance(caster, str):
+            actions = counts.setdefault(caster, {})
+            actions[action_id] = actions.get(action_id, 0) + 1
+
+
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         require_native_moving: bool = False,
@@ -652,18 +672,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             events += len(ack["applied_event_ids"])
             if corrupt_ack and events:
                 ack["applied_event_ids"] = []
-            applied = set(ack["applied_event_ids"])
-            for effect in receipt["native_damage_events"]:
-                if effect["event_id"] not in applied:
-                    continue
-                # Keep the original Rust identity and caster attribution.
-                # A periodic tick is a native effect, not a distinct cast;
-                # only an explicit native cast receipt can prove P4's unlock.
-                action_id = effect.get("source_action_id")
-                caster = effect.get("native_caster_type")
-                if isinstance(action_id, str) and action_id and isinstance(caster, str):
-                    counts = native_source_damage_effects_by_caster.setdefault(caster, {})
-                    counts[action_id] = counts.get(action_id, 0) + 1
+            accumulate_acked_native_source_effects(
+                native_source_damage_effects_by_caster, receipt, ack)
             proc.stdin.write(json.dumps(ack, sort_keys=True, allow_nan=False) + "\n")
             proc.stdin.flush()
             previous_ack = ack["world_after_sha256"]
