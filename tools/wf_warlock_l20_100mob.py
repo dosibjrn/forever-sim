@@ -271,7 +271,13 @@ def main() -> None:
             print("CHAIN_STARTED", json.dumps(record), flush=True)
             result = native_world_chain(
                 args.binary, prepared_path, target_count=args.targets,
-                classic_mob_level=20, rng_mode="balanced",
+                # The 2D world must kill the same source-configured HP as
+                # the prepared native request. Otherwise an explicit hostile
+                # target is compared against 484-HP proxy world mobs.
+                mob_health=(chosen_target["stats"][32]
+                            if source_health != 0 else None),
+                classic_mob_level=(20 if source_health == 0 else None),
+                rng_mode="balanced",
                 # Collect the native health receipt even when damage is zero.
                 # The strict positive-damage criterion is applied below by
                 # classify_native_chain to preserve real ACK/recovery evidence
