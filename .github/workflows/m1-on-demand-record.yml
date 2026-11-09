@@ -83,6 +83,7 @@ jobs:
               printf 'heavy=false\n' >> "$GITHUB_OUTPUT"
               printf 'p7_needed=false\n' >> "$GITHUB_OUTPUT"
               printf 'native_options_needed=false\n' >> "$GITHUB_OUTPUT"
+              printf 'warlock_shared_needed=false\n' >> "$GITHUB_OUTPUT"
               echo "Accepted explicit M1 receipt invalidation: $invalidate_target"
               exit 0
             fi
@@ -145,6 +146,15 @@ jobs:
           done
           printf 'p7_needed=%s\n' "$p7_needed" >> "$GITHUB_OUTPUT"
           printf 'native_options_needed=%s\n' "$native_options_needed" >> "$GITHUB_OUTPUT"
+          # The paid Warlock P4/P5/P6 path shares ONE 300s search and both
+          # genuine native/world 100-mob finalists, not three cold starts.
+          warlock_shared_needed=false
+          if [[ "$heavy" == true &&
+                " ${unique[*]} " == *" warlock:20:unrestricted:P4 "* &&
+                " ${unique[*]} " == *" warlock:20:unrestricted:P5 "* ]]; then
+            warlock_shared_needed=true
+          fi
+          printf 'warlock_shared_needed=%s\n' "$warlock_shared_needed" >> "$GITHUB_OUTPUT"
           echo "Accepted ${#unique[@]} production targets"
 
       - name: Checkout current main, without saved write credentials
@@ -210,6 +220,26 @@ jobs:
           test -x upstream/target/release/forever-engine
           echo "M1_NATIVE_P3_ENGINE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
 
+      # This is the exact source-tested world/ACK/recovery engine used by the
+      # Warlock L20 paid 30/300 run, not the unrelated selected P3 gitlink.
+      - name: Checkout Warlock L20 source-tested world/native engine
+        if: steps.targets.outputs.warlock_shared_needed == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: febc1d703e022265ed61ede3fec9b05416282536
+          path: warlock-native-engine
+
+      - name: Build exact Warlock L20 paid world/native engine
+        if: steps.targets.outputs.warlock_shared_needed == 'true'
+        working-directory: warlock-native-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = febc1d703e022265ed61ede3fec9b05416282536
+          cargo build --locked --bin forever-engine
+          test -x target/debug/forever-engine
+
       - name: Run real production gates and update one TSV
         if: steps.targets.outputs.invalidate != 'true'
         shell: bash
@@ -236,12 +266,22 @@ jobs:
           # Other classes, gates, and single-target runs stay unchanged.
           priest_pair=false
           priest_triple=false
+          warlock_pair=false
+          warlock_triple=false
           if [[ "$ALLOW_HEAVY" == true &&
                 " $TARGETS " == *" priest:20:unrestricted:P4 "* &&
                 " $TARGETS " == *" priest:20:unrestricted:P5 "* ]]; then
             priest_pair=true
             if [[ " $TARGETS " == *" priest:20:unrestricted:P6 "* ]]; then
               priest_triple=true
+            fi
+          fi
+          if [[ "$ALLOW_HEAVY" == true &&
+                " $TARGETS " == *" warlock:20:unrestricted:P4 "* &&
+                " $TARGETS " == *" warlock:20:unrestricted:P5 "* ]]; then
+            warlock_pair=true
+            if [[ " $TARGETS " == *" warlock:20:unrestricted:P6 "* ]]; then
+              warlock_triple=true
             fi
           fi
           echo "## M1 live-gate results" >> "$GITHUB_STEP_SUMMARY"
@@ -251,7 +291,11 @@ jobs:
             if [[ "$priest_pair" == true &&
                   "$entry" == priest:20:unrestricted:P5 ]] ||
                [[ "$priest_triple" == true &&
-                  "$entry" == priest:20:unrestricted:P6 ]]; then
+                  "$entry" == priest:20:unrestricted:P6 ]] ||
+               [[ "$warlock_pair" == true &&
+                  "$entry" == warlock:20:unrestricted:P5 ]] ||
+               [[ "$warlock_triple" == true &&
+                  "$entry" == warlock:20:unrestricted:P6 ]]; then
               continue  # Independent P5/P6 verdicts share the P4 native run.
             fi
             IFS=: read -r class level spec gate <<< "$entry"
@@ -263,6 +307,13 @@ jobs:
                 cli_gate="P4+P5+P6"
               fi
             fi
+            if [[ "$warlock_pair" == true &&
+                  "$entry" == warlock:20:unrestricted:P4 ]]; then
+              cli_gate="P4+P5"
+              if [[ "$warlock_triple" == true ]]; then
+                cli_gate="P4+P5+P6"
+              fi
+            fi
             echo "::group::M1 $entry"
             report="$(mktemp)"
             rc=0
@@ -271,6 +322,20 @@ jobs:
             # opt-in merely to obtain its first genuine functional PARTIAL.
             # If P5 later evolves into full acceptance, keep this light cap.
             if [[ "$gate" == P5 && "$ALLOW_HEAVY" != true ]]; then timeout_s=20; fi
+            # A single official paired Warlock call executes the selected
+            # Rust/gsim cold producer once; P4/P5/P6 inspect its same receipt.
+            if [[ "$warlock_pair" == true &&
+                  "$entry" == warlock:20:unrestricted:P4 ]]; then
+              export FOREVER_P4_P5_WARLOCK_L20_COLD_SEARCH=1
+              export FOREVER_P4_P5_WARLOCK_L20_BINARY="$GITHUB_WORKSPACE/warlock-native-engine/target/debug/forever-engine"
+              export FOREVER_P4_P5_WARLOCK_L20_SOURCE_REQUEST="$GITHUB_WORKSPACE/warlock-native-engine/fixtures/warlock-l20-troll-native.request.json"
+              export FOREVER_P4_P5_WARLOCK_L20_RECEIPT_DIR="$RUNNER_TEMP/warlock-l20-official-cold"
+            else
+              unset FOREVER_P4_P5_WARLOCK_L20_COLD_SEARCH \
+                FOREVER_P4_P5_WARLOCK_L20_BINARY \
+                FOREVER_P4_P5_WARLOCK_L20_SOURCE_REQUEST \
+                FOREVER_P4_P5_WARLOCK_L20_RECEIPT_DIR || true
+            fi
             # Explicit heavy mode on P4/P5 runs the existing genuine 30/300 s
             # source-paid cold search and selected 2D 100-mob acceptance,
             # rather than the default bounded PARTIAL-only diagnostic.
@@ -380,6 +445,15 @@ jobs:
           # Plot is a derived view of Git-backed M1 TSV snapshots, not a ledger.
           python tools/m1_progress.py --plot-svg docs/planning/M1_HISTORY.svg > /dev/null
           git diff --stat -- docs/planning/M1_PASSES.tsv docs/planning/M1_HISTORY.svg
+
+      - name: Preserve Warlock L20 official raw paid cold receipts
+        if: always() && steps.targets.outputs.warlock_shared_needed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l20-official-native-cold-${{ github.run_id }}
+          path: ${{ runner.temp }}/warlock-l20-official-cold/
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Publish M1 ledger and README chart atomically
         shell: bash
