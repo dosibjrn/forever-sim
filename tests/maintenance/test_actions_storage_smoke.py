@@ -34,3 +34,11 @@ def test_disposable_smoke_deletes_only_own_uniquely_named_artifact():
     assert 'if length == 1 then .[0] else error("expected exactly one own artifact") end' in workflow
     assert '"$api"' in workflow
     assert "DELETE failed with HTTP $status" in workflow
+
+
+def test_disposable_smoke_requires_explicit_dispatch():
+    """Do not create a test artifact automatically on ordinary file edits."""
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert "on:\n  workflow_dispatch:\n" in workflow
+    assert "\n  push:\n" not in workflow
+    assert "\n  schedule:\n" not in workflow
