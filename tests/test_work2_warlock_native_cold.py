@@ -97,6 +97,67 @@ def test_true_unseeded_cold_start_pays_native_mutation_not_reference_winner():
     assert reference == saved
 
 
+def test_unseeded_sampler_skips_unchanged_recovery_draws():
+    """An unchanged native-sourced policy must not spend the first paid slot."""
+    reference = source()
+    unchanged = copy.deepcopy(reference)
+    domain = {"gear": {}, "talents": [], "apl": [], "pets": [],
+              "recovery": [(0.5, 0.1), (0.7, 0.25)]}
+    propose, _mutate = cold.candidate_factory(reference, domain, unseeded=True)
+    for seed in range(64):
+        candidate = propose(random.Random(seed))
+        assert candidate["source"] == unchanged
+        assert candidate["recovery"] == {
+            "health_threshold": 0.7, "mana_threshold": 0.25}
+    assert reference == unchanged
+
+
+@pytest.mark.parametrize("recovery,expected_unseeded", [
+    ([(0.5, 0.1)], False),
+    ([(0.5, 0.1), (0.7, 0.25)], True),
+])
+def test_unseeded_receipt_reflects_first_actual_paid_native_proposal(
+    tmp_path, monkeypatch, recovery, expected_unseeded
+):
+    """The CLI flag alone cannot certify a changed cold-start candidate."""
+    reference = source()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-engine-test")
+    now = [0.0]
+    paid = []
+
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [], "pets": [],
+        "recovery": recovery,
+    })
+
+    def paid_chain(_binary, candidate, _out, *, targets, timeout):
+        paid.append((targets, copy.deepcopy(candidate)))
+        return {"seconds_per_mob": 9.0, "world_targets_killed": targets}
+
+    def search(**kwargs):
+        candidate = kwargs["propose"](random.Random(3))
+        now[0] = 6.0
+        kwargs["evaluate"](candidate, iterations=1, seed=3,
+                           rng_mode="balanced")
+        now[0] = 300.0
+        return {"status": "RAN", "best_candidate": candidate,
+                "best_score": -9.0, "elapsed_s": 300.0,
+                "paid_candidates": 1}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    report = cold.run_cold(
+        reference, options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=paid_chain, unseeded=True)
+    assert paid[0][0] == 2  # real search evaluation, not merely a proposal
+    assert report["native_paid_screen_count"] == 1
+    assert report["unseeded_cold_requested"] is True
+    assert report["unseeded_cold_start"] is expected_unseeded
+    assert report["cold_first_paid_candidate_sha256"] == cold.identity(paid[0][1])
+    assert (paid[0][1]["recovery"]["health_threshold"] != 0.5) is expected_unseeded
+    assert report["gate_recorded"] is False
+
+
 def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch):
     """Search must not create an unconditional Life Tap from native options."""
     reference = source()
