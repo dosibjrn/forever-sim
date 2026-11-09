@@ -79,3 +79,53 @@ def test_scheduled_gc_opts_into_success_only_deletion_before_planning():
         "planned = []")
     assert workflow.index("require_success_conclusion=True") < workflow.index(
         'request(f"artifacts/{aid}", "DELETE")')
+
+
+def test_gc_preserves_retried_runs_even_if_latest_attempt_succeeded():
+    """A successful rerun cannot certify artifacts from the failed attempt."""
+    artifacts = [artifact(1, 101), artifact(2, 102), artifact(3, 103)]
+    runs = {101: dict(run(101, "success"), run_attempt=1),
+            102: dict(run(102, "success"), run_attempt=2),
+            103: dict(run(103, "success"), run_attempt=3)}
+    ready, deferred = completed_run_candidates(
+        artifacts, lambda run_id: runs[run_id],
+        expected_workflow=WORKFLOW,
+        expected_name_prefix=NAME,
+        allowed_events=("pull_request", "push"),
+        require_success_conclusion=True,
+        require_single_attempt=True,
+    )
+    assert [row["id"] for row in ready] == [1]
+    assert deferred == 2
+
+
+@pytest.mark.parametrize("attempt", [None, True, 0, -1, 1.0, "1"])
+def test_gc_preserves_missing_or_ambiguous_run_attempt(attempt):
+    """Unexpected Actions metadata cannot authorize automatic deletion."""
+    response = run(100, "success")
+    response["run_attempt"] = attempt
+    ready, deferred = completed_run_candidates(
+        [artifact(5, 100)], lambda _run_id: response,
+        require_success_conclusion=True,
+        require_single_attempt=True,
+    )
+    assert ready == []
+    assert deferred == 1
+
+
+def test_gc_preserves_origin_when_run_attempt_is_missing():
+    ready, deferred = completed_run_candidates(
+        [artifact(5, 100)], lambda run_id: run(run_id, "success"),
+        require_single_attempt=True,
+    )
+    assert ready == []
+    assert deferred == 1
+
+
+def test_scheduled_gc_explicitly_protects_retried_run_artifacts():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml"
+                ).read_text(encoding="utf-8")
+    assert "require_single_attempt=True" in workflow
+    assert workflow.index("require_single_attempt=True") < workflow.index("planned = []")
+    assert workflow.index("require_single_attempt=True") < workflow.index(
+        'request(f"artifacts/{aid}", "DELETE")')
