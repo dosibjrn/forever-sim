@@ -165,3 +165,45 @@ def test_official_paired_cli_arms_warlock_source_producer(monkeypatch, capsys):
         assert "NO_PAID_NATIVE_RESULT" in capsys.readouterr().out
     finally:
         bridge.set_shared_warlock_l20_cold(False)
+
+
+def test_only_world_acked_rust_source_effects_are_attributed():
+    """Observe native IDs, not Python guesses of casts or spell legality."""
+    from live_two_world_pulls import accumulate_acked_native_source_effects
+
+    native = {"native_damage_events": [
+        {"event_id": "effect-1", "source_action_id": "Spell-686",
+         "native_caster_type": "player"},
+        {"event_id": "effect-2", "source_action_id": "Spell-172",
+         "native_caster_type": "player"},
+        {"event_id": "effect-3", "source_action_id": "Pet-1",
+         "native_caster_type": "pet"},
+    ]}
+    counted = {}
+    accumulate_acked_native_source_effects(
+        counted, native, {"applied_event_ids": ["effect-1", "effect-3"]})
+    assert counted == {"player": {"Spell-686": 1}, "pet": {"Pet-1": 1}}
+    # A second ACK for a real event increments the native identity; an
+    # unacknowledged effect never receives a fabricated world observation.
+    accumulate_acked_native_source_effects(
+        counted, native, {"applied_event_ids": ["effect-1"]})
+    assert counted == {"player": {"Spell-686": 2}, "pet": {"Pet-1": 1}}
+
+
+def test_source_damage_effects_are_not_mistaken_for_talent_unlock_casts(
+        monkeypatch, tmp_path):
+    """Native damage may be periodic or pet damage: no invented P4 PASS."""
+    monkeypatch.setenv(bridge.OPT_IN, "1")
+    report = _cold()
+    del report["native_representative_unlocked_cast_compared"]
+    report["finalists"]["30s"]["native_receipt"][
+        "native_source_damage_effects_by_caster"] = {
+            "player": {"Spell-686": 3}, "pet": {"Pet-1": 4}}
+    monkeypatch.setattr(bridge, "_execute", lambda: report)
+    bridge.set_shared_warlock_l20_cold(True)
+    try:
+        got = p4.run_live(tmp_path, "warlock", 20)
+        assert got["status"] == "FAIL"
+        assert "P4_NATIVE_REPRESENTATIVE_UNLOCK_CAST_UNVERIFIED" in got["reasons"]
+    finally:
+        bridge.set_shared_warlock_l20_cold(False)
