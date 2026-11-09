@@ -249,11 +249,14 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
     return receipt
 
 
-def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> dict:
-    """Carry only source-Rust regeneration actually paid on the ACKed 2D clock.
+def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict],
+                                   *, decisions: bool = False) -> dict:
+    """Classify ACK-clock recovery from verified source-Rust receipts.
 
-    Older pins lacking native tick receipts remain unobserved. A timed pause
-    without a native regeneration event cannot by itself certify recovery.
+    Fixed passive rest needs actual native ticks. Decisions can instead pay
+    for real food/water before the next mana tick; its vendor receipts must
+    already have passed _native_food_water_receipts clock validation.
+    Older pins without native receipts remain explicitly unobserved.
     """
     if not windows or len(windows) != len(kills):
         raise AssertionError("RUST_WORLD_PAID_RECOVERY_TARGET_COUNT_INVALID")
@@ -294,8 +297,16 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> di
         "native_passive_recovery_observed": True,
         "native_passive_recovery_ns_by_target": elapsed,
         "native_passive_recovery_ticks_by_target": ticks_by_target,
-        "paid_recovery": all(ns > 0 and ticks > 0
-                             for ns, ticks in zip(elapsed[1:], ticks_by_target[1:])),
+        "paid_recovery": all(
+            ns > 0 and (
+                ticks > 0 or (
+                    decisions and (windows[index]["food_seconds"] > 0
+                                   or windows[index]["water_seconds"] > 0)
+                )
+            )
+            for index, (ns, ticks) in enumerate(zip(elapsed, ticks_by_target))
+            if index > 0
+        ),
     }
 
 
@@ -700,9 +711,10 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             result["windows"], target_count)
         native_mana = _native_mana_continuity(
             result["windows"], target_count)
-        recovery = _native_paid_recovery_receipts(result["windows"], kills)
         food_water = _native_food_water_receipts(
             result["windows"], required=requested_mode == "decisions")
+        recovery = _native_paid_recovery_receipts(
+            result["windows"], kills, decisions=requested_mode == "decisions")
         if requested_mode == "fixed":
             # The earlier pinned fixed-duration Rust bridge did not yet emit
             # recovery_mode, but it DID echo the exact applied duration.
