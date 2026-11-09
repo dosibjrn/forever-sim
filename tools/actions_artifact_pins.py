@@ -25,6 +25,15 @@ _RUN_ID_FIELD = re.compile(
     r'"(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"\s*:\s*'
     r'(?:"([1-9]\d*)"|([1-9]\d*))\s*(?=[,}])')
 
+# Issue/PR discussions also cite Actions runs without URLs or JSON fields:
+# "Actions run #123", "workflow run ID: 123", and "run #123".
+# Require the explicit hash or ID marker; generic "run 42" is ambiguous.
+_RUN_PROSE_ID = re.compile(
+    r"\b(?:(?:github\s+)?(?:actions?\s+)?(?:workflow\s+)?)run\s+"
+    r"(?:#\s*|id\s*[:=#]?\s*)([1-9]\d*)\b",
+    flags=re.IGNORECASE,
+)
+
 
 def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> None:
     """Add referenced IDs from an issue, review, ledger or document."""
@@ -34,6 +43,7 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     artifacts.update(int(match) for match in _ARTIFACT_ID_FIELD.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_PROSE_ID.findall(text))
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
+    runs.update(int(match) for match in _RUN_PROSE_ID.findall(text))
 
 
 def artifact_run_id(artifact: dict) -> int | None:
