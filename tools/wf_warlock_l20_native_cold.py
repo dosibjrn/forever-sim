@@ -149,7 +149,20 @@ def candidate_factory(reference: dict, domain: dict):
                 value["recovery"] = {"health_threshold": hp, "mana_threshold": mana}
         return value
 
+    # Give the known request its own real paid trial before mutating any axis.
+    # An otherwise legal reference can be the only executable proposal in a
+    # short 30s window; the Rust/world evaluator, not this scheduler, still
+    # decides whether it executes and earns a score.
+    reference_proposed = False
+
     def propose(rng):
+        nonlocal reference_proposed
+        if not reference_proposed:
+            reference_proposed = True
+            return {
+                "source": copy.deepcopy(reference),
+                "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+            }
         return mutate({}, rng, cold=True)
 
     def change(previous, rng):
