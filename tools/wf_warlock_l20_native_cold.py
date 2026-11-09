@@ -326,7 +326,7 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
                     elif domain.get("apl"):
                         player["rotation"]["priorityList"] = copy.deepcopy(
                             rng.choice(domain["apl"]))
-                elif not cold and actions and rng.random() < 0.75:
+                elif not cold and (actions or domain.get("prepared_apl_actions")) and rng.random() < 0.75:
                     # Recombine source-returned actions in the current elite.
                     # A whole-APL replacement alone cannot accumulate two new
                     # spells, so a valid multi-spell challenger is unreachable.
@@ -347,7 +347,15 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
                         else:
                             rotation.pop(index)
                     else:
-                        action = copy.deepcopy(rng.choice(actions))
+                        # Preserve the same native-prepared actor alternatives
+                        # in elite search that repaired first-proposal scoring.
+                        # The broader Rust options remain selectable for novel
+                        # builds; no Python spell eligibility verdict is added.
+                        prepared = domain.get("prepared_apl_actions") or []
+                        choices = (prepared if prepared and
+                                   (not actions or rng.random() < 0.75)
+                                   else actions)
+                        action = copy.deepcopy(rng.choice(choices))
                         operation = rng.choice(("replace", "insert"))
                         if operation == "replace" and rotation:
                             rotation[rng.randrange(len(rotation))] = action
