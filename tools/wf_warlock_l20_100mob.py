@@ -124,12 +124,15 @@ def native_failure_receipt(exc: BaseException) -> dict:
         return {}
     row = exc.args[0]
     if (not isinstance(row, tuple) or len(row) != 5
-            or row[0] != "RUST_TWO_WORLD_NATIVE_FAILED"
-            or type(row[1]) is not int or row[1] == 0
+            or row[0] not in ("RUST_TWO_WORLD_NATIVE_FAILED",
+                                  "RUST_TWO_WORLD_KILLS_NOT_COMPLETED")
+            or type(row[1]) is not int
+            or (row[0] == "RUST_TWO_WORLD_NATIVE_FAILED" and row[1] == 0)
             or type(row[3]) is not int or row[3] < 0
             or type(row[4]) is not int or row[4] < 0):
         return {}
     refusal = {
+        "native_chain_failure_reason": row[0],
         "native_exit_code": row[1],
         "native_world_ack_kills_before_refusal": row[3],
         "native_damage_events_before_refusal": row[4],
