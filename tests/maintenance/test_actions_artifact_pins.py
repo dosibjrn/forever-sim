@@ -83,9 +83,9 @@ def test_key_value_native_log_receipts_pin_evidence_before_gc(tmp_path):
     log = tmp_path / "evidence/native/p4-hostile.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     log.write_text(
-        "artifact_id=12998142923 run_id=42574670709\\n"
+        "artifact_id=12998142923 run_id=42574670709\n"
         "workflow_run_id=42573346755 github_run_id=42573178806 "
-        "engine_build_run_id=40969635587\\n",
+        "engine_build_run_id=40969635587\n",
         encoding="utf-8",
     )
     runs, artifacts = collect_local_references(tmp_path)
