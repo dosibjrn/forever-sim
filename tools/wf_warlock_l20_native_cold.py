@@ -250,6 +250,8 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
             "engine or paid recovery policy",
             raw_response=receipt, request_sha256=identity(candidate))
     if (receipt.get("target_count_requested") != targets
+            or receipt.get("hostile_player_tank_requested") is not True
+            or receipt.get("native_enemy_attack_prepared") is not True
             or receipt.get("status") != f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
             or receipt.get("native_actor_continuity_receipt_complete") is not True
             or receipt.get("native_recovery_clock_accounted") is not True
