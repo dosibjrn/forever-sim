@@ -42,10 +42,10 @@ _RUN_ASSIGNMENT_ID = re.compile(
 # silently discard the only artifact/run referenced by a paid receipt.
 # Reject prefixes (not_artifact_id), zero and malformed numeric suffixes.
 _ARTIFACT_COLON_ID = re.compile(
-    r"""(?<!\\w)artifact_id\\s*:\\s*["']?([1-9]\\d*)["']?(?=$|[\\s,}\\]])""")
+    r"""(?<!\w)artifact_id\s*:\s*["']?([1-9]\d*)["']?(?=$|[\s,}\]])""")
 _RUN_COLON_ID = re.compile(
-    r"""(?<!\\w)(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"""
-    r"""\\s*:\\s*["']?([1-9]\\d*)["']?(?=$|[\\s,}\\]])""")
+    r"""(?<!\w)(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"""
+    r"""\s*:\s*["']?([1-9]\d*)["']?(?=$|[\s,}\]])""")
 
 # Issue/PR discussions also cite Actions runs without URLs or JSON fields:
 # "Actions run #123", "workflow run ID: 123", and "run #123".
