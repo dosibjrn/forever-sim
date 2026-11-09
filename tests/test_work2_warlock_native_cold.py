@@ -210,6 +210,113 @@ def test_neutral_actor_still_proposes_unverified_native_items_for_rust():
     assert cold.actor(reference)["equipment"]["items"] == []
 
 
+def test_native_prepared_apl_hints_prioritize_real_registered_actor_actions(
+    tmp_path,
+):
+    """Only Rust-prepared registered APL spells are ranked above broad options."""
+    source_request = source()
+    original_apl = {"action": {"castSpell": {"spellId": {"spellId": 1088}}}}
+    cold.actor(source_request)["equipment"]["items"] = []
+    cold.actor(source_request)["rotation"]["priorityList"] = [original_apl]
+    binary = tmp_path / "native"
+    binary.write_bytes(b"native test fixture")
+
+    def prepare(command, **kwargs):
+        assert kwargs["check"] is False
+        assert command[1:3] == ["prepare", "--request"]
+        out = Path(command[command.index("--outfile") + 1])
+        out.write_text(json.dumps({
+            "player": {"spells": [
+                {"action_id": {"spell_id": 6222},
+                 "flags": ["SpellFlagAPL"], "dot": {"duration_ns": 1}},
+                {"action_id": {"spell_id": 1014},
+                 "flags": ["SpellFlagAPL"], "dot": {"duration_ns": 1}},
+                {"action_id": {"spell_id": 1219479},
+                 "flags": [], "damage_effect": None},
+                {"action_id": {"spell_id": 1088},
+                 "flags": ["SpellFlagAPL"], "damage_effect": {"average": 58}},
+            ]}
+        }))
+        return SimpleNamespace(returncode=0)
+
+    hints = cold.native_prepared_apl_hints(
+        binary, source_request, tmp_path / "hints", runner=prepare)
+    assert [a["action"]["castSpell"]["spellId"]["spellId"]
+            for a in hints] == [6222, 1014, 1088]
+    for action in hints[:2]:
+        assert "dotIsActive" in action["action"]["condition"]["not"]["val"]
+    assert (tmp_path / "hints/source.request.json").is_file()
+    assert (tmp_path / "hints/source.prepared.json").is_file()
+
+    broad = {"action": {"castSpell": {"spellId": {"spellId": 1219479}}}}
+    domain = {
+        "gear": {}, "gear_insertions": [],
+        "gear_native_slots": {"head": [{"id": 100}],
+                              "chest": [{"id": 201}]},
+        "talents": [], "apl": [[broad]], "apl_actions": [broad],
+        "prepared_apl_actions": hints, "pets": [],
+        "recovery": [(0.7, 0.25)],
+    }
+    propose, _ = cold.candidate_factory(source_request, domain, unseeded=True)
+    candidate = propose(random.Random(20261109))
+    player = cold.actor(candidate["source"])
+    assert player["equipment"]["items"] == [{"id": 100}, {"id": 201}]
+    result = player["rotation"]["priorityList"]
+    assert result[-1] == original_apl
+    assert {a["action"]["castSpell"]["spellId"]["spellId"]
+            for a in result[:2]} == {6222, 1014}
+    assert cold.actor(source_request)["equipment"]["items"] == []
+
+
+def test_native_prepared_apl_hints_refusal_keeps_source_options(
+    tmp_path,
+):
+    """Optional Rust hint refusal is not an independent source-legality gate."""
+    binary = tmp_path / "native"
+    binary.write_bytes(b"test")
+
+    def refused(_command, **_kwargs):
+        return SimpleNamespace(returncode=1, stderr="native refusal")
+
+    assert cold.native_prepared_apl_hints(
+        binary, source(), tmp_path / "hints", runner=refused) == []
+
+
+def test_neutral_cold_source_apl_composes_distinct_native_actions_with_gear():
+    """The first paid neutral-actor challenger must not erase its source APL.
+
+    This is proposal forwarding, not a Python Warcraft-legality or damage
+    assertion; the Rust runner still accepts/refuses the complete build.
+    """
+    reference = source()
+    original_action = {"action": {"castSpell": {"spellId": {"spellId": 1088}}}}
+    cold.actor(reference)["equipment"]["items"] = []
+    cold.actor(reference)["rotation"]["priorityList"] = [original_action]
+    saved = copy.deepcopy(reference)
+    first = {"action": {"castSpell": {"spellId": {"spellId": 686}}}}
+    second = {"action": {"castSpell": {"spellId": {"spellId": 172}}}}
+    domain = {
+        "gear": {}, "gear_insertions": [],
+        "gear_native_slots": {
+            "head": [{"id": 100}], "chest": [{"id": 201}],
+        },
+        "talents": [], "apl": [[first], [second]],
+        "apl_actions": [first, second], "pets": [],
+        "recovery": [(0.7, 0.25)],
+    }
+    propose, _ = cold.candidate_factory(reference, domain, unseeded=True)
+    for seed in (3, 17, 20261109):
+        candidate = propose(random.Random(seed))
+        player = cold.actor(candidate["source"])
+        assert player["equipment"]["items"] == [{"id": 100}, {"id": 201}]
+        policy = player["rotation"]["priorityList"]
+        assert policy[-1] == original_action
+        assert len(policy) == 3
+        assert {entry["action"]["castSpell"]["spellId"]["spellId"]
+                for entry in policy[:-1]} == {686, 172}
+    assert reference == saved
+
+
 def test_native_life_tap_proposals_have_safe_hp_and_mana_conditions(monkeypatch):
     """Search must not create an unconditional Life Tap from native options."""
     reference = source()
@@ -369,8 +476,12 @@ def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
     apl_only = dict(domain, gear={}, talents=[], pets=[], recovery=[])
     propose_apl, _ = cold.candidate_factory(reference, apl_only)
     propose_apl(random.Random(5))  # genuine frozen first paid proposal
-    assert cold.actor(propose_apl(random.Random(5))["source"])[
-        "rotation"]["priorityList"] in domain["apl"]
+    composed = cold.actor(propose_apl(random.Random(5))["source"])[
+        "rotation"]["priorityList"]
+    baseline = cold.actor(reference)["rotation"]["priorityList"]
+    assert composed[-len(baseline):] == baseline
+    assert {a["action"]["castSpell"]["spellId"]["spellId"]
+            for a in composed[:-len(baseline)]} == {998, 999}
 
 
 
