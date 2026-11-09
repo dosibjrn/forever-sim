@@ -174,9 +174,13 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
         "--health-threshold", str(policy["health_threshold"]),
         "--mana-threshold", str(policy["mana_threshold"]),
     ]
+    # A retry in the same output directory must consume a receipt produced
+    # by THIS subprocess. Otherwise an earlier successful native run can be
+    # silently reused when the new invocation exits without writing a file.
+    summary_path = out / "world" / "summary.json"
+    summary_path.unlink(missing_ok=True)
     process = subprocess.run(command, capture_output=True, text=True,
                              timeout=timeout, check=False, cwd=ROOT)
-    summary_path = out / "world" / "summary.json"
     if not summary_path.exists():
         raise RuntimeError("Native paid runner did not emit a structured receipt: " +
                            (process.stderr or process.stdout)[-800:])
@@ -186,6 +190,20 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
             or not isinstance(rows[0], dict)):
         raise RuntimeError("Native paid runner returned an invalid summary")
     receipt = rows[0]
+    # The native 100-mob tool writes these exact input and engine fingerprints.
+    # Refuse cross-run/cross-build receipts even if their scalar score and
+    # target count look plausible. Rust remains the gameplay authority.
+    expected_provenance = {
+        "original_source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "native_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "recovery_request": {"recovery_policy": "decisions", **policy},
+    }
+    if any(receipt.get(key) != value for key, value in
+           expected_provenance.items()):
+        raise NativeUnscoredCandidate(
+            "Native world receipt provenance does not match current request, "
+            "engine or paid recovery policy",
+            raw_response=receipt, request_sha256=identity(candidate))
     if (receipt.get("target_count_requested") != targets
             or receipt.get("status") != f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
             or receipt.get("native_actor_continuity_receipt_complete") is not True
