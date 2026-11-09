@@ -142,7 +142,7 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
             or not isinstance(cold.get("engine_binary_sha256"), str)):
         reasons.append("WARLOCK_NATIVE_EXECUTED_IDENTITY_MISSING")
     # Unlocked-action cast metadata is an optimizer diagnostic, not a P4 veto.
-    if gate == "P5":    elif gate == "P5":
+    if gate == "P5":
         if type(cold.get("native_paid_after_snapshot")) is not int or (
                 cold["native_paid_after_snapshot"] < 1):
             reasons.append("P5_NATIVE_PAID_CONTINUATION_NOT_OBSERVED")
