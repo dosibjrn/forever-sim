@@ -57,6 +57,28 @@ def create_scenario(request: dict, *, variant: str) -> dict:
     return scenario
 
 
+def native_failure_receipt(exc: BaseException) -> dict:
+    """Preserve actual ACKed kills from the native-world driver refusal.
+
+    The Rust/gsim boundary raises this structured tuple *after* the native
+    process exits nonzero. Never parse counts from arbitrary error text.
+    """
+    if not isinstance(exc, AssertionError) or not exc.args:
+        return {}
+    row = exc.args[0]
+    if (not isinstance(row, tuple) or len(row) != 5
+            or row[0] != "RUST_TWO_WORLD_NATIVE_FAILED"
+            or type(row[1]) is not int or row[1] == 0
+            or type(row[3]) is not int or row[3] < 0
+            or type(row[4]) is not int or row[4] < 0):
+        return {}
+    return {
+        "native_exit_code": row[1],
+        "native_world_ack_kills_before_refusal": row[3],
+        "native_damage_events_before_refusal": row[4],
+    }
+
+
 def main() -> None:
     import argparse
     p = argparse.ArgumentParser()
@@ -172,6 +194,7 @@ def main() -> None:
             # nonzero exit; preserve the precise result, not a fake score.
             record["status"] = "INCOMPLETE_OR_NATIVE_REFUSAL"
             record["error"] = str(exc)[-4500:]
+            record.update(native_failure_receipt(exc))
             print("CHAIN_INCOMPLETE", json.dumps(record), flush=True)
         (base / "summary.json").write_text(json.dumps(record, indent=2) + "\n")
         attempts.append(record)
