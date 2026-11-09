@@ -189,7 +189,7 @@ def test_live_storage_guard_skips_pin_api_only_when_no_delete_can_be_planned():
     workflow = (Path(__file__).resolve().parents[2]
                 / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
                     encoding="utf-8")
-    fast_noop = "if not requires_evidence_pin_scan(total, ceiling, stage5, cutoff, created):"
+    fast_noop = "if not requires_evidence_pin_scan(planning_total, ceiling, stage5, cutoff, created):"
     assert fast_noop in workflow
     assert workflow.index("return verified_artifacts(repo, fetch_page)") < workflow.index(fast_noop)
     assert workflow.index(fast_noop) < workflow.index("collect_local_references(")
@@ -442,3 +442,48 @@ def test_post_delete_checks_every_id_on_each_complete_snapshot():
         [7, 8], lambda: [], attempts=3, delay_seconds=0,
         sleep=lambda _seconds: None, fetch_deleted_status=get) == []
     assert calls == [7, 8, 7, 8]
+
+
+def test_gc_planning_reference_uses_complete_owner_bytes_not_billing():
+    assert module.gc_planning_reference(200, "450000000") == (450000000, True)
+    assert module.gc_planning_reference(450, "200") == (450, False)
+    assert module.gc_planning_reference(200, "") == (200, False)
+    assert module.gc_planning_reference(200, "not available") == (200, False)
+    assert module.gc_planning_reference(200, "2e8") == (200, False)
+    assert module.gc_planning_reference(200, "-1") == (200, False)
+    with pytest.raises(ValueError, match="invalid local"):
+        module.gc_planning_reference(-1, "100")
+
+
+def test_owner_monitor_writes_signal_only_after_complete_inventory(
+        monkeypatch, tmp_path):
+    output = tmp_path / "github-output.txt"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setattr(module, "github_owner_page", lambda _page: [
+        {"full_name": repo, "private": False} for repo in module.REPOSITORIES])
+    monkeypatch.setattr(module, "github_page", lambda _repo, _page: {
+        "total_count": 1, "artifacts": [{"id": 1, "size_in_bytes": 42}]})
+    assert module.main() == 0
+    assert output.read_text() == "retained_public_bytes=84\n"
+
+    output.unlink()
+    monkeypatch.setattr(module, "github_page", lambda repo, _page: (
+        (_ for _ in ()).throw(OSError("fork unavailable"))
+        if repo.endswith("mythicsim-forever-engine") else {
+            "total_count": 1, "artifacts": [{"id": 1, "size_in_bytes": 42}]}))
+    assert module.main() == 1
+    assert not output.exists()
+
+
+def test_live_gc_consumes_complete_owner_total_and_bounds_deletions():
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    assert "id: footprint" in workflow
+    assert "steps.footprint.outputs.retained_public_bytes" in workflow
+    assert "gc_planning_reference(" in workflow
+    assert "requires_evidence_pin_scan(planning_total, ceiling" in workflow
+    assert "remaining = planning_total" in workflow
+    assert "owner_scope and len(planned) >= 10" in workflow
+    assert workflow.index("collect_local_references(") < workflow.index("planned = []")
+    assert workflow.index("completed_run_candidates(") < workflow.index("planned = []")
