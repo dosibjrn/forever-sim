@@ -261,9 +261,11 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict],
                                    *, decisions: bool = False) -> dict:
     """Classify ACK-clock recovery from verified source-Rust receipts.
 
-    Fixed passive rest needs actual native ticks. Decisions can instead pay
-    for real food/water before the next mana tick; its vendor receipts must
-    already have passed _native_food_water_receipts clock validation.
+    Fixed passive rest needs native ticks. Decisions can also pay real
+    food/water before the next mana tick, or require no refill at all when
+    native actor resources remain above both requested thresholds. The latter
+    still requires an actual positive native inter-pull clock, not a free rest.
+    Vendor receipts are validated separately before this routine is called.
     Older pins without native receipts remain explicitly unobserved.
     """
     if not windows or len(windows) != len(kills):
@@ -309,7 +311,8 @@ def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict],
             ns > 0 and (
                 ticks > 0 or (
                     decisions and (windows[index]["food_seconds"] > 0
-                                   or windows[index]["water_seconds"] > 0)
+                                   or windows[index]["water_seconds"] > 0
+                                   or windows[index].get("decisions_full_recovery") is False)
                 )
             )
             for index, (ns, ticks) in enumerate(zip(elapsed, ticks_by_target))
