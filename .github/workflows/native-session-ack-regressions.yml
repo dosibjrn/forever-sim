@@ -219,3 +219,36 @@ jobs:
           assert receipt["p4_p5_p6_pass"] is False, receipt
           print("WARLOCK_L20_EIGHT_ACTUAL_NATIVE_PAID_ACK_PASS_NOT_GATE")
           PY
+
+      - name: Attempt one actual 100-target retained actor, preserve failed survivors accurately
+        # Frozen build only, no second search, no M1 claim, no artifact upload.
+        working-directory: project
+        run: |
+          set +e
+          python -u tools/wf_warlock_l20_100mob.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --out ../warlock-l20-hundred-target-diagnostic \
+            --variant best_apl --targets 100 --recovery-policy fixed --recovery-seconds 12
+          code=$?
+          python - "$code" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path("../warlock-l20-hundred-target-diagnostic/summary.json").read_text())
+          row, = report["results"]
+          completed = row["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+          assert (int(sys.argv[1]) == 0) == completed, (sys.argv[1], row)
+          assert row["target_count_requested"] == 100
+          assert report["cold_30_300_search_executed"] is False
+          assert report["p4_p5_p6_pass"] is False
+          if completed:
+              assert row["killed"] == 100 and row["paid_recovery"] is True, row
+              assert row["native_2d_paid_objective_eligible"] is True, row
+          else:
+              assert row["status"] in (
+                  "INCOMPLETE_OR_NATIVE_REFUSAL", "INCOMPLETE_UNPAID_NATIVE_RECOVERY"), row
+              assert row["native_2d_paid_objective_eligible"] is False, row
+          print("WARLOCK_L20_ACTUAL_100MOB_DIAGNOSTIC_NO_GATE",
+                json.dumps(row, sort_keys=True))
+          PY
+          exit $?
