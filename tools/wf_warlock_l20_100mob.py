@@ -95,7 +95,9 @@ def create_scenario(request: dict, *, variant: str,
     scenario["simOptions"]["debugFirstIteration"] = False
     actor = scenario["raid"]["parties"][0]["players"][0]
     assert actor["class"] == "ClassWarlock" and actor["race"] == "RaceTroll"
-    assert len(actor["equipment"]["items"]) == 17
+    # The source-native cold search starts with empty equipment and may add
+    # individual Rust-proposed items. Do not impose the old saved-winner
+    # 17-slot shape here: native prepare alone accepts/refuses each build.
     rotation = actor["rotation"]["priorityList"]
     if variant == "best_apl":
         pass
