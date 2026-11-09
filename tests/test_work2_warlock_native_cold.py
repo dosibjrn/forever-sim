@@ -107,6 +107,8 @@ def test_30s_snapshot_cannot_be_replaced_by_a_better_paid_300s_candidate(
     assert result["snapshot_30"]["candidate_sha256"] == cold.identity(early)
     assert result["final_300"]["candidate_sha256"] == cold.identity(late)
     assert result["native_paid_screen_count"] == 2
+    assert result["screen_targets"] == 2
+    assert result["finalist_targets"] == 100
     assert result["cold_300_reached"] is True
     assert result["finalists"]["30s"]["seconds_per_mob"] == 12.0
     assert result["finalists"]["300s"]["seconds_per_mob"] == 8.0
@@ -114,7 +116,7 @@ def test_30s_snapshot_cannot_be_replaced_by_a_better_paid_300s_candidate(
     assert result["p6_comparison"]["t30_over_t300"] == 1.5
     assert result["p6_comparison"]["within_one_percent"] is False
     assert result["late_paid_screen_count"] == 0
-    assert [n for n, _ in calls] == [8, 8, 100, 100]
+    assert [n for n, _ in calls] == [2, 2, 100, 100]
     assert result["gate_recorded"] is False
     assert result["p4_p5_p6_pass"] is False
     assert (tmp_path / "out/cold_summary.json").exists()
@@ -148,7 +150,7 @@ def test_identical_cold_winners_reuse_one_real_hundred_target_receipt(
     result = cold.run_cold(
         source(), options(), binary=binary, out=tmp_path / "out",
         clock=lambda: now[0], chain=mock_chain)
-    assert calls == [8, 100]
+    assert calls == [2, 100]
     assert result["p6_comparison"]["within_one_percent"] is True
     assert result["p6_comparison"]["t30_over_t300"] == 1.0
     assert (result["finalists"]["30s"]["candidate_sha256"]
@@ -170,7 +172,7 @@ def test_paid_screen_completed_after_budget_does_not_replace_300s_winner(
     def native_paid(_binary, candidate, _out, *, targets, timeout):
         attempts.append((targets, cold.identity(candidate)))
         # Started at t=299, but a paid native call completes at 301.
-        if targets == 8 and candidate["source"] == late["source"]:
+        if targets == 2 and candidate["source"] == late["source"]:
             now[0] = 301.0
         return {"seconds_per_mob": (
             2.0 if candidate["source"] == late["source"] else 12.0)}
@@ -199,12 +201,54 @@ def test_paid_screen_completed_after_budget_does_not_replace_300s_winner(
     assert result["finalists"]["30s"]["candidate_sha256"] == cold.identity(early)
     assert result["finalists"]["300s"]["candidate_sha256"] == cold.identity(early)
     assert result["p6_comparison"]["within_one_percent"] is True
-    assert [n for n, _ in attempts] == [8, 8, 100]
+    assert [n for n, _ in attempts] == [2, 2, 100]
     assert result["native_search"]["best_score"] == -2.0  # untrusted late best
 
 
-@pytest.mark.parametrize("targets,complete", [(8, True), (100, True),
-                                              (8, False), (100, False)])
+
+
+def test_two_target_screen_finishing_after_snapshot_is_not_backdated(
+    tmp_path, monkeypatch
+):
+    binary = tmp_path / "binary"
+    binary.write_bytes(b"selected native engine fixture")
+    now = [0.0]
+    build = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    paid_targets = []
+
+    def paid(_binary, _candidate, _out, *, targets, timeout):
+        paid_targets.append(targets)
+        if targets == 2:
+            # Started before 30s, completed after. This is real paid work,
+            # not a P4 snapshot or a fabricated earlier evaluation.
+            now[0] = 31.0
+        return {"seconds_per_mob": 10.0}
+
+    def search(**kwargs):
+        now[0] = 25.0
+        kwargs["evaluate"](build, iterations=1, seed=1, rng_mode="balanced")
+        now[0] = 300.0
+        return {"status": "RAN", "best_candidate": build,
+                "best_score": -10.0, "elapsed_s": 300.0,
+                "paid_candidates": 1}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [], "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "out",
+        clock=lambda: now[0], chain=paid)
+    assert result["screen_targets"] == 2
+    assert result["snapshot_30"] is None
+    assert result["finalists"]["30s"]["status"] == "NO_PAID_SCREEN_WINNER"
+    assert result["final_300"]["candidate_sha256"] == cold.identity(build)
+    assert result["finalists"]["300s"]["seconds_per_mob"] == 10.0
+    assert result["p6_comparison"] is None
+    assert paid_targets == [2, 100]
+
+@pytest.mark.parametrize("targets,complete", [(2, True), (8, True), (100, True),
+                                              (2, False), (8, False), (100, False)])
 def test_candidate_scorer_uses_existing_native_decisions_and_refuses_unpaid(
     targets, complete, tmp_path, monkeypatch
 ):
@@ -244,3 +288,73 @@ def test_candidate_scorer_uses_existing_native_decisions_and_refuses_unpaid(
                 targets=targets, timeout=10.)
     assert len(observed) == 1
     assert (tmp_path / "attempt/candidate.request.json").exists()
+
+
+def test_one_real_paid_two_target_diagnostic_preserves_wall_and_receipt(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"test native binary")
+    now = [9.0]
+    calls = []
+
+    def native_chain(_binary, candidate, output, *, targets, timeout):
+        calls.append((targets, timeout, candidate["recovery"], output))
+        now[0] = 34.0
+        return {"status": "COMPLETED_2_REAL_NATIVE_GSIM_KILLS",
+                "world_targets_killed": 2, "seconds_per_mob": 15.0,
+                "native_actor_continuity_receipt_complete": True,
+                "native_recovery_clock_accounted": True}
+
+    result = cold.run_paid_two_target_screen(
+        source(), binary=binary, out=tmp_path / "measured",
+        timeout=90.0, clock=lambda: now[0], chain=native_chain)
+    assert calls[0][:3] == (2, 90.0, {
+        "health_threshold": 0.5, "mana_threshold": 0.1})
+    assert result["elapsed_wall_s"] == 25.0
+    assert result["completed_by_30s"] is True
+    assert result["native_receipt"]["world_targets_killed"] == 2
+    assert result["gate_recorded"] is False
+    assert result["p4_p5_p6_pass"] is False
+    persisted = json.loads((tmp_path / "measured/two_target_screen_summary.json").read_text())
+    assert persisted["status"] == "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+    assert persisted["elapsed_wall_s"] == 25.0
+
+
+def test_two_target_diagnostic_refusal_is_not_reported_as_snapshot(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"test native binary")
+    now = [0.0]
+
+    def refused(_binary, _candidate, _out, *, targets, timeout):
+        now[0] = 4.0
+        raise cold.NativeUnscoredCandidate(
+            "native refused original build",
+            raw_response={"status": "INCOMPLETE_UNPAID_NATIVE_RECOVERY",
+                          "world_targets_killed": 1})
+
+    result = cold.run_paid_two_target_screen(
+        source(), binary=binary, out=tmp_path / "refused",
+        clock=lambda: now[0], chain=refused)
+    assert result["status"] == "NATIVE_TWO_TARGET_SCREEN_UNSCORED"
+    assert result["native_receipt"]["world_targets_killed"] == 1
+    assert result["completed_by_30s"] is False
+    assert json.loads((tmp_path / "refused/two_target_screen_summary.json").read_text())[
+        "gate_recorded"] is False
+
+
+def test_two_target_diagnostic_late_completion_is_measured_not_backdated(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"test native binary")
+    now = [4.0]
+
+    def slow_paid(_binary, _candidate, _out, *, targets, timeout):
+        now[0] = 36.0
+        return {"status": "COMPLETED_2_REAL_NATIVE_GSIM_KILLS",
+                "world_targets_killed": 2, "seconds_per_mob": 7.0}
+
+    result = cold.run_paid_two_target_screen(
+        source(), binary=binary, out=tmp_path / "late",
+        clock=lambda: now[0], chain=slow_paid)
+    assert result["status"] == "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"
+    assert result["elapsed_wall_s"] == 32.0
+    assert result["completed_by_30s"] is False
+

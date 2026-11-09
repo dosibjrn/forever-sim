@@ -178,7 +178,7 @@ def main() -> None:
     p.add_argument("--binary", type=Path, required=True)
     p.add_argument("--source", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--targets", type=int, choices=(8, 100), default=100)
+    p.add_argument("--targets", type=int, choices=(2, 8, 100), default=100)
     p.add_argument("--variant", choices=("all", "best_apl", "life_tap_20",
                                          "life_tap_40"), default="all")
     p.add_argument("--recovery-policy", choices=("fixed", "decisions"),
@@ -375,7 +375,9 @@ def main() -> None:
 
     summary = {
         "kind": ("real_100_target_source_native_world_attempts"
-                 if args.targets == 100 else "eight_target_native_world_smoke"),
+                 if args.targets == 100 else
+                 "two_target_native_world_screen" if args.targets == 2
+                 else "eight_target_native_world_smoke"),
         "native_engine_is_combat_authority": True,
         "world": "one persistent gsim 2D world per candidate",
         "no_independent_fight_stitching": True,
