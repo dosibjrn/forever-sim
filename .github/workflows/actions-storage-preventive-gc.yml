@@ -1,0 +1,153 @@
+name: Clean - bounded Actions artifact storage guard
+
+on:
+  push:
+    paths:
+      - .github/workflows/actions-storage-preventive-gc.yml
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Delete only safe superseded main-branch stage5 artifacts (default dry run)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: clean-actions-artifact-gc
+  cancel-in-progress: false
+
+jobs:
+  monitor-and-prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventory and bounded evidence-safe GC
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLY: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.apply) }}
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import pathlib
+          import re
+          import urllib.error
+          import urllib.request
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          apply = os.environ.get("APPLY", "false").lower() == "true"
+          ceiling = 384 * 1024 * 1024
+          cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=72)
+          prefix = re.compile(r"^native-joint-28-stage5-[0-9a-f]{40}$")
+          base = f"https://api.github.com/repos/{repo}/actions/"
+
+          def request(path, method="GET"):
+              url = base + path
+              req = urllib.request.Request(
+                  url, method=method,
+                  headers={"Authorization": f"Bearer {token}",
+                           "Accept": "application/vnd.github+json",
+                           "X-GitHub-Api-Version": "2022-11-28"})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      return response.status, json.loads(response.read() or b"null")
+              except urllib.error.HTTPError as exc:
+                  return exc.code, exc.read().decode("utf-8", errors="replace")
+
+          def list_artifacts():
+              found = []
+              for page in range(1, 100):
+                  code, payload = request(f"artifacts?per_page=100&page={page}")
+                  if code != 200:
+                      raise RuntimeError(f"artifact inventory HTTP {code}: {str(payload)[:160]}")
+                  batch = payload["artifacts"]
+                  found.extend(batch)
+                  if len(batch) < 100:
+                      return found
+              raise RuntimeError("artifact pagination cap reached; refuse deletion")
+
+          def created(a):
+              return dt.datetime.fromisoformat(a["created_at"].replace("Z", "+00:00"))
+
+          all_artifacts = list_artifacts()
+          total = sum(int(a["size_in_bytes"]) for a in all_artifacts)
+          stage5 = sorted((a for a in all_artifacts if prefix.fullmatch(a["name"])),
+                          key=created, reverse=True)
+          stage5_bytes = sum(int(a["size_in_bytes"]) for a in stage5)
+          print(f"MODE={'APPLY' if apply else 'DRY_RUN'} repo={repo}")
+          print(f"BEFORE count={len(all_artifacts)} bytes={total} MiB={total/1048576:.2f}")
+          print(f"STAGE5 count={len(stage5)} bytes={stage5_bytes} MiB={stage5_bytes/1048576:.2f}")
+
+          pinned_runs = set()
+          for folder in ("docs", "evidence"):
+              for file in pathlib.Path(folder).rglob("*.md"):
+                  try:
+                      pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", file.read_text(errors="replace"))))
+                  except OSError:
+                      pass
+          for file in ("OVERALL_PLAN.md", "PROCESS.md", "README.md"):
+              pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", pathlib.Path(file).read_text(errors="replace"))))
+
+          keep_recent = {int(a["id"]) for a in stage5[:5]}
+          candidates = []
+          protected = {"recent-five": 0, "project-linked": 0, "non-main-branch": 0, "younger-than-72h": 0}
+          for a in reversed(stage5):
+              aid = int(a["id"])
+              run = a.get("workflow_run") or {}
+              run_id = int(run.get("id") or 0)
+              branch = run.get("head_branch")
+              if aid in keep_recent:
+                  protected["recent-five"] += 1
+              elif run_id in pinned_runs:
+                  protected["project-linked"] += 1
+              elif branch != "main":
+                  protected["non-main-branch"] += 1
+              elif created(a) >= cutoff:
+                  protected["younger-than-72h"] += 1
+              else:
+                  candidates.append(a)
+          print(f"PROTECTED {protected}; known linked run IDs={len(pinned_runs)}")
+          print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
+          for a in candidates[:12]:
+              print(f"CANDIDATE id={a['id']} bytes={a['size_in_bytes']} run={(a.get('workflow_run') or {}).get('id')} age={a['created_at']}")
+          planned = []
+          remaining = total
+          for a in candidates:
+              if remaining <= ceiling:
+                  break
+              planned.append(a)
+              remaining -= int(a["size_in_bytes"])
+          print(f"PLAN count={len(planned)} reclaim_MiB={(total-remaining)/1048576:.2f} predicted_remaining_MiB={remaining/1048576:.2f}")
+          if not apply:
+              print("DRY_RUN: no artifacts deleted")
+          else:
+              deleted = []
+              for a in planned:
+                  aid = int(a["id"])
+                  status, body = request(f"artifacts/{aid}", "DELETE")
+                  if status != 204:
+                      raise RuntimeError(f"DELETE id={aid} expected 204, got {status}: {str(body)[:160]}")
+                  status, _ = request(f"artifacts/{aid}")
+                  if status != 404:
+                      raise RuntimeError(f"DELETE verify id={aid} expected GET 404, got {status}")
+                  deleted.append(aid)
+              after_artifacts = list_artifacts()
+              after = sum(int(a["size_in_bytes"]) for a in after_artifacts)
+              still_present = set(deleted).intersection(int(a["id"]) for a in after_artifacts)
+              if still_present:
+                  raise RuntimeError(f"deleted artifact IDs still listed: {still_present}")
+              print(f"AFTER count={len(after_artifacts)} bytes={after} MiB={after/1048576:.2f}")
+              print(f"VERIFIED_DELETIONS count={len(deleted)} reclaimed_MiB={(total-after)/1048576:.2f}")
+              if after > ceiling:
+                  print("NOTICE: protected/other artifacts still exceed 384 MiB; no unsafe deletion")
+          PY
