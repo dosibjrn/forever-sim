@@ -27,22 +27,22 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           path: project
 
-      - name: Checkout known source-paid Warlock L20 Rust fixture
+      - name: Checkout prior 100/100 paid Decisions-capable Warlock Rust source
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 84bb2e76748fd62e74ecf838c4bca434000952ea
+          ref: febc1d703e022265ed61ede3fec9b05416282536
           path: engine
 
       - name: Record precise provenance and limit claim to old source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "84bb2e76748fd62e74ecf838c4bca434000952ea"
+          test "$(git -C engine rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
           test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
           echo "FOREVER_HEAD=$(git -C project rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
           echo "RUST_SOURCE_SHA=$(git -C engine rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Source is the previously paid L20 fixture; NOT Work1's pending selected-compatible hostile pin or a P4/P5/P6 gate verdict." >> "$GITHUB_STEP_SUMMARY"
+          echo "This Rust SHA completed the earlier 100/100 paid Decisions chain; this is a 2-target stationary-source timing diagnostic, NOT Work1's pending hostile-compatible pin or a P4/P5/P6 verdict." >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-python@v5
         with:
