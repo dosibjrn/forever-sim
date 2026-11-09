@@ -84,6 +84,49 @@ def requires_evidence_pin_scan(total_bytes: int, ceiling_bytes: int,
     return any(created(artifact) < cutoff for artifact in newest_first_stage5[5:])
 
 
+
+def verify_deleted_artifacts_absent(deleted_ids, list_artifacts, *,
+                                    attempts: int = 12,
+                                    delay_seconds: float = 5,
+                                    sleep=None) -> list[dict]:
+    """Certify post-DELETE absence using a COMPLETE, stable inventory.
+
+    GitHub can temporarily expose stale artifact pages after DELETE 204;
+    pagination may also change counts mid-scan while the deletion propagates.
+    Retry *only after deletion*, never when constructing the deletion plan:
+    the pre-delete verified_artifacts() snapshot must still fail closed.
+    An API or provenance error other than transient inventory ValueError
+    propagates immediately. Never claim success from a partial inventory.
+    """
+    import time
+
+    if type(attempts) is not int or attempts < 1:
+        raise ValueError("verification attempts must be positive")
+    sleep = time.sleep if sleep is None else sleep
+    deleted = set(deleted_ids)
+    remaining = deleted.copy()
+    for attempt in range(attempts):
+        try:
+            after = list_artifacts()
+        except ValueError as exc:
+            # verified_artifacts() rejects moving page counts/duplicate IDs.
+            # Retry a fresh whole snapshot, not the failed partial page.
+            print(f"Post-DELETE inventory not stable: {exc}; "
+                  f"retry {attempt + 1}/{attempts}")
+        else:
+            remaining = deleted.intersection(int(row["id"]) for row in after)
+            if not remaining:
+                return after
+            print(f"Deletion pending visibility for {len(remaining)} IDs; "
+                  f"retry {attempt + 1}/{attempts}")
+        if attempt + 1 < attempts:
+            sleep(delay_seconds)
+    raise RuntimeError(
+        f"DELETE verification did not converge after {attempts} complete "
+        f"inventory attempts; last-visible IDs={sorted(remaining)[:12]}")
+
+
+
 def inventory(repository: str, fetch_page) -> tuple[int, int]:
     """Count bytes only from a verified complete retained-artifact snapshot."""
     artifacts = verified_artifacts(repository, fetch_page)
