@@ -37,6 +37,8 @@ def test_incomplete_duplicate_or_invalid_inventory_is_not_reported(bad):
 
 
 def test_one_unavailable_repo_never_reports_account_clearance(monkeypatch, capsys):
+    monkeypatch.setattr(module, "github_owner_page", lambda _page: [
+        {"full_name": repo, "private": False} for repo in module.REPOSITORIES])
     monkeypatch.setattr(module, "github_page", lambda repo, page: (
         {"total_count": 0, "artifacts": []} if repo.endswith("forever-sim")
         else (_ for _ in ()).throw(OSError("access denied"))))
@@ -47,6 +49,8 @@ def test_one_unavailable_repo_never_reports_account_clearance(monkeypatch, capsy
 
 
 def test_both_repos_report_retained_not_billing(monkeypatch, capsys):
+    monkeypatch.setattr(module, "github_owner_page", lambda _page: [
+        {"full_name": repo, "private": False} for repo in module.REPOSITORIES])
     monkeypatch.setattr(module, "github_page", lambda repo, page: {
         "total_count": 1, "artifacts": [{"id": 1, "size_in_bytes": 512}]})
     assert module.main() == 0
@@ -76,3 +80,56 @@ def test_deletion_workflow_uses_complete_verified_inventory():
     assert "return verified_artifacts(repo, fetch_page)" in workflow
     assert workflow.index("return verified_artifacts(repo, fetch_page)") < workflow.index(
         "candidates = []")
+
+
+def test_public_owner_discovery_pages_and_keeps_canonical_repos():
+    calls = []
+    def page(number):
+        calls.append(number)
+        if number == 1:
+            return [{"full_name": f"dosibjrn/extra-{i}", "private": False}
+                    for i in range(100)]
+        return [{"full_name": "dosibjrn/last", "private": False}]
+
+    found = module.discover_public_owner_repos(page)
+    assert calls == [1, 2]
+    assert len(found) == 103
+    assert set(module.REPOSITORIES).issubset(found)
+    assert "dosibjrn/last" in found
+
+
+@pytest.mark.parametrize("page", [
+    [{"full_name": "somebody/foreign", "private": False}],
+    [{"full_name": "dosibjrn/private", "private": True}],
+    [{"full_name": "dosibjrn/duplicate", "private": False}] * 2,
+    {"not": "a list"},
+])
+def test_public_owner_discovery_fails_closed_on_ambiguous_input(page):
+    with pytest.raises(ValueError):
+        module.discover_public_owner_repos(lambda _page: page)
+
+
+def test_failed_owner_discovery_still_inspects_core_without_clearance(monkeypatch, capsys):
+    monkeypatch.setattr(module, "github_owner_page",
+                        lambda _page: (_ for _ in ()).throw(OSError("forbidden")))
+    monkeypatch.setattr(module, "github_page",
+                        lambda _repo, _page: {"total_count": 0, "artifacts": []})
+    assert module.main() == 1
+    out = capsys.readouterr().out
+    assert out.count("RETAINED repo=") == 2
+    assert "PUBLIC_OWNER_REPOS_UNKNOWN" in out
+    assert "RETAINED_SCOPE=INCOMPLETE" in out
+    assert "RETAINED_PUBLIC_OWNER_REPOS count=" not in out
+
+
+def test_public_owner_total_includes_other_repositories(monkeypatch, capsys):
+    monkeypatch.setattr(module, "github_owner_page", lambda _page: [
+        {"full_name": "dosibjrn/other-repo", "private": False}])
+    monkeypatch.setattr(module, "github_page", lambda repo, _page: {
+        "total_count": 1, "artifacts": [
+            {"id": 1, "size_in_bytes": 2048 if repo.endswith("other-repo") else 512}]})
+    assert module.main() == 0
+    out = capsys.readouterr().out
+    assert "RETAINED_KNOWN_TWO_REPOS bytes=1024" in out
+    assert "RETAINED_PUBLIC_OWNER_REPOS count=3 bytes=3072" in out
+    assert "BILLING_METER=UNKNOWN" in out
