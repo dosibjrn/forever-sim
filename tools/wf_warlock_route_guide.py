@@ -469,6 +469,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cold-summary", type=Path, help="Read actual native cold_summary.json finalists instead")
     parser.add_argument("--native-summary", type=Path, action="append",
                         help="Import paid native 100-target summary.json; repeat for different levels")
+    parser.add_argument("--baseline-observations", type=Path,
+                        help="Append previously published source-native observations to the new paid receipt")
     parser.add_argument("--execute-native", action="store_true",
                         help="Execute one real paid hostile Warlock 100-target Rust/gsim scenario")
     parser.add_argument("--actor-level", type=int, default=20,
@@ -498,6 +500,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--execute-native requires --binary and --source")
     if not args.execute_native and (args.binary or args.source):
         parser.error("--binary/--source require --execute-native")
+    if args.baseline_observations and not (args.native_summary or args.execute_native):
+        parser.error("--baseline-observations requires --native-summary or --execute-native")
     if (args.native_summary or args.execute_native) and args.run_url is None:
         # Local receipts are first-class and must never pretend to be an old CI run.
         pass
@@ -530,9 +534,15 @@ def main(argv: list[str] | None = None) -> int:
                 run_url=args.run_url, trial=trial)
             rows.extend(measured)
             refusals.extend(rejected)
-        # Preserve completed L20 evidence even when the adjacent L21 producer
-        # has a native refusal; never fabricate an L21 score from that refusal.
+        # A new paid refusal stays a nonzero CLI result even when an earlier
+        # L20 receipt is preserved as a separately measured baseline.
         refused_only = not rows
+        if args.baseline_observations:
+            baseline = build_route_report(json.loads(args.baseline_observations.read_text()))
+            if baseline["start_level"] != 10 or baseline["end_level"] != 60:
+                raise ValueError("baseline observations must cover the same L10-60 report scope")
+            rows = list(baseline["observations"]) + rows
+            refusals = list(baseline["native_refusals"]) + refusals
         payload = {"schema_version": 1, "class": "warlock",
                    "start_level": 10, "end_level": 60,
                    "observations": rows, "native_refusals": refusals}
