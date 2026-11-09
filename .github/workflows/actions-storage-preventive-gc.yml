@@ -30,6 +30,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Read-only retained Actions footprint across both owned production repos
+        # Diagnostic only. The repository-local evidence-pinned GC below is the
+        # ONLY deletion path. Failed fork reads must not suppress that safe GC.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m tools.actions_storage_footprint
       - name: Inventory and bounded evidence-safe GC
         shell: bash
         env:
