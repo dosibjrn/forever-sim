@@ -566,11 +566,11 @@ def test_unquoted_colon_receipts_pin_artifacts_and_runs_before_gc(tmp_path):
     receipt = tmp_path / "evidence/native/paid-world-receipt.log"
     receipt.parent.mkdir(parents=True, exist_ok=True)
     receipt.write_text(
-        "artifact_id: 12998142923\\n"
-        "workflow_run_id: 42574670709\\n"
-        "run_id: '42573539316'\\n"
-        "github_run_id: \\"42573346755\\"\\n"
-        "engine_build_run_id: 40969635587\\n",
+        "artifact_id: 12998142923\n"
+        "workflow_run_id: 42574670709\n"
+        "run_id: '42573539316'\n"
+        "github_run_id: \"42573346755\"\n"
+        "engine_build_run_id: 40969635587\n",
         encoding="utf-8",
     )
     runs, artifacts = collect_local_references(tmp_path)
@@ -584,7 +584,7 @@ def test_colon_pin_parser_rejects_unrelated_and_malformed_ids():
         "not_artifact_id: 88 xworkflow_run_id: 99 "
         "artifact_id: 0 artifact_id: 123abc artifact_id: 321-abc "
         "run_id: 0 run_id: 999abc not_run_id: 123 "
-        "artifact_id: 123 # valid explicit receipt ID\\n",
+        "artifact_id: 123 # valid explicit receipt ID\n",
         runs, artifacts,
     )
     assert runs == set()
