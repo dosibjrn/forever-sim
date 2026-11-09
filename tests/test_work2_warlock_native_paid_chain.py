@@ -216,3 +216,45 @@ def test_native_refusal_preserves_only_source_acknowledged_partial_kills():
     assert capture(AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 0,
                                    "no failure", 100, 1000))) == {}
     assert capture(ValueError("bad request")) == {}
+
+
+def test_native_failure_records_real_partial_ack_count_not_completion(
+    tmp_path, monkeypatch
+):
+    """A dry native actor may kill some mobs; report the exact ACK count."""
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    out = tmp_path / "out"
+
+    def prepare(cmd, **kwargs):
+        Path(cmd[cmd.index("--outfile") + 1]).write_text(json.dumps({
+            "player": {"class": "ClassWarlock", "race": "RaceTroll",
+                       "level": 20, "stats": {"Health": 600., "Mana": 700.}}}))
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    refusal = _WARLOCK["NativeWorldChainFailure"](
+        "RUST_TWO_WORLD_NATIVE_FAILED", 17, "native actor exhausted", 51, 87)
+    def native(*args, **kwargs):
+        raise refusal
+
+    main = _WARLOCK["main"]
+    monkeypatch.setitem(main.__globals__, "native_world_chain", native)
+    monkeypatch.setattr(main.__globals__["subprocess"], "run", prepare)
+    monkeypatch.setattr(sys, "argv", [
+        "driver", "--binary", str(tmp_path / "engine"), "--source", str(source),
+        "--out", str(out), "--targets", "100", "--variant", "best_apl",
+        "--recovery-policy", "fixed", "--recovery-seconds", "12",
+    ])
+    with pytest.raises(SystemExit, match="No variant completed 100"):
+        main()
+
+    record = json.loads((out / "best_apl/summary.json").read_text())
+    assert record["status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
+    assert record["killed"] == 51
+    assert record["native_damage_events"] == 87
+    assert record["native_exit_code"] == 17
+    assert "seconds_per_mob" not in record
+    assert record["native_2d_paid_objective_eligible"] is False
+    assert "exhausted" in record["error"]
+    summary = json.loads((out / "summary.json").read_text())
+    assert summary["p4_p5_p6_pass"] is False
