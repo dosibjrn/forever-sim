@@ -9,8 +9,11 @@ fake level nodes or stitched into an invented route.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -39,8 +42,18 @@ def _observation(raw: dict, start: int, end: int) -> dict:
         raise ValueError("cannot score incomplete native-world chain")
     seconds = _positive_number(raw.get("seconds_per_mob"), "seconds_per_mob")
     run = raw.get("run_url")
-    if not isinstance(run, str) or not run.startswith("https://github.com/") or "/actions/runs/" not in run:
-        raise ValueError("measured observation needs a specific native run URL")
+    receipt = raw.get("receipt_path")
+    linked = (isinstance(run, str) and run.startswith("https://github.com/")
+              and "/actions/runs/" in run)
+    local = (isinstance(receipt, str) and bool(receipt)
+             and isinstance(raw.get("engine_binary_sha256"), str)
+             and len(raw["engine_binary_sha256"]) == 64
+             and isinstance(raw.get("source_request_sha256"), str)
+             and len(raw["source_request_sha256"]) == 64)
+    if not linked and not local:
+        raise ValueError("measured observation requires an actual Actions run or hashed local native receipt")
+    if run is not None and not linked:
+        raise ValueError("invalid native Actions run URL")
     for key in ("id", "trial", "candidate", "scenario"):
         if not isinstance(raw.get(key), str) or not raw[key].strip():
             raise ValueError(f"missing {key} observation identity")
@@ -54,7 +67,7 @@ def _observation(raw: dict, start: int, end: int) -> dict:
         "seconds_per_mob": seconds,
         "elapsed_seconds_for_observed_chain": round(seconds * killed, 4),
         "paid_native_recovery": True, "native_world_ack": True,
-        "run_url": run, "artifact_url": raw.get("artifact_url"),
+        "run_url": run, "receipt_path": receipt, "artifact_url": raw.get("artifact_url"),
         "engine_sha": raw.get("engine_sha"),
         "engine_binary_sha256": raw.get("engine_binary_sha256"),
         "source_revision": raw.get("source_revision"),
@@ -64,6 +77,11 @@ def _observation(raw: dict, start: int, end: int) -> dict:
         "apl": raw.get("apl"), "pet": raw.get("pet"),
         "pulls": raw.get("pulls"), "recovery_policy": raw.get("recovery_policy"),
         "notes": raw.get("notes"),
+        "native_final_hp": raw.get("native_final_hp"),
+        "native_final_mana": raw.get("native_final_mana"),
+        "native_health_damage": raw.get("native_health_damage"),
+        "native_food_seconds": raw.get("native_food_seconds"),
+        "native_water_seconds": raw.get("native_water_seconds"),
         "status": "measured_native_chain",
     }
 
@@ -153,6 +171,118 @@ def observations_from_cold_summary(summary: dict, *, run_url: str,
     return out
 
 
+
+def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
+                                           run_url: str | None = None,
+                                           trial: str = "native-paid-l20") -> tuple[list[dict], list[dict]]:
+    """Consume the *actual* paid native/gsim producer output and saved requests.
+
+    No new combat evaluator. Failures remain observable, never scored. A local
+    receipt is tied to the exact binary and prepared source request hashes;
+    no unrelated historic Actions run is attributed to a new local execution.
+    """
+    if (not isinstance(summary, dict)
+            or summary.get("kind") != "real_100_target_source_native_world_attempts"
+            or summary.get("target_count_requested") != 100
+            or summary.get("native_recovery_requested", {}).get("recovery_policy") != "decisions"):
+        raise ValueError("expected 100-target paid native Decisions/gsim producer summary")
+    binary = summary.get("native_binary_sha256")
+    if not isinstance(binary, str) or len(binary) != 64:
+        raise ValueError("native executable fingerprint missing")
+    rows: list[dict] = []
+    refusals: list[dict] = []
+    attempts = summary.get("results")
+    if not isinstance(attempts, list) or not attempts:
+        raise ValueError("native producer has no attempted candidates")
+    for result in attempts:
+        if not isinstance(result, dict) or not isinstance(result.get("variant"), str):
+            raise ValueError("malformed native producer candidate")
+        status = result.get("status")
+        if status != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
+            refusals.append({"variant": result["variant"], "status": status,
+                             "error": result.get("error"), "killed": result.get("killed"),
+                             "native_exit_code": result.get("native_exit_code")})
+            continue
+        if not (result.get("killed") == 100
+                and result.get("target_count_requested") == 100
+                and result.get("native_binary_sha256") == binary
+                and result.get("native_actor_continuity_receipt_complete") is True
+                and result.get("paid_recovery") is True
+                and result.get("native_recovery_clock_accounted") is True
+                and result.get("native_recovery_mode") == "decisions_food_water"
+                and result.get("native_2d_paid_objective_eligible") is True
+                and result.get("world_target_hp_matches_request") is True
+                and result.get("native_food_water_observed") is True):
+            raise ValueError("native candidate lacks complete paid 100-target world/actor receipt")
+        source_path = summary_path.parent / result["variant"] / "source_request.json"
+        if not source_path.is_file():
+            raise ValueError(f"missing actually executed source request: {source_path}")
+        raw_bytes = source_path.read_bytes()
+        request_sha = hashlib.sha256(raw_bytes).hexdigest()
+        if request_sha != result.get("source_request_sha256"):
+            raise ValueError("source request bytes differ from executed native candidate")
+        source = json.loads(raw_bytes)
+        try:
+            actor = source["raid"]["parties"][0]["players"][0]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise ValueError("executed native candidate has no source actor") from exc
+        rows.append({
+            "id": f"{trial}-{result['variant']}",
+            "level": 20, "trial": trial,
+            "candidate": f"paid native {result['variant']} ({request_sha[:12]})",
+            "scenario": (f"Hostile retained-actor L20 native/gsim world, "
+                         f"HP {result.get('mob_hp_native_scenario')}, "
+                         f"damage {result.get('scenario_min_base_damage')}/"
+                         f"{result.get('scenario_swing_speed')}s; binary {binary}"),
+            "targets_requested": 100, "targets_killed": 100,
+            "seconds_per_mob": result.get("seconds_per_mob"),
+            "paid_native_recovery": True, "native_world_ack": True,
+            "run_url": run_url, "receipt_path": str(summary_path.resolve()),
+            "engine_binary_sha256": binary,
+            "source_request_sha256": request_sha,
+            "source_revision": None, "candidate_sha256": None,
+            "talents": actor.get("talentsString"),
+            "gear": actor.get("equipment", {}).get("items"),
+            "apl": actor.get("rotation", {}).get("priorityList"),
+            "pet": actor.get("warlockOptions"),
+            "pulls": None,
+            "recovery_policy": result.get("recovery_request"),
+            "native_final_hp": result.get("final_hp"),
+            "native_final_mana": result.get("final_mana"),
+            "native_health_damage": result.get("native_health_damage"),
+            "native_food_seconds": result.get("native_food_seconds"),
+            "native_water_seconds": result.get("native_water_seconds"),
+            "notes": "Actually executed and paid native chain, not a continuous 10–60 route.",
+        })
+    if not rows:
+        return [], refusals
+    return rows, refusals
+
+
+def execute_native_l20(*, binary: Path, source: Path, out: Path) -> Path:
+    """Invoke existing Rust/gsim producer once, then consume its persisted receipt."""
+    if not binary.is_file() or not source.is_file():
+        raise ValueError("native --binary and --source must be existing files")
+    native_out = out / "native_l20"
+    cmd = [
+        sys.executable, str(ROOT / "tools/wf_warlock_l20_100mob.py"),
+        "--binary", str(binary.resolve()), "--source", str(source.resolve()),
+        "--out", str(native_out.resolve()),
+        "--targets", "100", "--variant", "best_apl",
+        "--hostile-player-tank", "--recovery-policy", "decisions",
+        "--require-native-health-damage",
+    ]
+    outcome = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True,
+                             check=False)
+    summary_path = native_out / "summary.json"
+    if not summary_path.is_file():
+        raise RuntimeError(f"native producer failed ({outcome.returncode}): "
+                           f"{(outcome.stderr or outcome.stdout)[-2500:]}")
+    # Do not hide a refusal: summary.json contains its exact status/killed/error;
+    # caller only publishes complete paid kills as measured observations.
+    return summary_path
+
+
 def build_route_report(payload: dict) -> dict:
     """Preserve distinct paid measurements; never fabricate missing level costs."""
     if not isinstance(payload, dict) or payload.get("schema_version") != 1 or payload.get("class") != "warlock":
@@ -161,6 +291,9 @@ def build_route_report(payload: dict) -> dict:
     if type(start) is not int or type(end) is not int or start < 1 or end < start:
         raise ValueError("invalid route level range")
     observations = [_observation(row, start, end) for row in payload.get("observations", [])]
+    refusals = payload.get("native_refusals", [])
+    if not isinstance(refusals, list):
+        raise ValueError("native_refusals must be a list")
     if len({row["id"] for row in observations}) != len(observations):
         raise ValueError("duplicate observation IDs")
     # A trial only compares build candidates against one declared scenario.
@@ -199,6 +332,7 @@ def build_route_report(payload: dict) -> dict:
         "full_10_60_native_replay_executed": False,
         "elapsed_10_60_seconds": None,
         "levels": levels, "observations": observations, "comparisons": comparisons,
+        "native_refusals": refusals,
         "measured_levels": [level for level in by_level if by_level[level]],
         "unmeasured_levels": missing,
         "dual_spec": {
@@ -251,7 +385,9 @@ def render_guide(report: dict) -> str:
             lines += [
                 f"- **{row['candidate']}**: {row['targets_killed']}/{row['targets_requested']} "
                 f"native ACK kills, {row['seconds_per_mob']:.4f} s/mob, "
-                f"paid native recovery. [Actual run]({row['run_url']})."
+                f"paid native recovery. "
+                + (f"[Actual run]({row['run_url']})." if row["run_url"]
+                   else f"Local receipt: {row['receipt_path']}.")
             ]
             if row["notes"]:
                 lines.append(f"  - {row['notes']}")
@@ -265,6 +401,13 @@ def render_guide(report: dict) -> str:
                              "; inspect linked run artifacts before copying this build.")
         lines += ["", "Fastest **within this trial only**: " +
                   comp["fastest_observed_id"] + ". This is not a cross-trial route winner.", ""]
+    if report["native_refusals"]:
+        lines += ["## Native refusals (not scored)", ""]
+        for refused in report["native_refusals"]:
+            lines.append(f"- {refused['variant']}: {refused['status']}, "
+                         f"killed={refused.get('killed')}, "
+                         f"error={refused.get('error')}")
+        lines.append("")
     lines += [
         "## Route and dual spec",
         "",
@@ -285,10 +428,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--observations", type=Path, help="Native observation manifest (default: historical L20 evidence)")
     parser.add_argument("--cold-summary", type=Path, help="Read actual native cold_summary.json finalists instead")
+    parser.add_argument("--native-summary", type=Path, help="Consume existing paid Warlock L20 native/gsim 100-target summary.json")
+    parser.add_argument("--execute-native", action="store_true", help="Execute one paid hostile Warlock L20 100-target Rust/gsim scenario and publish its result")
+    parser.add_argument("--binary", type=Path, help="Selected compiled native Rust binary for --execute-native")
+    parser.add_argument("--source", type=Path, help="Exact native Warlock L20 source request for --execute-native")
     parser.add_argument("--run-url", help="Exact GitHub Actions run URL for --cold-summary")
     parser.add_argument("--trial", default="imported-native-cold", help="Identity of one comparable native run")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
+    if sum(bool(x) for x in (args.observations, args.cold_summary,
+                             args.native_summary, args.execute_native)) > 1:
+        parser.error("choose one input: --observations, --cold-summary, --native-summary, or --execute-native")
+    if args.execute_native and (not args.binary or not args.source):
+        parser.error("--execute-native requires --binary and --source")
+    if not args.execute_native and (args.binary or args.source):
+        parser.error("--binary/--source require --execute-native")
+    if (args.native_summary or args.execute_native) and args.run_url is None:
+        # Local receipts are first-class and must never pretend to be an old CI run.
+        pass
     if args.cold_summary:
         if args.observations or not args.run_url:
             parser.error("--cold-summary needs --run-url and cannot combine --observations")
@@ -299,6 +456,18 @@ def main(argv: list[str] | None = None) -> int:
                 json.loads(args.cold_summary.read_text()),
                 run_url=args.run_url, trial=args.trial),
         }
+    elif args.native_summary or args.execute_native:
+        native_path = (execute_native_l20(binary=args.binary, source=args.source, out=args.out)
+                       if args.execute_native else args.native_summary)
+        rows, refusals = observations_from_native_chain_summary(
+            json.loads(native_path.read_text()), summary_path=native_path,
+            run_url=args.run_url, trial=args.trial)
+        if not rows:
+            raise ValueError(f"no complete paid native L20 100-target candidate; "
+                             f"refusals preserved in {native_path}: {refusals}")
+        payload = {"schema_version": 1, "class": "warlock",
+                   "start_level": 10, "end_level": 60,
+                   "observations": rows, "native_refusals": refusals}
     else:
         payload = json.loads((args.observations or DEFAULT_OBSERVATIONS).read_text())
     report = build_route_report(payload)
