@@ -88,6 +88,11 @@ def test_gc_scans_submitted_reviews_and_fails_closed_before_deleting():
     # A bare /reviews path must be paginated with '?' rather than '&'.
     assert 'separator = "&" if "?" in endpoint else "?"' in workflow
     assert 'all_prs = gh_collection("pulls?state=all")' in workflow
+    assert 'for offset in range(0, len(all_prs), 20):' in workflow
+    assert '"gh", "api", "graphql", "-f", f"query={query}"' in workflow
+    assert 'payload.get("errors")' in workflow
+    assert 'connection["pageInfo"]["hasNextPage"]' in workflow
+    assert 'if connection["pageInfo"]["hasNextPage"]' in workflow
     assert 'gh_collection(f"pulls/{int(pr[\'number\'])}/reviews")' in workflow
     assert 'record_references(review.get("body"), pinned_runs, pinned_artifacts)' in workflow
     assert workflow.index('record_references(review.get("body")') < workflow.index(
