@@ -1,4 +1,4 @@
-"""Forever-owned L20 8/100-mob paid-recovery transport/receipt contracts.
+"""Forever-owned L20 2/8/100-mob paid-recovery transport/receipt contracts.
 
 Mocks only the Rust subprocess boundary. No Python food, regen, combat or
 legality oracle; real native/world behavior is checked by separate Actions.
@@ -92,9 +92,10 @@ def _source_request():
 
 
 @pytest.mark.parametrize("targets,paid", [
-    (8, True), (100, True), (8, False), (100, False),
+    (2, True), (8, True), (100, True),
+    (2, False), (8, False), (100, False),
 ])
-def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_as_100(
+def test_warlock_driver_forwards_native_decisions_and_never_scores_short_as_100(
     tmp_path, monkeypatch, targets, paid
 ):
     source = tmp_path / "source.json"
@@ -173,7 +174,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
         (out / "best_apl" / "prepared.json").read_bytes()).hexdigest()
     assert record["paid_recovery"] is paid
     # The default command does not *require* either proof. Nevertheless,
-    # a native-paid 8/100-mob receipt must retain both actual observations
+    # a native-paid 2/8/100-mob receipt must retain both actual observations
     # for reuse by the following search, while an unpaid route proves neither.
     assert record["native_consumption_proof_required"] is False
     assert record["native_health_damage_proof_required"] is False
@@ -191,6 +192,12 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert summary["original_source_sha256"] == record["original_source_sha256"]
     assert summary["p4_p5_p6_pass"] is False
     assert summary["cold_30_300_search_executed"] is False
+    if targets == 2:
+        assert summary["kind"] == "two_target_native_world_screen"
+    elif targets == 8:
+        assert summary["kind"] == "eight_target_native_world_smoke"
+    else:
+        assert summary["kind"] == "real_100_target_source_native_world_attempts"
 
 
 def test_fixed_recovery_duration_forwarded_from_warlock_driver(tmp_path, monkeypatch):
