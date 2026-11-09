@@ -34,10 +34,18 @@ class NativeWorldChainFailure(AssertionError):
     """
 
     def __init__(self, reason: str, exit_code: int, detail: str,
-                 killed: int, native_damage_events: int):
+                 killed: int, native_damage_events: int,
+                 native_source_damage_effects_by_caster: dict | None = None):
         self.exit_code = exit_code
         self.killed = killed
         self.native_damage_events = native_damage_events
+        # These are actually world-ACKed Rust effects, not inferred casts.
+        # Preserve them when a hostile retained actor dies partway through.
+        self.native_source_damage_effects_by_caster = {
+            caster: dict(actions) for caster, actions in
+            (native_source_damage_effects_by_caster or {}).items()
+        }
+        # Keep the existing five-element refusal tuple intact for callers.
         super().__init__((reason, exit_code, detail, killed, native_damage_events))
 
 
@@ -712,11 +720,13 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             # count and native event count to the real gate candidate scorer;
             # a failed session still cannot become a completed world screen.
             raise NativeWorldChainFailure("RUST_TWO_WORLD_NATIVE_FAILED", status,
-                                          stderr[-3000:], len(kills), events)
+                                          stderr[-3000:], len(kills), events,
+                                          native_source_damage_effects_by_caster)
         if native_report is None or len(kills) != target_count or events < target_count:
             raise NativeWorldChainFailure("RUST_TWO_WORLD_KILLS_NOT_COMPLETED",
                                           status, str(native_report)[-3000:],
-                                          len(kills), events)
+                                          len(kills), events,
+                                          native_source_damage_effects_by_caster)
         result = native_report["result"]
         if (native_report["source_sha256"] != source_hash
                 or result["world_targets_killed"] != target_count
