@@ -224,7 +224,8 @@ jobs:
               # unlike replaceable PR/push CI diagnostics. Retention handles it.
               allowed_events=("pull_request", "push"),
               require_success_conclusion=True,
-              require_single_attempt=True)
+              require_single_attempt=True,
+              protected_branches=open_branches)
           print(f"RUN_COMPLETION eligible_finished={len(candidates)} deferred_unsafe={unfinished}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
