@@ -451,6 +451,13 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "screen_targets": 2, "finalist_targets": 100,
         "budget_s": budget_s, "snapshot_s": snapshot_s,
         "elapsed_search_s": search["elapsed_s"],
+        "search_seed": seed,
+        # Actual completed native-paid comparisons either side of the
+        # 30s cut; attempted/refused and late payments are not credited.
+        "native_paid_before_snapshot": sum(
+            row["paid_completed_elapsed_s"] <= snapshot_s for row in on_time_rows),
+        "native_paid_after_snapshot": sum(
+            row["paid_completed_elapsed_s"] > snapshot_s for row in on_time_rows),
         "cold_300_reached": search["elapsed_s"] >= budget_s,
         "native_paid_screen_count": len(on_time_rows),
         "late_paid_screen_count": len(paid_rows) - len(on_time_rows),
