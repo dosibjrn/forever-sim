@@ -121,6 +121,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
             "native_windows": [{"actor_health": 150.}] * targets,
             "native_actor_mana_after_world_kills": [300.] * targets,
             "paid_recovery": paid,
+            "native_recovery_clock_accounted": paid,
             "native_recovery_mode": "decisions_food_water",
             "native_passive_recovery_elapsed_seconds": 6. * (targets - 1),
             "native_passive_recovery_ns_by_target": [0] + [6_000_000_000] * (targets - 1),
@@ -266,6 +267,7 @@ def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_pr
         "world_targets_killed": 8,
         "world_seconds_per_target_paid_recovery": 15.,
         "paid_recovery": True,
+        "native_recovery_clock_accounted": True,
         "native_recovery_mode": "decisions_food_water",
         "native_food_water_observed": True,
         "native_food_seconds_total": 3.,
@@ -296,6 +298,22 @@ def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_pr
                             "INCOMPLETE_NATIVE_DECISIONS_RECEIPT", False)
     assert classify(payload, 100, recovery_policy="decisions") == (
         "INCOMPLETE_UNPAID_NATIVE_RECOVERY", False)
+    # Rust can choose zero rest on a healthy actor. Its explicit
+    # zero-duration/zero-consumption receipts are still a paid-clock scenario,
+    # not a claim that any food/water was consumed.
+    no_rest = {**payload, "paid_recovery": False,
+               "native_recovery_clock_accounted": True,
+               "native_food_seconds_total": 0.,
+               "native_water_seconds_total": 0.,
+               "native_food_health_gain_total": 0.,
+               "native_water_mana_gain_total": 0.}
+    assert classify(no_rest, 8, recovery_policy="decisions") == completed
+    assert classify(no_rest, 8, recovery_policy="decisions",
+                    require_native_consumption=True) == (
+                        "NO_NATIVE_FOOD_WATER_RESOURCE_GAIN", False)
+    assert classify({**no_rest, "native_recovery_clock_accounted": False},
+                    8, recovery_policy="decisions") == (
+                        "INCOMPLETE_UNPAID_NATIVE_RECOVERY", False)
 
     # A paid chain with only 2D damage-to-mob events is not a proven
     # real-survival challenge when the caller asks for source player damage.
@@ -344,6 +362,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
             "native_windows": [{"actor_health": 200.}] * 8,
             "native_actor_mana_after_world_kills": [200.] * 8,
             "paid_recovery": True,
+            "native_recovery_clock_accounted": True,
             "native_recovery_mode": "decisions_food_water",
             "native_food_water_observed": True,
             "native_food_seconds_total": 0.,

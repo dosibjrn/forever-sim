@@ -714,6 +714,15 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 raise AssertionError("RUST_WORLD_NATIVE_RECOVERY_POLICY_NOT_APPLIED")
         if result["paid_recovery"] is not recovery["paid_recovery"]:
             raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
+        # Fixed rest promises a charged gap after every kill.  Decisions is
+        # conditional: a healthy actor can legitimately skip any particular
+        # gap. The native per-target ns/tick/food receipts still account for
+        # every gap; zero rest is not an unpaid *requested* rest. Keep the
+        # existing native paid_recovery flag as-is instead of rewriting it.
+        native_recovery_clock_accounted = (
+            recovery["paid_recovery"] if requested_mode != "decisions"
+            else (recovery["native_passive_recovery_observed"]
+                  and food_water["native_food_water_observed"]))
         native_health_damage = _native_health_damage_summary(
             result["windows"], require_positive=require_native_health_damage,
             require_zero=require_native_zero_health_damage)
@@ -730,6 +739,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             **native_mana,
             **recovery,
             **food_water,
+            "native_recovery_clock_accounted": native_recovery_clock_accounted,
             "native_recovery_mode": result.get("recovery_mode"),
             "native_recovery_seconds_per_gap": result.get("recovery_seconds_per_gap"),
             "native_recovery_thresholds": result.get("thresholds"),
@@ -740,10 +750,10 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             # objective. The existing diagnostic clock field remains intact.
             "world_seconds_per_target_paid_recovery": (
                 elapsed["world_elapsed_seconds"] / target_count
-                if recovery["paid_recovery"] else None),
+                if native_recovery_clock_accounted else None),
             "world_per_target_elapsed_seconds_paid_recovery": (
                 elapsed["world_per_target_elapsed_seconds_without_paid_recovery"]
-                if recovery["paid_recovery"] else None),
+                if native_recovery_clock_accounted else None),
             "native_health_damage": native_health_damage,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
