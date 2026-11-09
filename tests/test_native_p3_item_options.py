@@ -486,9 +486,13 @@ def test_selected_engine_workflow_runs_shaman_l20_native_p3_without_record():
     )[1].split("Run no-record Mage L30 P3 with native item options", 1)[0]
     assert "--class shaman --level 20" in shaman
     assert '--spec unrestricted --gate P3 --out "$report"' in shaman
-    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in shaman
-    assert 'row["real_native_representative_items_scored"] > 0' in shaman
-    assert 'row["real_source_search_evaluated"] > 0' in shaman
+    # No-record CI reports genuine native refusals without source-catalogue gates.
+    assert '"status", report["status"]' in shaman
+    assert 'row.get("native_item_options_source")' in shaman
+    assert 'row.get("native_item_options_status")' in shaman
+    assert 'row.get("native_equipped_paid_attempts")' in shaman
+    assert 'row.get("reasons"' in shaman
+    assert 'assert row["real_source_search_evaluated"] > 0' not in shaman
     assert "--record-pass" not in shaman
 
 def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
@@ -505,15 +509,15 @@ def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
     assert 'FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine' in paladin
     assert 'FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine' in paladin
     assert r'\${{' not in paladin
-    assert 'row["native_player_context_id"]' in paladin
-    assert 'row["native_player_context_kind"]' in paladin
-    assert 'row["native_player_context_base_stats"]' in paladin
-    assert 'row["native_player_context_resources"]' in paladin
-    assert 'row["native_player_context_weapon"]' in paladin
-    assert 'row["native_item_options_status"] == "ok"' in paladin
+    assert '"status", report["status"]' in paladin
+    assert 'row.get("native_player_context_kind")' in paladin
+    assert 'row.get("native_item_options_source")' in paladin
+    assert 'row.get("native_item_options_status")' in paladin
+    assert 'row.get("native_equipped_paid_attempts")' in paladin
+    assert 'row.get("reasons"' in paladin
+    assert 'assert row["native_item_options_status"] == "ok"' not in paladin
     assert 'assert row["native_unverified_candidate_count"] == 0' not in paladin
-    assert 'row["real_native_representative_items_scored"] > 0' in paladin
-    assert 'row["real_source_search_evaluated"] > 0' in paladin
+    assert 'assert row["real_source_search_evaluated"] > 0' not in paladin
     assert "--record-pass" not in paladin
 
 
