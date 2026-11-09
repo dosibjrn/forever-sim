@@ -12,6 +12,11 @@ _RUN = re.compile(r"actions/runs/(\d+)")
 _ARTIFACT = re.compile(r"/artifacts/(\d+)")
 # Accepted native receipts may preserve an artifact only by its JSON ID.
 _ARTIFACT_ID_FIELD = re.compile(r'"artifact_id"\s*:\s*"?([0-9]+)"?')
+# Machine-readable receipts can reference a workflow run only by numeric ID.
+# Non-numeric internal runtime-proof IDs must not be treated as Actions runs.
+_RUN_ID_FIELD = re.compile(
+    r'"(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"\s*:\s*'
+    r'(?:"([1-9]\d*)"|([1-9]\d*))\s*(?=[,}])')
 
 
 def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> None:
@@ -20,6 +25,7 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     runs.update(int(match) for match in _RUN.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_ID_FIELD.findall(text))
+    runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
 
 
 def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
