@@ -3,6 +3,8 @@ name: Work2 — Warlock L20 source-native P3 (no record)
 on:
   pull_request:
     paths:
+      # A new exact selected Rust gitlink is a real P3 producer change.
+      - integrations/mythicsim-rust/engine
       - .github/workflows/work2-warlock-l20-native-p3.yml
       - integrations/mythicsim-rust/native_p3_equipped.py
       - tools/wf_gate_p3_live.py
@@ -65,15 +67,16 @@ jobs:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: |
           set -euo pipefail
-          paid=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-best-paid.request.json
+          source=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-source-equipped.request.json
           template=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-native.request.json
           dir="$RUNNER_TEMP/warlock-l20-native-p3"
           mkdir -p "$dir"
-          if [[ -f "$paid" ]]; then
-            # Rust source search already prepared and paid this 17-item actor.
-            # Keep its original items, talents, APL and encounter unchanged.
-            cp "$paid" "$dir/equipped-source-request.json"
-            echo "P3_REQUEST_SOURCE=selected-rust-best-paid" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f "$source" ]]; then
+            # This is the same source-level L20 equipped actor used by the
+            # genuine Rust P3 paid run. The historical best-paid donor has
+            # unsupported combat-rating gear; never select it by default.
+            cp "$source" "$dir/equipped-source-request.json"
+            echo "P3_REQUEST_SOURCE=selected-rust-l20-source-equipped" >> "$GITHUB_STEP_SUMMARY"
             echo "FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST=$dir/equipped-source-request.json" >> "$GITHUB_ENV"
             echo "P3_SELECTED_SOURCE_READY=true" >> "$GITHUB_ENV"
           elif [[ -f "$template" ]]; then
@@ -147,5 +150,3 @@ jobs:
           name: work2-warlock-l20-p3-no-record
           path: ${{ runner.temp }}/warlock-l20-native-p3/
           if-no-files-found: ignore
-
-          retention-days: 30
