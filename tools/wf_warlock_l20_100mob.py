@@ -229,7 +229,11 @@ def main() -> None:
             result = native_world_chain(
                 args.binary, prepared_path, target_count=args.targets,
                 classic_mob_level=20, rng_mode="balanced",
-                require_native_health_damage=args.require_native_health_damage,
+                # Collect the native health receipt even when damage is zero.
+                # The strict positive-damage criterion is applied below by
+                # classify_native_chain to preserve real ACK/recovery evidence
+                # from an unsuccessful survival proof. No false completion.
+                require_native_health_damage=False,
                 **native_recovery,
             )
             (base / "chain_native_world.json").write_text(
