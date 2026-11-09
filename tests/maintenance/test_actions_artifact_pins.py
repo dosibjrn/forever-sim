@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from tools.actions_artifact_pins import artifact_run_id, collect_local_references, record_references
+from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
+                                         completed_run_candidates, record_references)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -165,7 +166,8 @@ def test_live_gc_fetches_comments_before_eligible_deletion():
     workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
         encoding="utf-8"
     )
-    assert "from tools.actions_artifact_pins import (artifact_run_id, collect_local_references, record_references)" in workflow
+    assert "from tools.actions_artifact_pins import (artifact_run_id, collect_local_references," in workflow
+    assert "completed_run_candidates, record_references)" in workflow
     assert 'gh_collection("issues?state=all")' in workflow
     assert '"issues/comments?sort=created&direction=desc"' in workflow
     assert '"pulls/comments?sort=created&direction=desc"' in workflow
@@ -201,3 +203,75 @@ def test_live_gc_excludes_unknown_run_provenance_before_age_based_deletion():
     assert 'protected["unknown-run-provenance"] += 1' in workflow
     assert workflow.index('elif run_id is None:') < workflow.index('elif created(a) >= cutoff:')
     assert 'candidates.append(a)' in workflow
+
+
+def test_gc_only_prunes_artifacts_from_finished_runs_and_fetches_each_run_once():
+    """Queued/in-progress origin runs cannot lose their artifacts to scheduled GC."""
+    artifacts = [
+        {"id": 1, "workflow_run": {"id": 100}},
+        {"id": 2, "workflow_run": {"id": 101}},
+        {"id": 3, "workflow_run": {"id": 100}},
+        {"id": 4, "workflow_run": {"id": 102}},
+        {"id": 5, "workflow_run": {"id": 103}},
+    ]
+    states = {100: "completed", 101: "in_progress",
+              102: "queued", 103: "waiting"}
+    calls = []
+
+    def fetch(run_id):
+        calls.append(run_id)
+        return {"id": run_id, "status": states[run_id]}
+
+    finished, deferred = completed_run_candidates(artifacts, fetch)
+    assert [row["id"] for row in finished] == [1, 3]
+    assert deferred == 3
+    assert calls == [100, 101, 102, 103]
+
+
+@pytest.mark.parametrize("run_response", [
+    None,
+    {},
+    {"id": 100},
+    {"id": 100, "status": None},
+    {"id": 100, "status": ""},
+    {"id": 100, "status": True},
+    {"id": "100", "status": "completed"},
+    {"id": 101, "status": "completed"},
+])
+def test_gc_run_status_read_must_be_unambiguous_before_deleting(run_response):
+    with pytest.raises(ValueError, match="completion status"):
+        completed_run_candidates(
+            [{"id": 1, "workflow_run": {"id": 100}}],
+            lambda _run_id: run_response)
+
+
+def test_gc_rejects_missing_origin_even_after_age_and_pin_checks():
+    with pytest.raises(ValueError, match="valid run ID"):
+        completed_run_candidates(
+            [{"id": 1, "workflow_run": None}],
+            lambda _run_id: {"id": 100, "status": "completed"})
+
+
+def test_gc_run_status_api_error_aborts_whole_planning_pass():
+    def fetch(run_id):
+        if run_id == 101:
+            raise OSError("Actions API unavailable")
+        return {"id": run_id, "status": "completed"}
+
+    with pytest.raises(OSError, match="unavailable"):
+        completed_run_candidates(
+            [{"workflow_run": {"id": 100}}, {"workflow_run": {"id": 101}}],
+            fetch)
+
+
+def test_scheduled_gc_looks_up_origin_completion_before_any_delete_plan():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+        encoding="utf-8")
+    assert "completed_run_candidates, record_references" in workflow
+    assert 'status, payload = request(f"runs/{run_id}")' in workflow
+    assert 'if status != 200:' in workflow
+    assert "candidates, unfinished = completed_run_candidates(candidates, fetch_origin_run)" in workflow
+    assert workflow.index("completed_run_candidates(candidates, fetch_origin_run)") < workflow.index(
+        "planned = []")
+    assert workflow.index("completed_run_candidates(candidates, fetch_origin_run)") < workflow.index(
+        'request(f"artifacts/{aid}", "DELETE")')

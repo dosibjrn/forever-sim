@@ -102,7 +102,8 @@ jobs:
 
           # Protect accepted M1 URLs as well as prose references.
           # Missing local evidence must fail closed before any deletion.
-          from tools.actions_artifact_pins import (artifact_run_id, collect_local_references, record_references)
+          from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
+                                                   completed_run_candidates, record_references)
           pinned_runs, pinned_artifacts = collect_local_references(pathlib.Path("."))
 
           def gh_collection(endpoint):
@@ -199,6 +200,16 @@ jobs:
               else:
                   candidates.append(a)
           print(f"PROTECTED {protected}; known linked run IDs={len(pinned_runs)}; linked artifact IDs={len(pinned_artifacts)}; open PR branches={len(open_branches)}")
+          # Check origin-run completion before building ANY artifact deletion
+          # plan. Errors, missing IDs and malformed replies fail closed.
+          def fetch_origin_run(run_id):
+              status, payload = request(f"runs/{run_id}")
+              if status != 200:
+                  raise RuntimeError(f"run {run_id}: completion read HTTP {status}: {str(payload)[:160]}")
+              return payload
+
+          candidates, unfinished = completed_run_candidates(candidates, fetch_origin_run)
+          print(f"RUN_COMPLETION eligible_finished={len(candidates)} deferred_unfinished={unfinished}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
               print(f"CANDIDATE id={a['id']} bytes={a['size_in_bytes']} run={(a.get('workflow_run') or {}).get('id')} age={a['created_at']}")
