@@ -43,12 +43,15 @@ def artifact_run_id(artifact: dict) -> int | None:
 
 
 def completed_run_candidates(
-        candidates: list[dict], fetch_run) -> tuple[list[dict], int]:
+        candidates: list[dict], fetch_run, *,
+        expected_workflow: str | None = None) -> tuple[list[dict], int]:
     """Keep only artifacts from confirmed completed workflow runs.
 
     Query each distinct originating run once. A missing/malformed/mismatched
-    response aborts the entire planning phase before any DELETE request;
+    response or unexpected workflow origin aborts planning before any DELETE;
     queued, in-progress, waiting and other non-completed runs stay protected.
+    The optional origin constraint prevents name-colliding artifacts from a
+    different workflow being deleted as if they were sweep diagnostics.
     """
     finished_by_run: dict[int, bool] = {}
     ready: list[dict] = []
@@ -65,6 +68,10 @@ def completed_run_candidates(
                     or not isinstance(run.get("status"), str)
                     or not run["status"]):
                 raise ValueError(f"run {run_id}: missing or mismatched completion status")
+            if expected_workflow is not None and run.get("path") != expected_workflow:
+                raise ValueError(
+                    f"run {run_id}: workflow origin {run.get('path')!r} "
+                    f"does not match {expected_workflow!r}")
             finished_by_run[run_id] = run["status"] == "completed"
         if finished_by_run[run_id]:
             ready.append(artifact)
