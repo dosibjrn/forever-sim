@@ -69,6 +69,21 @@ def verified_artifacts(repository: str, fetch_page) -> list[dict]:
     raise ValueError(f"{repository}: pagination exceeded {PAGE_LIMIT} pages")
 
 
+def requires_evidence_pin_scan(total_bytes: int, ceiling_bytes: int,
+                               newest_first_stage5: list[dict], cutoff,
+                               created) -> bool:
+    """Skip costly pin API reads only if no stage5 DELETE could be planned.
+
+    The guard always protects the newest five stage5 artifacts. All other
+    artifacts younger than the 72-hour cutoff are protected as well. An
+    over-ceiling inventory with any older candidate still needs the complete
+    evidence scan, even when that candidate ultimately proves pinned.
+    """
+    if total_bytes <= ceiling_bytes:
+        return False
+    return any(created(artifact) < cutoff for artifact in newest_first_stage5[5:])
+
+
 def inventory(repository: str, fetch_page) -> tuple[int, int]:
     """Count bytes only from a verified complete retained-artifact snapshot."""
     artifacts = verified_artifacts(repository, fetch_page)
