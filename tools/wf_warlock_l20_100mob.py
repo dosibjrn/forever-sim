@@ -254,12 +254,16 @@ def main() -> None:
             # Independent transport proofs: a native health-damage refusal
             # must not erase genuine paid food/water evidence, or vice versa.
             # Neither individual proof grants an accepted chain objective.
+            # Observed native proofs are independent of whether this run
+            # *requires* them for acceptance. The latter only controls the
+            # combined status above. Reuse actual paid observations when
+            # ranking subsequent 100-mob/native optimizer candidates.
             _, consumption_complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
-                require_native_consumption=args.require_native_consumption)
+                require_native_consumption=True)
             _, health_complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
-                require_native_health_damage=args.require_native_health_damage)
+                require_native_health_damage=True)
             record.update(
                 status=status,
                 killed=killed,
@@ -285,7 +289,7 @@ def main() -> None:
                 native_food_health_gain=result.get("native_food_health_gain_total"),
                 native_water_mana_gain=result.get("native_water_mana_gain_total"),
                 native_consumption_proof_required=args.require_native_consumption,
-                native_consumption_proven=(consumption_complete and args.require_native_consumption),
+                native_consumption_proven=(consumption_complete and args.recovery_policy == "decisions"),
                 native_health_damage=result.get("native_health_damage"),
                 # Transport the existing source-native per-mob attack receipt.
                 # A world damage-to-target event is not incoming player damage.
@@ -298,7 +302,7 @@ def main() -> None:
                      "damage_events": window.get("native_health_damage_events")}
                     for window in result["native_windows"]
                 ],
-                native_health_damage_proven=(health_complete and args.require_native_health_damage),
+                native_health_damage_proven=health_complete,
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
                 # Frozen-build screen only: never promote it to cold-search
