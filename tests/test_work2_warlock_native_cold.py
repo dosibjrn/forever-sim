@@ -698,3 +698,103 @@ def test_paid_chain_refuses_mismatched_native_paid_provenance(
         cold.paid_chain(binary, candidate, tmp_path / "candidate",
                         targets=100, timeout=10.0)
     assert exc.value.raw_response[wrong_field] == "from-an-incompatible-run"
+
+
+
+def test_hundred_target_paid_baseline_runs_once_without_cold_search(
+    tmp_path, monkeypatch
+):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected native binary")
+    reference = source()
+    saved = copy.deepcopy(reference)
+    now = [4.0]
+    calls = []
+    def native_paid(_binary, candidate, out, *, targets, timeout):
+        calls.append((targets, timeout, copy.deepcopy(candidate), out))
+        now[0] = 17.0
+        return {
+            "status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+            "world_targets_killed": 100,
+            "seconds_per_mob": 19.5,
+            "native_actor_continuity_receipt_complete": True,
+            "native_recovery_clock_accounted": True,
+        }
+
+    report = cold.run_paid_hundred_target_baseline(
+        reference, binary=binary, out=tmp_path / "baseline",
+        health_threshold=0.7, mana_threshold=0.25,
+        timeout=1200.0, clock=lambda: now[0], chain=native_paid)
+    assert len(calls) == 1
+    assert calls[0][0:2] == (100, 1200.0)
+    assert calls[0][2]["recovery"] == {
+        "health_threshold": 0.7, "mana_threshold": 0.25}
+    assert calls[0][3] == tmp_path / "baseline" / "paid"
+    assert reference == saved
+    assert report["elapsed_wall_s"] == 13.0
+    assert report["seconds_per_mob"] == 19.5
+    assert report["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+    assert report["native_receipt"]["world_targets_killed"] == 100
+    assert report["gate_recorded"] is False
+    assert report["p4_p5_p6_pass"] is False
+    saved_report = json.loads(
+        (tmp_path / "baseline/hundred_target_baseline_summary.json").read_text())
+    assert saved_report["seconds_per_mob"] == 19.5
+
+
+def test_hundred_target_paid_baseline_preserves_native_refusal(tmp_path):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected native binary")
+    def refused(_binary, _candidate, _out, *, targets, timeout):
+        assert targets == 100
+        raise cold.NativeUnscoredCandidate(
+            "native refused after 43 kills",
+            raw_response={"status": "INCOMPLETE_UNPAID_NATIVE_RECOVERY",
+                          "world_targets_killed": 43})
+    result = cold.run_paid_hundred_target_baseline(
+        source(), binary=binary, out=tmp_path / "refusal", chain=refused)
+    assert result["status"] == "NATIVE_HUNDRED_TARGET_BASELINE_UNSCORED"
+    assert result["seconds_per_mob"] is None
+    assert result["native_receipt"]["world_targets_killed"] == 43
+    assert result["p4_p5_p6_pass"] is False
+
+
+def test_hundred_target_paid_baseline_rejects_invalid_budget_before_native(
+    tmp_path
+):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected native binary")
+    def should_not_run(*_args, **_kwargs):
+        raise AssertionError("native must not run")
+    with pytest.raises(ValueError, match="INVALID_PAID_BASELINE_ARGUMENT"):
+        cold.run_paid_hundred_target_baseline(
+            source(), binary=binary, out=tmp_path / "invalid",
+            health_threshold=float("nan"), chain=should_not_run)
+
+
+def test_hundred_target_baseline_cli_bypasses_cold_native_options(
+    tmp_path, monkeypatch, capsys
+):
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected native binary")
+    request = tmp_path / "request.json"
+    request.write_text(json.dumps(source()))
+    def no_options(*_args):
+        raise AssertionError("frozen baseline must not start cold options")
+    monkeypatch.setattr(cold, "query_native_options", no_options)
+    called = []
+    def baseline(reference, *, binary, out, timeout, health_threshold,
+                 mana_threshold):
+        called.append((binary, out, timeout, health_threshold, mana_threshold))
+        return {"status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+                "elapsed_wall_s": 3.5, "seconds_per_mob": 12.0}
+    monkeypatch.setattr(cold, "run_paid_hundred_target_baseline", baseline)
+    monkeypatch.setattr(cold.sys, "argv", [
+        "wf_warlock_l20_native_cold.py", "--binary", str(binary),
+        "--source", str(request), "--out", str(tmp_path / "baseline"),
+        "--hundred-target-baseline", "--baseline-timeout", "900",
+        "--health-threshold", "0.7", "--mana-threshold", "0.25",
+    ])
+    cold.main()
+    assert called == [(binary, tmp_path / "baseline", 900.0, 0.7, 0.25)]
+    assert "WARLOCK_NATIVE_HUNDRED_TARGET_PAID_BASELINE" in capsys.readouterr().out
