@@ -323,7 +323,7 @@ def _native_food_water_receipts(windows: list[dict], *, required: bool) -> dict:
     }
 
 
-def _native_health_damage_summary(windows: list[dict], *
+def _native_health_damage_summary(windows: list[dict], *,
                                   require_positive: bool,
                                   require_zero: bool = False) -> dict:
     """Carry actual per-target Rust damage-taken resource receipts into 2D results.
