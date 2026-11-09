@@ -82,6 +82,11 @@ def _observation(raw: dict, start: int, end: int) -> dict:
         "native_health_damage": raw.get("native_health_damage"),
         "native_food_seconds": raw.get("native_food_seconds"),
         "native_water_seconds": raw.get("native_water_seconds"),
+        "native_food_health_gain": raw.get("native_food_health_gain"),
+        "native_water_mana_gain": raw.get("native_water_mana_gain"),
+        "native_recovery_seconds": raw.get("native_recovery_seconds"),
+        "native_walk_paid_seconds": raw.get("native_walk_paid_seconds"),
+        "native_damage_events": raw.get("native_damage_events"),
         "status": "measured_native_chain",
     }
 
@@ -252,6 +257,11 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
             "native_health_damage": result.get("native_health_damage"),
             "native_food_seconds": result.get("native_food_seconds"),
             "native_water_seconds": result.get("native_water_seconds"),
+            "native_food_health_gain": result.get("native_food_health_gain"),
+            "native_water_mana_gain": result.get("native_water_mana_gain"),
+            "native_recovery_seconds": result.get("native_recovery_seconds"),
+            "native_walk_paid_seconds": result.get("walk_paid_s"),
+            "native_damage_events": result.get("native_damage_events"),
             "notes": "Actually executed and paid native chain, not a continuous 10–60 route.",
         })
     if not rows:
@@ -259,7 +269,9 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
     return rows, refusals
 
 
-def execute_native_l20(*, binary: Path, source: Path, out: Path) -> Path:
+def execute_native_l20(*, binary: Path, source: Path, out: Path,
+                       health_threshold: float = 0.7,
+                       mana_threshold: float = 0.25) -> Path:
     """Invoke existing Rust/gsim producer once, then consume its persisted receipt."""
     if not binary.is_file() or not source.is_file():
         raise ValueError("native --binary and --source must be existing files")
@@ -270,7 +282,10 @@ def execute_native_l20(*, binary: Path, source: Path, out: Path) -> Path:
         "--out", str(native_out.resolve()),
         "--targets", "100", "--variant", "best_apl",
         "--hostile-player-tank", "--recovery-policy", "decisions",
-        "--require-native-health-damage",
+        "--health-threshold", str(health_threshold),
+        "--mana-threshold", str(mana_threshold),
+        # Hostile source preparation remains required; an observed zero-damage
+        # native actor is not a separate product-route certificate or veto.
     ]
     outcome = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True,
                              check=False)
@@ -328,7 +343,9 @@ def build_route_report(payload: dict) -> dict:
     return {
         "schema_version": 1, "class": "warlock", "start_level": start,
         "end_level": end, "authority": "source_native_observations",
-        "status": "sparse_evidence_no_executable_continuous_route",
+        "status": ("native_refusal_only_no_measured_chain"
+                   if refusals and not observations else
+                   "sparse_evidence_no_executable_continuous_route"),
         "full_10_60_native_replay_executed": False,
         "elapsed_10_60_seconds": None,
         "levels": levels, "observations": observations, "comparisons": comparisons,
@@ -342,9 +359,11 @@ def build_route_report(payload: dict) -> dict:
             "note": "Optional L40 dual-spec requires contiguous paid native frontiers; no forced switch.",
         },
         "next_step": (
-            "Load native candidate/build receipts, then feed contiguous measured "
-            "level frontiers into existing v2 DecisionResult/path_dp and dual_spec; "
-            "execute selected route in Rust and publish its retained-state trace."
+            ("Inspect the persisted native refusals and try a changed source-native "
+             "L20 candidate before extending the route." if refusals and not observations
+             else "Load native candidate/build receipts, then feed contiguous measured "
+                  "level frontiers into existing v2 DecisionResult/path_dp and dual_spec; "
+                  "execute selected route in Rust and publish its retained-state trace.")
         ),
     }
 
@@ -391,6 +410,14 @@ def render_guide(report: dict) -> str:
             ]
             if row["notes"]:
                 lines.append(f"  - {row['notes']}")
+            for field in ("engine_binary_sha256", "source_request_sha256",
+                          "native_final_hp", "native_final_mana",
+                          "native_health_damage", "native_damage_events",
+                          "native_food_seconds", "native_water_seconds",
+                          "native_food_health_gain", "native_water_mana_gain",
+                          "native_recovery_seconds", "native_walk_paid_seconds"):
+                if row[field] is not None:
+                    lines.append(f"  - {field}: {json.dumps(row[field], sort_keys=True)}")
             for field in ("talents", "gear", "apl", "pet", "recovery_policy"):
                 if row[field] is not None:
                     lines.append(f"  - {field}: {json.dumps(row[field], sort_keys=True)}")
@@ -432,6 +459,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--execute-native", action="store_true", help="Execute one paid hostile Warlock L20 100-target Rust/gsim scenario and publish its result")
     parser.add_argument("--binary", type=Path, help="Selected compiled native Rust binary for --execute-native")
     parser.add_argument("--source", type=Path, help="Exact native Warlock L20 source request for --execute-native")
+    parser.add_argument("--health-threshold", type=float, default=0.7,
+                        help="Native Decisions recovery health threshold for --execute-native")
+    parser.add_argument("--mana-threshold", type=float, default=0.25,
+                        help="Native Decisions recovery mana threshold for --execute-native")
     parser.add_argument("--run-url", help="Exact GitHub Actions run URL for --cold-summary")
     parser.add_argument("--trial", default="imported-native-cold", help="Identity of one comparable native run")
     parser.add_argument("--out", type=Path, required=True)
@@ -439,6 +470,9 @@ def main(argv: list[str] | None = None) -> int:
     if sum(bool(x) for x in (args.observations, args.cold_summary,
                              args.native_summary, args.execute_native)) > 1:
         parser.error("choose one input: --observations, --cold-summary, --native-summary, or --execute-native")
+    if args.execute_native and not (0 < args.health_threshold <= 1 and
+                                    0 < args.mana_threshold <= 1):
+        parser.error("Decisions recovery thresholds must be in (0, 1]")
     if args.execute_native and (not args.binary or not args.source):
         parser.error("--execute-native requires --binary and --source")
     if not args.execute_native and (args.binary or args.source):
@@ -446,6 +480,7 @@ def main(argv: list[str] | None = None) -> int:
     if (args.native_summary or args.execute_native) and args.run_url is None:
         # Local receipts are first-class and must never pretend to be an old CI run.
         pass
+    refused_only = False
     if args.cold_summary:
         if args.observations or not args.run_url:
             parser.error("--cold-summary needs --run-url and cannot combine --observations")
@@ -457,14 +492,16 @@ def main(argv: list[str] | None = None) -> int:
                 run_url=args.run_url, trial=args.trial),
         }
     elif args.native_summary or args.execute_native:
-        native_path = (execute_native_l20(binary=args.binary, source=args.source, out=args.out)
+        native_path = (execute_native_l20(
+            binary=args.binary, source=args.source, out=args.out,
+            health_threshold=args.health_threshold, mana_threshold=args.mana_threshold)
                        if args.execute_native else args.native_summary)
         rows, refusals = observations_from_native_chain_summary(
             json.loads(native_path.read_text()), summary_path=native_path,
             run_url=args.run_url, trial=args.trial)
-        if not rows:
-            raise ValueError(f"no complete paid native L20 100-target candidate; "
-                             f"refusals preserved in {native_path}: {refusals}")
+        # A failed paid run must still produce a usable refusal/coverage dossier,
+        # not just a native summary hidden behind a Python exception.
+        refused_only = not rows
         payload = {"schema_version": 1, "class": "warlock",
                    "start_level": 10, "end_level": 60,
                    "observations": rows, "native_refusals": refusals}
@@ -477,7 +514,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Published {len(report['observations'])} native observations; "
           f"{len(report['measured_levels'])} measured level(s), "
           f"{len(report['unmeasured_levels'])} unmeasured level(s) to {args.out}")
-    return 0
+    # Distinguish a preserved native refusal from a successful measured route
+    # for CI and top-level callers; the JSON/guide remain available either way.
+    return 2 if refused_only else 0
 
 
 if __name__ == "__main__":
