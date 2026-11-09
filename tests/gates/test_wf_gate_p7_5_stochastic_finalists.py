@@ -364,15 +364,12 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
     def native(binary, path, n, *, rng_mode):
         req = json.loads(path.read_text())
         calls.append(("native", n, rng_mode, player(req)["talentsString"]))
-        return {"native_dps": score(req, n, rng_mode)}
-    def world(binary, path, distance, iterations, *, rng_mode):
-        req = json.loads(path.read_text())
-        calls.append(("world", iterations, rng_mode, player(req)["talentsString"]))
-        return {"world_mean_dps": score(req, iterations, rng_mode),
-                "iterations_done": iterations,
-                "native_damage_events": 10, "native_world_ticks": 20}
+        return {"native_dps": score(req, n, rng_mode), "iterations": n}
+    def world(*args, **kwargs):
+        raise AssertionError("stationary P7.5 must not call world/2D")
     production = SimpleNamespace(native_source_control=native, run=world)
-    def paid_finalist(production, binary, request, distance, *, seeds):
+    def paid_finalist(production, binary, request, distance, *, seeds, native_only=False):
+        assert native_only is True
         calls.append(("balanced_paid", 6, "balanced",
                       player(request)["talentsString"]))
         return (900.0 if player(request)["talentsString"] == paid_winner
@@ -383,10 +380,9 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
                         lambda path, name: source if "joint_search" in str(path)
                         else production)
     monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *args: (_candidate("reference"),
+                        lambda *args, **kwargs: (_candidate("reference"),
                                        {"reference_dps": 728.19}, binary))
     monkeypatch.setattr(gate, "_paid_p75_balanced_finalist", paid_finalist)
-    monkeypatch.setattr(gate, "_source_native_world_parity", lambda *a, **kw: None)
     monkeypatch.setattr(gate, "strongest_accepted_prior",
                         lambda *a, **kw: {"dps": 749.5392,
                                           "compatible_gates": ["P7.3"],
@@ -404,7 +400,7 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
     assert result["status"] == "PASS", result
     assert result["cold_balanced_screen_best_dps"] == 900.0
     assert result["paid_joint_balanced_finalists"] == 2
-    assert result["frozen_stochastic_world_dps"] == (760.0 if paid_winner == "A" else 770.0)
+    assert result["frozen_stochastic_native_dps"] == (760.0 if paid_winner == "A" else 770.0)
     # Capture the actual source-paid frozen winner, not the balanced spike A.
     # The production gate can now compare real gear/talent/APL on a FAIL
     # without a duplicate 300s/1000-fight acceptance run.
@@ -421,11 +417,11 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
     assert result["selected_balanced_request_sha256"] == selected_hash
     if paid_winner == "B":
         assert cold_hash != selected_hash
-    assert result["joint_cold_world_dps"] == 900.0
+    assert result["joint_cold_native_dps"] == 900.0
     assert result["selected_validation"] == (
         "paid_2x3_balanced_live_native_finalist")
     assert ("native", 1000, "stochastic", paid_winner) in calls
-    assert ("world", 1000, "stochastic", "B" if paid_winner == "A" else "A") not in calls
+    assert all(row[0] != "world" for row in calls)
     assert result["source_legal_joint_candidates_paid"] == 2
 
 
@@ -525,20 +521,17 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
 
     def native(binary, path, n, *, rng_mode):
         req = json.loads(path.read_text())
-        return {"native_dps": 760.0 if n == 1000 else
-                780.0 + int(player(req)["talentsString"])}
-
-    def world(binary, path, distance, iterations, *, rng_mode):
-        req = json.loads(path.read_text())
-        if iterations == 3:
+        if n == 3:
             now[0] = min(260.0, now[0] + 10.0)
-        return {
-            "world_mean_dps": (760.0 if iterations == 1000 else
-                               780.0 + int(player(req)["talentsString"])),
-            "iterations_done": iterations,
-            "native_damage_events": 20, "native_world_ticks": 40}
+        return {"native_dps": 760.0 if n == 1000 else
+                780.0 + int(player(req)["talentsString"]),
+                "iterations": n}
 
-    def paid_finalist(production, binary, request, distance, *, seeds):
+    def world(*args, **kwargs):
+        raise AssertionError("stationary P7.5 must not call world/2D")
+
+    def paid_finalist(production, binary, request, distance, *, seeds, native_only=False):
+        assert native_only is True
         paid_seeds.append(seeds)
         if seeds == deep_seeds and paid_seeds.count(deep_seeds) == 2:
             now[0] = 300.0
@@ -550,11 +543,9 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
                         lambda path, name: source if "joint_search" in str(path)
                         else production)
     monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *a: (_candidate("0"),
+                        lambda *a, **kwargs: (_candidate("0"),
                                     {"reference_dps": 728.19}, binary))
     monkeypatch.setattr(gate, "_paid_p75_balanced_finalist", paid_finalist)
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *args, **kwargs: None)
     gear_block_calls = []
     def observe_gear_block(*args):
         gear_block_calls.append(requests[0])
@@ -594,7 +585,7 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     assert result["selected_validation"] == (
         "paid_6x3_balanced_live_native_deep_confirmed_finalist")
     assert result["frozen_stochastic_iterations"] == 1000
-    assert result["frozen_stochastic_world_dps"] == 760.0
+    assert result["frozen_stochastic_native_dps"] == 760.0
 
 
 def test_p75_cli_preserves_actual_frozen_paid_build(monkeypatch, capsys):

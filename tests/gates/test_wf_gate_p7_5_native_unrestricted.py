@@ -144,6 +144,55 @@ def test_unrestricted_full_cold_search_and_holdout_are_native_only(
     assert proximity["dps_objective_required"] == round(0.93 * 728.19, 4)
 
 
+def test_balance_full_cold_search_and_stochastic_holdout_skip_world(
+        monkeypatch, tmp_path):
+    # Regression for #1095: Balance previously required gsim world/2D parity
+    # despite the approved stationary native P7.5 contract. The fixture's
+    # world transport raises if called, covering reference, screen and holdout.
+    calls, preflights, unchanged, base = _setup_paid_unrestricted(
+        monkeypatch, tmp_path)
+    _player(base).pop("distanceFromTarget")  # no invented 2D field needed
+    unchanged = copy.deepcopy(base)
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    _clock(monkeypatch, [0.0, 0.0, 300.0, 300.0])
+
+    report = p75.run_live(tmp_path, "druid", 60, spec="balance")
+
+    assert preflights == [{"require_world": False}]
+    assert [(n, mode) for n, mode, _ in calls] == [
+        (3, "balanced"), (1000, "stochastic")]
+    assert report["status"] == "PASS"  # injected native transport, not M1
+    assert report["production_engine"] == "pinned_mythicsim_rust_native"
+    assert report["checkpoint_spec"] == "balance"
+    assert report["source_legal_joint_candidates_paid"] == 1
+    assert report["independent_300s_search_completed"] is True
+    assert report["frozen_stochastic_native_dps"] == 730.0
+    assert report["final_required_dps"] == 0.93 * 728.19
+    assert "frozen_stochastic_world_dps" not in report
+    assert "world_damage_events" not in report
+    assert calls[0][2] == calls[1][2]
+    assert base == unchanged
+
+
+def test_balance_stochastic_prior_floor_still_enforced_without_world(
+        monkeypatch, tmp_path):
+    prior = {"dps": 800.0, "compatible_gates": ["P7.1"],
+             "run_urls": ["https://github.com/example/actions/runs/1"]}
+    calls, preflights, _, _ = _setup_paid_unrestricted(
+        monkeypatch, tmp_path, prior=prior)
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    _clock(monkeypatch, [0.0, 0.0, 300.0, 300.0])
+
+    report = p75.run_live(tmp_path, "druid", 60, spec="balance")
+
+    assert preflights == [{"require_world": False}]
+    assert [(n, mode) for n, mode, _ in calls] == [
+        (3, "balanced"), (1000, "stochastic")]
+    assert report["status"] == "FAIL"
+    assert report["final_required_dps"] == 744.0
+    assert "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR" in report["reasons"]
+
+
 def test_stronger_accepted_stochastic_prior_raises_native_floor(
         monkeypatch, tmp_path):
     prior = {"dps": 800.0, "compatible_gates": ["P7.1"],

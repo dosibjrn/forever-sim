@@ -435,11 +435,10 @@ def _p75_crossover_rng(proposal_index: int) -> random.Random:
 
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
-    # Approved P7.5 is a stationary native benchmark, not a world-ACK gate.
-    # Keep the old Balance diagnostic path unchanged while migrating the
-    # checkpoint-critical unrestricted route to direct selected-native calls.
+    # P7.5 is a stationary selected-native benchmark for every supported
+    # profile. In particular Balance must not be vetoed by world/2D parity.
     feral = spec == "feral"
-    native_only = spec in ("unrestricted", "feral")
+    native_only = spec in ("unrestricted", "feral", "balance")
     prepared = (_pinned_source_runtime(
         root, class_key, level, spec, "P7.5", require_world=False)
         if native_only else _pinned_source_runtime(root, class_key, level, spec, "P7.5"))
