@@ -218,7 +218,7 @@ def test_live_gc_fetches_comments_before_eligible_deletion():
         encoding="utf-8"
     )
     assert "from tools.actions_artifact_pins import (artifact_run_id, collect_local_references," in workflow
-    assert "completed_run_candidates, record_references)" in workflow
+    assert "completed_run_candidates, record_references, protects_open_pr_artifact)" in workflow
     assert 'gh_collection("issues?state=all")' in workflow
     assert '"issues/comments?sort=created&direction=desc"' in workflow
     assert '"pulls/comments?sort=created&direction=desc"' in workflow
