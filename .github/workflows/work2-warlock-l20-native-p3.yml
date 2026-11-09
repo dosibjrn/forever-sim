@@ -65,15 +65,19 @@ jobs:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: |
           set -euo pipefail
-          paid=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-best-paid.request.json
+          # This exact Rust-owned fixture produced the real 26-paid, 17/17-slot
+          # no-record P3 PASS in Work1 #42645832096. The older "best-paid"
+          # L60-raid-item donor is NOT a usable L20 baseline: native prepare
+          # refuses its unsourced combat-rating stats before any paid scoring.
+          proven=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-source-equipped.request.json
           template=integrations/mythicsim-rust/engine/fixtures/warlock-l20-troll-native.request.json
           dir="$RUNNER_TEMP/warlock-l20-native-p3"
           mkdir -p "$dir"
-          if [[ -f "$paid" ]]; then
-            # Rust source search already prepared and paid this 17-item actor.
-            # Keep its original items, talents, APL and encounter unchanged.
-            cp "$paid" "$dir/equipped-source-request.json"
-            echo "P3_REQUEST_SOURCE=selected-rust-best-paid" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f "$proven" ]]; then
+            # Preserve the actual Rust-produced baseline unchanged and let
+            # selected Rust prepare/sim judge every candidate in the gate.
+            cp "$proven" "$dir/equipped-source-request.json"
+            echo "P3_REQUEST_SOURCE=selected-rust-source-equipped" >> "$GITHUB_STEP_SUMMARY"
             echo "FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST=$dir/equipped-source-request.json" >> "$GITHUB_ENV"
             echo "P3_SELECTED_SOURCE_READY=true" >> "$GITHUB_ENV"
           elif [[ -f "$template" ]]; then
