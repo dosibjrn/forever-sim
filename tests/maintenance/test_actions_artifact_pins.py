@@ -54,6 +54,18 @@ def test_machine_readable_receipts_pin_run_urls_and_bare_artifact_ids(tmp_path):
     assert artifacts == {9001, 9002}
 
 
+def test_numeric_actions_run_ids_in_json_pin_evidence_without_url():
+    runs, artifacts = set(), set()
+    record_references(
+        '{"run_id": 42574670709, "workflow_run_id": "42573539316", '
+        '"engine_build_run_id": 40969635587, "github_run_id": 42573178806, '
+        '"run_id": "native-paid-1", "not_a_run_id": 777, '
+        '"run_id": "123abc"}',
+        runs, artifacts)
+    assert runs == {42574670709, 42573539316, 40969635587, 42573178806}
+    assert artifacts == set()
+
+
 def test_issue_pr_and_inline_review_comments_are_pinned():
     runs, artifacts = set(), set()
     for body in (
