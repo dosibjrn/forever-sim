@@ -6,7 +6,6 @@ saved JSON, static PASS field, or second 300-second search is trusted.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import os
@@ -21,7 +20,8 @@ OPT_IN = "FOREVER_P4_P5_WARLOCK_L20_COLD_SEARCH"
 def set_shared_warlock_l20_cold(enabled: bool) -> None:
     """Arm one ephemeral shared run for an explicit paired gate invocation."""
     global _SHARED_COLD
-    _SHARED_COLD = {} if enabled else None
+    _SHARED_COLD = {"run_id": os.environ.get("GITHUB_RUN_ID")
+                    or "warlock-native-p456-" + uuid4().hex} if enabled else None
 
 
 def _rejected(reason: str, *, status: str = "FAIL", **extra) -> dict:
@@ -50,7 +50,7 @@ def _execute() -> dict:
             request, options, binary=binary, out=output,
             seed=int(os.environ.get("FOREVER_P4_P5_WARLOCK_L20_SEED",
                                     "20261109")))
-    except (OSError, ValueError, RuntimeError, TypeError, KeyError) as exc:
+    except Exception as exc:
         return _rejected("WARLOCK_NATIVE_COLD_EXECUTION_REFUSED:"
                          + type(exc).__name__ + ":" + str(exc)[-400:])
     if not isinstance(cold, dict):
@@ -80,7 +80,7 @@ def _completed_finalist(row: object) -> bool:
         and math.isclose(value, raw["seconds_per_mob"], rel_tol=1e-9))
 
 
-def _gate_verdict(cold: dict, gate: str) -> dict:
+def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
     """Check existing P4-P6 criteria against the one source-paid receipt."""
     if "status" in cold and cold["status"] in ("FAIL", "BLOCKED"):
         return cold
@@ -104,6 +104,8 @@ def _gate_verdict(cold: dict, gate: str) -> dict:
     first = cold.get("snapshot_30")
     last = cold.get("final_300")
     finalists = cold.get("finalists") or {}
+    if not isinstance(finalists, dict):
+        finalists = {}
     if cold.get("cold_300_reached") is not True:
         reasons.append("P4_P5_NATIVE_COLD_300S_NOT_REACHED")
     if (not isinstance(first, dict)
@@ -150,7 +152,8 @@ def _gate_verdict(cold: dict, gate: str) -> dict:
                 or type(last_s) not in (int, float)
                 or not math.isfinite(first_s) or not math.isfinite(last_s)
                 or last_s <= 0
-                or not math.isclose(comparison.get("t30_over_t300", -1),
+                or type(comparison.get("t30_over_t300")) not in (int, float)
+                or not math.isclose(comparison["t30_over_t300"],
                                     first_s / last_s, rel_tol=1e-9)
                 or first_s > 1.01 * last_s):
             reasons.append("P6_NATIVE_PAID_100MOB_ONE_PERCENT_NOT_PROVEN")
@@ -169,8 +172,7 @@ def _gate_verdict(cold: dict, gate: str) -> dict:
                                    + cold["engine_binary_sha256"],
                 "source_revision": "source-request-sha256:"
                                    + cold["source_request_sha256"],
-                "run_id": os.environ.get("GITHUB_RUN_ID")
-                          or "warlock-native-p456-" + uuid4().hex,
+                "run_id": run_id,
             }}
 
 
@@ -184,4 +186,5 @@ def run_warlock_l20_gate(class_key: str, level: int, spec: str,
                          status="BLOCKED")
     if "executed" not in _SHARED_COLD:
         _SHARED_COLD["executed"] = _execute()
-    return _gate_verdict(_SHARED_COLD["executed"], gate)
+    return _gate_verdict(_SHARED_COLD["executed"], gate,
+                         run_id=_SHARED_COLD["run_id"])
