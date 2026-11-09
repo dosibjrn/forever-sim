@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Port native Improved Roots rank intake and native Druid P2 witnesses.
+"""Port native Improved Entangling Roots rank intake into selected Rust.
 
 The Forever Balance layout admits the three Roots ranks, but native
-Talents::from_message previously discarded them. This preserves that rank and
-adds selected-source preparation witnesses for two P2 effects already present
-in Rust: Moonkin Form and Predatory Strikes. Roots damage/root-break behavior
-and the P2 gate's native adapter remain unimplemented; these witnesses alone
-do not award P1/P2 acceptance.
+Talents::from_message previously discarded them. This preserves the rank
+wire intake needed by the native Roots implementation. Retired P1/P2-only
+witness injection is not a bootstrap or gate dependency.
 """
 from __future__ import annotations
 
@@ -63,119 +61,6 @@ mod native_improved_roots_rank_tests {
     }
 }"""
 
-P2_NATIVE_TESTS = r"""
-    #[test]
-    fn native_improved_roots_rank_intake_predatory_strikes_behavior() {
-        let fixture = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/classes/druid/prepare/cat.request.json");
-        let original: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(fixture).expect("read Feral Cat request fixture"),
-        )
-        .expect("parse Feral Cat request fixture");
-
-        let attack_power = |rank: i32| {
-            // The first 15 points satisfy Predatory Strikes' tier requirement:
-            // Ferocity 5 + Furor 5 + Feral Swiftness 2 + Feral Instinct 3.
-            let build = format!("-5523000000{rank}-");
-            let (message, extras) = talent_layout::fill(
-                "proto.DruidTalents",
-                "druid",
-                &build,
-                &super::super::FOREVER_TREES,
-            )
-            .expect("legal Forever Feral Predatory Strikes rank");
-            assert_eq!(
-                Talents::from_message(&message, &extras).predatory_strikes,
-                rank
-            );
-
-            let mut request = original.clone();
-            request["raid"]["parties"][0]["players"][0]["talentsString"] =
-                serde_json::Value::String(build);
-            let prepared = crate::prepare_json(
-                &serde_json::to_vec(&request).expect("serialize Feral Cat request"),
-                "native-p2-predatory-strikes",
-            )
-            .expect("selected Rust prepares the Feral Cat actor");
-            prepared["player"]["stats"]["AttackPower"]
-                .as_f64()
-                .expect("native Feral Cat AttackPower")
-        };
-
-        let base = attack_power(0);
-        for rank in 1..=3 {
-            let actual = attack_power(rank);
-            let expected = crate::prepare::spelldata::Ladder::talent(16972, 3)
-                .effect_at(1)
-                .fraction_at(rank)
-                * f64::from(crate::prepare::character::constants::CHARACTER_LEVEL);
-            assert!(expected > 0.0, "source-backed rank {rank} has a positive effect");
-            assert!(
-                (actual - base - expected).abs() < 1e-9,
-                "Predatory Strikes rank {rank} must add its selected-source AP: base={base}, actual={actual}, expected_delta={expected}"
-            );
-        }
-    }
-
-    #[test]
-    fn native_improved_roots_rank_intake_moonkin_form_behavior() {
-        let fixture = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/classes/druid/prepare/balance.request.json");
-        let original: serde_json::Value = serde_json::from_slice(
-            &std::fs::read(fixture).expect("read Balance request fixture"),
-        )
-        .expect("parse Balance request fixture");
-
-        let prepare = |rank: i32| {
-            // 30 prior Balance points satisfy Moonkin Form's tier requirement;
-            // the last digit is the Moonkin Form rank.
-            let build = format!("553222311510000{rank}");
-            let (message, extras) = talent_layout::fill(
-                "proto.DruidTalents",
-                "druid",
-                &build,
-                &super::super::FOREVER_TREES,
-            )
-            .expect("legal Forever Balance Moonkin Form rank");
-            assert_eq!(
-                Talents::from_message(&message, &extras).moonkin_form,
-                rank == 1
-            );
-
-            let mut request = original.clone();
-            request["raid"]["parties"][0]["players"][0]["talentsString"] =
-                serde_json::Value::String(build);
-            crate::prepare_json(
-                &serde_json::to_vec(&request).expect("serialize Balance request"),
-                "native-p2-moonkin-form",
-            )
-            .expect("selected Rust prepares the Balance actor")
-        };
-
-        let without = prepare(0);
-        let with = prepare(1);
-        let has_aura = |prepared: &serde_json::Value| {
-            prepared["player"]["auras"]
-                .as_array()
-                .expect("native player auras")
-                .iter()
-                .any(|aura| aura["label"] == "Moonkin Form")
-        };
-        let has_spell = |prepared: &serde_json::Value| {
-            prepared["player"]["spells"]
-                .as_array()
-                .expect("native player spellbook")
-                .iter()
-                .any(|spell| spell["action_id"]["spell_id"] == 24858)
-        };
-        assert!(!has_aura(&without), "rank 0 must not register Moonkin Form aura");
-        assert!(has_aura(&with), "rank 1 must register Moonkin Form aura");
-        assert!(!has_spell(&without), "rank 0 must not register Moonkin Form spell");
-        assert!(has_spell(&with), "rank 1 must register Moonkin Form spell");
-    }"""
-RUST_TEST_EXTENDED = RUST_TEST.replace("\n}", P2_NATIVE_TESTS + "\n}", 1)
-
-
 def replace_once(source: str, old: str, new: str, label: str) -> str:
     if source.count(new) == 1 and source.count(old) == 0:
         return source
@@ -188,13 +73,12 @@ def port_text(source: str) -> str:
     source = replace_once(source, COMMENT_OLD, COMMENT_NEW, "COMMENT")
     source = replace_once(source, FIELD_OLD, FIELD_NEW, "FIELD")
     source = replace_once(source, READ_OLD, READ_NEW, "READ")
-    if RUST_TEST_EXTENDED in source:
-        return source
-    if RUST_TEST in source:
-        return source.replace(RUST_TEST, RUST_TEST_EXTENDED, 1)
+    # A previous fork port may already contain the old, larger Rust test
+    # module. Preserve that published source unchanged, but do not inject
+    # retired P2-only Moonkin/Predatory Strikes witnesses on new ports.
     if "mod native_improved_roots_rank_tests" in source:
-        raise ValueError("NATIVE_IMPROVED_ROOTS_TEST_SOURCE_DRIFT")
-    return source.rstrip() + "\n\n" + RUST_TEST_EXTENDED + "\n"
+        return source
+    return source.rstrip() + "\n\n" + RUST_TEST + "\n"
 
 
 def main(argv: list[str]) -> int:
