@@ -68,6 +68,8 @@ jobs:
         working-directory: engine
         run: cargo build --locked --bin forever-engine
       - name: Propose actual L21 talent candidate from pinned Rust options and prepare
+        id: propose
+        continue-on-error: true
         working-directory: project
         run: |
           python -u tools/wf_warlock_next_level_source.py \
@@ -75,7 +77,18 @@ jobs:
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --from-level 20 --to-level 21 \
             --out ../warlock-l21-source
+      - name: Publish authoritative L21 native actor refusal without claiming measured kills
+        if: steps.propose.outcome == 'failure'
+        working-directory: project
+        run: |
+          set -euo pipefail
+          test -s ../warlock-l21-source/proposal.json
+          python -u tools/wf_warlock_route_guide.py \
+            --native-proposal ../warlock-l21-source/proposal.json \
+            --baseline-observations data/warlock/native_route_observations.json \
+            --out ../warlock-l21-native-route
       - name: Execute one hostile L21 retained-actor 100-kill chain and publish L20+L21 coverage
+        if: steps.propose.outcome == 'success'
         working-directory: project
         env:
           PYTHONUNBUFFERED: "1"
