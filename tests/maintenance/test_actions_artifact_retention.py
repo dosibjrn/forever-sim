@@ -25,10 +25,14 @@ def test_actions_upload_steps_set_explicit_bounded_retention():
             indent = len(line) - len(line.lstrip(" "))
             step_body = []
             for following in lines[index + 1:]:
-                if (following.strip()
-                        and not following.lstrip().startswith("#")
-                        and len(following) - len(following.lstrip(" ")) <= indent):
-                    break
+                if following.strip() and not following.lstrip().startswith("#"):
+                    following_indent = len(following) - len(following.lstrip(" "))
+                    # Same-indent "with:" still belongs to this upload step.
+                    # Stop at the next list step or a containing YAML key.
+                    if (following_indent < indent
+                            or (following_indent == indent
+                                and following.lstrip().startswith("- "))):
+                        break
                 step_body.append(following)
             declared = [int(match.group(1))
                         for row in step_body
