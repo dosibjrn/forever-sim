@@ -28,6 +28,32 @@ def test_local_evidence_includes_merge_owned_ledger_and_document_links(tmp_path)
     assert artifacts == {901}
 
 
+
+def test_machine_readable_receipts_pin_run_urls_and_bare_artifact_ids(tmp_path):
+    """A JSON-only native evidence pin must survive an evidence-safe GC."""
+    for name, contents in {
+        "OVERALL_PLAN.md": "",
+        "PROCESS.md": "",
+        "README.md": "",
+        "docs/planning/M1_PASSES.tsv": "",
+        "docs/evidence/paid.json":
+            '{"workflow_run": "https://github.com/o/r/actions/runs/456", "artifact_id": 9001}',
+        "evidence/native/receipt.tsv":
+            'run_url\\thttps://github.com/o/r/actions/runs/789\\n',
+        "gate_evidence/warlock/L20/P3.json":
+            '{"artifact_id": "9002", "irrelevant_number": 2222}',
+        "gate_sources/warlock/selected.json":
+            '{"run_url": "https://github.com/o/r/actions/runs/999"}',
+    }.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents, encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {456, 789, 999}
+    assert artifacts == {9001, 9002}
+
+
 def test_issue_pr_and_inline_review_comments_are_pinned():
     runs, artifacts = set(), set()
     for body in (
