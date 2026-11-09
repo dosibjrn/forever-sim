@@ -60,23 +60,16 @@ jobs:
           python-version: '3.11'
       - name: Install existing world runtime dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Verify published typed RNG and compile the exact selected Rust fork
+      - name: Compile the exact selected Rust fork and verify its RNG CLI
         run: |
           set -euo pipefail
           selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
           actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
           test "$selected" = "$actual"
           echo "SELECTED_RUST_SHA=$actual"
-          # Typed RNG is already published in the pinned fork. Do not reapply
-          # the historical source-rewrite port to its changed Rust CLI imports:
-          # the port's text anchors are not a runtime contract.
-          grep -Fq 'pub enum RngMode' integrations/mythicsim-rust/engine/src/core/rng.rs
-          grep -Fq '"--rng-mode"' integrations/mythicsim-rust/engine/src/main.rs
-          grep -Fq '"native_health_damage_taken"' integrations/mythicsim-rust/engine/src/core/fight.rs
-          grep -Fq '"native_health_damage_events"' integrations/mythicsim-rust/engine/src/core/fight.rs
-          grep -Fq 'pub enum RngMode' integrations/mythicsim-rust/engine/src/core/rng.rs
-          ! grep -Fq 'WOWSIM_RNG_MODE' integrations/mythicsim-rust/engine/src/core/rng.rs
-          grep -Fq 'SimRng::new(rng_mode,' integrations/mythicsim-rust/engine/src/core/fight.rs
+          # Do not veto this live native/world check on Rust implementation
+          # tokens or file layout. The selected engine owns its internals;
+          # exercise the compiled CLI and real native/2D behavior below.
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
           binary=integrations/mythicsim-rust/engine/target/debug/forever-engine
           fixture=integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json
