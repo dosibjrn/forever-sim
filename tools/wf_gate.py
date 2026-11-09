@@ -388,10 +388,10 @@ def main(argv=None) -> int:
             if (isinstance(apl, list) and 0 < len(apl) <= 50
                     and len(json.dumps(apl, ensure_ascii=False).encode("utf-8")) <= 8192):
                 record["cold_winner_apl"] = apl
-            # Keep the full actually paid P7.2 build and selected native mode
-            # in the no-record Actions receipt. A hash/APL alone cannot show
-            # whether source equipment and talents were frozen.
-            if gate == "P7.2":
+            # Keep the full actually paid P7.2/P7.3 candidate and native
+            # mode. A hash plus changed action/talent cannot show whether
+            # the frozen equipment, APL and encounter were preserved.
+            if gate in ("P7.2", "P7.3"):
                 rules = report.get("native_rules")
                 if rules in ("go_reference", "forever"):
                     record["native_rules"] = rules

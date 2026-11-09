@@ -76,8 +76,9 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     """One exact-source native preflight shared by P7 discovery gates."""
     if (class_key, level, spec, gate) in (
             ("druid", 30, "unrestricted", "P7.2"),
-            ("warlock", 20, "unrestricted", "P7.2")):
-        # The selected L30 reference is a distinct frozen native request, not
+            ("warlock", 20, "unrestricted", "P7.2"),
+            ("warlock", 20, "unrestricted", "P7.3")):
+        # The checkpoint reference is a distinct frozen native request, not
         # an L60 Balance donor. Reuse its authenticated stochastic receipt and
         # native PREPARE without charging another 1,000-fight sample.
         from tools.wf_p7_native_reference import (
