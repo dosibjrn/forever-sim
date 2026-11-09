@@ -125,6 +125,7 @@ def native_actor_receipt_complete(result: dict, requested_targets: int) -> bool:
 
 def classify_native_chain(result: dict, requested_targets: int, *,
                           recovery_policy: str,
+                          expected_world_hp: float,
                           require_native_consumption: bool = False,
                           require_native_health_damage: bool = False) -> tuple[str, bool]:
     """Score only native-reported paid 2D kills, never a policy fallback.
@@ -144,6 +145,14 @@ def classify_native_chain(result: dict, requested_targets: int, *,
             or type(seconds_per_mob) not in (float, int)
             or not isfinite(seconds_per_mob) or seconds_per_mob <= 0):
         return "INCOMPLETE_UNPAID_NATIVE_RECOVERY", False
+    # The 2D world is Forever-owned. A native/ACK chain measured against a
+    # different world target HP cannot score this requested hostile scenario.
+    # This is request/result forwarding integrity, not a second game rule.
+    actual_world_hp = result.get("world_target_hp")
+    if (type(actual_world_hp) not in (int, float)
+            or not isfinite(actual_world_hp)
+            or actual_world_hp != expected_world_hp):
+        return "NATIVE_WORLD_TARGET_HEALTH_MISMATCH", False
     if recovery_policy == "decisions":
         if (result.get("native_recovery_mode") != "decisions_food_water"
                 or result.get("native_food_water_observed") is not True):
@@ -300,6 +309,7 @@ def main() -> None:
             seconds_per_mob = result.get("world_seconds_per_target_paid_recovery")
             status, complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
+                expected_world_hp=chosen_target["stats"][32],
                 require_native_consumption=args.require_native_consumption,
                 require_native_health_damage=args.require_native_health_damage)
             actor_receipt_complete = native_actor_receipt_complete(
@@ -317,13 +327,20 @@ def main() -> None:
             # ranking subsequent 100-mob/native optimizer candidates.
             _, consumption_complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
+                expected_world_hp=chosen_target["stats"][32],
                 require_native_consumption=True)
             _, health_complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
+                expected_world_hp=chosen_target["stats"][32],
                 require_native_health_damage=True)
             record.update(
                 status=status,
                 killed=killed,
+                world_target_hp_observed=(result.get("world_target_hp")
+                    if type(result.get("world_target_hp")) in (int, float)
+                    and isfinite(result["world_target_hp"]) else None),
+                world_target_hp_matches_request=(
+                    result.get("world_target_hp") == chosen_target["stats"][32]),
                 elapsed_s=result["world_elapsed_seconds"],
                 seconds_per_mob=(seconds_per_mob if complete else None),
                 min_hp=result["minimum_native_actor_health"],
