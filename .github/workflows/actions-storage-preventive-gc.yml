@@ -119,15 +119,46 @@ jobs:
                            "pulls/comments?sort=created&direction=desc"):
               for comment in gh_collection(endpoint):
                   record_references(comment.get("body"), pinned_runs, pinned_artifacts)
-          # Submitted PR review bodies are separate from inline comments.
-          # Preserve review-only evidence and fail closed if review pages fail.
+          # Submitted review *bodies* are not inline review comments. Collect
+          # every PR's review references before deletion. Batch GraphQL to avoid
+          # 1,000+ individual REST requests against GITHUB_TOKEN's hourly limit.
+          # GraphQL errors or missing pages fail closed; overflow falls back to
+          # the paginated REST reader, never silently truncates review evidence.
           all_prs = gh_collection("pulls?state=all")
+          owner, name = repo.split("/", 1)
           review_count = 0
-          for pr in all_prs:
-              for review in gh_collection(f"pulls/{int(pr['number'])}/reviews"):
-                  record_references(review.get("body"), pinned_runs, pinned_artifacts)
-                  review_count += 1
-          print(f"PIN_SCAN pr_reviews={review_count}")
+          for offset in range(0, len(all_prs), 20):
+              batch = all_prs[offset:offset + 20]
+              fields = " ".join(
+                  f"p{i}: pullRequest(number: {int(pr['number'])}) "
+                  "{ reviews(first: 100) { nodes { body } "
+                  "pageInfo { hasNextPage } } }"
+                  for i, pr in enumerate(batch))
+              query = (f'query {{ repository(owner: "{owner}", name: "{name}") '
+                       f'{{ {fields} }} }}')
+              response = subprocess.run(
+                  ["gh", "api", "graphql", "-f", f"query={query}"],
+                  capture_output=True, text=True, check=True)
+              payload = json.loads(response.stdout)
+              if payload.get("errors"):
+                  raise RuntimeError(f"Review pin GraphQL errors: {str(payload['errors'])[:250]}")
+              results = (payload.get("data") or {}).get("repository")
+              if not isinstance(results, dict):
+                  raise RuntimeError("Missing GraphQL review pin repository result")
+              for i, pr in enumerate(batch):
+                  connection = (results.get(f"p{i}") or {}).get("reviews")
+                  if (not isinstance(connection, dict)
+                          or not isinstance(connection.get("nodes"), list)
+                          or not isinstance(connection.get("pageInfo"), dict)
+                          or type(connection["pageInfo"].get("hasNextPage")) is not bool):
+                      raise RuntimeError(f"Incomplete review pin result for PR {pr['number']}")
+                  reviews = (gh_collection(f"pulls/{int(pr['number'])}/reviews")
+                             if connection["pageInfo"]["hasNextPage"]
+                             else connection["nodes"])
+                  for review in reviews:
+                      record_references(review.get("body"), pinned_runs, pinned_artifacts)
+                      review_count += 1
+          print(f"PIN_SCAN prs={len(all_prs)} pr_reviews={review_count}")
           open_branches = {p["head"]["ref"] for p in all_prs
                            if p.get("state") == "open"
                            and p.get("head", {}).get("repo", {}).get("full_name") == repo}
