@@ -7,6 +7,7 @@ No resetting native resources, fabricated kills, or Python combat evaluator.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from math import isfinite
 import subprocess
@@ -21,6 +22,15 @@ from live_two_world_pulls import (  # noqa: E402
     run as native_world_chain,
 )
 from src.scenarios.leveling_targets import representative_hp  # noqa: E402
+
+
+def file_sha256(path: Path) -> str:
+    """Record actual source/binary bytes used by each native paid attempt."""
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def create_scenario(request: dict, *, variant: str) -> dict:
@@ -172,6 +182,8 @@ def main() -> None:
     )
     args.out.mkdir(parents=True, exist_ok=True)
     original = json.loads(args.source.read_text())
+    binary_sha256 = file_sha256(args.binary)
+    original_source_sha256 = file_sha256(args.source)
     attempts = []
     variants = (("best_apl", "life_tap_20", "life_tap_40")
                 if args.variant == "all" else (args.variant,))
@@ -184,6 +196,9 @@ def main() -> None:
         prepared_path = base / "prepared.json"
         source_path.write_text(json.dumps(scenario, indent=2) + "\n")
         record = {"variant": variant, "target_count_requested": args.targets,
+                  "native_binary_sha256": binary_sha256,
+                  "original_source_sha256": original_source_sha256,
+                  "source_request_sha256": file_sha256(source_path),
                   "mob_level": 20, "mob_hp_classic_proxy": representative_hp(20),
                   "synthetic_min_base_damage": 20,
                   "recovery_request": native_recovery,
@@ -199,6 +214,8 @@ def main() -> None:
                 raise RuntimeError("NATIVE_PREPARE_FAILED: " +
                                    (result.stderr or result.stdout)[-2500:])
             prepared = json.loads(prepared_path.read_text())
+            record["native_prepared_sha256"] = file_sha256(prepared_path)
+            record["native_prepared_request_sha256"] = prepared.get("request_sha256")
             player = prepared["player"]
             record["native_actor"] = {
                 "class": player.get("class"), "race": player.get("race"),
@@ -284,6 +301,8 @@ def main() -> None:
         "world": "one persistent gsim 2D world per candidate",
         "no_independent_fight_stitching": True,
         "target_count_requested": args.targets,
+        "native_binary_sha256": binary_sha256,
+        "original_source_sha256": original_source_sha256,
         "native_recovery_requested": native_recovery,
         "native_consumption_proof_required": args.require_native_consumption,
         "native_health_damage_proof_required": args.require_native_health_damage,
