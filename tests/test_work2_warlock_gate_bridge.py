@@ -88,23 +88,33 @@ def test_explicit_pair_required_and_other_class_not_redirected(monkeypatch, tmp_
 
 def test_native_refusal_and_incomplete_finalists_never_score(monkeypatch, tmp_path):
     monkeypatch.setenv(bridge.OPT_IN, "1")
-    for report, failure in [
-        ({"status": "FAIL", "reasons": ["NATIVE_UNSUPPORTED"],
-          "native_receipt": {"status": "UNSUPPORTED"}}, "NATIVE_UNSUPPORTED"),
-        ({**_cold(), "finalists": {
-            "30s": _finalist("first", 10.0),
-            "300s": {"status": "INCOMPLETE_100_NATIVE_FINALIST",
-                     "reason": "NATIVE_INVALID"}}}, "P5_NATIVE_100MOB_FINALIST_INCOMPLETE"),
-    ]:
-        monkeypatch.setattr(bridge, "_execute", lambda r=report: copy.deepcopy(r))
-        bridge.set_shared_warlock_l20_cold(True)
-        try:
-            for gate in (p4, p5, p6):
-                got = gate.run_live(tmp_path, "warlock", 20)
-                assert got["status"] != "PASS"
-                assert failure in got["reasons"]
-        finally:
-            bridge.set_shared_warlock_l20_cold(False)
+    unsupported = {"status": "FAIL", "reasons": ["NATIVE_UNSUPPORTED"],
+                   "native_receipt": {"status": "UNSUPPORTED"}}
+    monkeypatch.setattr(bridge, "_execute", lambda: copy.deepcopy(unsupported))
+    bridge.set_shared_warlock_l20_cold(True)
+    try:
+        for gate in (p4, p5, p6):
+            got = gate.run_live(tmp_path, "warlock", 20)
+            assert got["status"] == "FAIL"
+            assert "NATIVE_UNSUPPORTED" in got["reasons"]
+    finally:
+        bridge.set_shared_warlock_l20_cold(False)
+
+    incomplete = _cold()
+    incomplete["finalists"]["300s"] = {
+        "status": "INCOMPLETE_100_NATIVE_FINALIST", "reason": "NATIVE_INVALID"}
+    monkeypatch.setattr(bridge, "_execute", lambda: incomplete)
+    bridge.set_shared_warlock_l20_cold(True)
+    try:
+        # P4 may use its own real completed 30s winner; P5 and P6
+        # independently require the missing 300s winner receipt.
+        assert p4.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
+        for gate in (p5, p6):
+            got = gate.run_live(tmp_path, "warlock", 20)
+            assert got["status"] == "FAIL"
+            assert "P5_NATIVE_100MOB_FINALIST_INCOMPLETE" in got["reasons"]
+    finally:
+        bridge.set_shared_warlock_l20_cold(False)
 
 
 def test_p4_unlock_cast_is_not_inferred_from_available_action_ids(monkeypatch, tmp_path):
