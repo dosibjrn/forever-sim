@@ -258,3 +258,122 @@ def test_native_failure_records_real_partial_ack_count_not_completion(
     assert "exhausted" in record["error"]
     summary = json.loads((out / "summary.json").read_text())
     assert summary["p4_p5_p6_pass"] is False
+
+
+def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_proof():
+    classify = _WARLOCK["classify_native_chain"]
+    payload = {
+        "world_targets_killed": 8,
+        "world_seconds_per_target_paid_recovery": 15.,
+        "paid_recovery": True,
+        "native_recovery_mode": "decisions_food_water",
+        "native_food_water_observed": True,
+        "native_food_seconds_total": 3.,
+        "native_water_seconds_total": 0.,
+        "native_food_health_gain_total": 50.,
+        "native_water_mana_gain_total": 0.,
+    }
+    completed = ("COMPLETED_8_REAL_NATIVE_GSIM_KILLS", True)
+    assert classify(payload, 8, recovery_policy="decisions",
+                    require_native_consumption=True) == completed
+    assert classify({**payload, "native_food_seconds_total": 0.,
+                     "native_food_health_gain_total": 0.},
+                    8, recovery_policy="decisions",
+                    require_native_consumption=True) == (
+                        "NO_NATIVE_FOOD_WATER_RESOURCE_GAIN", False)
+    # No food needed is a valid native policy outcome for an ordinary route.
+    assert classify({**payload, "native_food_seconds_total": 0.,
+                     "native_food_health_gain_total": 0.},
+                    8, recovery_policy="decisions") == completed
+    for field, replacement in (
+        ("native_recovery_mode", "fixed_passive"),
+        ("native_food_water_observed", False),
+        ("native_water_seconds_total", None),
+        ("native_food_health_gain_total", float("nan")),
+    ):
+        assert classify({**payload, field: replacement}, 8,
+                        recovery_policy="decisions") == (
+                            "INCOMPLETE_NATIVE_DECISIONS_RECEIPT", False)
+    assert classify(payload, 100, recovery_policy="decisions") == (
+        "INCOMPLETE_UNPAID_NATIVE_RECOVERY", False)
+
+    # A paid chain with only 2D damage-to-mob events is not a proven
+    # real-survival challenge when the caller asks for source player damage.
+    assert classify(payload, 8, recovery_policy="decisions",
+                    require_native_health_damage=True) == (
+                        "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False)
+    with_damage = {**payload, "native_health_damage": {
+        "observed": True, "damage_taken": 48., "damage_events": 3}}
+    assert classify(with_damage, 8, recovery_policy="decisions",
+                    require_native_health_damage=True,
+                    require_native_consumption=True) == completed
+    for damage in (
+        {"observed": False, "damage_taken": 48., "damage_events": 3},
+        {"observed": True, "damage_taken": 0., "damage_events": 3},
+        {"observed": True, "damage_taken": float("nan"), "damage_events": 3},
+        {"observed": True, "damage_taken": 48., "damage_events": 0},
+    ):
+        assert classify({**payload, "native_health_damage": damage}, 8,
+                        recovery_policy="decisions",
+                        require_native_health_damage=True) == (
+                            "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False)
+
+
+def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    out = tmp_path / "out"
+
+    def prepare(cmd, **kwargs):
+        Path(cmd[cmd.index("--outfile") + 1]).write_text(json.dumps({
+            "player": {"class": "ClassWarlock", "race": "RaceTroll",
+                       "level": 20, "stats": {"Health": 600., "Mana": 700.}}}))
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    def native(*args, **kwargs):
+        assert kwargs["recovery_policy"] == "decisions"
+        assert kwargs["require_native_health_damage"] is True
+        return {
+            "world_targets_killed": 8,
+            "world_seconds_per_target_paid_recovery": 20.,
+            "world_elapsed_seconds": 160.,
+            "minimum_native_actor_health": 200.,
+            "minimum_native_actor_mana": 10.,
+            "native_windows": [{"actor_health": 200.}] * 8,
+            "native_actor_mana_after_world_kills": [200.] * 8,
+            "paid_recovery": True,
+            "native_recovery_mode": "decisions_food_water",
+            "native_food_water_observed": True,
+            "native_food_seconds_total": 0.,
+            "native_water_seconds_total": 0.,
+            "native_food_health_gain_total": 0.,
+            "native_water_mana_gain_total": 0.,
+            "gsim_route_paid_movement_s": 4.,
+            "native_damage_events": 8,
+            "native_health_damage": {
+                "observed": True, "damage_taken": 35., "damage_events": 2},
+        }
+
+    main = _WARLOCK["main"]
+    monkeypatch.setitem(main.__globals__, "native_world_chain", native)
+    monkeypatch.setattr(main.__globals__["subprocess"], "run", prepare)
+    monkeypatch.setattr(sys, "argv", [
+        "driver", "--binary", str(tmp_path / "engine"), "--source", str(source),
+        "--out", str(out), "--targets", "8", "--variant", "best_apl",
+        "--recovery-policy", "decisions", "--require-native-consumption",
+        "--require-native-health-damage",
+    ])
+    with pytest.raises(SystemExit, match="No variant completed 8"):
+        main()
+    record = json.loads((out / "best_apl/summary.json").read_text())
+    assert record["status"] == "NO_NATIVE_FOOD_WATER_RESOURCE_GAIN"
+    assert record["paid_recovery"] is True
+    assert record["native_consumption_proof_required"] is True
+    assert record["native_consumption_proven"] is False
+    assert record["native_health_damage_proof_required"] is True
+    assert record["native_health_damage_proven"] is False
+    assert record["native_health_damage"]["damage_taken"] == 35.
+    assert record["seconds_per_mob"] is None
+    assert record["native_2d_paid_objective_eligible"] is False
