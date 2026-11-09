@@ -99,3 +99,26 @@ def test_native_options_budget_and_source_level_must_match(tmp_path, monkeypatch
     with pytest.raises(ValueError, match="adjacent level"):
         next_level.propose(binary=binary, source=source, out=tmp_path / "other",
                            from_level=20, to_level=22)
+
+
+def test_native_unsupported_actor_level_is_one_causal_refusal(tmp_path, monkeypatch):
+    source, binary = source_file(tmp_path)
+    calls = []
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        refusal = {"prepared": False, "refusal": {
+            "code": "actor_level_source",
+            "reason": "no selected native level 21 base stats for RaceTroll ClassWarlock"}}
+        return subprocess.CompletedProcess(cmd, 1, stderr=json.dumps(refusal))
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "refused"
+    receipt = next_level.propose(binary=binary, source=source, out=out)
+    assert len(calls) == 2
+    assert receipt["attempted"] == 1
+    assert receipt["status"] == "NATIVE_ACTOR_LEVEL_UNSUPPORTED"
+    assert receipt["native_refusals"][0]["native_refusal_code"] == "actor_level_source"
+    assert "no selected native level 21" in receipt["native_refusals"][0]["reason"]
+    assert not (out / "source_request.json").exists()
+    assert json.loads((out / "proposal.json").read_text()) == receipt
