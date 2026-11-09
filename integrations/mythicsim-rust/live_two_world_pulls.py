@@ -26,6 +26,21 @@ from src.scenarios.spaced_pulls import SpacedPullLayout
 from src.scenarios.leveling_targets import MOB_BASE_HP, representative_hp
 
 
+class NativeWorldChainFailure(AssertionError):
+    """A failed native/world run with observed, ACKed progress.
+
+    This is a transport result, not a completed 100-target objective.
+    Keep observed kills as data instead of forcing callers to parse stderr.
+    """
+
+    def __init__(self, reason: str, exit_code: int, detail: str,
+                 killed: int, native_damage_events: int):
+        self.exit_code = exit_code
+        self.killed = killed
+        self.native_damage_events = native_damage_events
+        super().__init__((reason, exit_code, detail, killed, native_damage_events))
+
+
 def _source_approach_radius(request: dict) -> float:
     """Use the selected source-prepared melee reach for diagnostic 2D placement.
 
@@ -658,10 +673,12 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             # already applied by this same gsim world.  Forward that observed
             # count and native event count to the real gate candidate scorer;
             # a failed session still cannot become a completed world screen.
-            raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", status,
-                                  stderr[-3000:], len(kills), events))
+            raise NativeWorldChainFailure("RUST_TWO_WORLD_NATIVE_FAILED", status,
+                                          stderr[-3000:], len(kills), events)
         if native_report is None or len(kills) != target_count or events < target_count:
-            raise AssertionError(("RUST_TWO_WORLD_KILLS_NOT_COMPLETED", native_report, kills, events))
+            raise NativeWorldChainFailure("RUST_TWO_WORLD_KILLS_NOT_COMPLETED",
+                                          status, str(native_report)[-3000:],
+                                          len(kills), events)
         result = native_report["result"]
         if (native_report["source_sha256"] != source_hash
                 or result["world_targets_killed"] != target_count
