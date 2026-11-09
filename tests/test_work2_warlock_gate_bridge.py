@@ -169,6 +169,9 @@ def test_official_paired_cli_arms_warlock_source_producer(monkeypatch, capsys):
 
 def test_only_world_acked_rust_source_effects_are_attributed():
     """Observe native IDs, not Python guesses of casts or spell legality."""
+    # The paid Warlock entrypoint installs the maintained native integration
+    # import path, as it does in real producer execution.
+    from tools import wf_warlock_l20_100mob as _paid_warlock  # noqa: F401
     from live_two_world_pulls import accumulate_acked_native_source_effects
 
     native = {"native_damage_events": [
