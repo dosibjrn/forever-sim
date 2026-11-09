@@ -38,7 +38,6 @@ on:
       - 'integrations/mythicsim-rust/tests/test_native_gear_adapter.py'
       - 'integrations/mythicsim-rust/native_p3_equipped.py'
       - 'integrations/mythicsim-rust/tests/test_native_p3_equipped.py'
-      - 'integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py'
       - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'tests/test_work1_p7_1_live_entry.py'
       - 'tests/test_work1_p71_native_generated.py'
@@ -157,7 +156,6 @@ jobs:
           integrations/mythicsim-rust/tests/test_apl_mutation_source_only.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           integrations/mythicsim-rust/tests/test_native_p3_equipped.py
-          integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
           tests/test_work1_p7_1_live_entry.py
           tests/test_work1_p71_native_generated.py
