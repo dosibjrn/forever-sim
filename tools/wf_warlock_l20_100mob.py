@@ -129,11 +129,18 @@ def native_failure_receipt(exc: BaseException) -> dict:
             or type(row[3]) is not int or row[3] < 0
             or type(row[4]) is not int or row[4] < 0):
         return {}
-    return {
+    refusal = {
         "native_exit_code": row[1],
         "native_world_ack_kills_before_refusal": row[3],
         "native_damage_events_before_refusal": row[4],
     }
+    if isinstance(exc, NativeWorldChainFailure):
+        # A partially killed hostile chain must retain the actual native
+        # player/pet source-action breakdown already ACKed by the world.
+        # Effects are not casts and an incomplete chain cannot be scored.
+        refusal["native_source_damage_effects_by_caster"] = (
+            exc.native_source_damage_effects_by_caster)
+    return refusal
 
 
 def native_actor_receipt_complete(result: dict, requested_targets: int) -> bool:
