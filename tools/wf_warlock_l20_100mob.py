@@ -64,15 +64,22 @@ def create_scenario(request: dict, *, variant: str) -> dict:
     if variant == "best_apl":
         pass
     elif variant in ("life_tap_20", "life_tap_40"):
-        # Same schema used and paid for by the existing native APL search:
-        # conditional Life Tap is a *candidate*, Rust owns execution.
+        # A Life Tap candidate must not repeatedly exchange the last HP
+        # for mana. The native APL engine evaluates both resources before
+        # every cast; this is a search policy, not a Python combat rule.
         threshold = 20 if variant == "life_tap_20" else 40
         tap = {"action": {
             "castSpell": {"spellId": {"spellId": 1455}},
-            "condition": {"cmp": {
-                "lhs": {"currentManaPercent": {}},
-                "op": "OpLt", "rhs": {"const": {"val": str(threshold) + "%"}},
-            }},
+            "condition": {"and": {"vals": [
+                {"cmp": {
+                    "lhs": {"currentManaPercent": {}},
+                    "op": "OpLt", "rhs": {"const": {"val": str(threshold) + "%"}},
+                }},
+                {"cmp": {
+                    "lhs": {"currentHealthPercent": {}},
+                    "op": "OpGt", "rhs": {"const": {"val": "50%"}},
+                }},
+            ]}},
         }}
         actor["rotation"]["priorityList"] = [tap] + rotation
     else:
