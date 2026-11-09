@@ -15,7 +15,7 @@ import textwrap
 import pytest
 
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/rust-submodule-verify.yml"
-STEP = "Run Druid Feral L60 unified-options native P3 (no record)"
+STEP = "Probe Feral L60 P3 on selected native engine (no record)"
 
 
 def _reader() -> str:
