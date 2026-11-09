@@ -5,6 +5,7 @@ legality oracle; real native/world behavior is checked by separate Actions.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import runpy
@@ -98,6 +99,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
 ):
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     out = tmp_path / "out"
     observed = []
 
@@ -158,6 +160,14 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert observed[0]["rng_mode"] == "balanced"
     record = json.loads((out / "best_apl" / "summary.json").read_text())
     assert record["killed"] == targets
+    assert record["native_binary_sha256"] == hashlib.sha256(
+        b"mock native engine for receipt test").hexdigest()
+    assert record["original_source_sha256"] == hashlib.sha256(
+        source.read_bytes()).hexdigest()
+    assert record["source_request_sha256"] == hashlib.sha256(
+        (out / "best_apl" / "source_request.json").read_bytes()).hexdigest()
+    assert record["native_prepared_sha256"] == hashlib.sha256(
+        (out / "best_apl" / "prepared.json").read_bytes()).hexdigest()
     assert record["paid_recovery"] is paid
     assert record["seconds_per_mob"] == (7. if paid else None)
     assert record["status"] == (
@@ -166,6 +176,8 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert record["native_2d_paid_objective_eligible"] is (
         paid and targets == 100)
     summary = json.loads((out / "summary.json").read_text())
+    assert summary["native_binary_sha256"] == record["native_binary_sha256"]
+    assert summary["original_source_sha256"] == record["original_source_sha256"]
     assert summary["p4_p5_p6_pass"] is False
     assert summary["cold_30_300_search_executed"] is False
 
@@ -173,6 +185,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
 def test_fixed_recovery_duration_forwarded_from_warlock_driver(tmp_path, monkeypatch):
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     observed = []
 
     def prepare(cmd, **kwargs):
@@ -225,6 +238,7 @@ def test_native_failure_records_real_partial_ack_count_not_completion(
     """A dry native actor may kill some mobs; report the exact ACK count."""
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     out = tmp_path / "out"
 
     def prepare(cmd, **kwargs):
@@ -342,6 +356,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
 ):
     source = tmp_path / "source.json"
     source.write_text(json.dumps(_source_request()), encoding="utf-8")
+    (tmp_path / "engine").write_bytes(b"mock native engine for receipt test")
     out = tmp_path / "out"
 
     def prepare(cmd, **kwargs):
