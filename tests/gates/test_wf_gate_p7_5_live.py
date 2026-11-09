@@ -79,8 +79,8 @@ def test_unrelated_checkpoint_does_not_use_balance_ref(tmp_path):
     assert "P7_5_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT" in report["reasons"]
 
 
-def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypatch, tmp_path):
-    """Negative control: a plausible DPS score cannot bypass causal parity."""
+def test_real_p75_provider_rejects_invalid_native_iteration_receipt(monkeypatch, tmp_path):
+    """A plausible score without the required native iterations cannot be paid."""
     from pathlib import Path
     import json
     from tools import wf_gate_p7_5_live as p75
@@ -98,7 +98,7 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
     original = _base()
     original["raid"]["parties"][0]["players"][0]["distanceFromTarget"] = 15
     monkeypatch.setattr(p75, "_pinned_source_runtime",
-                        lambda *args: (original, {"reference_dps": 728.19}, binary))
+                        lambda *args, **kwargs: (original, {"reference_dps": 728.19}, binary))
 
     class Validator:
         engine = {11: {"name": "one"}, 21: {"name": "two"}}
@@ -126,18 +126,12 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
         GearValidator=Validator,
         candidate_pool=lambda validator, limit, **kwargs: ({0: [11], 1: [21]}, {}),
         make_candidate=cold, player=player, RejectedGear=ValueError)
+    def forbid_world(*args, **kwargs):
+        raise AssertionError("stationary P7.5 must not call world/2D")
     production = SimpleNamespace(
         native_source_control=lambda binary, path, n, *, rng_mode: {
-            "iterations": n, "first_duration_s": 120.0, "native_dps": 730.0},
-        run=lambda binary, path, distance, iterations, *, rng_mode: {
-            "iterations_done": iterations,
-            "per_iteration": [
-                {"iteration_index": i, "duration_s": 119.0,
-                 "world_dps": 730.0, "world_applied_damage": 730.0 * 119.0}
-                for i in range(iterations)],
-            "sampled_duration_s": 119.0,
-            "native_dps": 730.0, "world_mean_dps": 730.0,
-            "native_damage_events": 10, "native_world_ticks": 20})
+            "iterations": n - 1, "native_dps": 730.0},
+        run=forbid_world)
     monkeypatch.setattr(p75, "_source_module",
                         lambda path, name: source if "joint_search" in str(path)
                         else production)
@@ -145,9 +139,9 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
     assert report["status"] == "FAIL"
     assert report["reasons"] == [
         "P7_5_NO_SOURCE_LEGAL_JOINT_CANDIDATE_REACHED_NATIVE_WORLD"]
-    assert any("P7_5_P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED" in reason
+    assert any("P7_5_NATIVE_SCREEN_ITERATIONS_INVALID" in reason
                for reason in report["cold_candidate_failures"])
-    assert "joint_cold_world_dps" not in report
+    assert "joint_cold_native_dps" not in report
 
 
 def test_shared_source_preflight_uses_exact_p7_gate_reason(tmp_path):
@@ -185,9 +179,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     clock = iter([0.0, 0.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *a: (original, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *a, **kw: None)
+                        lambda *a, **kwargs: (original, {"reference_dps": 728.19}, binary))
 
     class Validator:
         engine = {11: {"name": "one"}, 21: {"name": "two"}}
@@ -224,12 +216,9 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     calls = []
     def native(binary, path, n, *, rng_mode):
         calls.append(("native", n, rng_mode, path.read_text()))
-        return {"native_dps": 730.0}
-    def world(binary, path, distance, iterations, *, rng_mode):
-        assert distance == 15
-        calls.append(("world", iterations, rng_mode, path.read_text()))
-        return {"world_mean_dps": 729.0, "iterations_done": iterations,
-                "native_damage_events": 20, "native_world_ticks": 30}
+        return {"native_dps": 730.0, "iterations": n}
+    def world(*args, **kwargs):
+        raise AssertionError("stationary P7.5 must never call 2D world")
     producer = SimpleNamespace(native_source_control=native, run=world)
     monkeypatch.setattr(
         gate, "_source_module",
@@ -238,8 +227,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert pool_calls == [None]
     assert [(a, b, c) for a, b, c, _ in calls] == [
-        ("native", 3, "balanced"), ("world", 3, "balanced"),
-        ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
+        ("native", 3, "balanced"), ("native", 1000, "stochastic")]
     assert json.loads(calls[0][3]) == json.loads(calls[-1][3])
     assert report["frozen_request_raw_sha256"] == hashlib.sha256(
         calls[-1][3].encode()).hexdigest()
@@ -250,7 +238,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert report["frozen_stochastic_external_only_floor_met"] is True
     assert report["final_required_dps"] == 0.93 * 728.19
     # The absence of an optional compatible prior cannot block an otherwise
-    # complete real 300s search and frozen 1000-fight native/world result.
+    # complete real 300s search and frozen 1000-fight native result.
     assert report["strongest_accepted_compatible_prior_dps"] is None
     assert report["status"] == "PASS"  # injected transport; not real M1 evidence
     assert report["reasons"] == []
@@ -275,7 +263,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert accepted["runtime_proof"]["executed"] is True
 
     # An accepted stronger prior raises the P7.5 holdout floor; the same
-    # frozen 729-DPS result must now fail, not use the external-only limit.
+    # frozen 730-DPS result must now fail, not use the external-only limit.
     monkeypatch.setattr(gate, "strongest_accepted_prior",
                         lambda *args, **kwargs: {
                             "dps": 800.0,
@@ -308,8 +296,8 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert pool_calls == [15]
     assert len(prior_calls) == 1
     assert [(a, b, c) for a, b, c, _ in calls] == [
-        ("native", 3, "balanced"), ("world", 3, "balanced")]
-    assert light["joint_cold_world_dps"] == 729.0
+        ("native", 3, "balanced")]
+    assert light["joint_cold_native_dps"] == 730.0
     assert light["final_required_dps"] == 697.5
     assert light["strongest_accepted_compatible_prior_dps"] == 750.0
     assert light["status"] == "BLOCKED"
@@ -326,7 +314,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
 def test_p75_rejects_invalid_full_search_mode_before_source_work(monkeypatch, tmp_path):
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "anything")
     monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *a: ({}, {"reference_dps": 728.19}, tmp_path / "binary"))
+                        lambda *a, **kwargs: ({}, {"reference_dps": 728.19}, tmp_path / "binary"))
     assert gate.run_live(tmp_path, "druid", 60, spec="balance") == {
         "status": "BLOCKED", "reasons": ["P7_5_INVALID_FULL_SOURCE_SEARCH_MODE"]}
 
@@ -392,9 +380,7 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.))
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
-        lambda *a: (base, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *a, **kw: None)
+        lambda *a, **kwargs: (base, {"reference_dps": 728.19}, binary))
 
     class Validator:
         engine = {10: {"name": "head"}, 20: {"name": "neck"}}
@@ -428,10 +414,9 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
         RejectedGear=ValueError)
     producer = SimpleNamespace(
         native_source_control=lambda binary, path, n, *, rng_mode: {
-            "native_dps": score(path)},
-        run=lambda binary, path, distance, iterations, *, rng_mode: {
-            "world_mean_dps": score(path), "iterations_done": iterations,
-            "native_damage_events": 10, "native_world_ticks": 20})
+            "native_dps": score(path), "iterations": n},
+        run=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("unexpected 2D world invocation")))
     monkeypatch.setattr(
         gate, "_source_module",
         lambda path, name: source if "joint_search" in str(path) else producer)
@@ -439,8 +424,8 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert seen_elites == [None, "independently-found"]
     assert report["source_legal_joint_candidates_paid"] == 2
-    assert report["joint_cold_world_dps"] == 735.0
-    assert report["frozen_stochastic_world_dps"] == 735.0
+    assert report["joint_cold_native_dps"] == 735.0
+    assert report["frozen_stochastic_native_dps"] == 735.0
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["status"] == "PASS"  # injected full holdout; no optional prior needed
     assert report["final_required_dps"] == 0.93 * 728.19
@@ -474,9 +459,7 @@ def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
     monkeypatch.setattr(gate.time, "sleep", lambda *_: None)
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
-        lambda *a: (base, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *a, **kw: None)
+        lambda *a, **kwargs: (base, {"reference_dps": 728.19}, binary))
 
     class Validator:
         @staticmethod
@@ -513,10 +496,9 @@ def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
     )
     producer = SimpleNamespace(
         native_source_control=lambda binary, path, n, *, rng_mode: {
-            "native_dps": 700.0},
-        run=lambda binary, path, distance, iterations, *, rng_mode: {
-            "world_mean_dps": 700.0, "iterations_done": iterations,
-            "native_damage_events": 10, "native_world_ticks": 20},
+            "native_dps": 700.0, "iterations": n},
+        run=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("unexpected 2D world invocation")),
     )
     monkeypatch.setattr(
         gate, "_source_module",
