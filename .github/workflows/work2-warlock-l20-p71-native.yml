@@ -1,4 +1,4 @@
-name: Work2 Warlock L20 native P7.1 reference (no M1)
+name: Work2 Warlock L20 native P7.1 + P7.2 (no M1)
 
 on:
   push:
@@ -10,6 +10,8 @@ on:
       - tools/wf_p7_native_reference.py
       - tools/wf_gate_p7_1_live.py
       - tests/test_work2_warlock_l20_p71.py
+      - tools/wf_gate_p7_2_live.py
+      - tests/test_work2_warlock_l20_p72.py
   workflow_dispatch:
 
 permissions:
@@ -61,9 +63,10 @@ jobs:
       - name: Install focused Forever test dependencies
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
 
-      - name: Test Warlock P7.1 transport and existing native reference contract
+      - name: Test Warlock P7.1/P7.2 transport and existing native reference contract
         run: >-
           python -m pytest -q tests/test_work2_warlock_l20_p71.py
+          tests/test_work2_warlock_l20_p72.py
           tests/test_work1_p71_native_generated.py
           tests/test_work1_p7_1_live_entry.py
 
@@ -109,6 +112,15 @@ jobs:
             --out warlock-l20-p71-gate.json \
             | tee warlock-l20-p71-gate-stdout.json
 
+      - name: Pay one source-native changed Warlock APL for P7.2 (no record)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/wf_gate.py \
+            --class warlock --level 20 --spec unrestricted --gate P7.2 \
+            --out warlock-l20-p72-gate.json \
+            | tee warlock-l20-p72-gate-stdout.json
+
       - name: Retain native exact-source stochastic evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -122,5 +134,7 @@ jobs:
             warlock-l20-reference-producer.json
             warlock-l20-p71-gate.json
             warlock-l20-p71-gate-stdout.json
+            warlock-l20-p72-gate.json
+            warlock-l20-p72-gate-stdout.json
           if-no-files-found: warn
           retention-days: 7
