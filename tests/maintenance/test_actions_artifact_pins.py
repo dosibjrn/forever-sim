@@ -54,6 +54,24 @@ def test_machine_readable_receipts_pin_run_urls_and_bare_artifact_ids(tmp_path):
     assert artifacts == {9001, 9002}
 
 
+def test_retained_plaintext_log_pins_artifact_and_run_before_gc(tmp_path):
+    """A raw paid receipt may retain the only URL to a native run artifact."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    log = tmp_path / "evidence/native/paid-hostile.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text(
+        "Native receipt: https://github.com/o/r/actions/runs/42574670709/artifacts/12998142923\n",
+        encoding="utf-8",
+    )
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42574670709}
+    assert artifacts == {12998142923}
+
+
 def test_numeric_actions_run_ids_in_json_pin_evidence_without_url():
     runs, artifacts = set(), set()
     record_references(
@@ -64,6 +82,28 @@ def test_numeric_actions_run_ids_in_json_pin_evidence_without_url():
         runs, artifacts)
     assert runs == {42574670709, 42573539316, 40969635587, 42573178806}
     assert artifacts == set()
+
+
+
+@pytest.mark.parametrize("damaged_path", [
+    "docs/evidence/damaged-receipt.json",
+    "evidence/native/damaged-paid.log",
+    "PROCESS.md",
+])
+def test_malformed_utf8_paid_receipt_aborts_artifact_pin_scan(tmp_path, damaged_path):
+    """Never delete on a lossy decode that can conceal an evidence pin."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    corrupt = tmp_path / damaged_path
+    corrupt.parent.mkdir(parents=True, exist_ok=True)
+    # Replacement decoding would conceal artifact_id=9001, making GC
+    # falsely treat its artifact as unreferenced.
+    corrupt.write_bytes(b'{"artifact_id": \xff 9001, "run_id": 42574670709}')
+    with pytest.raises(UnicodeDecodeError):
+        collect_local_references(tmp_path)
 
 
 def test_issue_pr_and_inline_review_comments_are_pinned():

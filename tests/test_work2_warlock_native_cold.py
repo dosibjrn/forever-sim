@@ -49,6 +49,151 @@ def options():
     }
 
 
+def test_native_spell_candidates_can_replace_or_stand_alone_in_apl(monkeypatch):
+    """Search may replace the saved filler; only Rust judges executable casts."""
+    reference = source()
+    original = copy.deepcopy(reference)
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([{"talents": "110-0-0"}]))
+    domain = cold.native_candidate_domain(reference, options(), seed=11)
+    original_apl = cold.actor(reference)["rotation"]["priorityList"]
+    native_spell = {"action": {"castSpell": {"spellId": {"spellId": 999}}}}
+    assert [native_spell] in domain["apl"]
+    assert [native_spell, original_apl[1]] in domain["apl"]
+    assert [original_apl[0], native_spell] in domain["apl"]
+    assert [native_spell, *original_apl] in domain["apl"]
+    assert reference == original  # proposal generation never mutates saved build
+
+    # The existing generic search factory can actually select the new APL.
+    only_apl = {"gear": {}, "talents": ["110-0-0"],
+                "apl": [[native_spell]], "recovery": [(0.5, 0.1)]}
+    propose, _mutate = cold.candidate_factory(reference, only_apl)
+    assert any(
+        cold.actor(propose(random.Random(seed))["source"])["rotation"][
+            "priorityList"] == [native_spell]
+        for seed in range(20)
+    )
+
+
+
+def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
+    """The paid search can build multi-spell challengers, not only fixed APLs."""
+    reference = source()
+    original = copy.deepcopy(reference)
+    native = options()
+    native["spells"].extend([{"spell_id": 998}, {"spell_id": 999}])
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([{"talents": "110-0-0"}]))
+    domain = cold.native_candidate_domain(reference, native, seed=5)
+    propose, mutate = cold.candidate_factory(reference, domain)
+
+    class AplOnlyRng:
+        def __init__(self, spell_id, slot, operation="replace"):
+            self.spell_id, self.slot, self.operation = spell_id, slot, operation
+
+        def randint(self, _lo, _hi):
+            return 1
+
+        def sample(self, axes, count):
+            assert "apl" in axes and count == 1
+            return ["apl"]
+
+        def random(self):
+            return 0.0
+
+        def choice(self, values):
+            if values is domain["apl_actions"]:
+                return next(
+                    item for item in values
+                    if item["action"]["castSpell"]["spellId"]["spellId"] ==
+                    self.spell_id)
+            assert values == ("replace", "insert")
+            return self.operation
+
+        def randrange(self, stop):
+            assert self.slot < stop
+            return self.slot
+
+    candidate = {"source": copy.deepcopy(reference),
+                 "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}}
+    first = mutate(candidate, AplOnlyRng(999, 0))
+    combined = mutate(first, AplOnlyRng(998, 1))
+    actions = cold.actor(combined["source"])["rotation"]["priorityList"]
+    new_ids = [a["action"]["castSpell"]["spellId"]["spellId"] for a in actions]
+    assert new_ids == [999, 998]
+    assert actions not in domain["apl"]  # unreachable by old whole-APL draws
+    assert reference == original
+    assert cold.actor(first["source"])["rotation"]["priorityList"] != actions
+    inserted = mutate(combined, AplOnlyRng(999, 2, "insert"))
+    assert len(cold.actor(inserted["source"])["rotation"]["priorityList"]) == 3
+
+    # Cold proposals still start from Rust-sourced whole APL candidates.
+    assert cold.actor(propose(random.Random(5))["source"])["rotation"]["priorityList"] in domain["apl"]
+
+
+
+def test_native_apl_elite_mutations_reorder_and_remove_without_resetting():
+    """An elite can reposition/prune Rust-action proposals in one paid trial."""
+    reference = source()
+    original = copy.deepcopy(reference)
+    native_action = {"action": {"castSpell": {"spellId": {"spellId": 999}}}}
+    domain = {
+        "gear": {}, "talents": ["110-0-0"],
+        "apl": [cold.actor(reference)["rotation"]["priorityList"]],
+        "apl_actions": [native_action],
+        "recovery": [(0.5, 0.1)],
+    }
+    _, mutate = cold.candidate_factory(reference, domain)
+    candidate = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+    rotation = cold.actor(candidate["source"])["rotation"]["priorityList"]
+    rotation.insert(1, copy.deepcopy(native_action))
+
+    class AplEditRng:
+        def __init__(self, operation, slots):
+            self.operation, self.slots, self.random_count = (
+                operation, iter(slots), 0)
+
+        def randint(self, _lo, _hi):
+            return 1
+
+        def sample(self, axes, count):
+            assert "apl" in axes and count == 1
+            return ["apl"]
+
+        def random(self):
+            self.random_count += 1
+            return 0.0 if self.random_count == 1 else 0.99
+
+        def choice(self, values):
+            assert values == ("move", "remove")
+            return self.operation
+
+        def randrange(self, stop):
+            index = next(self.slots)
+            assert index < stop
+            return index
+
+    moved = mutate(candidate, AplEditRng("move", [1, 0]))
+    ids = lambda c: [
+        action["action"]["castSpell"]["spellId"]["spellId"]
+        for action in cold.actor(c["source"])["rotation"]["priorityList"]
+    ]
+    assert ids(candidate) == [686, 999, 172]
+    assert ids(moved) == [999, 686, 172]
+    pruned = mutate(moved, AplEditRng("remove", [1]))
+    assert ids(pruned) == [999, 172]
+    assert ids(moved) == [999, 686, 172]
+    assert reference == original
+    # The native candidate is still just a proposed APL, not a Python verdict.
+    assert cold.actor(pruned["source"])["rotation"]["priorityList"] != domain["apl"][0]
+
+
+
 def test_unverified_items_enter_cold_native_candidate_proposals():
     requests = native_equipment_proposals(options(), cold.actor(source())[
         "equipment"]["items"])
@@ -358,3 +503,68 @@ def test_two_target_diagnostic_late_completion_is_measured_not_backdated(tmp_pat
     assert result["elapsed_wall_s"] == 32.0
     assert result["completed_by_30s"] is False
 
+
+
+
+def test_native_refusal_preserves_its_screen_directory_and_next_paid_receipt(
+    tmp_path, monkeypatch
+):
+    """An unscored source proposal cannot contaminate the next paid screen."""
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native engine")
+    now = [0.0]
+    refused = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    completed = copy.deepcopy(refused)
+    cold.actor(completed["source"])["talentsString"] = "101-0-0"
+    screens = []
+
+    def native_paid(_binary, candidate, out, *, targets, timeout):
+        if targets == 2:
+            screens.append(out)
+            if candidate == refused:
+                (out / "world").mkdir(parents=True)
+                (out / "world" / "summary.json").write_text(
+                    json.dumps({"results": [{"status": "NATIVE_REFUSAL"}]}))
+                raise cold.NativeUnscoredCandidate(
+                    "Rust refused this candidate",
+                    raw_response={"status": "NATIVE_REFUSAL"})
+            # The previously refused native receipt must never be reused.
+            assert not (out / "world" / "summary.json").exists()
+        return {"seconds_per_mob": 9.0}
+
+    def search(**kwargs):
+        now[0] = 5.0
+        with pytest.raises(cold.NativeUnscoredCandidate):
+            kwargs["evaluate"](refused, iterations=1, seed=3,
+                               rng_mode="balanced")
+        now[0] = 15.0
+        kwargs["evaluate"](completed, iterations=1, seed=3,
+                           rng_mode="balanced")
+        now[0] = 300.0
+        return {"status": "RAN", "best_candidate": completed,
+                "best_score": -9.0, "elapsed_s": 300.0,
+                "paid_candidates": 1, "unscored_candidates": 1}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [],
+        "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=native_paid)
+    assert screens == [tmp_path / "cold/screens/00000",
+                       tmp_path / "cold/screens/00001"]
+    assert json.loads((screens[0] / "world/summary.json").read_text())[
+        "results"][0]["status"] == "NATIVE_REFUSAL"
+    assert result["native_screen_attempt_count"] == 2
+    assert result["native_screen_unscored_count"] == 1
+    failure = result["native_screen_unscored_samples"][0]
+    assert failure["candidate_sha256"] == cold.identity(refused)
+    assert failure["native_receipt_path"] == "screens/00000/world/summary.json"
+    assert failure["native_response_status"] == "NATIVE_REFUSAL"
+    assert result["native_paid_screen_count"] == 1
+    assert result["snapshot_30"]["candidate_sha256"] == cold.identity(completed)
+    assert result["finalists"]["30s"]["status"] == (
+        "COMPLETED_100_REAL_NATIVE_GSIM_KILLS")
+    assert result["p4_p5_p6_pass"] is False

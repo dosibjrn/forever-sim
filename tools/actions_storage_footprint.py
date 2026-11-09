@@ -15,6 +15,25 @@ REPOSITORIES = ("dosibjrn/forever-sim", "dosibjrn/mythicsim-forever-engine")
 PAGE_LIMIT = 100
 
 
+# Nominal included allowance from owner issue #1102 (0.5 GB decimal).
+# This is only a retained-byte reference, NOT the billed GB-months meter.
+INCLUDED_REFERENCE_BYTES = 500_000_000
+
+
+def retained_reference_level(retained_bytes: int) -> int:
+    """Warning threshold of visible retained bytes relative to 0.5 GB.
+
+    Never interpret a value below a threshold as billing clearance: private
+    repositories, caches, Packages and accrued storage are not in this scan.
+    """
+    if retained_bytes < 0:
+        raise ValueError("negative retained-byte count")
+    for threshold in (90, 85, 75):
+        if retained_bytes * 100 >= INCLUDED_REFERENCE_BYTES * threshold:
+            return threshold
+    return 0
+
+
 def verified_artifacts(repository: str, fetch_page) -> list[dict]:
     """Return a complete stable artifact snapshot; never approve partial GC input."""
     seen: set[int] = set()
@@ -132,6 +151,15 @@ def main() -> int:
     print(f"RETAINED_KNOWN_TWO_REPOS bytes={core_total} MiB={core_total/1048576:.2f}")
     total = sum(sizes.values())
     print(f"RETAINED_PUBLIC_OWNER_REPOS count={len(repositories)} bytes={total} MiB={total/1048576:.2f}")
+    level = retained_reference_level(total)
+    print(f"RETAINED_REFERENCE_LEVEL={level} public_bytes={total} "
+          f"reference_bytes={INCLUDED_REFERENCE_BYTES} "
+          f"percent={100 * total / INCLUDED_REFERENCE_BYTES:.1f}; not billing usage")
+    if level:
+        print(f"::warning::RETAINED_REFERENCE_{level}_PCT: "
+              f"visible public-owner artifacts use at least {100 * total / INCLUDED_REFERENCE_BYTES:.1f}% "
+              "of the nominal 0.5 GB included-storage reference; "
+              "check actual account billing/budgets and protected evidence")
     print("BILLING_METER=UNKNOWN; public retained bytes are not billed GB-months; private repos/packages/caches omitted")
     return 0
 

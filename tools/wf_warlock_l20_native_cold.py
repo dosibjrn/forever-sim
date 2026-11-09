@@ -51,18 +51,29 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     apl_variants = [apl]
     if len(apl) > 1:
         apl_variants.append(list(reversed(apl)))
+    native_actions = []
     # Candidate spell IDs come only from get_options, and Rust still decides
-    # whether a spell is executable at this level/talent/build.
+    # whether a spell is executable at this level/talent/build. A prefix-only
+    # proposal cannot replace an existing filler or try a new standalone APL:
+    # both are genuine candidate-search dimensions, not Python spell rules.
     for spell in options["spells"]:
         spell_id = spell.get("spell_id") if isinstance(spell, dict) else None
         if type(spell_id) is int and spell_id > 0:
-            proposal = [{"action": {"castSpell": {
-                "spellId": {"spellId": spell_id}}}}, *copy.deepcopy(apl)]
-            apl_variants.append(proposal)
+            action = {"action": {"castSpell": {
+                "spellId": {"spellId": spell_id}}}}
+            native_actions.append(action)
+            apl_variants.append([copy.deepcopy(action), *copy.deepcopy(apl)])
+            apl_variants.append([copy.deepcopy(action)])
+            for index in range(len(apl)):
+                proposal = copy.deepcopy(apl)
+                proposal[index] = copy.deepcopy(action)
+                apl_variants.append(proposal)
     unique_apl = list({json.dumps(x, sort_keys=True): x
                        for x in apl_variants}.values())
+    unique_actions = list({json.dumps(x, sort_keys=True): x
+                           for x in native_actions}.values())
     return {"gear": gear, "talents": talents or [player.get("talentsString", "0-0-0")],
-            "apl": unique_apl,
+            "apl": unique_apl, "apl_actions": unique_actions,
             # These are recovery *policy proposals*, not Python regen mechanics.
             "recovery": [(0.35, 0.10), (0.50, 0.10),
                          (0.50, 0.25), (0.70, 0.25)]}
@@ -87,8 +98,37 @@ def candidate_factory(reference: dict, domain: dict):
             elif axis == "talents":
                 player["talentsString"] = rng.choice(domain["talents"])
             elif axis == "apl":
-                player["rotation"]["priorityList"] = copy.deepcopy(
-                    rng.choice(domain["apl"]))
+                actions = domain.get("apl_actions") or []
+                if not cold and actions and rng.random() < 0.75:
+                    # Recombine source-returned actions in the current elite.
+                    # A whole-APL replacement alone cannot accumulate two new
+                    # spells, so a valid multi-spell challenger is unreachable.
+                    # Rust remains the only judge of executable rotations.
+                    rotation = player["rotation"]["priorityList"]
+                    if len(rotation) > 1 and rng.random() > 0.70:
+                        # Reorder/prune an evolved policy in one mutation:
+                        # replacing its whole APL loses previously discovered
+                        # Rust actions, while elite-only search cannot rely on
+                        # keeping a worse intermediate edit. Never delete the
+                        # last action; Rust judges executable candidates.
+                        operation = rng.choice(("move", "remove"))
+                        index = rng.randrange(len(rotation))
+                        if operation == "move":
+                            entry = rotation.pop(index)
+                            rotation.insert(rng.randrange(len(rotation) + 1),
+                                            entry)
+                        else:
+                            rotation.pop(index)
+                    else:
+                        action = copy.deepcopy(rng.choice(actions))
+                        operation = rng.choice(("replace", "insert"))
+                        if operation == "replace" and rotation:
+                            rotation[rng.randrange(len(rotation))] = action
+                        else:
+                            rotation.insert(rng.randrange(len(rotation) + 1), action)
+                else:
+                    player["rotation"]["priorityList"] = copy.deepcopy(
+                        rng.choice(domain["apl"]))
             elif axis == "recovery":
                 hp, mana = rng.choice(domain["recovery"])
                 value["recovery"] = {"health_threshold": hp, "mana_threshold": mana}
@@ -170,6 +210,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     deadline = start + budget_s
     early = None
     paid_rows = []
+    screen_attempts = []
     def evaluate(candidate: dict, *, iterations: int, seed: int,
                  rng_mode: str) -> float:
         nonlocal early
@@ -177,11 +218,37 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         # scoring is an independent native/world 2-target run, not native DPS.
         if rng_mode != "balanced":
             raise ValueError("BALANCED_NATIVE_SCREEN_REQUIRED")
-        index = len(paid_rows)
+        # Count *all* attempted native calls, including rejected builds. Using
+        # len(paid_rows) would reuse an old screen directory after a refusal:
+        # the next subprocess could overwrite the failed request or consume
+        # its leftover world/summary.json as though it were a fresh receipt.
+        index = len(screen_attempts)
         path = out / "screens" / f"{index:05d}"
-        receipt = chain(binary, candidate, path, targets=2,
-                        timeout=max(0.05, deadline - clock()))
+        attempt = {
+            "candidate_sha256": identity(candidate),
+            "native_receipt_path": str((path / "world" / "summary.json").relative_to(out)),
+            "status": "IN_PROGRESS",
+        }
+        screen_attempts.append(attempt)
+        try:
+            receipt = chain(binary, candidate, path, targets=2,
+                            timeout=max(0.05, deadline - clock()))
+        except Exception as exc:
+            # The generic native kernel still judges refusals, timeout and
+            # errors. Preserve actual attempted request/receipt locations
+            # without making an unscored native result eligible for P4/P5.
+            raw = getattr(exc, "raw_response", None)
+            attempt.update(
+                status=str(getattr(exc, "status", type(exc).__name__)),
+                reason=str(exc)[-1200:],
+                native_response_status=(raw.get("status") if isinstance(raw, dict)
+                                        else None),
+                paid_completed_elapsed_s=clock() - start,
+            )
+            raise
         completed_at = clock() - start
+        attempt.update(status="COMPLETED",
+                       paid_completed_elapsed_s=completed_at)
         score = -float(receipt["seconds_per_mob"])
         # A native call admitted just before a deadline can finish after it.
         # Only paid evaluations completed by the actual wall-clock boundary
@@ -266,6 +333,13 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "cold_300_reached": search["elapsed_s"] >= budget_s,
         "native_paid_screen_count": len(on_time_rows),
         "late_paid_screen_count": len(paid_rows) - len(on_time_rows),
+        "native_screen_attempt_count": len(screen_attempts),
+        "native_screen_unscored_count": sum(
+            attempt["status"] != "COMPLETED" for attempt in screen_attempts),
+        "native_screen_unscored_samples": [
+            attempt for attempt in screen_attempts
+            if attempt["status"] != "COMPLETED"
+        ][:8],
         "distinct_paid_candidates": len({
             row["candidate_sha256"] for row in on_time_rows}),
         "native_search": {k: v for k, v in search.items()

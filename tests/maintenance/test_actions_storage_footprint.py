@@ -133,3 +133,35 @@ def test_public_owner_total_includes_other_repositories(monkeypatch, capsys):
     assert "RETAINED_KNOWN_TWO_REPOS bytes=1024" in out
     assert "RETAINED_PUBLIC_OWNER_REPOS count=3 bytes=3072" in out
     assert "BILLING_METER=UNKNOWN" in out
+
+
+@pytest.mark.parametrize(("retained", "expected"), [
+    (0, 0),
+    (374_999_999, 0),
+    (375_000_000, 75),
+    (424_999_999, 75),
+    (425_000_000, 85),
+    (449_999_999, 85),
+    (450_000_000, 90),
+    (700_000_000, 90),
+])
+def test_nominal_retained_reference_levels_are_exact_not_billing(retained, expected):
+    assert module.retained_reference_level(retained) == expected
+
+
+def test_retained_reference_rejects_negative_bytes():
+    with pytest.raises(ValueError, match="negative"):
+        module.retained_reference_level(-1)
+
+
+def test_large_public_retained_footprint_warns_without_claiming_billing_clearance(monkeypatch, capsys):
+    monkeypatch.setattr(module, "github_owner_page", lambda _page: [
+        {"full_name": repo, "private": False} for repo in module.REPOSITORIES])
+    monkeypatch.setattr(module, "github_page", lambda _repo, _page: {
+        "total_count": 1, "artifacts": [{"id": 1, "size_in_bytes": 300_000_000}]})
+    assert module.main() == 0
+    output = capsys.readouterr().out
+    assert "RETAINED_REFERENCE_LEVEL=90" in output
+    assert "::warning::RETAINED_REFERENCE_90_PCT" in output
+    assert "BILLING_METER=UNKNOWN" in output
+    assert "RETAINED_PUBLIC_OWNER_REPOS count=2 bytes=600000000" in output
