@@ -138,10 +138,16 @@ def classify_native_chain(result: dict, requested_targets: int, *,
         if (not isinstance(damage, dict) or damage.get("observed") is not True
                 or type(damage.get("damage_taken")) not in (float, int)
                 or not isfinite(damage["damage_taken"])
-                or damage["damage_taken"] <= 0
+                or damage["damage_taken"] < 0
                 or type(damage.get("damage_events")) is not int
-                or damage["damage_events"] <= 0):
+                or damage["damage_events"] < 0
+                or (damage["damage_taken"] > 0) != (damage["damage_events"] > 0)):
             return "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False
+        if damage["damage_events"] == 0:
+            # Explicitly observed zero is a real native outcome, not a missing
+            # receipt. Keep the strict survival proof failed without discarding
+            # already ACKed paid Decisions/consumption evidence.
+            return "NO_NATIVE_INCOMING_PLAYER_DAMAGE", False
     return f"COMPLETED_{requested_targets}_REAL_NATIVE_GSIM_KILLS", True
 
 
@@ -281,6 +287,17 @@ def main() -> None:
                 native_consumption_proof_required=args.require_native_consumption,
                 native_consumption_proven=(consumption_complete and args.require_native_consumption),
                 native_health_damage=result.get("native_health_damage"),
+                # Transport the existing source-native per-mob attack receipt.
+                # A world damage-to-target event is not incoming player damage.
+                # This identifies zero/missing *individual* windows for the
+                # Rust owner without inventing Python attack mechanics.
+                native_incoming_player_damage_by_target=[
+                    {"index": window.get("index"),
+                     "native_kill_ns": window.get("native_kill_ns"),
+                     "damage_taken": window.get("native_health_damage_taken"),
+                     "damage_events": window.get("native_health_damage_events")}
+                    for window in result["native_windows"]
+                ],
                 native_health_damage_proven=(health_complete and args.require_native_health_damage),
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
