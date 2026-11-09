@@ -1008,13 +1008,13 @@ def test_paid_world_refusal_receipt_identifies_actual_hostile_target(
 
 
 @pytest.mark.parametrize("targets", [2, 100])
-def test_cold_paid_chain_requires_native_damage_only_for_full_hostile_finalist(
+def test_cold_paid_chain_scores_complete_zero_hit_route_without_extra_gate(
     tmp_path, monkeypatch, targets
 ):
-    """Zero incoming damage must not qualify a 100-mob cold finalist.
+    """Avoiding all player damage is not grounds to refuse a paid mob route.
 
-    Short native screens remain useful even if no enemy hit lands. The Rust
-    producer, rather than Python combat heuristics, owns the actual receipt.
+    The native world still owns whether 100 different kills, resources, and
+    paid recovery really completed. This test only checks Forever transport.
     """
     binary = tmp_path / "engine"
     binary.write_bytes(b"native Warlock engine")
@@ -1024,11 +1024,10 @@ def test_cold_paid_chain_requires_native_damage_only_for_full_hostile_finalist(
 
     def native_runner(command, **_kwargs):
         submitted.append(command)
-        assert ("--require-native-health-damage" in command) is (targets == 100)
+        assert "--require-native-health-damage" not in command
         source_path = Path(command[command.index("--source") + 1])
         out = Path(command[command.index("--out") + 1])
         out.mkdir(parents=True, exist_ok=True)
-        zero_hit_long_run = targets == 100
         row = {
             "target_count_requested": targets,
             "original_source_sha256": cold.hashlib.sha256(
@@ -1038,29 +1037,22 @@ def test_cold_paid_chain_requires_native_damage_only_for_full_hostile_finalist(
             "recovery_request": {"recovery_policy": "decisions",
                                  "health_threshold": 0.5,
                                  "mana_threshold": 0.1},
-            "status": ("NO_NATIVE_INCOMING_PLAYER_DAMAGE" if zero_hit_long_run
-                       else "COMPLETED_2_REAL_NATIVE_GSIM_KILLS"),
+            "status": f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS",
             "native_actor_continuity_receipt_complete": True,
             "native_recovery_clock_accounted": True,
             "native_recovery_mode": "decisions_food_water",
-            "native_2d_paid_objective_eligible": False,
-            "seconds_per_mob": None if zero_hit_long_run else 12.0,
+            "native_2d_paid_objective_eligible": targets == 100,
+            "seconds_per_mob": 12.0,
             "native_health_damage": {"observed": True, "damage_taken": 0.0,
                                      "damage_events": 0},
         }
         (out / "summary.json").write_text(json.dumps({"results": [row]}))
-        return SimpleNamespace(returncode=1 if zero_hit_long_run else 0,
-                               stdout="", stderr="")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(cold.subprocess, "run", native_runner)
-    if targets == 100:
-        with pytest.raises(cold.NativeUnscoredCandidate,
-                           match="NO_NATIVE_INCOMING_PLAYER_DAMAGE") as exc:
-            cold.paid_chain(binary, candidate, tmp_path / "attempt",
-                            targets=targets, timeout=30.0)
-        assert exc.value.raw_response["native_health_damage"]["damage_events"] == 0
-    else:
-        receipt = cold.paid_chain(binary, candidate, tmp_path / "attempt",
-                                  targets=targets, timeout=30.0)
-        assert receipt["seconds_per_mob"] == 12.0
+    receipt = cold.paid_chain(binary, candidate, tmp_path / "attempt",
+                              targets=targets, timeout=30.0)
+    assert receipt["seconds_per_mob"] == 12.0
+    assert receipt["native_health_damage"]["damage_events"] == 0
+    assert receipt["native_2d_paid_objective_eligible"] is (targets == 100)
     assert len(submitted) == 1
