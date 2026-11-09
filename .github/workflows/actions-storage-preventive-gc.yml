@@ -251,8 +251,15 @@ jobs:
               # Only a complete, stable post-DELETE inventory can certify
               # absence. Retry stale views AND transient pagination churn;
               # pre-DELETE inventory/pin/provenance checks remain fail-closed.
+              # A stable listing alone cannot prove deletion: require the
+              # direct artifact endpoint to converge to 404 as well.
+              def deleted_artifact_get_status(artifact_id):
+                  status, _ = request(f"artifacts/{artifact_id}")
+                  return status
+
               after_artifacts = verify_deleted_artifacts_absent(
-                  deleted, list_artifacts, attempts=12, delay_seconds=5)
+                  deleted, list_artifacts, attempts=12, delay_seconds=5,
+                  fetch_deleted_status=deleted_artifact_get_status)
               after = sum(int(a["size_in_bytes"]) for a in after_artifacts)
               print(f"AFTER count={len(after_artifacts)} bytes={after} MiB={after/1048576:.2f}")
               print(f"VERIFIED_DELETIONS count={len(deleted)} reclaimed_MiB={(total-after)/1048576:.2f}")
