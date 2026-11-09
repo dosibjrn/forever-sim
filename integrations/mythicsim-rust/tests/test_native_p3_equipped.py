@@ -367,6 +367,73 @@ def test_native_p3_uses_second_rust_option_after_first_refusal():
     assert receipt["native_slot_evaluations"][0]["reason"] == "native rating unavailable"
 
 
+def test_native_p3_third_native_candidate_after_two_source_refusals():
+    """Two refused L20 chest swaps must not hide a third Rust-supplied item."""
+    paid = []
+
+    def scorer(_binary, request, _iterations, _seed, mode, _deadline, **_kwargs):
+        assert mode == "balanced"
+        item = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][4]["id"]
+        paid.append(item)
+        if item in (512, 513):
+            raise NativeCandidateRefusal(
+                "UNSUPPORTED", reason="native L20 rating conversion unavailable",
+                request_sha256=f"native-refused-{item}", raw_response={})
+        return (115.0 if item == 514 else 100.0), {}, 0.01, f"native-paid-{item}"
+
+    receipt = compare_equipped_native(
+        "native", _reference(), {"chest": {"selected_ids": [104, 512, 513, 514]}},
+        evaluator=scorer, preparer=_prepared_actor, max_paid_attempts=4)
+    assert paid == [104, 512, 513, 514]
+    assert receipt["paid_attempts"] == 4
+    assert [row["status"] for row in receipt["native_slot_evaluations"]] == [
+        "UNSUPPORTED", "UNSUPPORTED", "VALID"]
+    assert receipt["native_slots_verified"] == 1
+    assert receipt["native_slots_unscored"] == []
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["comparison"]["delta_dps"] == 15.0
+    assert receipt["swap"]["to_id"] == 514
+
+
+def test_native_p3_third_candidate_not_paid_after_finite_equal_slot_scores():
+    """Native equal scores are real; do not pay for an unnecessary fallback."""
+    paid = []
+
+    def scorer(_binary, request, _iterations, _seed, _mode, _deadline, **_kwargs):
+        item = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][4]["id"]
+        paid.append(item)
+        return 100.0, {}, 0.01, f"native-paid-{item}"
+
+    receipt = compare_equipped_native(
+        "native", _reference(), {"chest": {"selected_ids": [512, 513, 514]}},
+        evaluator=scorer, preparer=_prepared_actor, max_paid_attempts=4)
+    assert paid == [104, 512, 513]
+    assert receipt["paid_attempts"] == 3
+    assert receipt["native_slots_verified"] == 1
+    assert receipt["status"] == "PAID_NATIVE_EQUAL"
+
+
+def test_native_p3_third_candidate_still_obeys_shared_paid_cap():
+    """A true native refusal remains visible when the shared budget runs out."""
+    paid = []
+
+    def scorer(_binary, request, _iterations, _seed, _mode, _deadline, **_kwargs):
+        item = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][4]["id"]
+        paid.append(item)
+        if item != 104:
+            raise NativeCandidateRefusal(
+                "UNSUPPORTED", reason="native refuses", request_sha256="refused")
+        return 100.0, {}, 0.01, "baseline"
+
+    receipt = compare_equipped_native(
+        "native", _reference(), {"chest": {"selected_ids": [512, 513, 514]}},
+        evaluator=scorer, preparer=_prepared_actor, max_paid_attempts=3)
+    assert paid == [104, 512, 513]
+    assert receipt["paid_attempts"] == 3
+    assert receipt["native_slots_unscored"] == ["chest"]
+    assert receipt["status"] == "PAID_NATIVE_REFUSAL"
+
+
 def test_native_p3_refusal_does_not_bypass_attempt_cap():
     def scorer(binary, request, iterations, seed, rng_mode, deadline, **kwargs):
         item = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][4]["id"]
