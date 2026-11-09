@@ -170,6 +170,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     deadline = start + budget_s
     early = None
     paid_rows = []
+    screen_attempts = []
     def evaluate(candidate: dict, *, iterations: int, seed: int,
                  rng_mode: str) -> float:
         nonlocal early
@@ -177,11 +178,37 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         # scoring is an independent native/world 2-target run, not native DPS.
         if rng_mode != "balanced":
             raise ValueError("BALANCED_NATIVE_SCREEN_REQUIRED")
-        index = len(paid_rows)
+        # Count *all* attempted native calls, including rejected builds. Using
+        # len(paid_rows) would reuse an old screen directory after a refusal:
+        # the next subprocess could overwrite the failed request or consume
+        # its leftover world/summary.json as though it were a fresh receipt.
+        index = len(screen_attempts)
         path = out / "screens" / f"{index:05d}"
-        receipt = chain(binary, candidate, path, targets=2,
-                        timeout=max(0.05, deadline - clock()))
+        attempt = {
+            "candidate_sha256": identity(candidate),
+            "native_receipt_path": str((path / "world" / "summary.json").relative_to(out)),
+            "status": "IN_PROGRESS",
+        }
+        screen_attempts.append(attempt)
+        try:
+            receipt = chain(binary, candidate, path, targets=2,
+                            timeout=max(0.05, deadline - clock()))
+        except Exception as exc:
+            # The generic native kernel still judges refusals, timeout and
+            # errors. Preserve actual attempted request/receipt locations
+            # without making an unscored native result eligible for P4/P5.
+            raw = getattr(exc, "raw_response", None)
+            attempt.update(
+                status=str(getattr(exc, "status", type(exc).__name__)),
+                reason=str(exc)[-1200:],
+                native_response_status=(raw.get("status") if isinstance(raw, dict)
+                                        else None),
+                paid_completed_elapsed_s=clock() - start,
+            )
+            raise
         completed_at = clock() - start
+        attempt.update(status="COMPLETED",
+                       paid_completed_elapsed_s=completed_at)
         score = -float(receipt["seconds_per_mob"])
         # A native call admitted just before a deadline can finish after it.
         # Only paid evaluations completed by the actual wall-clock boundary
@@ -266,6 +293,13 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "cold_300_reached": search["elapsed_s"] >= budget_s,
         "native_paid_screen_count": len(on_time_rows),
         "late_paid_screen_count": len(paid_rows) - len(on_time_rows),
+        "native_screen_attempt_count": len(screen_attempts),
+        "native_screen_unscored_count": sum(
+            attempt["status"] != "COMPLETED" for attempt in screen_attempts),
+        "native_screen_unscored_samples": [
+            attempt for attempt in screen_attempts
+            if attempt["status"] != "COMPLETED"
+        ][:8],
         "distinct_paid_candidates": len({
             row["candidate_sha256"] for row in on_time_rows}),
         "native_search": {k: v for k, v in search.items()

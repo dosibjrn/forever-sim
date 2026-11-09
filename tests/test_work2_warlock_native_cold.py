@@ -358,3 +358,68 @@ def test_two_target_diagnostic_late_completion_is_measured_not_backdated(tmp_pat
     assert result["elapsed_wall_s"] == 32.0
     assert result["completed_by_30s"] is False
 
+
+
+
+def test_native_refusal_preserves_its_screen_directory_and_next_paid_receipt(
+    tmp_path, monkeypatch
+):
+    """An unscored source proposal cannot contaminate the next paid screen."""
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native engine")
+    now = [0.0]
+    refused = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    completed = copy.deepcopy(refused)
+    cold.actor(completed["source"])["talentsString"] = "101-0-0"
+    screens = []
+
+    def native_paid(_binary, candidate, out, *, targets, timeout):
+        if targets == 2:
+            screens.append(out)
+            if candidate == refused:
+                (out / "world").mkdir(parents=True)
+                (out / "world" / "summary.json").write_text(
+                    json.dumps({"results": [{"status": "NATIVE_REFUSAL"}]}))
+                raise cold.NativeUnscoredCandidate(
+                    "Rust refused this candidate",
+                    raw_response={"status": "NATIVE_REFUSAL"})
+            # The previously refused native receipt must never be reused.
+            assert not (out / "world" / "summary.json").exists()
+        return {"seconds_per_mob": 9.0}
+
+    def search(**kwargs):
+        now[0] = 5.0
+        with pytest.raises(cold.NativeUnscoredCandidate):
+            kwargs["evaluate"](refused, iterations=1, seed=3,
+                               rng_mode="balanced")
+        now[0] = 15.0
+        kwargs["evaluate"](completed, iterations=1, seed=3,
+                           rng_mode="balanced")
+        now[0] = 300.0
+        return {"status": "RAN", "best_candidate": completed,
+                "best_score": -9.0, "elapsed_s": 300.0,
+                "paid_candidates": 1, "unscored_candidates": 1}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [],
+        "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=native_paid)
+    assert screens == [tmp_path / "cold/screens/00000",
+                       tmp_path / "cold/screens/00001"]
+    assert json.loads((screens[0] / "world/summary.json").read_text())[
+        "results"][0]["status"] == "NATIVE_REFUSAL"
+    assert result["native_screen_attempt_count"] == 2
+    assert result["native_screen_unscored_count"] == 1
+    failure = result["native_screen_unscored_samples"][0]
+    assert failure["candidate_sha256"] == cold.identity(refused)
+    assert failure["native_receipt_path"] == "screens/00000/world/summary.json"
+    assert failure["native_response_status"] == "NATIVE_REFUSAL"
+    assert result["native_paid_screen_count"] == 1
+    assert result["snapshot_30"]["candidate_sha256"] == cold.identity(completed)
+    assert result["finalists"]["30s"]["status"] == (
+        "COMPLETED_100_REAL_NATIVE_GSIM_KILLS")
+    assert result["p4_p5_p6_pass"] is False
