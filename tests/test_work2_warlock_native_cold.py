@@ -798,3 +798,70 @@ def test_hundred_target_baseline_cli_bypasses_cold_native_options(
     cold.main()
     assert called == [(binary, tmp_path / "baseline", 900.0, 0.7, 0.25)]
     assert "WARLOCK_NATIVE_HUNDRED_TARGET_PAID_BASELINE" in capsys.readouterr().out
+
+def test_cold_finalist_partial_native_refusal_keeps_real_100_target_evidence(
+    tmp_path, monkeypatch
+):
+    """An incomplete hostile replay stays unscored but remains diagnosable."""
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"exact native engine")
+    now = [0.0]
+    first = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    second = copy.deepcopy(first)
+    cold.actor(second["source"])["talentsString"] = "101-0-0"
+    refused_receipt = {
+        "status": "INCOMPLETE_OR_NATIVE_REFUSAL",
+        "target_count_requested": 100,
+        "killed": 43,
+        "native_recovery_clock_accounted": True,
+        "native_recovery_seconds": 74.0,
+        "native_health_damage_proven": True,
+    }
+    calls = []
+
+    def native_paid(_binary, candidate, out, *, targets, timeout):
+        calls.append((targets, cold.identity(candidate)))
+        if targets == 2:
+            return {"seconds_per_mob": 12.0 if candidate == first else 8.0}
+        if candidate == first:
+            (out / "world").mkdir(parents=True, exist_ok=True)
+            (out / "world" / "summary.json").write_text(
+                json.dumps({"results": [refused_receipt]}))
+            raise cold.NativeUnscoredCandidate(
+                "native chain stopped after 43/100 ACKs",
+                raw_response=copy.deepcopy(refused_receipt))
+        return {"seconds_per_mob": 9.0, "world_targets_killed": 100}
+
+    def search(**kwargs):
+        now[0] = 10.0
+        kwargs["evaluate"](first, iterations=1, seed=4, rng_mode="balanced")
+        now[0] = 90.0
+        kwargs["evaluate"](second, iterations=1, seed=4, rng_mode="balanced")
+        now[0] = 300.0
+        return {"status": "RAN", "best_candidate": second,
+                "best_score": -8.0, "elapsed_s": 300.0, "paid_candidates": 2}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [],
+        "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=native_paid)
+    assert [count for count, _ in calls] == [2, 2, 100, 100]
+    rejected = result["finalists"]["30s"]
+    assert rejected["status"] == "INCOMPLETE_100_NATIVE_FINALIST"
+    assert rejected["native_response_status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
+    assert rejected["native_receipt"] == refused_receipt
+    assert rejected["native_receipt"]["killed"] == 43
+    assert rejected["native_receipt_path"] == (
+        "finalists/" + cold.identity(first) + "/world/summary.json")
+    assert "seconds_per_mob" not in rejected
+    assert result["finalists"]["300s"]["seconds_per_mob"] == 9.0
+    assert result["p6_comparison"] is None
+    assert result["gate_recorded"] is False
+    assert result["p4_p5_p6_pass"] is False
+    persisted = json.loads((tmp_path / "cold/cold_summary.json").read_text())
+    assert persisted["finalists"]["30s"]["native_receipt"] == refused_receipt
+    assert persisted["p6_comparison"] is None
