@@ -111,7 +111,7 @@ jobs:
           # Protect accepted M1 URLs as well as prose references.
           # Missing local evidence must fail closed before any deletion.
           from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
-                                                   completed_run_candidates, record_references)
+                                                   completed_run_candidates, record_references, protects_open_pr_artifact)
           pinned_runs, pinned_artifacts = collect_local_references(pathlib.Path("."))
 
           def gh_collection(endpoint):
@@ -181,14 +181,12 @@ jobs:
                            if p.get("state") == "open"
                            and p.get("head", {}).get("repo", {}).get("full_name") == repo}
           keep_recent = {int(a["id"]) for a in stage5[:5]}
-          # Protect newest two outputs on every still-open PR branch.
-          active_branch_counts = {}
+          # Do not delete ANY receipt from an unmerged PR branch. Two newest
+          # were insufficient: older paid/failing runs may be the only
+          # unmerged evidence. Ambiguous origin-branch metadata also stays.
           for a in stage5:
-              run = a.get("workflow_run")
-              branch = run.get("head_branch") if isinstance(run, dict) else None
-              if branch in open_branches and active_branch_counts.get(branch, 0) < 2:
+              if protects_open_pr_artifact(a, open_branches):
                   keep_recent.add(int(a["id"]))
-                  active_branch_counts[branch] = active_branch_counts.get(branch, 0) + 1
           candidates = []
           protected = {"newest-or-active-head": 0, "project-or-issue-linked": 0,
                        "unknown-run-provenance": 0, "younger-than-72h": 0}
