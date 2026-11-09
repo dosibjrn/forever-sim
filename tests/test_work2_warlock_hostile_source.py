@@ -127,3 +127,62 @@ def test_cold_native_candidate_requests_real_hostile_source(
         cold.paid_chain(binary, candidate, tmp_path / "attempt",
                         targets=targets, timeout=15)
     assert len(commands) == 1
+
+
+@pytest.mark.parametrize("targets", [2, 100])
+@pytest.mark.parametrize("hostile_requested,enemy_prepared,eligible", [
+    (False, True, False),
+    (True, False, False),
+    (True, True, True),
+])
+def test_cold_scorer_requires_actual_hostile_native_receipt(
+    tmp_path, monkeypatch, targets, hostile_requested, enemy_prepared, eligible
+):
+    """A completed-looking stationary receipt cannot become a cold winner.
+
+    The native prepared enemy is authoritative. Zero actual player hits remain
+    an eligible native result when both hostile transport flags are true.
+    """
+    import hashlib
+    from native_matrix import NativeUnscoredCandidate
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"pinned-native-engine")
+    candidate = {
+        "source": _request(),
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+
+    def paid_native(command, **_kwargs):
+        assert "--hostile-player-tank" in command
+        source = tmp_path / "attempt" / "candidate.request.json"
+        summary = tmp_path / "attempt" / "world" / "summary.json"
+        summary.parent.mkdir(parents=True, exist_ok=True)
+        summary.write_text(json.dumps({"results": [{
+            "original_source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "native_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+            "recovery_request": {"recovery_policy": "decisions",
+                                 **candidate["recovery"]},
+            "target_count_requested": targets,
+            "status": f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS",
+            "hostile_player_tank_requested": hostile_requested,
+            "native_enemy_attack_prepared": enemy_prepared,
+            "native_actor_continuity_receipt_complete": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "native_2d_paid_objective_eligible": targets == 100,
+            "seconds_per_mob": 13.2,
+            "native_health_damage": {"damage_events": 0, "damage_taken": 0},
+        }]}))
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(cold.subprocess, "run", paid_native)
+    if eligible:
+        receipt = cold.paid_chain(
+            binary, candidate, tmp_path / "attempt", targets=targets, timeout=20)
+        assert receipt["seconds_per_mob"] == 13.2
+    else:
+        with pytest.raises(NativeUnscoredCandidate, match="incomplete/refused"):
+            cold.paid_chain(
+                binary, candidate, tmp_path / "attempt",
+                targets=targets, timeout=20)
