@@ -49,6 +49,35 @@ def options():
     }
 
 
+
+def test_native_spell_candidates_can_replace_or_stand_alone_in_apl(monkeypatch):
+    """Search may replace the saved filler; only Rust judges executable casts."""
+    reference = source()
+    original = copy.deepcopy(reference)
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([{"talents": "110-0-0"}]))
+    domain = cold.native_candidate_domain(reference, options(), seed=11)
+    original_apl = cold.actor(reference)["rotation"]["priorityList"]
+    native_spell = {"action": {"castSpell": {"spellId": {"spellId": 999}}}}
+    assert [native_spell] in domain["apl"]
+    assert [native_spell, original_apl[1]] in domain["apl"]
+    assert [original_apl[0], native_spell] in domain["apl"]
+    assert [native_spell, *original_apl] in domain["apl"]
+    assert reference == original  # proposal generation never mutates saved build
+
+    # The existing generic search factory can actually select the new APL.
+    only_apl = {"gear": {}, "talents": ["110-0-0"],
+                "apl": [[native_spell]], "recovery": [(0.5, 0.1)]}
+    propose, _mutate = cold.candidate_factory(reference, only_apl)
+    assert any(
+        cold.actor(propose(random.Random(seed))["source"])["rotation"][
+            "priorityList"] == [native_spell]
+        for seed in range(20)
+    )
+
+
+
 def test_unverified_items_enter_cold_native_candidate_proposals():
     requests = native_equipment_proposals(options(), cold.actor(source())[
         "equipment"]["items"])
