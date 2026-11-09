@@ -72,8 +72,15 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                        for x in apl_variants}.values())
     unique_actions = list({json.dumps(x, sort_keys=True): x
                            for x in native_actions}.values())
+    # The native Warlock options endpoint supplies the exact proto enum numbers.
+    # These are proposals only: native prepare/combat alone accepts or refuses
+    # a summon for the actual level, build and encounter.
+    pets = list(dict.fromkeys(
+        row["proto_enum_value"] for row in options.get("pets", [])
+        if isinstance(row, dict) and type(row.get("proto_enum_value")) is int
+    ))
     return {"gear": gear, "talents": talents or [player.get("talentsString", "0-0-0")],
-            "apl": unique_apl, "apl_actions": unique_actions,
+            "apl": unique_apl, "apl_actions": unique_actions, "pets": pets,
             # These are recovery *policy proposals*, not Python regen mechanics.
             "recovery": [(0.35, 0.10), (0.50, 0.10),
                          (0.50, 0.25), (0.70, 0.25)]}
@@ -86,9 +93,12 @@ def candidate_factory(reference: dict, domain: dict):
                  "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}
                  } if cold else copy.deepcopy(candidate)
         axes = ("gear", "talents", "apl", "recovery")
+        if domain.get("pets"):
+            axes += ("pet",)
         # A cold proposal changes multiple axes; subsequent mutation explores
         # both local and joint moves using the generic search scheduler.
-        selected = rng.sample(axes, rng.randint(2, 4) if cold else rng.randint(1, 3))
+        selected = rng.sample(axes, rng.randint(2, len(axes)) if cold
+                              else rng.randint(1, min(3, len(axes))))
         player = actor(value["source"])
         for axis in selected:
             if axis == "gear" and domain["gear"]:
@@ -129,6 +139,11 @@ def candidate_factory(reference: dict, domain: dict):
                 else:
                     player["rotation"]["priorityList"] = copy.deepcopy(
                         rng.choice(domain["apl"]))
+            elif axis == "pet":
+                # Request shape is the existing native protojson WarlockOptions
+                # classOptions.summon field, not a Python demon model.
+                player.setdefault("warlock", {}).setdefault("options", {}).setdefault(
+                    "classOptions", {})["summon"] = rng.choice(domain["pets"])
             elif axis == "recovery":
                 hp, mana = rng.choice(domain["recovery"])
                 value["recovery"] = {"health_threshold": hp, "mana_threshold": mana}
@@ -159,9 +174,13 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
         "--health-threshold", str(policy["health_threshold"]),
         "--mana-threshold", str(policy["mana_threshold"]),
     ]
+    # A retry in the same output directory must consume a receipt produced
+    # by THIS subprocess. Otherwise an earlier successful native run can be
+    # silently reused when the new invocation exits without writing a file.
+    summary_path = out / "world" / "summary.json"
+    summary_path.unlink(missing_ok=True)
     process = subprocess.run(command, capture_output=True, text=True,
                              timeout=timeout, check=False, cwd=ROOT)
-    summary_path = out / "world" / "summary.json"
     if not summary_path.exists():
         raise RuntimeError("Native paid runner did not emit a structured receipt: " +
                            (process.stderr or process.stdout)[-800:])
@@ -171,6 +190,20 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
             or not isinstance(rows[0], dict)):
         raise RuntimeError("Native paid runner returned an invalid summary")
     receipt = rows[0]
+    # The native 100-mob tool writes these exact input and engine fingerprints.
+    # Refuse cross-run/cross-build receipts even if their scalar score and
+    # target count look plausible. Rust remains the gameplay authority.
+    expected_provenance = {
+        "original_source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "native_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "recovery_request": {"recovery_policy": "decisions", **policy},
+    }
+    if any(receipt.get(key) != value for key, value in
+           expected_provenance.items()):
+        raise NativeUnscoredCandidate(
+            "Native world receipt provenance does not match current request, "
+            "engine or paid recovery policy",
+            raw_response=receipt, request_sha256=identity(candidate))
     if (receipt.get("target_count_requested") != targets
             or receipt.get("status") != f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
             or receipt.get("native_actor_continuity_receipt_complete") is not True
