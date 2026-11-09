@@ -443,26 +443,11 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
-def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
-        target_count: int = 2, corrupt_ack: bool = False,
-        require_native_moving: bool = False,
-        classic_mob_level: int | None = None,
-        require_native_health_damage: bool = False,
-        require_native_zero_health_damage: bool = False,
-        rng_mode: str = "stochastic",
-        recovery_policy: str | None = None,
-        recovery_seconds: int | None = None,
-        health_threshold: float = 0.5,
-        mana_threshold: float = 0.1) -> dict:
-    """Execute N world kills; retain one Rust process, actor and ACK lineage.
-
-    No policy means the existing native default. Explicit fixed/Decisions
-    requests use only the Rust CLI; Python never grants resource recovery.
-    """
-    if rng_mode not in ("balanced", "stochastic"):
-        raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
-    if require_native_health_damage and require_native_zero_health_damage:
-        raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
+def _native_recovery_cli_args(recovery_policy: str | None,
+                              recovery_seconds: int | None,
+                              health_threshold: float,
+                              mana_threshold: float) -> tuple[str | None, list[str]]:
+    """Serialize the documented Rust recovery CLI; no Python game recovery."""
     requested_mode = recovery_policy or ("fixed" if recovery_seconds is not None else None)
     if requested_mode not in (None, "fixed", "decisions"):
         raise ValueError("RUST_WORLD_RECOVERY_POLICY_INVALID")
@@ -484,6 +469,32 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "--health-threshold", str(health_threshold),
             "--mana-threshold", str(mana_threshold),
         ]
+    return requested_mode, native_recovery_args
+
+
+def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
+        target_count: int = 2, corrupt_ack: bool = False,
+        require_native_moving: bool = False,
+        classic_mob_level: int | None = None,
+        require_native_health_damage: bool = False,
+        require_native_zero_health_damage: bool = False,
+        rng_mode: str = "stochastic",
+        recovery_policy: str | None = None,
+        recovery_seconds: int | None = None,
+        health_threshold: float = 0.5,
+        mana_threshold: float = 0.1) -> dict:
+    """Execute N world kills; retain one Rust process, actor and ACK lineage.
+
+    No policy means the existing native default. Explicit fixed/Decisions
+    requests use only the Rust CLI; Python never grants resource recovery.
+    """
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
+    if require_native_health_damage and require_native_zero_health_damage:
+        raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
+    requested_mode, native_recovery_args = _native_recovery_cli_args(
+        recovery_policy, recovery_seconds, health_threshold, mana_threshold)
+    seconds = 12 if recovery_seconds is None else recovery_seconds
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
