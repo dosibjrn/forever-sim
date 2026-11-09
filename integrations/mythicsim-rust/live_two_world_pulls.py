@@ -685,14 +685,16 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         recovery = _native_paid_recovery_receipts(result["windows"], kills)
         food_water = _native_food_water_receipts(
             result["windows"], required=requested_mode == "decisions")
-        if requested_mode is not None:
-            expected_mode = ("fixed_passive" if requested_mode == "fixed"
-                             else "decisions_food_water")
-            if result.get("recovery_mode") != expected_mode:
+        if requested_mode == "fixed":
+            # The earlier pinned fixed-duration Rust bridge did not yet emit
+            # recovery_mode, but it DID echo the exact applied duration.
+            if result.get("recovery_mode") not in (None, "fixed_passive"):
                 raise AssertionError("RUST_WORLD_NATIVE_RECOVERY_POLICY_NOT_APPLIED")
-            if (requested_mode == "fixed"
-                    and result.get("recovery_seconds_per_gap") != seconds):
+            if result.get("recovery_seconds_per_gap") != seconds:
                 raise AssertionError("RUST_WORLD_NATIVE_RECOVERY_DURATION_NOT_APPLIED")
+        elif requested_mode == "decisions":
+            if result.get("recovery_mode") != "decisions_food_water":
+                raise AssertionError("RUST_WORLD_NATIVE_RECOVERY_POLICY_NOT_APPLIED")
         if result["paid_recovery"] is not recovery["paid_recovery"]:
             raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
         native_health_damage = _native_health_damage_summary(
