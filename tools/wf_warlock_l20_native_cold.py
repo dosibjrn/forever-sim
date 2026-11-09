@@ -56,6 +56,22 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                              if isinstance(row, dict)
                              and type(row.get("item_id")) is int}.values())
                        if not items else [])
+    # A cold, unequipped actor has no replacement positions and the old
+    # sampler added at most ONE item. The genuine P4/P5 native run then spent
+    # 289 attempts on nonlethal 2-mob requests (Actions #42659843410).
+    # Build multi-slot proposals solely from slots explicitly returned by
+    # Rust get_options(); never infer slots for unverified items or decide
+    # equip legality in Python. Rust prepare remains the only judge.
+    gear_native_slots = {}
+    if not items:
+        for row in options["items"]:
+            native = row.get("native") if isinstance(row, dict) else None
+            if (row.get("eligibility") == "native_eligible"
+                    and isinstance(native, dict)
+                    and isinstance(native.get("slot"), str)
+                    and type(row.get("item_id")) is int):
+                gear_native_slots.setdefault(native["slot"], []).append(
+                    {"id": row["item_id"]})
     source_talents = player.get("talentsString", "0-0-0")
     # The frozen request is already submitted first as a real paid baseline.
     # Do not advertise it again as a native talent mutation when Rust supplied
@@ -112,6 +128,7 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
         if isinstance(row, dict) and type(row.get("proto_enum_value")) is int
     ))
     return {"gear": gear, "gear_insertions": gear_insertions,
+            "gear_native_slots": gear_native_slots,
             "talents": talents,
             "apl": unique_apl, "apl_actions": unique_actions, "pets": pets,
             # These are recovery *policy proposals*, not Python regen mechanics.
@@ -152,7 +169,21 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
                 # Source-native empty gear has no replacement positions. An
                 # insertion can be recombined with a later insertion/replace
                 # without constructing a Python equipment legality catalogue.
-                if insertions and (not equipped or rng.random() < 0.6):
+                native_slots = domain.get("gear_native_slots") or {}
+                if cold and not equipped and native_slots:
+                    # A full source-returned slot proposal can reach a
+                    # survivable 2-mob score from a neutral actor; single
+                    # item insertion could not. This is exploratory candidate
+                    # construction, not Python equipment validation.
+                    for alternatives in native_slots.values():
+                        equipped.append(copy.deepcopy(rng.choice(alternatives)))
+                elif cold and not equipped and len(insertions) >= 4:
+                    # When Rust has not verified any slots, keep its
+                    # unverified item IDs as proposals rather than dropping
+                    # them. Native will accept/refuse the combined equipment.
+                    equipped.extend(copy.deepcopy(entry) for entry in
+                                    rng.sample(insertions, min(8, len(insertions))))
+                elif insertions and (not equipped or rng.random() < 0.6):
                     equipped.append(copy.deepcopy(rng.choice(insertions)))
                 elif insertions:
                     equipped[rng.randrange(len(equipped))] = copy.deepcopy(
