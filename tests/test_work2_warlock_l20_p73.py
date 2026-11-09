@@ -103,6 +103,7 @@ def test_p73_pays_changed_native_talent_with_gear_apl_encounter_fixed(
     assert result["cold_unique_source_requests"] == 1
     assert result["source_original_talents"] == "0-0-0"
     assert result["cold_winner_talents"] == "1-0-0"
+    assert result["cold_winner_request"] == paid[0]
     assert queried == [(binary, "warlock", 20)]
     assert len(paid) == 1
     changed = paid[0]
@@ -156,3 +157,39 @@ def test_p73_rejects_missing_source_options_before_paid_score(
     assert result["status"] == "BLOCKED"
     assert result["reasons"] == ["P7_3_NATIVE_TALENT_OPTIONS_UNAVAILABLE"]
     assert "Rust get_options" in result["native_options_error"]
+
+
+def test_public_p73_receipt_keeps_complete_native_paid_candidate(
+        monkeypatch, capsys):
+    from tools import wf_gate
+    paid = _base()
+    paid["raid"]["parties"][0]["players"][0]["talentsString"] = "1-0-0"
+    report = {
+        "status": "PASS", "reasons": [],
+        "runtime_proof": {"executed": True, "engine_revision": "selected-rust",
+                          "source_revision": "paid-native-candidate",
+                          "run_id": "p73-paid-1"},
+        "production_engine": "pinned_mythicsim_rust_native",
+        "native_source_revision": "selected-rust",
+        "source_request_raw_sha256": "authentic-reference",
+        "cold_winner_request_sha256": "paid-native-candidate",
+        "source_legal_cold_candidates_paid": 1,
+        "winner_native_dps": 28.0,
+        "source_original_talents": "0-0-0",
+        "cold_winner_talents": "1-0-0",
+        "fixed_rotation_and_gear": True,
+        "cold_winner_request": paid,
+        "native_rules": "forever",
+        "reference_profile": "unrestricted",
+        "checkpoint_spec": "unrestricted",
+    }
+    monkeypatch.setattr(wf_gate, "_run_live_gate", lambda *args: report)
+    assert wf_gate.main(["--class", "warlock", "--level", "20",
+                         "--spec", "unrestricted", "--gate", "P7.3"]) == 0
+    row = json.loads(capsys.readouterr().out)["results"][0]
+    assert row["status"] == "PASS"  # mock transport, NOT official M1
+    assert row["cold_winner_request"] == paid
+    assert row["cold_winner_talents"] == "1-0-0"
+    assert row["winner_native_dps"] == 28.0
+    assert row["native_rules"] == "forever"
+    assert row["fixed_rotation_and_gear"] is True
