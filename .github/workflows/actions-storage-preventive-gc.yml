@@ -92,20 +92,10 @@ jobs:
           print(f"BEFORE count={len(all_artifacts)} bytes={total} MiB={total/1048576:.2f}")
           print(f"STAGE5 count={len(stage5)} bytes={stage5_bytes} MiB={stage5_bytes/1048576:.2f}")
 
-          pinned_runs = set()
-          pinned_artifacts = set()
-          for folder in ("docs", "evidence"):
-              for file in pathlib.Path(folder).rglob("*.md"):
-                  try:
-                      body = file.read_text(errors="replace")
-                      pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", body)))
-                      pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\d+)", body)))
-                  except OSError:
-                      pass
-          for file in ("OVERALL_PLAN.md", "PROCESS.md", "README.md"):
-              body = pathlib.Path(file).read_text(errors="replace")
-              pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", body)))
-              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\d+)", body)))
+          # Protect accepted M1 URLs as well as prose references.
+          # Missing local evidence must fail closed before any deletion.
+          from tools.actions_artifact_pins import collect_local_references, record_references
+          pinned_runs, pinned_artifacts = collect_local_references(pathlib.Path("."))
 
           def gh_collection(endpoint):
               entries = []
@@ -120,13 +110,14 @@ jobs:
                       return entries
               raise RuntimeError(f"Too many pages of {endpoint}")
 
-          # Protect issue/PR-referenced run artifacts; do not treat a closed
-          # PR as proof its exact native evidence is disposable.
-          issues = gh_collection("issues?state=all")
-          for issue in issues:
-              body = issue.get("body") or ""
-              pinned_runs.update(map(int, re.findall(r"actions/runs/(\d+)", body)))
-              pinned_artifacts.update(map(int, re.findall(r"/artifacts/(\d+)", body)))
+          # Protect links in issue/PR bodies, conversation comments and
+          # inline PR reviews; exhaust API pagination before deleting.
+          for issue in gh_collection("issues?state=all"):
+              record_references(issue.get("body"), pinned_runs, pinned_artifacts)
+          for endpoint in ("issues/comments?sort=created&direction=desc",
+                           "pulls/comments?sort=created&direction=desc"):
+              for comment in gh_collection(endpoint):
+                  record_references(comment.get("body"), pinned_runs, pinned_artifacts)
           open_prs = gh_collection("pulls?state=open")
           open_branches = {p["head"]["ref"] for p in open_prs
                            if p.get("head", {}).get("repo", {}).get("full_name") == repo}
