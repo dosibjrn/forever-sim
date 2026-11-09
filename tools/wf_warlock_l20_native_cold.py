@@ -327,10 +327,26 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
                 result = {"status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
                           "seconds_per_mob": receipt["seconds_per_mob"],
                           "native_receipt": receipt}
-            except (NativeUnscoredCandidate, RuntimeError,
-                    subprocess.TimeoutExpired, ValueError) as exc:
+            except NativeUnscoredCandidate as exc:
+                # A paid native chain can ACK some targets and then refuse.
+                # Preserve its actual killed/recovery/source receipt without
+                # treating an incomplete replay as a scored 100-mob finalist.
+                raw = exc.raw_response
+                result = {
+                    "status": "INCOMPLETE_100_NATIVE_FINALIST",
+                    "reason": str(exc)[-1200:],
+                    "native_response_status": (
+                        raw.get("status") if isinstance(raw, dict) else None),
+                    "native_receipt": copy.deepcopy(raw) if isinstance(raw, dict)
+                    else None,
+                }
+            except (RuntimeError, subprocess.TimeoutExpired, ValueError) as exc:
                 result = {"status": "INCOMPLETE_100_NATIVE_FINALIST",
                           "reason": str(exc)[-1200:]}
+            # A path is evidence only if the paid subprocess actually wrote it.
+            receipt_path = out / "finalists" / key / "world" / "summary.json"
+            if receipt_path.is_file():
+                result["native_receipt_path"] = str(receipt_path.relative_to(out))
             finalists.setdefault("_by_sha", {})[key] = result
         finalists[label] = {"candidate_sha256": key,
                             "screen_paid_s_per_mob": winner["screen_paid_s_per_mob"],
