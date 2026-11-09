@@ -77,6 +77,62 @@ def test_native_spell_candidates_can_replace_or_stand_alone_in_apl(monkeypatch):
 
 
 
+def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
+    """The paid search can build multi-spell challengers, not only fixed APLs."""
+    reference = source()
+    original = copy.deepcopy(reference)
+    native = options()
+    native["spells"].extend([{"spell_id": 998}, {"spell_id": 999}])
+    monkeypatch.setattr(
+        cold, "proposals_from_native_talents",
+        lambda _options, _source, _seed: iter([{"talents": "110-0-0"}]))
+    domain = cold.native_candidate_domain(reference, native, seed=5)
+    propose, mutate = cold.candidate_factory(reference, domain)
+
+    class AplOnlyRng:
+        def __init__(self, spell_id, slot, operation="replace"):
+            self.spell_id, self.slot, self.operation = spell_id, slot, operation
+
+        def randint(self, _lo, _hi):
+            return 1
+
+        def sample(self, axes, count):
+            assert "apl" in axes and count == 1
+            return ["apl"]
+
+        def random(self):
+            return 0.0
+
+        def choice(self, values):
+            if values is domain["apl_actions"]:
+                return next(
+                    item for item in values
+                    if item["action"]["castSpell"]["spellId"]["spellId"] ==
+                    self.spell_id)
+            assert values == ("replace", "insert")
+            return self.operation
+
+        def randrange(self, stop):
+            assert self.slot < stop
+            return self.slot
+
+    candidate = {"source": copy.deepcopy(reference),
+                 "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}}
+    first = mutate(candidate, AplOnlyRng(999, 0))
+    combined = mutate(first, AplOnlyRng(998, 1))
+    actions = cold.actor(combined["source"])["rotation"]["priorityList"]
+    new_ids = [a["action"]["castSpell"]["spellId"]["spellId"] for a in actions]
+    assert new_ids == [999, 998]
+    assert actions not in domain["apl"]  # unreachable by old whole-APL draws
+    assert reference == original
+    assert cold.actor(first["source"])["rotation"]["priorityList"] != actions
+    inserted = mutate(combined, AplOnlyRng(999, 2, "insert"))
+    assert len(cold.actor(inserted["source"])["rotation"]["priorityList"]) == 3
+
+    # Cold proposals still start from Rust-sourced whole APL candidates.
+    assert cold.actor(propose(random.Random(5))["source"])["rotation"]["priorityList"] in domain["apl"]
+
+
 def test_unverified_items_enter_cold_native_candidate_proposals():
     requests = native_equipment_proposals(options(), cold.actor(source())[
         "equipment"]["items"])
