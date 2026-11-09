@@ -212,7 +212,7 @@ jobs:
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
             --out ../warlock-l20-decisions-hundred \
-            --variant best_apl --targets 100 --recovery-policy decisions \
+            --variant best_apl --targets 100 --hostile-player-tank --recovery-policy decisions \
             --health-threshold 1.0 --mana-threshold 1.0
           python - <<'PY'
           import json
@@ -221,6 +221,8 @@ jobs:
           row, = receipt["results"]
           assert row["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS", row
           assert row["killed"] == 100, row
+          assert row["hostile_player_tank_requested"] is True, row
+          assert row["native_enemy_attack_prepared"] is True, row
           assert row["native_recovery_clock_accounted"] is True, row
           assert row["native_actor_continuity_receipt_complete"] is True, row
           assert row["native_2d_paid_objective_eligible"] is True, row
