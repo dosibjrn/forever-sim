@@ -43,6 +43,7 @@ jobs:
           import pathlib
           import re
           import subprocess
+          import time
           import urllib.error
           import urllib.request
 
@@ -170,17 +171,23 @@ jobs:
               for a in planned:
                   aid = int(a["id"])
                   status, body = request(f"artifacts/{aid}", "DELETE")
-                  if status != 204:
-                      raise RuntimeError(f"DELETE id={aid} expected 204, got {status}: {str(body)[:160]}")
-                  status, _ = request(f"artifacts/{aid}")
-                  if status != 404:
-                      raise RuntimeError(f"DELETE verify id={aid} expected GET 404, got {status}")
+                  if status not in (204, 404):
+                      raise RuntimeError(f"DELETE id={aid} expected 204/previously gone 404, got {status}: {str(body)[:160]}")
                   deleted.append(aid)
-              after_artifacts = list_artifacts()
+              # GitHub may return stale GET/list data immediately after a 204.
+              # Verify final absence with bounded eventual-consistency retries.
+              remaining_ids = set(deleted)
+              for attempt in range(12):
+                  after_artifacts = list_artifacts()
+                  live_ids = {int(a["id"]) for a in after_artifacts}
+                  remaining_ids = set(deleted).intersection(live_ids)
+                  if not remaining_ids:
+                      break
+                  print(f"Deletion pending visibility for {len(remaining_ids)} IDs; retry {attempt + 1}/12")
+                  time.sleep(5)
+              if remaining_ids:
+                  raise RuntimeError(f"DELETE verification did not converge: {sorted(remaining_ids)[:12]}")
               after = sum(int(a["size_in_bytes"]) for a in after_artifacts)
-              still_present = set(deleted).intersection(int(a["id"]) for a in after_artifacts)
-              if still_present:
-                  raise RuntimeError(f"deleted artifact IDs still listed: {still_present}")
               print(f"AFTER count={len(after_artifacts)} bytes={after} MiB={after/1048576:.2f}")
               print(f"VERIFIED_DELETIONS count={len(deleted)} reclaimed_MiB={(total-after)/1048576:.2f}")
               if after > ceiling:
