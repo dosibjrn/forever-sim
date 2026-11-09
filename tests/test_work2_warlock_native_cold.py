@@ -1668,3 +1668,33 @@ def test_one_paid_cold_native_refusal_keeps_exact_candidate_and_failure(
         "RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL")
     assert report["gate_recorded"] is False
     assert (tmp_path / "probe/cold_proposal.request.json").is_file()
+
+
+def test_neutral_cold_draw_also_changes_native_apl_not_just_gear():
+    """The observed 17-item/one-action refusal must get a real APL challenger."""
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = []
+    original = copy.deepcopy(reference)
+    original_apl = copy.deepcopy(
+        cold.actor(reference)["rotation"]["priorityList"])
+    native_action = {"action": {"castSpell": {
+        "spellId": {"spellId": 999}}}}
+    domain = {
+        "gear": {}, "gear_insertions": [{"id": 100}, {"id": 200}],
+        "gear_native_slots": {
+            "head": [{"id": 100}], "chest": [{"id": 200}]},
+        "talents": ["101-0-0"],
+        "apl": [[native_action], [native_action, *original_apl]],
+        "apl_actions": [native_action],
+        "pets": [1], "recovery": [(0.7, 0.25)],
+    }
+    propose, _ = cold.candidate_factory(reference, domain, unseeded=True)
+    for seed in range(40):
+        candidate = propose(random.Random(seed))
+        player = cold.actor(candidate["source"])
+        assert len(player["equipment"]["items"]) == 2
+        apl = player["rotation"]["priorityList"]
+        assert len(apl) == len(original_apl) + 1
+        assert apl[0] == native_action
+        assert apl[1:] == original_apl
+    assert reference == original
