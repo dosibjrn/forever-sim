@@ -387,8 +387,10 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     # 100 targets. In that case, try the next DISTINCT candidate already
     # paid for within the SAME frozen 30s / 300s window. Do not rerun the
     # cold search, smuggle in a post-snapshot build, or score partial kills.
-    # A bounded replay shortlist controls real 100-mob compute; exhaustion
-    # remains an honest incomplete finalist, never an invented PASS.
+    # A bounded replay shortlist controls real 100-mob compute. Rank
+    # completed finalist replays on the measured 100-mob objective, not the
+    # 2-target screen: surviving a chain says nothing about its relative time.
+    # Exhaustion remains an honest incomplete finalist, never an invented PASS.
     replay_limit = 3
     finalist_pools = {
         "30s": [row for row in on_time_rows
@@ -412,7 +414,8 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
             replay_attempts[label] = []
             continue
         attempts = []
-        selected = distinct[0]
+        selected = None
+        best_paid_100_s_per_mob = math.inf
         for winner in distinct[:replay_limit]:
             key = winner["candidate_sha256"]
             if key not in replay_cache:
@@ -452,11 +455,18 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
                              "paid_completed_elapsed_s":
                                  winner["paid_completed_elapsed_s"],
                              "native_receipt_path":
-                                 result.get("native_receipt_path")})
-            if result["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
+                                 result.get("native_receipt_path"),
+                             "native_100mob_seconds_per_mob":
+                                 result.get("seconds_per_mob")})
+            if (result["status"] == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+                    and result["seconds_per_mob"] < best_paid_100_s_per_mob):
                 selected = winner
-                break
+                best_paid_100_s_per_mob = result["seconds_per_mob"]
         replay_attempts[label] = attempts
+        # If every bounded replay refused, retain the fastest short-screen
+        # attempted candidate's refusal rather than fabricate a 100-mob score.
+        if selected is None:
+            selected = distinct[0]
         key = selected["candidate_sha256"]
         finalists[label] = {
             "candidate_sha256": key,
