@@ -36,6 +36,7 @@ def _finalist(key: str, score: float) -> dict:
 def _cold() -> dict:
     return {
         "cold_300_reached": True, "elapsed_search_s": 300.08,
+        "unseeded_cold_start": True,
         "source_request_sha256": "a" * 64,
         "engine_binary_sha256": "b" * 64,
         "source_revision": "test-only-rust-source", "search_seed": 7,
@@ -130,6 +131,21 @@ def test_p4_unlock_cast_is_not_inferred_from_available_action_ids(monkeypatch, t
         # Missing P4 cast comparison cannot invent a P5 or P6 veto.
         assert p5.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
         assert p6.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
+    finally:
+        bridge.set_shared_warlock_l20_cold(False)
+
+
+def test_saved_reference_cannot_claim_unseeded_p4_p5_p6(monkeypatch, tmp_path):
+    monkeypatch.setenv(bridge.OPT_IN, "1")
+    seeded = _cold()
+    seeded["unseeded_cold_start"] = False
+    monkeypatch.setattr(bridge, "_execute", lambda: seeded)
+    bridge.set_shared_warlock_l20_cold(True)
+    try:
+        for gate in (p4, p5, p6):
+            verdict = gate.run_live(tmp_path, "warlock", 20)
+            assert verdict["status"] == "FAIL"
+            assert "P4_P5_NATIVE_COLD_UNSEEDED_START_NOT_OBSERVED" in verdict["reasons"]
     finally:
         bridge.set_shared_warlock_l20_cold(False)
 

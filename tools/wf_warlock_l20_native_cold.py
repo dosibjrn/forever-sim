@@ -56,6 +56,24 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                              if isinstance(row, dict)
                              and type(row.get("item_id")) is int}.values())
                        if not items else [])
+    # A cold, unequipped actor has no replacement positions and the old
+    # sampler added at most ONE item. The genuine P4/P5 native run then spent
+    # 289 attempts on nonlethal 2-mob requests (Actions #42659843410).
+    # Build multi-slot proposals solely from slots explicitly returned by
+    # Rust get_options(); never infer slots for unverified items or decide
+    # equip legality in Python. Rust prepare remains the only judge.
+    gear_native_slots = {}
+    if not items:
+        for row in options["items"]:
+            if not isinstance(row, dict):
+                continue
+            native = row.get("native")
+            if (row.get("eligibility") == "native_eligible"
+                    and isinstance(native, dict)
+                    and isinstance(native.get("slot"), str)
+                    and type(row.get("item_id")) is int):
+                gear_native_slots.setdefault(native["slot"], []).append(
+                    {"id": row["item_id"]})
     source_talents = player.get("talentsString", "0-0-0")
     # The frozen request is already submitted first as a real paid baseline.
     # Do not advertise it again as a native talent mutation when Rust supplied
@@ -112,6 +130,7 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
         if isinstance(row, dict) and type(row.get("proto_enum_value")) is int
     ))
     return {"gear": gear, "gear_insertions": gear_insertions,
+            "gear_native_slots": gear_native_slots,
             "talents": talents,
             "apl": unique_apl, "apl_actions": unique_actions, "pets": pets,
             # These are recovery *policy proposals*, not Python regen mechanics.
@@ -119,8 +138,12 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                          (0.50, 0.25), (0.70, 0.25)]}
 
 
-def candidate_factory(reference: dict, domain: dict):
-    """Cold whole-build proposals and native-sourced mutations, never seeded scores."""
+def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
+    """Cold whole-build proposals and native-sourced mutations, never seeded scores.
+
+    For approved cold gates, the first proposal must also be a native-sourced
+    mutation, not a replay of a previously selected reference winner.
+    """
     def mutate(candidate: dict, rng: random.Random, *, cold: bool = False) -> dict:
         value = {"source": copy.deepcopy(reference),
                  "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}
@@ -130,7 +153,8 @@ def candidate_factory(reference: dict, domain: dict):
         # This is proposal sampling, never a Python build-legality veto.
         axes = tuple(axis for axis in ("gear", "talents", "apl", "recovery")
                      if domain.get(axis) or
-                     (axis == "gear" and domain.get("gear_insertions")))
+                     (axis == "gear" and (domain.get("gear_insertions")
+                                           or domain.get("gear_native_slots"))))
         if domain.get("pets"):
             axes += ("pet",)
         if not axes:
@@ -140,6 +164,13 @@ def candidate_factory(reference: dict, domain: dict):
         minimum = min(2, len(axes)) if cold else 1
         maximum = len(axes) if cold else min(3, len(axes))
         selected = rng.sample(axes, rng.randint(minimum, maximum))
+        # Empty starter equipment repeatedly produced zero-lethal Rust screens.
+        # Include a Rust-supplied gear proposal in every *cold* neutral actor
+        # draw; vary all other axes normally. This is sampling, NOT a Python
+        # assertion that the source-supplied equipment is equip-legal.
+        if (cold and "gear" in axes and "gear" not in selected
+                and not actor(reference)["equipment"]["items"]):
+            selected[-1] = "gear"
         player = actor(value["source"])
         for axis in selected:
             if axis == "gear":
@@ -148,7 +179,40 @@ def candidate_factory(reference: dict, domain: dict):
                 # Source-native empty gear has no replacement positions. An
                 # insertion can be recombined with a later insertion/replace
                 # without constructing a Python equipment legality catalogue.
-                if insertions and (not equipped or rng.random() < 0.6):
+                native_slots = domain.get("gear_native_slots") or {}
+                if cold and not equipped and native_slots:
+                    # A full source-returned slot proposal can reach a
+                    # survivable 2-mob score from a neutral actor; single
+                    # item insertion could not. This is exploratory candidate
+                    # construction, not Python equipment validation.
+                    for alternatives in native_slots.values():
+                        equipped.append(copy.deepcopy(rng.choice(alternatives)))
+                elif cold and not equipped and len(insertions) >= 4:
+                    # When Rust has not verified any slots, keep its
+                    # unverified item IDs as proposals rather than dropping
+                    # them. Native will accept/refuse the combined equipment.
+                    equipped.extend(copy.deepcopy(entry) for entry in
+                                    rng.sample(insertions, min(8, len(insertions))))
+                elif native_slots and (not insertions or rng.random() < 0.8):
+                    # Follow-up mutations of a neutral actor used to append
+                    # arbitrary source items, often losing the multi-slot
+                    # proposal before a second score was reachable. Reuse
+                    # Rust's reported slot grouping to replace an occupied
+                    # source slot or append a new one. Rust is still the sole
+                    # authority for real equip legality and combat success.
+                    slot = rng.choice(list(native_slots))
+                    alternatives = native_slots[slot]
+                    ids_in_slot = {entry["id"] for entry in alternatives}
+                    positions = [
+                        index for index, entry in enumerate(equipped)
+                        if isinstance(entry, dict) and entry.get("id") in ids_in_slot
+                    ]
+                    choice = copy.deepcopy(rng.choice(alternatives))
+                    if positions:
+                        equipped[rng.choice(positions)] = choice
+                    else:
+                        equipped.append(choice)
+                elif insertions and (not equipped or rng.random() < 0.6):
                     equipped.append(copy.deepcopy(rng.choice(insertions)))
                 elif insertions:
                     equipped[rng.randrange(len(equipped))] = copy.deepcopy(
@@ -209,13 +273,25 @@ def candidate_factory(reference: dict, domain: dict):
 
     def propose(rng):
         nonlocal reference_proposed
-        if not reference_proposed:
+        reference_candidate = {
+            "source": copy.deepcopy(reference),
+            "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+        }
+        if not reference_proposed and not unseeded:
             reference_proposed = True
-            return {
-                "source": copy.deepcopy(reference),
-                "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
-            }
-        return mutate({}, rng, cold=True)
+            return reference_candidate
+        # Sparse native options can include only the already selected
+        # recovery policy (or randomly sample that same policy). Spend cheap
+        # in-memory proposal attempts before consuming a paid native slot on
+        # an unchanged cold reference. If Rust exposes no distinct proposal,
+        # still forward it rather than invent a Python source-legality veto;
+        # the report below must then mark the cold start as NOT unseeded.
+        candidate = reference_candidate
+        for _ in range(16):
+            candidate = mutate({}, rng, cold=True)
+            if candidate != reference_candidate:
+                break
+        return candidate
 
     def change(previous, rng):
         return mutate(previous, rng)
@@ -295,7 +371,7 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
 def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
              seed: int = 20261109, budget_s: float = 300.0,
              snapshot_s: float = 30.0, clock=time.monotonic,
-             chain=paid_chain) -> dict:
+             chain=paid_chain, unseeded: bool = False) -> dict:
     """One 30/300s cold search; snapshot only paid results completed by 30s.
 
     All screening calls execute actual retained-actor native/world Decisions
@@ -310,19 +386,31 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         raise ValueError("WRONG_NATIVE_WARLOCK_L20_SOURCE")
     out.mkdir(parents=True, exist_ok=True)
     domain = native_candidate_domain(reference, options, seed)
-    propose, mutate = candidate_factory(reference, domain)
+    propose, mutate = candidate_factory(reference, domain, unseeded=unseeded)
     start = clock()
     deadline = start + budget_s
     early = None
     paid_rows = []
     screen_attempts = []
+    reference_candidate = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+    first_paid_candidate_sha256 = None
+    first_paid_changed_reference = False
     def evaluate(candidate: dict, *, iterations: int, seed: int,
                  rng_mode: str) -> float:
-        nonlocal early
+        nonlocal early, first_paid_candidate_sha256, first_paid_changed_reference
         # The kernel provides the shared balanced search protocol. Real-world
         # scoring is an independent native/world 2-target run, not native DPS.
         if rng_mode != "balanced":
             raise ValueError("BALANCED_NATIVE_SCREEN_REQUIRED")
+        # An unseeded request is not proof of an unseeded execution. Observe
+        # the FIRST actual paid native proposal, including a refused one.
+        # This is structural search provenance, never a Warcraft legality check.
+        if first_paid_candidate_sha256 is None:
+            first_paid_candidate_sha256 = identity(candidate)
+            first_paid_changed_reference = candidate != reference_candidate
         # Count *all* attempted native calls, including rejected builds. Using
         # len(paid_rows) would reuse an old screen directory after a refusal:
         # the next subprocess could overwrite the failed request or consume
@@ -505,6 +593,9 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "budget_s": budget_s, "snapshot_s": snapshot_s,
         "elapsed_search_s": search["elapsed_s"],
         "search_seed": seed,
+        "unseeded_cold_requested": unseeded,
+        "cold_first_paid_candidate_sha256": first_paid_candidate_sha256,
+        "unseeded_cold_start": unseeded and first_paid_changed_reference,
         # Actual completed native-paid comparisons either side of the
         # 30s cut; attempted/refused and late payments are not credited.
         "native_paid_before_snapshot": sum(
@@ -658,6 +749,44 @@ def run_paid_two_target_screen(reference: dict, *, binary: Path, out: Path,
     return report
 
 
+def run_paid_cold_two_target_proposal(
+    reference: dict, options: dict, *, binary: Path, out: Path,
+    seed: int = 20261109, timeout: float = 120.0,
+    clock=time.monotonic, chain=paid_chain,
+) -> dict:
+    """Pay ONE unseeded Rust-source proposal, never a 300s gate search.
+
+    Inspect precisely the cold candidate submitted to the selected native
+    world runner. This catches neutral-actor source proposal failures before
+    paying a second 300-second search. It is diagnostics, not acceptance.
+    """
+    out.mkdir(parents=True, exist_ok=True)
+    domain = native_candidate_domain(reference, options, seed)
+    propose, _ = candidate_factory(reference, domain, unseeded=True)
+    candidate = propose(random.Random(seed))
+    (out / "cold_proposal.request.json").write_text(
+        json.dumps(candidate["source"], sort_keys=True) + "\n")
+    policy = candidate["recovery"]
+    report = run_paid_two_target_screen(
+        candidate["source"], binary=binary, out=out,
+        health_threshold=policy["health_threshold"],
+        mana_threshold=policy["mana_threshold"],
+        timeout=timeout, clock=clock, chain=chain)
+    report.update({
+        "kind": "warlock_l20_one_native_cold_proposal_paid_screen",
+        "cold_candidate_sha256": identity(candidate),
+        "cold_candidate_changed_reference": candidate != {
+            "source": reference,
+            "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+        },
+        "original_source_request_sha256": identity(reference),
+        "seed": seed,
+    })
+    (out / "two_target_screen_summary.json").write_text(
+        json.dumps(report, indent=2, allow_nan=False) + "\n")
+    return report
+
+
 def cold_search_has_paid_finalist_evidence(report: dict) -> bool:
     """CLI completion means observable paid finalists, not a gate PASS.
 
@@ -689,9 +818,13 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261109)
     parser.add_argument("--budget", type=float, default=300.0)
     parser.add_argument("--snapshot", type=float, default=30.0)
+    parser.add_argument("--unseeded", action="store_true",
+                        help="Start with a source-native mutation, never pay the input reference as a saved winner")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--two-target-screen", action="store_true",
                       help="Measure one real paid 2-target candidate only; no cold gate")
+    mode.add_argument("--two-target-cold-proposal", action="store_true",
+                      help="Pay ONE native-sourced unseeded cold proposal; no 300s search")
     mode.add_argument("--hundred-target-baseline", action="store_true",
                       help="Pay one frozen 100-target Decisions build; no cold search")
     parser.add_argument("--baseline-timeout", type=float, default=1800.0)
@@ -700,6 +833,19 @@ def main() -> None:
     parser.add_argument("--mana-threshold", type=float, default=0.1)
     args = parser.parse_args()
     source = json.loads(args.source.read_text())
+    if args.two_target_cold_proposal:
+        options = query_native_options(args.binary, "warlock", 20)
+        result = run_paid_cold_two_target_proposal(
+            source, options, binary=args.binary, out=args.out,
+            seed=args.seed, timeout=args.screen_timeout)
+        print("WARLOCK_NATIVE_COLD_PROPOSAL_TWO_TARGET", json.dumps({
+            "status": result["status"],
+            "candidate_changed_reference": result["cold_candidate_changed_reference"],
+            "summary": str(args.out / "two_target_screen_summary.json"),
+        }), flush=True)
+        if result["status"] != "COMPLETED_2_REAL_NATIVE_GSIM_KILLS":
+            raise SystemExit(1)
+        return
     if args.two_target_screen:
         result = run_paid_two_target_screen(
             source, binary=args.binary, out=args.out,
@@ -733,13 +879,14 @@ def main() -> None:
     options = query_native_options(args.binary, "warlock", 20)
     result = run_cold(source, options, binary=args.binary, out=args.out,
                       seed=args.seed, budget_s=args.budget,
-                      snapshot_s=args.snapshot)
+                      snapshot_s=args.snapshot, unseeded=args.unseeded)
     complete = cold_search_has_paid_finalist_evidence(result)
     print("WARLOCK_NATIVE_COLD_PAID_SEARCH", json.dumps({
         "status": result["native_search"]["status"],
         "evidence_status": ("COMPLETED_PAID_FINALISTS" if complete
                             else "INCOMPLETE_PAID_FINALIST_EVIDENCE"),
         "native_paid_screen_count": result["native_paid_screen_count"],
+        "unseeded_cold_start": result["unseeded_cold_start"],
         "finalists": {k: row["status"] for k, row in result["finalists"].items()},
         "p6_within_one_percent": (
             result["p6_comparison"].get("within_one_percent")
