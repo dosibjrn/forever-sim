@@ -3,7 +3,7 @@
 
 This is a producer for the existing P4-P6 objective, not an alternate gate.
 Rust supplies source options and judges every submitted build. The existing
-native/world runner supplies the measured eight-target screening objective and
+native/world runner supplies the measured two-target screening objective and
 a separate full continuous 100-target receipt for each frozen winner.
 """
 from __future__ import annotations
@@ -155,7 +155,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
 
     All screening calls execute actual retained-actor native/world Decisions
     routes. Full 100-mob verification occurs AFTER the cold 300s window; it is
-    never stitched from the independent eight-target screens.
+    never stitched from the independent two-target screens.
     """
     if not (0 < snapshot_s < budget_s and math.isfinite(budget_s)):
         raise ValueError("INVALID_COLD_SEARCH_BUDGET")
@@ -174,12 +174,12 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
                  rng_mode: str) -> float:
         nonlocal early
         # The kernel provides the shared balanced search protocol. Real-world
-        # scoring is an independent native/world 8-target run, not native DPS.
+        # scoring is an independent native/world 2-target run, not native DPS.
         if rng_mode != "balanced":
             raise ValueError("BALANCED_NATIVE_SCREEN_REQUIRED")
         index = len(paid_rows)
         path = out / "screens" / f"{index:05d}"
-        receipt = chain(binary, candidate, path, targets=8,
+        receipt = chain(binary, candidate, path, targets=2,
                         timeout=max(0.05, deadline - clock()))
         completed_at = clock() - start
         score = -float(receipt["seconds_per_mob"])
@@ -260,7 +260,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "native_options_source": "selected_rust_get_options",
         "native_world_source": "wf_warlock_l20_100mob.py",
         "recovery": "native_decisions_food_water",
-        "screen_targets": 8, "finalist_targets": 100,
+        "screen_targets": 2, "finalist_targets": 100,
         "budget_s": budget_s, "snapshot_s": snapshot_s,
         "elapsed_search_s": search["elapsed_s"],
         "cold_300_reached": search["elapsed_s"] >= budget_s,
