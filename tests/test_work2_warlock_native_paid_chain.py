@@ -169,6 +169,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert record["native_prepared_sha256"] == hashlib.sha256(
         (out / "best_apl" / "prepared.json").read_bytes()).hexdigest()
     assert record["paid_recovery"] is paid
+    assert len(record["native_incoming_player_damage_by_target"]) == targets
     assert record["seconds_per_mob"] == (7. if paid else None)
     assert record["status"] == (
         f"COMPLETED_{targets}_REAL_NATIVE_GSIM_KILLS"
@@ -334,6 +335,15 @@ def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_pr
     assert classify(payload, 8, recovery_policy="decisions",
                     require_native_health_damage=True) == (
                         "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False)
+    # Exact Rust result on the strict eight-target Warlock chain: eight ACKs
+    # and paid water, but *observed zero* incoming player hits. This is not
+    # the same as a missing native receipt, and must not earn an objective.
+    zero_damage = {**payload, "native_health_damage": {
+        "observed": True, "damage_taken": 0., "damage_events": 0}}
+    assert classify(zero_damage, 8, recovery_policy="decisions",
+                    require_native_health_damage=True,
+                    require_native_consumption=True) == (
+                        "NO_NATIVE_INCOMING_PLAYER_DAMAGE", False)
     with_damage = {**payload, "native_health_damage": {
         "observed": True, "damage_taken": 48., "damage_events": 3}}
     assert classify(with_damage, 8, recovery_policy="decisions",
@@ -479,6 +489,9 @@ def test_strict_health_refusal_retains_real_eight_target_decisions_receipt(
     assert record["native_health_damage_proven"] is False
     assert record["native_health_damage"] == {
         "observed": True, "damage_taken": 0., "damage_events": 0}
-    assert record["status"] == "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT"
+    assert record["status"] == "NO_NATIVE_INCOMING_PLAYER_DAMAGE"
+    assert len(record["native_incoming_player_damage_by_target"]) == 8
+    assert all(window["damage_taken"] is None and window["damage_events"] is None
+               for window in record["native_incoming_player_damage_by_target"])
     assert record["seconds_per_mob"] is None
     assert record["native_2d_paid_objective_eligible"] is False
