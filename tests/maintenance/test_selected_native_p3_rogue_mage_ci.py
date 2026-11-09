@@ -30,7 +30,8 @@ def _reader(step: str) -> str:
 
 
 def _run(step, class_key, level, status, tmp_path, monkeypatch,
-         *, exit_code=None, checkpoint_level=None, row=None):
+         *, exit_code=None, checkpoint_level=None, row=None,
+         native_json_text=None, native_exit_code=0):
     report = {
         "class": class_key, "level": checkpoint_level or level,
         "spec": "unrestricted", "gate": "P3", "status": status,
@@ -48,10 +49,14 @@ def _run(step, class_key, level, status, tmp_path, monkeypatch,
             "items": [],
         }
         native_file = tmp_path / "native.json"
-        native_file.write_text(json.dumps(native), encoding="utf-8")
+        native_file.write_text(
+            json.dumps(native) if native_json_text is None else native_json_text,
+            encoding="utf-8")
         args.append(str(native_file))
     args.extend([str(result_file), str(
         exit_code if exit_code is not None else (0 if status == "PASS" else 1))])
+    if class_key == "rogue":
+        args.append(str(native_exit_code))
     monkeypatch.setattr(sys, "argv", args)
     exec(compile(_reader(step), str(WORKFLOW), "exec"), {"__name__": "__main__"})
 
@@ -86,3 +91,30 @@ def test_ci_still_rejects_wrong_checkpoint(
     with pytest.raises(AssertionError):
         _run(step, class_key, level, "FAIL", tmp_path, monkeypatch,
              checkpoint_level=level + 1)
+
+
+@pytest.mark.parametrize("diagnostic", [
+    "not valid JSON",
+    "[]",
+    '{"status": "refused", "refusal": "malformed"}',
+])
+@pytest.mark.parametrize("gate_status", ("PASS", "FAIL", "BLOCKED"))
+def test_rogue_auxiliary_native_diagnostic_cannot_veto_actual_p3(
+        diagnostic, gate_status, tmp_path, monkeypatch, capsys):
+    # Even a nonzero native catalogue exit and malformed optional JSON
+    # cannot prevent the real selected-engine gate receipt from being read.
+    _run(STEPS[0][0], "rogue", 20, gate_status, tmp_path, monkeypatch,
+         native_json_text=diagnostic, native_exit_code=42)
+    output = capsys.readouterr().out
+    assert "NO_RECORD_NATIVE_P3_OBSERVED rogue:20" in output
+    assert "native_probe_exit 42" in output
+    assert f"gate_status {gate_status}" in output
+
+
+def test_rogue_auxiliary_cli_failure_is_not_a_shell_veto():
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    rogue = workflow.split(f"      - name: {STEPS[0][0]}\\n", 1)[1].split(
+        "      - name: Run no-record Priest and Mage L20 P3", 1)[0]
+    assert "|| native_rc=$?" in rogue
+    assert rogue.index("|| native_rc=$?") < rogue.index("python tools/wf_gate.py")
+    assert 'assert (native["class"], native["level"]' not in rogue
