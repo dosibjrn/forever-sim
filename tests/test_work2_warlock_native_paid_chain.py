@@ -297,6 +297,27 @@ def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_pr
     assert classify(payload, 100, recovery_policy="decisions") == (
         "INCOMPLETE_UNPAID_NATIVE_RECOVERY", False)
 
+    # A paid chain with only 2D damage-to-mob events is not a proven
+    # real-survival challenge when the caller asks for source player damage.
+    assert classify(payload, 8, recovery_policy="decisions",
+                    require_native_health_damage=True) == (
+                        "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False)
+    with_damage = {**payload, "native_health_damage": {
+        "observed": True, "damage_taken": 48., "damage_events": 3}}
+    assert classify(with_damage, 8, recovery_policy="decisions",
+                    require_native_health_damage=True,
+                    require_native_consumption=True) == completed
+    for damage in (
+        {"observed": False, "damage_taken": 48., "damage_events": 3},
+        {"observed": True, "damage_taken": 0., "damage_events": 3},
+        {"observed": True, "damage_taken": float("nan"), "damage_events": 3},
+        {"observed": True, "damage_taken": 48., "damage_events": 0},
+    ):
+        assert classify({**payload, "native_health_damage": damage}, 8,
+                        recovery_policy="decisions",
+                        require_native_health_damage=True) == (
+                            "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False)
+
 
 def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
     tmp_path, monkeypatch
@@ -313,6 +334,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
 
     def native(*args, **kwargs):
         assert kwargs["recovery_policy"] == "decisions"
+        assert kwargs["require_native_health_damage"] is True
         return {
             "world_targets_killed": 8,
             "world_seconds_per_target_paid_recovery": 20.,
@@ -330,6 +352,8 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
             "native_water_mana_gain_total": 0.,
             "gsim_route_paid_movement_s": 4.,
             "native_damage_events": 8,
+            "native_health_damage": {
+                "observed": True, "damage_taken": 35., "damage_events": 2},
         }
 
     main = _WARLOCK["main"]
@@ -339,6 +363,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
         "driver", "--binary", str(tmp_path / "engine"), "--source", str(source),
         "--out", str(out), "--targets", "8", "--variant", "best_apl",
         "--recovery-policy", "decisions", "--require-native-consumption",
+        "--require-native-health-damage",
     ])
     with pytest.raises(SystemExit, match="No variant completed 8"):
         main()
@@ -347,5 +372,8 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
     assert record["paid_recovery"] is True
     assert record["native_consumption_proof_required"] is True
     assert record["native_consumption_proven"] is False
+    assert record["native_health_damage_proof_required"] is True
+    assert record["native_health_damage_proven"] is False
+    assert record["native_health_damage"]["damage_taken"] == 35.
     assert record["seconds_per_mob"] is None
     assert record["native_2d_paid_objective_eligible"] is False
