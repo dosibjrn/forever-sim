@@ -256,3 +256,69 @@ def test_non_public_artifact_url_never_retries_anonymously(monkeypatch):
     with pytest.raises(urllib.error.HTTPError):
         module._github_json("https://api.github.com/repos/another/private/actions/artifacts")
     assert len(calls) == 1
+
+
+def test_public_owner_repo_index_retries_anonymously_after_scoped_token_403(
+        monkeypatch, capsys):
+    """Discover all owned public repos even if the Actions token is repo-scoped."""
+    monkeypatch.setenv("GH_TOKEN", "only-current-repository")
+    requests = []
+
+    def urlopen(request, timeout):
+        requests.append(request)
+        assert timeout == 25
+        if len(requests) == 1:
+            assert request.get_header("Authorization") == "Bearer only-current-repository"
+            raise urllib.error.HTTPError(request.full_url, 403, "scoped token", {}, None)
+        assert request.get_header("Authorization") is None
+        return io.BytesIO(
+            b'[{"full_name":"dosibjrn/third-public-repo","private":false}]')
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    found = module.discover_public_owner_repos(module.github_owner_page)
+    assert len(requests) == 2
+    assert set(module.REPOSITORIES).issubset(found)
+    assert "dosibjrn/third-public-repo" in found
+    assert "PUBLIC_READ_FALLBACK owner-repos=dosibjrn" in capsys.readouterr().out
+
+
+def test_owner_index_anonymous_failure_remains_unverified(monkeypatch, capsys):
+    """A second 403 still fails closed; do not invent account headroom."""
+    monkeypatch.setenv("GH_TOKEN", "only-current-repository")
+    calls = []
+
+    def urlopen(request, timeout):
+        calls.append(request)
+        if "/users/" in request.full_url:
+            raise urllib.error.HTTPError(request.full_url, 403, "denied", {}, None)
+        return io.BytesIO(b'{"total_count":0,"artifacts":[]}')
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    assert module.main() == 1
+    out = capsys.readouterr().out
+    assert "RETAINED_SCOPE=INCOMPLETE" in out
+    assert "RETAINED_PUBLIC_OWNER_REPOS count=" not in out
+    owner_requests = [req for req in calls if "/users/dosibjrn/repos?" in req.full_url]
+    assert len(owner_requests) == 2
+    assert owner_requests[0].get_header("Authorization")
+    assert owner_requests[1].get_header("Authorization") is None
+
+
+@pytest.mark.parametrize("url", [
+    "https://api.github.com/users/somebody/repos?type=owner&per_page=100&page=1",
+    "https://api.github.com/users/dosibjrn/repos?type=all&per_page=100&page=1",
+    "https://api.github.com/users/dosibjrn/repos?type=owner&per_page=100&page=1&private=1",
+])
+def test_public_owner_fallback_never_reads_foreign_or_other_scopes(
+        monkeypatch, url):
+    monkeypatch.setenv("GH_TOKEN", "scoped-token")
+    requests = []
+
+    def urlopen(request, timeout):
+        requests.append(request)
+        raise urllib.error.HTTPError(request.full_url, 403, "denied", {}, None)
+
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    with pytest.raises(urllib.error.HTTPError):
+        module._github_json(url)
+    assert len(requests) == 1

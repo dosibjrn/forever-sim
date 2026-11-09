@@ -137,7 +137,19 @@ def _github_json(url: str):
             url.startswith(f"https://api.github.com/repos/{OWNER}/")
             and url.split("?", 1)[0].endswith("/actions/artifacts")
         )
-        if not (token and public_artifacts and exc.code in (403, 404)):
+        # GitHub's repository-scoped Actions token can also refuse the public
+        # owner-repository index. Without this read-only fallback the monitor
+        # cannot discover other owned public repositories and always reports
+        # incomplete scope despite the index being anonymously accessible.
+        owner_prefix = (
+            f"https://api.github.com/users/{OWNER}/repos?"
+            "type=owner&per_page=100&page="
+        )
+        public_owner_index = (url.startswith(owner_prefix)
+                              and url[len(owner_prefix):].isascii()
+                              and url[len(owner_prefix):].isdigit())
+        if not (token and (public_artifacts or public_owner_index)
+                and exc.code in (403, 404)):
             raise
         anonymous_headers = {
             "Accept": "application/vnd.github+json",
@@ -145,7 +157,10 @@ def _github_json(url: str):
         }
         anonymous_request = urllib.request.Request(url, headers=anonymous_headers)
         with urllib.request.urlopen(anonymous_request, timeout=25) as response:
-            print(f"PUBLIC_READ_FALLBACK repo={url.split('/')[5]}")
+            if public_owner_index:
+                print(f"PUBLIC_READ_FALLBACK owner-repos={OWNER}")
+            else:
+                print(f"PUBLIC_READ_FALLBACK repo={url.split('/')[5]}")
             return json.load(response)
 
 
