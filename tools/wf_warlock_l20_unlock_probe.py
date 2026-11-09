@@ -140,7 +140,7 @@ def run_probe(reference: dict, options: dict, *, binary: Path, out: Path,
               proposals=None, chain=None) -> dict:
     """Execute a *fresh*, matched native two-target policy comparison.
 
-    The receipt deliberately never asserts \`native_representative_unlocked_cast_compared\`:
+    The receipt deliberately never asserts `native_representative_unlocked_cast_compared`:
     native ACKed damage effects alone are NOT cast-event evidence.
     """
     if timeout <= 0:
@@ -180,10 +180,13 @@ def run_probe(reference: dict, options: dict, *, binary: Path, out: Path,
                                   "native_receipt": receipt}
             except Exception as exc:
                 raw = getattr(exc, "raw_response", None)
-                results[label] = {"status": "NATIVE_PAID_2_TARGET_REFUSED",
-                                  "reason": str(exc)[-1200:],
-                                  "native_response": raw if isinstance(raw, dict)
-                                  else None}
+                results[label] = {
+                    "status": ("NATIVE_PAID_2_TARGET_REFUSED"
+                               if isinstance(raw, dict)
+                               else "NATIVE_PAID_2_TARGET_ERROR"),
+                    "reason": str(exc)[-1200:],
+                    "native_response": raw if isinstance(raw, dict) else None,
+                }
         summary["paid_comparison"] = results
         if all(row["status"] == "NATIVE_PAID_2_TARGET_COMPLETE"
                for row in results.values()):
@@ -191,7 +194,14 @@ def run_probe(reference: dict, options: dict, *, binary: Path, out: Path,
         else:
             summary["status"] = "NATIVE_PAID_POLICY_REFUSAL_RETAINED"
         # Forward real native ACK observations without inventing casts.
-        native_effects = results["talent_action"].get("native_receipt", {}).get(
+        # An incomplete native chain may still have genuinely ACKed effects.
+        # The paid scorer keeps them on the structured refusal response, not
+        # a successful receipt. Report that observation without calling it a
+        # cast/result proof or treating an incomplete chain as scoreable.
+        challenger = results["talent_action"]
+        native_response = (challenger.get("native_receipt")
+                           or challenger.get("native_response") or {})
+        native_effects = native_response.get(
             "native_source_damage_effects_by_caster", {})
         action_id = selected["new_native_registered_action_id"]
         summary["new_native_action_acked_damage_effects"] = (
