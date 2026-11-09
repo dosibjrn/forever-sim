@@ -66,6 +66,37 @@ def test_issue_pr_and_inline_review_comments_are_pinned():
     assert artifacts == {987654}
 
 
+
+def test_submitted_pr_review_body_pins_are_collected():
+    # GitHub's /pulls/{number}/reviews bodies are distinct from /pulls/comments.
+    runs, artifacts = set(), set()
+    submitted_reviews = [
+        {"body": "Keep this receipt: https://github.com/o/r/actions/runs/98766"},
+        {"body": "Artifact: https://github.com/o/r/actions/artifacts/112233"},
+        {"body": None},
+    ]
+    for review in submitted_reviews:
+        record_references(review.get("body"), runs, artifacts)
+    assert runs == {98766}
+    assert artifacts == {112233}
+
+
+def test_gc_scans_submitted_reviews_and_fails_closed_before_deleting():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+        encoding="utf-8"
+    )
+    # A bare /reviews path must be paginated with '?' rather than '&'.
+    assert 'separator = "&" if "?" in endpoint else "?"' in workflow
+    assert 'all_prs = gh_collection("pulls?state=all")' in workflow
+    assert 'gh_collection(f"pulls/{int(pr[\'number\'])}/reviews")' in workflow
+    assert 'record_references(review.get("body"), pinned_runs, pinned_artifacts)' in workflow
+    assert workflow.index('record_references(review.get("body")') < workflow.index(
+        'candidates = []'
+    )
+    assert 'if p.get("state") == "open"' in workflow
+    assert 'result = subprocess.run(["gh", "api", url], capture_output=True, text=True, check=True)' in workflow
+
+
 def test_missing_canonical_ledger_fails_closed(tmp_path):
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md"):
         (tmp_path / name).write_text("", encoding="utf-8")
