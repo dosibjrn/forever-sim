@@ -43,15 +43,27 @@ jobs:
           status="$(curl --silent --show-error --output "$RUNNER_TEMP/delete.response" --write-out '%{http_code}' --request DELETE --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' "$api")"
           test "$status" = 204 || { echo "DELETE failed with HTTP $status"; cat "$RUNNER_TEMP/delete.response"; exit 1; }
 
-          status="$(curl --silent --show-error --output "$RUNNER_TEMP/get.response" --write-out '%{http_code}' --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' "$api")"
-          test "$status" = 404 || { echo "Expected GET 404 after deletion, received $status"; exit 1; }
-
-          remaining="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100")"
-          if jq -e --argjson id "$artifact_id" '[.artifacts[] | select(.id == $id)] | length == 0' <<< "$remaining"; then
-            echo "PASS: created, listed and deleted own disposable artifact id=$artifact_id ($bytes bytes); GET=404 and absent from run artifacts."
-          else
-            echo "FAIL: deleted artifact still listed"; exit 1
-          fi
+          # GitHub can return stale GET=200 or a stale artifact listing
+          # briefly after DELETE=204 (observed in cleanup run #42574446203).
+          # Verify BOTH endpoints converge; never mistake 204 for final absence.
+          for attempt in $(seq 1 12); do
+            status="$(curl --silent --show-error --output "$RUNNER_TEMP/get.response" --write-out '%{http_code}' --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' "$api")"
+            if test "$status" != 200 && test "$status" != 404; then
+              echo "FAIL: unexpected GET HTTP $status after DELETE" >&2
+              exit 1
+            fi
+            remaining="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100")"
+            if test "$status" = 404 && jq -e --argjson id "$artifact_id" '[.artifacts[] | select(.id == $id)] | length == 0' <<< "$remaining" >/dev/null; then
+              echo "PASS: created, listed and deleted own disposable artifact id=$artifact_id ($bytes bytes); GET=404 and absent from run artifacts."
+              break
+            fi
+            if test "$attempt" = 12; then
+              echo "FAIL: deletion did not converge after 12 checks (last GET HTTP $status)" >&2
+              exit 1
+            fi
+            echo "Deletion visibility pending (attempt $attempt/12, GET HTTP $status)"
+            sleep 5
+          done
 
       - name: Inventory repository artifact footprint (read only)
         shell: bash
