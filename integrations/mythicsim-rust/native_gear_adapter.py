@@ -64,7 +64,6 @@ class NativeGearAdapter:
         if _player(reference)["class"] != self.expected_class:
             raise GearRejected("CLASS_IDENTITY", "Reference belongs to another class")
         self.base = _player(reference)["equipment"]["items"]
-        self.pools: dict[int, dict[int, dict]] = {}
         # Multiple pinned requests may use the same item ID with different
         # source-observed enchants/effects. ID-only pools lose those choices.
         self.variants: dict[int, list[dict]] = {}
@@ -84,7 +83,6 @@ class NativeGearAdapter:
                 # Do not pre-check native DB presence, item type, slot fit,
                 # armor, class, level, hand, or uniqueness here; Rust owns all
                 # of those decisions, including native INVALID/UNSUPPORTED.
-                self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
                 variants = self.variants.setdefault(index, [])
                 if entry not in variants:
                     variants.append(copy.deepcopy(entry))
@@ -104,7 +102,6 @@ class NativeGearAdapter:
                     variants = self.variants.setdefault(index, [])
                     if entry not in variants:
                         variants.append(copy.deepcopy(entry))
-                        self.pools.setdefault(index, {})[entry["id"]] = copy.deepcopy(entry)
                         self.native_option_candidate_count += 1
                         if entry["id"] in unverified_ids:
                             self.native_option_unverified_count += 1

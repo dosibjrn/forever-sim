@@ -37,9 +37,9 @@ class NativeGearAdapterTests(unittest.TestCase):
         adapter = NativeGearAdapter("mage", self.fire,
             [self.fire, self.frost, self.warrior], self.items)
         self.assertEqual((0, 1, 2), adapter.mutable_indices)
-        self.assertEqual({10, 11}, set(adapter.pools[0]))
-        self.assertEqual({20, 21}, set(adapter.pools[1]))
-        self.assertEqual({30, 31}, set(adapter.pools[2]))  # native decides weapon/hand legality
+        self.assertEqual({10, 11}, {item["id"] for item in adapter.variants[0]})
+        self.assertEqual({20, 21}, {item["id"] for item in adapter.variants[1]})
+        self.assertEqual({30, 31}, {item["id"] for item in adapter.variants[2]})  # native decides weapon/hand legality
 
     def test_native_mutation_preserves_reference_talents_apl_and_weapon(self):
         original = copy.deepcopy(self.fire)
@@ -61,7 +61,7 @@ class NativeGearAdapterTests(unittest.TestCase):
         items[11]["class_allowlist"] = ["ClassWarrior"]
         items[11]["type"] = "ItemTypeChest"  # wrong slot/type is still a native decision
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
-        self.assertIn(11, adapter.pools[0])
+        self.assertTrue(any(item["id"] == 11 for item in adapter.variants[0]))
         candidate = copy.deepcopy(self.fire)
         candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
         adapter.validate(candidate)  # proposal only; MythicSim owns the verdict
@@ -290,7 +290,7 @@ class NativeGearAdapterTests(unittest.TestCase):
         items[11]["armor_type"] = "ArmorTypePlate"
         items[11]["required_level"] = 61
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
-        self.assertIn(11, adapter.pools[0])
+        self.assertTrue(any(item["id"] == 11 for item in adapter.variants[0]))
         candidate = copy.deepcopy(self.fire)
         candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
         adapter.validate(candidate)  # no Python armor or level legality verdict
@@ -440,8 +440,10 @@ class NativeGearAdapterTests(unittest.TestCase):
         first, audit1 = adapter.mutate_one(random.Random(11))
         # Exclude all choices at the first index so the next mutation must
         # exercise a different source-verified position.
-        blocked = {(audit1["source_slot_index"], item_id)
-                   for item_id in adapter.pools[audit1["source_slot_index"]]}
+        blocked = {
+            (audit1["source_slot_index"], item["id"])
+            for item in adapter.variants[audit1["source_slot_index"]]
+        }
         second, audit2 = adapter.mutate_from(first, random.Random(22),
                                               excluded_swaps=blocked)
         self.assertNotEqual(audit1["source_slot_index"], audit2["source_slot_index"])
