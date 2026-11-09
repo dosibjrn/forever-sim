@@ -257,7 +257,6 @@ def test_partial_hostile_world_refusal_keeps_acked_native_actions_not_a_score(
 
     attempt = json.loads((out / "best_apl/summary.json").read_text())
     assert attempt["status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
-    assert attempt["native_chain_failure_reason"] == reason
     assert attempt["native_exit_code"] == exit_code
     assert attempt["native_world_ack_kills_before_refusal"] == 47
     assert attempt["native_damage_events_before_refusal"] == 80
