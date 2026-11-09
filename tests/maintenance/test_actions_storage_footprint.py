@@ -165,3 +165,31 @@ def test_large_public_retained_footprint_warns_without_claiming_billing_clearanc
     assert "::warning::RETAINED_REFERENCE_90_PCT" in output
     assert "BILLING_METER=UNKNOWN" in output
     assert "RETAINED_PUBLIC_OWNER_REPOS count=2 bytes=600000000" in output
+
+
+def test_gc_fast_noop_skips_if_below_ceiling_or_only_newest_five_can_age():
+    import datetime as dt
+
+    now = dt.datetime(2026, 11, 9, tzinfo=dt.timezone.utc)
+    cutoff = now - dt.timedelta(hours=72)
+    recent = now - dt.timedelta(hours=1)
+    old = now - dt.timedelta(days=5)
+    make = lambda stamp: {"created_at": stamp.isoformat()}
+    created = lambda artifact: dt.datetime.fromisoformat(artifact["created_at"])
+    newest_five = [make(recent)] * 4 + [make(old)]
+    assert not module.requires_evidence_pin_scan(300, 384, [*newest_five, make(old)], cutoff, created)
+    assert not module.requires_evidence_pin_scan(500, 384, newest_five, cutoff, created)
+    assert not module.requires_evidence_pin_scan(500, 384, [*newest_five, make(cutoff)], cutoff, created)
+    assert module.requires_evidence_pin_scan(500, 384, [*newest_five, make(old)], cutoff, created)
+
+
+def test_live_storage_guard_skips_pin_api_only_when_no_delete_can_be_planned():
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    fast_noop = "if not requires_evidence_pin_scan(total, ceiling, stage5, cutoff, created):"
+    assert fast_noop in workflow
+    assert workflow.index("return verified_artifacts(repo, fetch_page)") < workflow.index(fast_noop)
+    assert workflow.index(fast_noop) < workflow.index("collect_local_references(")
+    assert workflow.index(fast_noop) < workflow.index('gh_collection("issues?state=all")')
+    assert workflow.index(fast_noop) < workflow.index('request(f"artifacts/{aid}", "DELETE")')
