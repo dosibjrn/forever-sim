@@ -132,7 +132,6 @@ def native_failure_receipt(exc: BaseException) -> dict:
             or type(row[4]) is not int or row[4] < 0):
         return {}
     refusal = {
-        "native_chain_failure_reason": row[0],
         "native_exit_code": row[1],
         "native_world_ack_kills_before_refusal": row[3],
         "native_damage_events_before_refusal": row[4],
