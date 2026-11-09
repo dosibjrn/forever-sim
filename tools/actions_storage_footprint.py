@@ -1,4 +1,4 @@
-"""Read-only retained artifact footprint for the two owned production repositories.
+"""Read-only retained artifact footprint for the owner's public repositories.
 
 This is NOT an Actions billing/GB-month meter, and never deletes artifacts.
 The in-repository evidence-aware GC remains the only deletion path.
@@ -10,6 +10,7 @@ import os
 import urllib.error
 import urllib.request
 
+OWNER = "dosibjrn"
 REPOSITORIES = ("dosibjrn/forever-sim", "dosibjrn/mythicsim-forever-engine")
 PAGE_LIMIT = 100
 
@@ -55,10 +56,35 @@ def inventory(repository: str, fetch_page) -> tuple[int, int]:
     return len(artifacts), sum(a["size_in_bytes"] for a in artifacts)
 
 
-def github_page(repository: str, page: int) -> dict:
+def discover_public_owner_repos(fetch_page) -> list[str]:
+    """Include all visible owned public repos, not just the two main projects.
+
+    This is an intentionally bounded public-only scope: private repos, Packages,
+    caches and account billing are not represented. Malformed/incomplete
+    pagination must never produce a reassuring owner-wide total.
+    """
+    seen: set[str] = set()
+    repositories = set(REPOSITORIES)
+    for page in range(1, PAGE_LIMIT + 1):
+        batch = fetch_page(page)
+        if not isinstance(batch, list) or len(batch) > 100:
+            raise ValueError(f"owner repository listing: invalid page {page}")
+        for row in batch:
+            if not isinstance(row, dict):
+                raise ValueError(f"owner repository listing: malformed repo on page {page}")
+            full_name = row.get("full_name")
+            if (not isinstance(full_name, str) or not full_name.startswith(f"{OWNER}/")
+                    or row.get("private") is not False or full_name in seen):
+                raise ValueError(f"owner repository listing: invalid/duplicate repo on page {page}")
+            seen.add(full_name)
+            repositories.add(full_name)
+        if len(batch) < 100:
+            return sorted(repositories)
+    raise ValueError(f"owner repository listing exceeded {PAGE_LIMIT} pages")
+
+
+def _github_json(url: str):
     token = os.environ.get("GH_TOKEN", "")
-    url = (f"https://api.github.com/repos/{repository}/actions/artifacts"
-           f"?per_page=100&page={page}")
     headers = {"Accept": "application/vnd.github+json",
                "X-GitHub-Api-Version": "2022-11-28"}
     if token:
@@ -68,22 +94,45 @@ def github_page(repository: str, page: int) -> dict:
         return json.load(response)
 
 
+def github_owner_page(page: int) -> list[dict]:
+    return _github_json(
+        f"https://api.github.com/users/{OWNER}/repos?type=owner&per_page=100&page={page}")
+
+
+def github_page(repository: str, page: int) -> dict:
+    return _github_json(
+        f"https://api.github.com/repos/{repository}/actions/artifacts"
+        f"?per_page=100&page={page}")
+
+
 def main() -> int:
-    totals = []
     failed = []
-    for repository in REPOSITORIES:
+    try:
+        repositories = discover_public_owner_repos(github_owner_page)
+    except (OSError, ValueError, urllib.error.URLError) as exc:
+        print(f"::warning::PUBLIC_OWNER_REPOS_UNKNOWN: {exc}")
+        failed.append("public owner repository listing")
+        # Continue to inspect both canonical repositories; never claim a
+        # complete public-owner total from a failed or partial listing.
+        repositories = list(REPOSITORIES)
+
+    sizes = {}
+    for repository in repositories:
         try:
             count, size = inventory(repository, github_page)
             print(f"RETAINED repo={repository} artifacts={count} bytes={size} MiB={size/1048576:.2f}")
-            totals.append(size)
+            sizes[repository] = size
         except (OSError, ValueError, urllib.error.URLError) as exc:
             print(f"::warning::RETAINED_UNKNOWN repo={repository}: {exc}")
             failed.append(repository)
     if failed:
-        print("RETAINED_SCOPE=INCOMPLETE; no account-wide headroom claim")
+        print("RETAINED_SCOPE=INCOMPLETE; no public-owner or account-wide headroom claim")
         return 1
-    print(f"RETAINED_KNOWN_TWO_REPOS bytes={sum(totals)} MiB={sum(totals)/1048576:.2f}")
-    print("BILLING_METER=UNKNOWN; retained bytes are not billed GB-months; other repos/packages/caches omitted")
+    core_total = sum(sizes[repository] for repository in REPOSITORIES)
+    print(f"RETAINED_KNOWN_TWO_REPOS bytes={core_total} MiB={core_total/1048576:.2f}")
+    total = sum(sizes.values())
+    print(f"RETAINED_PUBLIC_OWNER_REPOS count={len(repositories)} bytes={total} MiB={total/1048576:.2f}")
+    print("BILLING_METER=UNKNOWN; public retained bytes are not billed GB-months; private repos/packages/caches omitted")
     return 0
 
 
