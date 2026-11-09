@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run real 100 successive L20 Warlock fights on one native Rust/gsim actor.
+"""Run real 100 successive Warlock fights on one native Rust/gsim actor.
 
 This invokes the maintained live_two_world_pulls causal damage/ACK driver.
 No resetting native resources, fabricated kills, or Python combat evaluator.
@@ -60,11 +60,12 @@ def guarded_life_tap_action(spell_id: int, *,
 
 
 def create_scenario(request: dict, *, variant: str,
-                    hostile_player_tank: bool = False) -> dict:
+                    hostile_player_tank: bool = False,
+                    actor_level: int = 20) -> dict:
     scenario = copy.deepcopy(request)
     encounter = scenario["encounter"]
     target = encounter["targets"][0]
-    target["level"] = 20
+    target["level"] = actor_level
     # Preserve explicit source labels and hostile attack parameters when the
     # candidate supplies them. The legacy stationary source has no attack
     # fields, so only that caller receives proxy defaults. In particular a
@@ -76,7 +77,7 @@ def create_scenario(request: dict, *, variant: str,
     # for the selected Rust prepare/world executor instead of silently
     # replacing it with the generic L20 proxy.
     if target["stats"][32] == 0:
-        target["stats"][32] = representative_hp(20)
+        target["stats"][32] = representative_hp(actor_level)
     # Defaults are scenario assumptions, not facts about WoW Forever mobs.
     target.setdefault("minBaseDamage", 20.0)
     target.setdefault("swingSpeed", 2.0)
@@ -88,7 +89,7 @@ def create_scenario(request: dict, *, variant: str,
         scenario["raid"]["tanks"] = [{"type": "Player", "index": 0}]
         target["tankIndex"] = 0
         if "stationary" in target["name"].casefold():
-            target["name"] = "Hostile L20 player-tanked native world enemy"
+            target["name"] = f"Hostile L{actor_level} player-tanked native world enemy"
     encounter["duration"] = 30
     scenario["simOptions"]["iterations"] = 8
     scenario["simOptions"]["randomSeed"] = "4242"
@@ -240,6 +241,8 @@ def main() -> None:
     p.add_argument("--source", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--targets", type=int, choices=(2, 8, 100), default=100)
+    p.add_argument("--actor-level", type=int, default=20,
+                   help="Explicit native actor/target level; Rust prepare is authoritative")
     p.add_argument("--variant", choices=("all", "best_apl", "life_tap_20",
                                          "life_tap_40"), default="all")
     p.add_argument("--hostile-player-tank", action="store_true",
@@ -257,6 +260,8 @@ def main() -> None:
                    help="Eight-target Decisions smoke: native paid food/water "
                         "with a positive HP or mana gain")
     args = p.parse_args()
+    if not 10 <= args.actor_level <= 60:
+        p.error("--actor-level must be in 10..60")
     if args.recovery_policy == "decisions" and args.recovery_seconds is not None:
         p.error("--recovery-seconds cannot be combined with Decisions recovery")
     if args.require_native_consumption and (
@@ -282,7 +287,8 @@ def main() -> None:
     for variant in variants:
         scenario = create_scenario(
             original, variant=variant,
-            hostile_player_tank=args.hostile_player_tank)
+            hostile_player_tank=args.hostile_player_tank,
+            actor_level=args.actor_level)
         base = args.out / variant
         base.mkdir(parents=True, exist_ok=True)
         source_path = base / "source_request.json"
@@ -290,12 +296,13 @@ def main() -> None:
         source_path.write_text(json.dumps(scenario, indent=2) + "\n")
         source_health = original["encounter"]["targets"][0]["stats"][32]
         chosen_target = scenario["encounter"]["targets"][0]
-        record = {"variant": variant, "target_count_requested": args.targets,
+        record = {"variant": variant, "actor_level": args.actor_level,
+                  "target_count_requested": args.targets,
                   "native_binary_sha256": binary_sha256,
                   "original_source_sha256": original_source_sha256,
                   "source_request_sha256": file_sha256(source_path),
-                  "mob_level": 20,
-                  "mob_hp_classic_proxy": (representative_hp(20)
+                  "mob_level": args.actor_level,
+                  "mob_hp_classic_proxy": (representative_hp(args.actor_level)
                                            if source_health == 0 else None),
                   "mob_hp_native_scenario": chosen_target["stats"][32],
                   "scenario_min_base_damage": chosen_target["minBaseDamage"],
@@ -307,7 +314,7 @@ def main() -> None:
                   "native_health_damage_proof_required": args.require_native_health_damage}
         try:
             cmd = [str(args.binary.resolve()), "prepare", "--request",
-                   str(source_path.resolve()), "--actor-level", "20",
+                   str(source_path.resolve()), "--actor-level", str(args.actor_level),
                    "--outfile", str(prepared_path.resolve())]
             result = subprocess.run(cmd, capture_output=True, text=True,
                                     timeout=60, check=False)
@@ -324,7 +331,7 @@ def main() -> None:
                 "health": player["stats"]["Health"],
                 "mana": player["stats"]["Mana"],
             }
-            if player["level"] != 20 or player["class"] != "ClassWarlock":
+            if player["level"] != args.actor_level or player["class"] != "ClassWarlock":
                 raise RuntimeError("Wrong real native prepared actor")
             # Trust the Rust-prepared enemy actor, not presence of source
             # minBaseDamage/swingSpeed or a player-hit positivity proxy.
@@ -339,7 +346,7 @@ def main() -> None:
                 # Keep the original sourced Classic proxy on zero-HP fixtures.
                 mob_health=(chosen_target["stats"][32]
                             if source_health != 0 else None),
-                classic_mob_level=(20 if source_health == 0 else None),
+                classic_mob_level=(args.actor_level if source_health == 0 else None),
                 rng_mode="balanced",
                 # Collect the native health receipt even when damage is zero.
                 # The strict positive-damage criterion is applied below by
@@ -480,6 +487,7 @@ def main() -> None:
         "world": "one persistent gsim 2D world per candidate",
         "no_independent_fight_stitching": True,
         "target_count_requested": args.targets,
+        "actor_level": args.actor_level,
         "native_binary_sha256": binary_sha256,
         "original_source_sha256": original_source_sha256,
         "native_recovery_requested": native_recovery,
@@ -491,7 +499,7 @@ def main() -> None:
         "results": attempts,
     }
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print("WARLOCK_L20_100_MOB_CHAIN_RESULT", json.dumps(summary), flush=True)
+    print("WARLOCK_NATIVE_100_MOB_CHAIN_RESULT", json.dumps(summary), flush=True)
     # A failed 100-kill run is a real unsuccessful outcome, never a fake PASS.
     expected = f"COMPLETED_{args.targets}_REAL_NATIVE_GSIM_KILLS"
     if not any(r["status"] == expected for r in attempts):
