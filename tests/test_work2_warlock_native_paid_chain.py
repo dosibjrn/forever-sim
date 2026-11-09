@@ -135,6 +135,9 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
             "native_water_mana_gain_total": 120.,
             "gsim_route_paid_movement_s": 2.,
             "native_damage_events": targets,
+            "native_health_damage": {
+                "observed": True, "damage_taken": 48.,
+                "damage_events": 3},
         }
 
     main = _WARLOCK["main"]
@@ -169,6 +172,13 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_unpaid_or_8_a
     assert record["native_prepared_sha256"] == hashlib.sha256(
         (out / "best_apl" / "prepared.json").read_bytes()).hexdigest()
     assert record["paid_recovery"] is paid
+    # The default command does not *require* either proof. Nevertheless,
+    # a native-paid 8/100-mob receipt must retain both actual observations
+    # for reuse by the following search, while an unpaid route proves neither.
+    assert record["native_consumption_proof_required"] is False
+    assert record["native_health_damage_proof_required"] is False
+    assert record["native_consumption_proven"] is paid
+    assert record["native_health_damage_proven"] is paid
     assert len(record["native_incoming_player_damage_by_target"]) == targets
     assert record["seconds_per_mob"] == (7. if paid else None)
     assert record["status"] == (
