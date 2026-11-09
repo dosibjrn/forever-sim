@@ -485,6 +485,36 @@ def test_native_apl_mutations_recombine_two_new_rust_spell_actions(monkeypatch):
 
 
 
+def test_elite_mutations_sample_prepared_and_broad_rust_apl_actions():
+    """Later native search explores both prepared actions and broad alternatives.
+
+    Source preparation ranks proposals but does not become a new Python
+    legality gate or exclude unseen source-backed action IDs.
+    """
+    reference = source()
+    frozen = copy.deepcopy(reference)
+    prepared = {"action": {"castSpell": {"spellId": {"spellId": 6222}}}}
+    broad = {"action": {"castSpell": {"spellId": {"spellId": 1219479}}}}
+    domain = {
+        "gear": {}, "talents": [], "apl": [[broad]],
+        "apl_actions": [broad], "prepared_apl_actions": [prepared],
+        "pets": [], "recovery": [],
+    }
+    _, mutate = cold.candidate_factory(reference, domain)
+    baseline = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
+    }
+    rotations = [
+        cold.actor(mutate(baseline, random.Random(seed))["source"])[
+            "rotation"]["priorityList"]
+        for seed in range(120)
+    ]
+    assert any(prepared in rotation for rotation in rotations)
+    assert any(broad in rotation for rotation in rotations)
+    assert reference == frozen
+
+
 def test_native_apl_elite_mutations_reorder_and_remove_without_resetting():
     """An elite can reposition/prune Rust-action proposals in one paid trial."""
     reference = source()
@@ -1590,6 +1620,73 @@ def test_native_paid_cold_fallback_uses_only_eligible_frozen_candidates(
     assert attempted["300s"][1]["candidate_sha256"] == survivor_sha
     assert result["gate_recorded"] is False
     assert result["p4_p5_p6_pass"] is False
+
+
+def test_300s_keeps_measured_30s_incumbent_outside_proxy_top_three(
+    tmp_path, monkeypatch
+):
+    """A faster 100-mob incumbent cannot disappear from the later shortlist.
+
+    The first candidate is the real paid 30s winner. Three late proposals
+    have better two-target proxy times, so the previous top-three cutoff
+    excluded the incumbent and chose a *slower* measured 100-mob route.
+    Reusing its completed native receipt costs zero additional 100-mob calls.
+    """
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"source-native test engine")
+    now = [0.0]
+    incumbent = {"source": source(), "recovery": {
+        "health_threshold": 0.5, "mana_threshold": 0.1}}
+    challengers = []
+    for index in range(3):
+        candidate = copy.deepcopy(incumbent)
+        cold.actor(candidate["source"])["talentsString"] = (
+            f"{index + 1}01-0-0")
+        challengers.append(candidate)
+    all_candidates = [incumbent, *challengers]
+    screen_times = {cold.identity(candidate): seconds for candidate, seconds
+                    in zip(all_candidates, (12.0, 5.0, 6.0, 7.0))}
+    hundred_times = {cold.identity(candidate): seconds for candidate, seconds
+                     in zip(all_candidates, (8.0, 16.0, 20.0, 24.0))}
+    calls = []
+
+    def paid(_binary, candidate, _out, *, targets, timeout):
+        key = cold.identity(candidate)
+        calls.append((targets, key))
+        return {"seconds_per_mob": (
+            screen_times[key] if targets == 2 else hundred_times[key])}
+
+    def search(**kwargs):
+        for elapsed, candidate in zip((10.0, 45.0, 100.0, 200.0),
+                                      all_candidates):
+            now[0] = elapsed
+            kwargs["evaluate"](candidate, iterations=1, seed=7,
+                               rng_mode="balanced")
+        now[0] = 300.0
+        return {"elapsed_s": 300.0, "paid_candidates": 4}
+
+    monkeypatch.setattr(cold, "search_native", search)
+    monkeypatch.setattr(cold, "native_candidate_domain", lambda *args: {
+        "gear": {}, "talents": [], "apl": [], "recovery": [(0.5, 0.1)]})
+    result = cold.run_cold(
+        source(), options(), binary=binary, out=tmp_path / "cold",
+        clock=lambda: now[0], chain=paid)
+
+    expected = cold.identity(incumbent)
+    assert result["finalists"]["30s"]["candidate_sha256"] == expected
+    assert result["finalists"]["300s"]["candidate_sha256"] == expected
+    assert result["finalists"]["300s"]["seconds_per_mob"] == 8.0
+    assert result["p6_comparison"]["t30_over_t300"] == 1.0
+    # The 300s window still evaluates its three better two-target challengers,
+    # then reuses the paid early 100-target receipt without another native call.
+    attempted = result["native_100mob_replay_attempts"]["300s"]
+    assert len(attempted) == 4
+    assert attempted[-1]["candidate_sha256"] == expected
+    assert attempted[-1]["native_100mob_seconds_per_mob"] == 8.0
+    assert sum(targets == 100 for targets, _ in calls) == 4
+    assert sum(targets == 100 and key == expected
+               for targets, key in calls) == 1
+    assert result["gate_recorded"] is False
 
 
 def test_native_paid_cold_selects_fastest_completed_hundred_mob_route(

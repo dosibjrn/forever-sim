@@ -639,3 +639,38 @@ def test_live_gc_enforces_branch_crosscheck_before_its_delete_plan():
         "planned = []")
     assert workflow.index("planned = []") < workflow.index(
         'request(f"artifacts/{aid}", "DELETE")')
+
+
+def test_unquoted_colon_receipts_pin_artifacts_and_runs_before_gc(tmp_path):
+    """YAML-style evidence IDs must survive the same complete local pin scan."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    receipt = tmp_path / "evidence/native/paid-world-receipt.log"
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(
+        "artifact_id: 12998142923\n"
+        "workflow_run_id: 42574670709\n"
+        "run_id: '42573539316'\n"
+        "github_run_id: \"42573346755\"\n"
+        "engine_build_run_id: 40969635587\n",
+        encoding="utf-8",
+    )
+    runs, artifacts = collect_local_references(tmp_path)
+    assert artifacts == {12998142923}
+    assert runs == {42574670709, 42573539316, 42573346755, 40969635587}
+
+
+def test_colon_pin_parser_rejects_unrelated_and_malformed_ids():
+    runs, artifacts = set(), set()
+    record_references(
+        "not_artifact_id: 88 xworkflow_run_id: 99 "
+        "artifact_id: 0 artifact_id: 123abc artifact_id: 321-abc "
+        "run_id: 0 run_id: 999abc not_run_id: 123 "
+        "artifact_id: 123 # valid explicit receipt ID\n",
+        runs, artifacts,
+    )
+    assert runs == set()
+    assert artifacts == {123}
