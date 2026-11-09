@@ -28,7 +28,7 @@ def overlay_recorded_equipment(native_request: dict, recorded_reference: dict) -
     """
     result = copy.deepcopy(native_request)
     player(result)["equipment"] = copy.deepcopy(
-        recorded_reference["player"]["equipment"])
+        player(recorded_reference)["equipment"])
     return result
 
 

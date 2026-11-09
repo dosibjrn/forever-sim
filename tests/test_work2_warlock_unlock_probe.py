@@ -176,14 +176,27 @@ def test_unexpected_runner_error_is_not_labeled_a_native_refusal(tmp_path):
 def test_recorded_source_equipment_overlay_is_exact_and_non_mutating():
     neutral = _source()
     neutral["raid"]["parties"][0]["players"][0]["equipment"] = {"items": []}
-    recorded = {"player": {"equipment": {"items": [
+    recorded = copy.deepcopy(_source())
+    probe.player(recorded)["equipment"] = {"items": [
         {"id": 253949}, {"id": 20442}, {"id": 4315}
-    ]}}}
+    ]}
     original = copy.deepcopy(neutral)
     equipment = copy.deepcopy(recorded)
     result = probe.overlay_recorded_equipment(neutral, recorded)
-    assert probe.player(result)["equipment"] == recorded["player"]["equipment"]
+    assert probe.player(result)["equipment"] == probe.player(recorded)["equipment"]
     assert neutral == original and recorded == equipment
     # No talents, policy, encounter, seed, or native request fields change.
     probe.player(result)["equipment"] = {"items": []}
     assert result == original
+
+
+def test_recorded_p71_fixture_native_raid_shape_is_forwarded_exactly():
+    """Protect the actual JSON transport shape, not a synthetic top-level player."""
+    recorded = json.loads((Path(__file__).resolve().parents[1] /
+                           "fixtures/warlock-l20-p71.request.json").read_text())
+    neutral = _source()
+    probe.player(neutral)["equipment"] = {"items": []}
+    changed = probe.overlay_recorded_equipment(neutral, recorded)
+    assert probe.player(changed)["equipment"] == probe.player(recorded)["equipment"]
+    assert len(probe.player(changed)["equipment"]["items"]) > 0
+    assert probe.player(neutral)["equipment"] == {"items": []}
