@@ -110,3 +110,7 @@ def test_direct_cold_cli_imports_project_tools_outside_repo(tmp_path):
     assert completed.returncode == 0, completed.stderr
     assert "--budget" in completed.stdout
     assert "--snapshot" in completed.stdout
+    assert "--two-target-screen" in completed.stdout
+    assert "--two-target-cold-proposal" in completed.stdout
+    assert "--two-target-talent-unlock" not in completed.stdout
+    assert "--talent-unlock-equipment-reference" not in completed.stdout
