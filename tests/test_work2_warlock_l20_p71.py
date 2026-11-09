@@ -114,3 +114,28 @@ def test_stationary_fixture_preserves_pinned_rust_warlock_actor():
     assert len(target) == 1 and target[0]["level"] == 20
     assert target[0]["minBaseDamage"] == 0 and target[0]["canCrush"] is False
     assert frozen["simOptions"]["iterations"] == 1000
+
+
+def test_paid_stochastic_warlock_reference_is_frozen_to_exact_source():
+    """Receipt provenance, not a second engine correctness or gameplay test."""
+    import hashlib
+
+    root = Path(__file__).resolve().parents[1]
+    frozen = reference._reference_directory(root, "warlock", 20, "unrestricted")
+    raw = (frozen / "request.json").read_bytes()
+    fixture = (root / "fixtures/warlock-l20-p71.request.json").read_bytes()
+    receipt = json.loads((frozen / "reference.json").read_text())
+    encounter = json.loads(raw)["encounter"]
+    canonical_encounter = json.dumps(
+        encounter, sort_keys=True, separators=(",", ":")).encode()
+    assert raw == fixture
+    assert receipt["source_request_raw_sha256"] == hashlib.sha256(raw).hexdigest()
+    assert receipt["encounter_sha256"] == hashlib.sha256(canonical_encounter).hexdigest()
+    assert receipt["selected_engine_revision"] == (
+        "201e9052ffe4349cad2cca241fc164737ac5a12b")
+    assert receipt["native_prepared_actor"] == {
+        "status": "PREPARED", "class": "ClassWarlock", "level": 20}
+    assert receipt["reference_rng_mode"] == "stochastic"
+    assert receipt["reference_iterations"] == 1000
+    assert receipt["reference_native_sample"]["iterations"] == 1000
+    assert receipt["reference_native_sample"]["native_dps"] == receipt["reference_dps"]
