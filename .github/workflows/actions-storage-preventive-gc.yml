@@ -50,7 +50,6 @@ jobs:
           import pathlib
           import re
           import subprocess
-          import time
           import urllib.error
           import urllib.request
 
@@ -77,7 +76,8 @@ jobs:
 
           # The deletion path must use the same strict page-count/ID checks
           # as the read-only monitor. API churn is an abort, not deletion input.
-          from tools.actions_storage_footprint import verified_artifacts, requires_evidence_pin_scan
+          from tools.actions_storage_footprint import (verified_artifacts, requires_evidence_pin_scan,
+                                                       verify_deleted_artifacts_absent)
 
           def list_artifacts():
               def fetch_page(_repository, page):
@@ -111,7 +111,7 @@ jobs:
           # Protect accepted M1 URLs as well as prose references.
           # Missing local evidence must fail closed before any deletion.
           from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
-                                                   completed_run_candidates, record_references)
+                                                   completed_run_candidates, record_references, protects_open_pr_artifact)
           pinned_runs, pinned_artifacts = collect_local_references(pathlib.Path("."))
 
           def gh_collection(endpoint):
@@ -181,14 +181,12 @@ jobs:
                            if p.get("state") == "open"
                            and p.get("head", {}).get("repo", {}).get("full_name") == repo}
           keep_recent = {int(a["id"]) for a in stage5[:5]}
-          # Protect newest two outputs on every still-open PR branch.
-          active_branch_counts = {}
+          # Do not delete ANY receipt from an unmerged PR branch. Two newest
+          # were insufficient: older paid/failing runs may be the only
+          # unmerged evidence. Ambiguous origin-branch metadata also stays.
           for a in stage5:
-              run = a.get("workflow_run")
-              branch = run.get("head_branch") if isinstance(run, dict) else None
-              if branch in open_branches and active_branch_counts.get(branch, 0) < 2:
+              if protects_open_pr_artifact(a, open_branches):
                   keep_recent.add(int(a["id"]))
-                  active_branch_counts[branch] = active_branch_counts.get(branch, 0) + 1
           candidates = []
           protected = {"newest-or-active-head": 0, "project-or-issue-linked": 0,
                        "unknown-run-provenance": 0, "younger-than-72h": 0}
@@ -226,7 +224,8 @@ jobs:
               # unlike replaceable PR/push CI diagnostics. Retention handles it.
               allowed_events=("pull_request", "push"),
               require_success_conclusion=True,
-              require_single_attempt=True)
+              require_single_attempt=True,
+              protected_branches=open_branches)
           print(f"RUN_COMPLETION eligible_finished={len(candidates)} deferred_unsafe={unfinished}")
           print(f"ELIGIBLE count={len(candidates)} MiB={sum(a['size_in_bytes'] for a in candidates)/1048576:.2f}")
           for a in candidates[:12]:
@@ -249,19 +248,11 @@ jobs:
                   if status not in (204, 404):
                       raise RuntimeError(f"DELETE id={aid} expected 204/previously gone 404, got {status}: {str(body)[:160]}")
                   deleted.append(aid)
-              # GitHub may return stale GET/list data immediately after a 204.
-              # Verify final absence with bounded eventual-consistency retries.
-              remaining_ids = set(deleted)
-              for attempt in range(12):
-                  after_artifacts = list_artifacts()
-                  live_ids = {int(a["id"]) for a in after_artifacts}
-                  remaining_ids = set(deleted).intersection(live_ids)
-                  if not remaining_ids:
-                      break
-                  print(f"Deletion pending visibility for {len(remaining_ids)} IDs; retry {attempt + 1}/12")
-                  time.sleep(5)
-              if remaining_ids:
-                  raise RuntimeError(f"DELETE verification did not converge: {sorted(remaining_ids)[:12]}")
+              # Only a complete, stable post-DELETE inventory can certify
+              # absence. Retry stale views AND transient pagination churn;
+              # pre-DELETE inventory/pin/provenance checks remain fail-closed.
+              after_artifacts = verify_deleted_artifacts_absent(
+                  deleted, list_artifacts, attempts=12, delay_seconds=5)
               after = sum(int(a["size_in_bytes"]) for a in after_artifacts)
               print(f"AFTER count={len(after_artifacts)} bytes={after} MiB={after/1048576:.2f}")
               print(f"VERIFIED_DELETIONS count={len(deleted)} reclaimed_MiB={(total-after)/1048576:.2f}")

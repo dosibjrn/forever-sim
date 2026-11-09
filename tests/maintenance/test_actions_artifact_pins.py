@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from tools.actions_artifact_pins import (artifact_run_id, collect_local_references,
-                                         completed_run_candidates, record_references)
+                                         completed_run_candidates, record_references, protects_open_pr_artifact)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -218,7 +218,7 @@ def test_live_gc_fetches_comments_before_eligible_deletion():
         encoding="utf-8"
     )
     assert "from tools.actions_artifact_pins import (artifact_run_id, collect_local_references," in workflow
-    assert "completed_run_candidates, record_references)" in workflow
+    assert "completed_run_candidates, record_references, protects_open_pr_artifact)" in workflow
     assert 'gh_collection("issues?state=all")' in workflow
     assert '"issues/comments?sort=created&direction=desc"' in workflow
     assert '"pulls/comments?sort=created&direction=desc"' in workflow
@@ -554,6 +554,91 @@ def test_actions_run_prose_requires_unambiguous_id_marker():
         runs, artifacts)
     assert runs == set()
     assert artifacts == set()
+
+
+@pytest.mark.parametrize(("origin", "protected"), [
+    ({"id": 1, "head_branch": "work/unmerged"}, True),
+    ({"id": 2, "head_branch": "main"}, False),
+    ({"id": 3, "head_branch": "work/merged"}, False),
+    ({"id": 4, "head_branch": None}, True),
+    ({"id": 5}, True),
+    ({"id": 6, "head_branch": 7}, True),
+    (None, True),
+])
+def test_gc_keeps_all_open_pr_evidence_and_unknown_branch_origins(origin, protected):
+    artifact = {"workflow_run": origin}
+    assert protects_open_pr_artifact(artifact, {"work/unmerged"}) is protected
+
+
+def test_gc_no_longer_limits_unmerged_branch_protection_to_two_artifacts():
+    """An older unmerged native receipt must survive even when newer runs exist."""
+    artifacts = [
+        {"id": i, "workflow_run": {"id": 100 + i,
+                                  "head_branch": "work/unmerged"}}
+        for i in range(5)
+    ]
+    assert all(protects_open_pr_artifact(a, {"work/unmerged"}) for a in artifacts)
+    assert not protects_open_pr_artifact(
+        {"workflow_run": {"id": 200, "head_branch": "main"}},
+        {"work/unmerged"})
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+        encoding="utf-8")
+    assert "if protects_open_pr_artifact(a, open_branches):" in workflow
+    assert "active_branch_counts" not in workflow
+    assert workflow.index("if protects_open_pr_artifact(") < workflow.index(
+        "candidates = []")
+
+
+@pytest.mark.parametrize(("artifact_branch", "actual_branch", "open_branches", "expected"), [
+    ("work/open", "work/open", {"work/open"}, "protected"),
+    ("main", "work/open", {"work/open"}, "mismatch"),
+    ("main", "main", {"work/open"}, "eligible"),
+    ("work/old", None, {"work/open"}, "protected"),
+    (None, "work/open", {"work/open"}, "protected"),
+])
+def test_gc_confirms_open_pr_protection_with_authoritative_run_branch(
+        artifact_branch, actual_branch, open_branches, expected):
+    """A stale/mislabelled artifact branch cannot authorize evidence deletion."""
+    sha = "a" * 40
+    artifact = {
+        "id": 31, "name": "native-joint-28-stage5-" + sha,
+        "workflow_run": {
+            "id": 900, "head_sha": sha, "head_branch": artifact_branch,
+        },
+    }
+    def fetch(run_id):
+        return {
+            "id": run_id, "status": "completed", "conclusion": "success",
+            "event": "pull_request", "run_attempt": 1,
+            "path": ".github/workflows/native-joint-28-sweep.yml",
+            "head_sha": sha, "head_branch": actual_branch,
+        }
+    options = dict(
+        expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+        expected_name_prefix="native-joint-28-stage5-",
+        allowed_events=("pull_request", "push"),
+        require_success_conclusion=True,
+        require_single_attempt=True,
+        protected_branches=open_branches,
+    )
+    if expected == "mismatch":
+        with pytest.raises(ValueError, match="artifact branch .* does not match run branch"):
+            completed_run_candidates([artifact], fetch, **options)
+    else:
+        ready, deferred = completed_run_candidates([artifact], fetch, **options)
+        assert ([a["id"] for a in ready], deferred) == (
+            ([31], 0) if expected == "eligible" else ([], 1)
+        )
+
+
+def test_live_gc_enforces_branch_crosscheck_before_its_delete_plan():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml"
+                ).read_text(encoding="utf-8")
+    assert "protected_branches=open_branches)" in workflow
+    assert workflow.index("protected_branches=open_branches)") < workflow.index(
+        "planned = []")
+    assert workflow.index("planned = []") < workflow.index(
+        'request(f"artifacts/{aid}", "DELETE")')
 
 
 def test_unquoted_colon_receipts_pin_artifacts_and_runs_before_gc(tmp_path):

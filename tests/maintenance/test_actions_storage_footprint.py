@@ -78,7 +78,7 @@ def test_deletion_workflow_uses_complete_verified_inventory():
     workflow = (Path(__file__).resolve().parents[2]
                 / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
                     encoding="utf-8")
-    assert "from tools.actions_storage_footprint import verified_artifacts" in workflow
+    assert "from tools.actions_storage_footprint import (verified_artifacts, requires_evidence_pin_scan," in workflow
     assert "return verified_artifacts(repo, fetch_page)" in workflow
     assert workflow.index("return verified_artifacts(repo, fetch_page)") < workflow.index(
         "candidates = []")
@@ -322,3 +322,68 @@ def test_public_owner_fallback_never_reads_foreign_or_other_scopes(
     with pytest.raises(urllib.error.HTTPError):
         module._github_json(url)
     assert len(requests) == 1
+
+
+def test_post_delete_retries_unstable_pagination_then_stale_id_without_false_success():
+    """A moving GitHub page count is retryable only in post-DELETE verification."""
+    calls = []
+    sleeps = []
+
+    def list_verified():
+        calls.append(len(calls) + 1)
+        if len(calls) == 1:
+            def moving(_repo, page):
+                if page == 1:
+                    return {"total_count": 101,
+                            "artifacts": [{"id": i, "size_in_bytes": 1}
+                                          for i in range(1, 101)]}
+                return {"total_count": 100, "artifacts": [{"id": 101, "size_in_bytes": 1}]}
+            return module.verified_artifacts("owner/repo", moving)
+        if len(calls) == 2:
+            return [{"id": 55, "size_in_bytes": 100},
+                    {"id": 70, "size_in_bytes": 1}]
+        return [{"id": 70, "size_in_bytes": 1}]
+
+    after = module.verify_deleted_artifacts_absent(
+        [55], list_verified, attempts=4, delay_seconds=5,
+        sleep=sleeps.append)
+    assert after == [{"id": 70, "size_in_bytes": 1}]
+    assert calls == [1, 2, 3]
+    assert sleeps == [5, 5]
+
+
+def test_post_delete_never_certifies_partial_inventories():
+    """Repeated pagination churn exhausts the bounded retries and fails closed."""
+    calls = []
+    sleeps = []
+
+    def unstable():
+        calls.append(1)
+        raise ValueError("total_count changed during pagination")
+
+    with pytest.raises(RuntimeError, match="did not converge"):
+        module.verify_deleted_artifacts_absent(
+            [55], unstable, attempts=3, delay_seconds=2,
+            sleep=sleeps.append)
+    assert len(calls) == 3
+    assert sleeps == [2, 2]
+
+
+def test_post_delete_visible_id_still_fails_closed():
+    calls = []
+    with pytest.raises(RuntimeError, match="last-visible IDs=\\[55\\]"):
+        module.verify_deleted_artifacts_absent(
+            [55], lambda: calls.append(1) or [{"id": 55, "size_in_bytes": 1}],
+            attempts=2, delay_seconds=0, sleep=lambda _seconds: None)
+    assert len(calls) == 2
+
+
+def test_live_gc_invokes_bounded_complete_post_delete_verification():
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    assert "verify_deleted_artifacts_absent)" in workflow
+    assert "after_artifacts = verify_deleted_artifacts_absent(" in workflow
+    assert "deleted, list_artifacts, attempts=12, delay_seconds=5)" in workflow
+    assert workflow.index('request(f"artifacts/{aid}", "DELETE")') < workflow.index(
+        "after_artifacts = verify_deleted_artifacts_absent(")
