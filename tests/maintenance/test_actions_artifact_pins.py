@@ -533,6 +533,8 @@ def test_artifact_prose_parser_does_not_pin_unlabelled_numbers():
     ("The workflow run ID: 42573346755 must be preserved.", 42573346755),
     ("Reproduce from run #42573539316 before removing diagnostics.", 42573539316),
     ("GitHub Actions run id=42574670709 is the original evidence.", 42574670709),
+    ("Only recorded as Actions #42573178806; no URL exists.", 42573178806),
+    ("github ACTIONS #42573346755 is the only native receipt.", 42573346755),
 ])
 def test_explicit_prose_actions_run_ids_pin_origin_artifacts(reference, expected_run):
     """An issue/PR prose-only run reference must protect all of its artifacts."""
@@ -547,7 +549,8 @@ def test_actions_run_prose_requires_unambiguous_id_marker():
     runs, artifacts = set(), set()
     record_references(
         "run 42; issue #1052; run #0; workflow run: 12345; "
-        "2026 runs; version 9876; generic workflow 321",
+        "2026 runs; version 9876; generic workflow 321; "
+        "Actions 9876; Actions #0; Actions #123abc; Action #456",
         runs, artifacts)
     assert runs == set()
     assert artifacts == set()

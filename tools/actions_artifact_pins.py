@@ -46,6 +46,11 @@ _RUN_PROSE_ID = re.compile(
     flags=re.IGNORECASE,
 )
 
+# Issue/PR comments sometimes shorthand a GitHub Actions run as
+# "Actions #123", without "run" or a URL. A run-only evidence reference
+# must pin its origin artifacts as safely as an Actions URL does.
+_ACTIONS_NUMBER = re.compile(r"\bactions\s+#\s*([1-9]\d*)\b", re.IGNORECASE)
+
 
 def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> None:
     """Add referenced IDs from an issue, review, ledger or document."""
@@ -58,6 +63,7 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     runs.update(int(match) for match in _RUN_ASSIGNMENT_ID.findall(text))
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
     runs.update(int(match) for match in _RUN_PROSE_ID.findall(text))
+    runs.update(int(match) for match in _ACTIONS_NUMBER.findall(text))
 
 
 def artifact_run_id(artifact: dict) -> int | None:
