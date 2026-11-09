@@ -15,7 +15,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "integrations/mythicsim-rust"))
 
-from live_two_world_pulls import run as native_world_chain  # noqa: E402
+from live_two_world_pulls import (  # noqa: E402
+    NativeWorldChainFailure,
+    run as native_world_chain,
+)
 from src.scenarios.leveling_targets import representative_hp  # noqa: E402
 
 
@@ -194,6 +197,12 @@ def main() -> None:
             # nonzero exit; preserve the precise result, not a fake score.
             record["status"] = "INCOMPLETE_OR_NATIVE_REFUSAL"
             record["error"] = str(exc)[-4500:]
+            if isinstance(exc, NativeWorldChainFailure):
+                # Only actual acknowledged 2D kills; never score a partial
+                # native chain as completed or interpolate its remaining time.
+                record["killed"] = exc.killed
+                record["native_damage_events"] = exc.native_damage_events
+                record["native_exit_code"] = exc.exit_code
             record.update(native_failure_receipt(exc))
             print("CHAIN_INCOMPLETE", json.dumps(record), flush=True)
         (base / "summary.json").write_text(json.dumps(record, indent=2) + "\n")
