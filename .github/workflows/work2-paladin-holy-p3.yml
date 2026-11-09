@@ -111,3 +111,5 @@ jobs:
           name: paladin-holy-l60-native-hps-p3-no-record
           path: ${{ runner.temp }}/paladin-holy-p3/
           if-no-files-found: ignore
+
+          retention-days: 30
