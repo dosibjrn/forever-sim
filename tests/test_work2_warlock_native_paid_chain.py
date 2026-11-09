@@ -200,3 +200,19 @@ def test_fixed_recovery_duration_forwarded_from_warlock_driver(tmp_path, monkeyp
     record = json.loads((tmp_path / "out/best_apl/summary.json").read_text())
     assert record["status"] == "INCOMPLETE_OR_NATIVE_REFUSAL"
     assert "3 kills" in record["error"]
+
+
+
+def test_native_refusal_preserves_only_source_acknowledged_partial_kills():
+    capture = _WARLOCK["native_failure_receipt"]
+    actual = AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 19,
+                             "native ran dry", 50, 623))
+    assert capture(actual) == {
+        "native_exit_code": 19,
+        "native_world_ack_kills_before_refusal": 50,
+        "native_damage_events_before_refusal": 623,
+    }
+    assert capture(AssertionError("50 kills maybe")) == {}
+    assert capture(AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 0,
+                                   "no failure", 100, 1000))) == {}
+    assert capture(ValueError("bad request")) == {}
