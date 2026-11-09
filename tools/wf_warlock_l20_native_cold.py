@@ -389,6 +389,67 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
     return report
 
 
+
+def run_paid_hundred_target_baseline(reference: dict, *, binary: Path, out: Path,
+                                     health_threshold: float = 0.5,
+                                     mana_threshold: float = 0.1,
+                                     timeout: float = 1800.0,
+                                     clock=time.monotonic,
+                                     chain=paid_chain) -> dict:
+    """One frozen, actually paid 100-mob Decisions baseline; no cold search.
+
+    Uses the identical request/engine/recovery-provenance and continuous-world
+    receipt path as the cold finalists. This is diagnostic evidence, not P4–P6
+    acceptance: it neither performs a 30/300 search nor records a gate.
+    """
+    if (not math.isfinite(timeout) or timeout <= 0
+            or not all(math.isfinite(x) and 0 <= x <= 1
+                       for x in (health_threshold, mana_threshold))):
+        raise ValueError("INVALID_PAID_BASELINE_ARGUMENT")
+    out.mkdir(parents=True, exist_ok=True)
+    candidate = {
+        "source": copy.deepcopy(reference),
+        "recovery": {"health_threshold": health_threshold,
+                     "mana_threshold": mana_threshold},
+    }
+    started = clock()
+    receipt = None
+    reason = None
+    try:
+        receipt = chain(binary, candidate, out / "paid", targets=100,
+                        timeout=timeout)
+        status = "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+    except NativeUnscoredCandidate as exc:
+        status = "NATIVE_HUNDRED_TARGET_BASELINE_UNSCORED"
+        reason = str(exc)
+        receipt = exc.raw_response
+    except subprocess.TimeoutExpired as exc:
+        status = "NATIVE_HUNDRED_TARGET_BASELINE_TIMEOUT"
+        reason = str(exc)
+    except (RuntimeError, ValueError) as exc:
+        status = "NATIVE_HUNDRED_TARGET_BASELINE_ERROR"
+        reason = str(exc)
+    report = {
+        "kind": "warlock_l20_frozen_paid_hundred_target_baseline",
+        "status": status,
+        "elapsed_wall_s": max(0.0, clock() - started),
+        "source_request_sha256": identity(reference),
+        "engine_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "target_count_requested": 100,
+        "recovery": candidate["recovery"],
+        "seconds_per_mob": (receipt["seconds_per_mob"]
+                            if status == "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+                            else None),
+        "native_receipt": receipt,
+        "reason": reason,
+        "gate_recorded": False,
+        "p4_p5_p6_pass": False,
+    }
+    (out / "hundred_target_baseline_summary.json").write_text(
+        json.dumps(report, indent=2, allow_nan=False) + "\n")
+    return report
+
+
 def run_paid_two_target_screen(reference: dict, *, binary: Path, out: Path,
                                health_threshold: float = 0.5,
                                mana_threshold: float = 0.1,
@@ -456,8 +517,12 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20261109)
     parser.add_argument("--budget", type=float, default=300.0)
     parser.add_argument("--snapshot", type=float, default=30.0)
-    parser.add_argument("--two-target-screen", action="store_true",
-                        help="Measure one real paid 2-target candidate only; no cold gate")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--two-target-screen", action="store_true",
+                      help="Measure one real paid 2-target candidate only; no cold gate")
+    mode.add_argument("--hundred-target-baseline", action="store_true",
+                      help="Pay one frozen 100-target Decisions build; no cold search")
+    parser.add_argument("--baseline-timeout", type=float, default=1800.0)
     parser.add_argument("--screen-timeout", type=float, default=120.0)
     parser.add_argument("--health-threshold", type=float, default=0.5)
     parser.add_argument("--mana-threshold", type=float, default=0.1)
@@ -476,6 +541,21 @@ def main() -> None:
             "summary": str(args.out / "two_target_screen_summary.json"),
         }), flush=True)
         if result["status"] != "COMPLETED_2_REAL_NATIVE_GSIM_KILLS":
+            raise SystemExit(1)
+        return
+    if args.hundred_target_baseline:
+        result = run_paid_hundred_target_baseline(
+            source, binary=args.binary, out=args.out,
+            timeout=args.baseline_timeout,
+            health_threshold=args.health_threshold,
+            mana_threshold=args.mana_threshold)
+        print("WARLOCK_NATIVE_HUNDRED_TARGET_PAID_BASELINE", json.dumps({
+            "status": result["status"],
+            "elapsed_wall_s": result["elapsed_wall_s"],
+            "seconds_per_mob": result["seconds_per_mob"],
+            "summary": str(args.out / "hundred_target_baseline_summary.json"),
+        }), flush=True)
+        if result["status"] != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
             raise SystemExit(1)
         return
     options = query_native_options(args.binary, "warlock", 20)
