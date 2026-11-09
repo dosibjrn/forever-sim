@@ -52,7 +52,6 @@ def _cold() -> dict:
             "status": "MEASURED_PAID_100_MOB_FINALISTS",
             "t30_over_t300": 10.0 / 9.95,
         },
-        "native_representative_unlocked_cast_compared": True,
     }
 
 
@@ -118,17 +117,15 @@ def test_native_refusal_and_incomplete_finalists_never_score(monkeypatch, tmp_pa
         bridge.set_shared_warlock_l20_cold(False)
 
 
-def test_p4_unlock_cast_is_not_inferred_from_available_action_ids(monkeypatch, tmp_path):
+def test_p4_paid_winner_no_longer_needs_unlock_cast_certificate(monkeypatch, tmp_path):
     monkeypatch.setenv(bridge.OPT_IN, "1")
     report = _cold()
-    del report["native_representative_unlocked_cast_compared"]
+    report["native_source_unlocked_actions_available"] = True
+    report["native_representative_unlocked_cast_compared"] = False
     monkeypatch.setattr(bridge, "_execute", lambda: report)
     bridge.set_shared_warlock_l20_cold(True)
     try:
-        got = p4.run_live(tmp_path, "warlock", 20)
-        assert got["status"] == "FAIL"
-        assert "P4_NATIVE_REPRESENTATIVE_UNLOCK_CAST_UNVERIFIED" in got["reasons"]
-        # Missing P4 cast comparison cannot invent a P5 or P6 veto.
+        assert p4.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
         assert p5.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
         assert p6.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
     finally:
@@ -209,20 +206,16 @@ def test_only_world_acked_rust_source_effects_are_attributed():
     assert counted == {"player": {"Spell-686": 2}, "pet": {"Pet-1": 1}}
 
 
-def test_source_damage_effects_are_not_mistaken_for_talent_unlock_casts(
-        monkeypatch, tmp_path):
-    """Native damage may be periodic or pet damage: no invented P4 PASS."""
+def test_source_damage_effects_remain_ordinary_diagnostics(monkeypatch, tmp_path):
+    """Native damage counters neither prove nor block a real P4 outcome."""
     monkeypatch.setenv(bridge.OPT_IN, "1")
     report = _cold()
-    del report["native_representative_unlocked_cast_compared"]
     report["finalists"]["30s"]["native_receipt"][
         "native_source_damage_effects_by_caster"] = {
             "player": {"Spell-686": 3}, "pet": {"Pet-1": 4}}
     monkeypatch.setattr(bridge, "_execute", lambda: report)
     bridge.set_shared_warlock_l20_cold(True)
     try:
-        got = p4.run_live(tmp_path, "warlock", 20)
-        assert got["status"] == "FAIL"
-        assert "P4_NATIVE_REPRESENTATIVE_UNLOCK_CAST_UNVERIFIED" in got["reasons"]
+        assert p4.run_live(tmp_path, "warlock", 20)["status"] == "PASS"
     finally:
         bridge.set_shared_warlock_l20_cold(False)
