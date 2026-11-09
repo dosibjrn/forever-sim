@@ -263,8 +263,16 @@ def main() -> None:
                 require_native_health_damage=False,
                 **native_recovery,
             )
-            (base / "chain_native_world.json").write_text(
-                json.dumps(result, indent=2, allow_nan=False) + "\n")
+            # An incomplete native actor trace must still produce a durable
+            # refusal summary. Non-finite native data cannot be written as
+            # standard JSON; retain the structured refusal instead of
+            # crashing before the 100-target attempt is classified.
+            try:
+                native_json = json.dumps(result, indent=2, allow_nan=False)
+            except (TypeError, ValueError):
+                native_json = None
+            if native_json is not None:
+                (base / "chain_native_world.json").write_text(native_json + "\n")
             killed = result["world_targets_killed"]
             paid = result.get("paid_recovery") is True
             seconds_per_mob = result.get("world_seconds_per_target_paid_recovery")
@@ -276,6 +284,8 @@ def main() -> None:
                 result, args.targets)
             if complete and not actor_receipt_complete:
                 status, complete = "INCOMPLETE_NATIVE_ACTOR_CONTINUITY_RECEIPT", False
+            if complete and native_json is None:
+                status, complete = "INCOMPLETE_NONFINITE_NATIVE_RECEIPT", False
             # Independent transport proofs: a native health-damage refusal
             # must not erase genuine paid food/water evidence, or vice versa.
             # Neither individual proof grants an accepted chain objective.
