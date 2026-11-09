@@ -399,7 +399,7 @@ def _warlock_l20_native_request(root: Path) -> str | None:
     if explicit:
         return explicit
     pinned_fixture = (root / "integrations/mythicsim-rust/engine/fixtures"
-                      / "warlock-l20-troll-best-paid.request.json")
+                      / "warlock-l20-troll-source-equipped.request.json")
     return str(pinned_fixture) if pinned_fixture.is_file() else None
 
 
