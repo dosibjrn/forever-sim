@@ -1,0 +1,31 @@
+"""Regress the native/world workflow boundary without auditing Rust internals.
+
+This tests Forever-owned CI invocation only. The selected Rust engine owns
+implementation details and its CLI/world outcomes remain the authority.
+"""
+from pathlib import Path
+
+WORKFLOW = (Path(__file__).resolve().parents[2]
+            / ".github/workflows/native-session-ack-regressions.yml")
+
+
+def test_selected_native_world_job_reaches_executable_checks_without_source_greps():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    setup = text.split(
+        "      - name: Compile the exact selected Rust fork and verify its RNG CLI\n",
+        1)[1].split(
+        "      - name: Verify explicit Balanced and Stochastic modes in real native",
+        1)[0]
+    # Pin exact code revision, build the selected binary, then test its CLI;
+    # don't gate a real Rust/2D regression on implementation-specific symbols.
+    assert 'test "$selected" = "$actual"' in setup
+    assert "cargo build --locked --manifest-path" in setup
+    assert "grep -Fq" not in setup
+    assert 'if "$binary" sim --infile "$fixture"' in setup
+    assert 'if "$binary" sim --rng-mode bogus --infile "$fixture"' in setup
+
+    # The downstream scenario checks still exercise native + 2D behavior.
+    assert "native_source_control(binary, request, 5, rng_mode=mode)" in text
+    assert "probe.run(binary, request, distance=15.0" in text
+    assert "live_two_world_pulls.py" in text
+    assert "--require-native-health-damage" in text
