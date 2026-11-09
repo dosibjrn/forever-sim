@@ -115,8 +115,9 @@ def test_native_workflow_uses_the_existing_source_equipped_actor():
     workflow = (Path(__file__).resolve().parents[1] /
                 ".github/workflows/work2-warlock-l20-talent-unlock.yml")
     text = workflow.read_text()
-    assert "--source ../engine/fixtures/warlock-l20-troll-source-equipped.request.json" in text
-    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" not in text
+    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" in text
+    assert "--talent-unlock-equipment-reference fixtures/warlock-l20-p71.request.json" in text
+    assert "--source ../engine/fixtures/warlock-l20-troll-source-equipped.request.json" not in text
 
 
 def test_refused_native_chain_keeps_actual_acked_effects_not_inferred_cast(tmp_path):
@@ -170,3 +171,19 @@ def test_unexpected_runner_error_is_not_labeled_a_native_refusal(tmp_path):
     assert result["paid_comparison"]["baseline"]["status"] == "NATIVE_PAID_2_TARGET_ERROR"
     assert result["paid_comparison"]["talent_action"]["status"] == "NATIVE_PAID_2_TARGET_ERROR"
     assert result["p4_pass"] is False
+
+
+def test_recorded_source_equipment_overlay_is_exact_and_non_mutating():
+    neutral = _source()
+    neutral["raid"]["parties"][0]["players"][0]["equipment"] = {"items": []}
+    recorded = {"player": {"equipment": {"items": [
+        {"id": 253949}, {"id": 20442}, {"id": 4315}
+    ]}}}
+    original = copy.deepcopy(neutral)
+    equipment = copy.deepcopy(recorded)
+    result = probe.overlay_recorded_equipment(neutral, recorded)
+    assert probe.player(result)["equipment"] == recorded["player"]["equipment"]
+    assert neutral == original and recorded == equipment
+    # No talents, policy, encounter, seed, or native request fields change.
+    probe.player(result)["equipment"] = {"items": []}
+    assert result == original

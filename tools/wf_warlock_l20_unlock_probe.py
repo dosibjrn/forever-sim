@@ -18,6 +18,20 @@ def player(request: dict) -> dict:
     return request["raid"]["parties"][0]["players"][0]
 
 
+
+def overlay_recorded_equipment(native_request: dict, recorded_reference: dict) -> dict:
+    """Copy an existing executed source actor's item payload into a native request.
+
+    This is scenario input composition, not Python item legality or an
+    assertion that Rust accepts the combined build. Only Rust can judge it.
+    The original request and source reference are not mutated.
+    """
+    result = copy.deepcopy(native_request)
+    player(result)["equipment"] = copy.deepcopy(
+        recorded_reference["player"]["equipment"])
+    return result
+
+
 def prepared_apl_ids(binary: Path, request: dict, out: Path,
                      *, runner=subprocess.run) -> set[int] | None:
     """Read Rust's exact prepared APL registry; None means native refusal.

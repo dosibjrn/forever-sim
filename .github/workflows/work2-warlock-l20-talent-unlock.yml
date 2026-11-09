@@ -11,8 +11,9 @@ permissions:
 
 # One bounded native prepare discovery and at most two paid 2-mob
 # Decisions routes; this is not a 300s cold search, recorder or P4 PASS.
-# Preserve the gear-backed native source from the existing lethal L20 fixture.
-# Both paid branches reuse its exact equipment; only talents/APL may differ.
+# Start from the selected Rust native actor and copy the already recorded
+# source-equipped P7 reference's gear (17 selected-source items) into that
+# actor. Both paid branches freeze the resulting input; Rust judges builds.
 concurrency:
   group: work2-warlock-l20-talent-unlock
   cancel-in-progress: false
@@ -53,7 +54,8 @@ jobs:
         run: |
           python -u tools/wf_warlock_l20_native_cold.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../engine/fixtures/warlock-l20-troll-source-equipped.request.json \
+            --source ../engine/fixtures/warlock-l20-troll-native.request.json \
+            --talent-unlock-equipment-reference fixtures/warlock-l20-p71.request.json \
             --out ../warlock-l20-unlock-probe \
             --two-target-talent-unlock --screen-timeout 180 --seed 20261109
       - name: Retain concise source/native receipt or exact refusal
@@ -63,6 +65,7 @@ jobs:
           name: warlock-l20-native-unlock
           path: |
             warlock-l20-unlock-probe/unlock_probe_summary.json
+            warlock-l20-unlock-probe/source_equipped.request.json
             warlock-l20-unlock-probe/candidate.request.json
             warlock-l20-unlock-probe/baseline/world/summary.json
             warlock-l20-unlock-probe/talent_action/world/summary.json
