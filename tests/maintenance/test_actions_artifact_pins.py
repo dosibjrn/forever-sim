@@ -373,3 +373,67 @@ def test_live_gc_requires_matching_artifact_and_run_sha_before_plan():
                 ).read_text(encoding="utf-8")
     assert 'expected_name_prefix="native-joint-28-stage5-"' in workflow
     assert workflow.index("completed_run_candidates(") < workflow.index("planned = []")
+
+
+
+@pytest.mark.parametrize("event", [
+    "workflow_dispatch", "repository_dispatch", "", None,
+])
+def test_gc_preserves_manually_requested_and_unknown_event_sweeps(event):
+    """Full opt-in native evidence is never disposable PR CI after 72 hours."""
+    sha = "a" * 40
+    artifact = {
+        "id": 15, "name": "native-joint-28-stage5-" + sha,
+        "workflow_run": {"id": 100, "head_sha": sha},
+    }
+    ready, deferred = completed_run_candidates(
+        [artifact],
+        lambda run_id: {
+            "id": run_id, "status": "completed",
+            "path": ".github/workflows/native-joint-28-sweep.yml",
+            "event": event, "head_sha": sha,
+        },
+        expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+        expected_name_prefix="native-joint-28-stage5-",
+        allowed_events=("pull_request", "push"),
+    )
+    assert ready == []
+    assert deferred == 1
+
+
+@pytest.mark.parametrize("event", ["pull_request", "push"])
+def test_gc_allows_only_normal_completed_sweep_ci_events(event):
+    """Preserve cleanup of confirmed disposable CI while pinning opt-in runs."""
+    sha = "b" * 40
+    artifacts = [
+        {"id": aid, "name": "native-joint-28-stage5-" + sha,
+         "workflow_run": {"id": 99, "head_sha": sha}}
+        for aid in (5, 6)
+    ]
+    fetched = []
+
+    def fetch(run_id):
+        fetched.append(run_id)
+        return {
+            "id": run_id, "status": "completed",
+            "path": ".github/workflows/native-joint-28-sweep.yml",
+            "event": event, "head_sha": sha,
+        }
+
+    ready, deferred = completed_run_candidates(
+        artifacts, fetch,
+        expected_workflow=".github/workflows/native-joint-28-sweep.yml",
+        expected_name_prefix="native-joint-28-stage5-",
+        allowed_events=("pull_request", "push"),
+    )
+    assert [a["id"] for a in ready] == [5, 6]
+    assert deferred == 0
+    assert fetched == [99]
+
+
+def test_live_gc_does_not_delete_manually_opted_in_full_sweep_evidence():
+    workflow = (ROOT / ".github/workflows/actions-storage-preventive-gc.yml"
+                ).read_text(encoding="utf-8")
+    assert 'allowed_events=("pull_request", "push")' in workflow
+    assert workflow.index('allowed_events=("pull_request", "push")') < workflow.index(
+        "planned = []")
