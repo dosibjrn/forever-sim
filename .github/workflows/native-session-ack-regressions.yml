@@ -173,8 +173,9 @@ jobs:
             --targets 2
 
   warlock-l20-paid-eight:
-    # Bounded changed-behavior smoke on the known trial fixture/pin only.
-    # Not the selected production submodule, not P4/P5/P6 acceptance.
+    # Exact tested Work1 Rust Decisions + source-ACK SHA. This is a NEW
+    # strict eight-target native/gsim proof, not the old fixed-rest 8/100.
+    # It must report the genuine native refusal if the integrated run fails.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -182,45 +183,62 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: project
-      - name: Checkout known fixed-recovery native Warlock trial
+      - name: Checkout tested Warlock Decisions and world ACK Rust
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 84bb2e76748fd62e74ecf838c4bca434000952ea
+          ref: febc1d703e022265ed61ede3fec9b05416282536
           path: engine
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install 2D world Python dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Build exact trial Rust bridge
+      - name: Build and fingerprint exact native source
         working-directory: engine
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "84bb2e76748fd62e74ecf838c4bca434000952ea"
+          test "$(git rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
           cargo build --locked --bin forever-engine
-      - name: Execute eight retained Troll Warlock L20 native/world kills with paid fixed recovery
+          sha256sum target/debug/forever-engine fixtures/warlock-l20-troll-best-paid.request.json
+      - name: Execute strict eight-target Warlock Decisions native-world proof
         working-directory: project
         run: |
           set -euo pipefail
           python -u tools/wf_warlock_l20_100mob.py \
             --binary ../engine/target/debug/forever-engine \
             --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
-            --out ../warlock-l20-eight-target-smoke \
-            --variant best_apl --targets 8 --recovery-policy fixed --recovery-seconds 12
+            --out ../warlock-l20-decisions-eight \
+            --variant best_apl --targets 8 --recovery-policy decisions \
+            --health-threshold 1.0 --mana-threshold 1.0 \
+            --require-native-consumption --require-native-health-damage
           python - <<'PY'
           import json
           from pathlib import Path
-          receipt = json.loads(Path("../warlock-l20-eight-target-smoke/summary.json").read_text())
+          receipt = json.loads(Path("../warlock-l20-decisions-eight/summary.json").read_text())
           row, = receipt["results"]
           assert row["status"] == "COMPLETED_8_REAL_NATIVE_GSIM_KILLS", row
-          assert row["killed"] == 8 and row["paid_recovery"] is True, row
+          assert row["killed"] == 8 and row["native_recovery_clock_accounted"] is True, row
+          assert row["native_consumption_proven"] is True, row
+          assert row["native_health_damage_proven"] is True, row
           assert row["native_2d_paid_objective_eligible"] is False, row
           assert receipt["p4_p5_p6_pass"] is False, receipt
-          print("WARLOCK_L20_EIGHT_ACTUAL_NATIVE_PAID_ACK_PASS_NOT_GATE")
+          print("WARLOCK_L20_EIGHT_NATIVE_DECISIONS_AND_HEALTH_PROOF_NOT_GATE",
+                json.dumps(row, sort_keys=True), flush=True)
           PY
+      - name: Show full native refusal or paid receipt after the run
+        if: always()
+        run: |
+          test ! -f warlock-l20-decisions-eight/summary.json || cat warlock-l20-decisions-eight/summary.json
+      - name: Preserve distinct 8-target Decisions requests and native receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warlock-l20-strict-decisions-eight
+          path: warlock-l20-decisions-eight/
+          if-no-files-found: warn
+          retention-days: 3
 
-      # The frozen 100/100 fixed-rest run succeeded on the exact trial SHA in
-      # Actions #42577136919. Do not re-run this unchanged expensive baseline
-      # on every PR; Work2's new 100-target Decisions candidate is a separate
-      # source-paid diagnostic once the compatible native SHA is selected.
+      # The frozen fixed-rest 100/100 baseline already passed in Actions
+      # #42577136919. Never re-run it here. A subsequent distinct 100-target
+      # Decisions chain and cold 300s finalists require separate real receipts.
