@@ -55,7 +55,8 @@ def completed_run_candidates(
         expected_workflow: str | None = None,
         expected_name_prefix: str | None = None,
         allowed_events: tuple[str, ...] | None = None,
-        require_success_conclusion: bool = False) -> tuple[list[dict], int]:
+        require_success_conclusion: bool = False,
+        require_single_attempt: bool = False) -> tuple[list[dict], int]:
     """Keep only artifacts from confirmed completed workflow runs.
 
     Query each distinct originating run once. A missing/malformed/mismatched
@@ -69,7 +70,9 @@ def completed_run_candidates(
     evidence artifacts; absent or unknown event metadata is deferred safely.
     When require_success_conclusion is set, retain all non-success outcomes:
     failed native-sweep artifacts can be the only available failure evidence.
-    A missing or ambiguous conclusion also fails closed.
+    A missing or ambiguous conclusion also fails closed. When single-attempt
+    protection is enabled, an absent/ambiguous run_attempt or a rerun is kept:
+    the latest successful conclusion cannot classify earlier attempt artifacts.
     """
     runs_by_id: dict[int, dict] = {}
     ready: list[dict] = []
@@ -95,6 +98,13 @@ def completed_run_candidates(
         if allowed_events is not None and run.get("event") not in allowed_events:
             # A manual sweep explicitly opted into retaining full native
             # request/response evidence. Do not treat it as disposable PR CI.
+            deferred += 1
+            continue
+        if require_single_attempt and (
+                type(run.get("run_attempt")) is not int
+                or run["run_attempt"] != 1):
+            # The run ID survives retries. A later successful attempt does
+            # not make artifacts from earlier failed attempts disposable.
             deferred += 1
             continue
         if expected_name_prefix is not None:
