@@ -1,0 +1,26 @@
+{
+  "class": "warlock",
+  "encounter_sha256": "419489d7045f12bcd1e1a56259fc82dfc69f44360e472ffb62471dca031e0c93",
+  "encounter_target_level": 20,
+  "level": 20,
+  "native_actor_level_context": 20,
+  "native_prepared_actor": {
+    "class": "ClassWarlock",
+    "level": 20,
+    "status": "PREPARED"
+  },
+  "native_rules": "forever",
+  "reference_configuration_source": "native_generated_msim_reference",
+  "reference_dps": 26.170875786265796,
+  "reference_iterations": 1000,
+  "reference_native_sample": {
+    "first_duration_s": 120,
+    "iterations": 1000,
+    "native_dps": 26.170875786265796,
+    "native_rules": "forever"
+  },
+  "reference_rng_mode": "stochastic",
+  "selected_engine_revision": "201e9052ffe4349cad2cca241fc164737ac5a12b",
+  "source_request_raw_sha256": "db707d8acaa5f2104f497bc73ae91b21aa2f1d0376e90b35fd256655f6a08274",
+  "spec": "unrestricted"
+}

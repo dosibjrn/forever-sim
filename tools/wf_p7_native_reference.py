@@ -63,6 +63,14 @@ def _binary_and_pin(root: Path) -> tuple[Path, str] | None:
     return binary, selected
 
 
+def _generated_checkpoint_selected(class_key: str, level: int, spec: str) -> bool:
+    """Only checkpoint profiles with an explicit frozen native request route."""
+    return spec == "unrestricted" and (
+        (class_key == "druid" and level in (20, 30, 40))
+        or (class_key == "warlock" and level == 20)
+    )
+
+
 def _native_reference_request(root: Path, class_key: str,
                               level: int, spec: str) -> Path | None:
     """Use source request bytes owned by the exact selected native submodule.
@@ -70,8 +78,13 @@ def _native_reference_request(root: Path, class_key: str,
     This is an input asset, not a Python game-rules database. Do not build a
     lower-level reference from the historical level-60 Balance request.
     """
-    if class_key != "druid" or spec != "unrestricted" or level not in (20, 30, 40):
+    if not _generated_checkpoint_selected(class_key, level, spec):
         return None
+    if class_key == "warlock":
+        # Stationary Forever scenario with selected Rust P3 actor intact.
+        # Native PREPARE and SIM remain the Warcraft and score authority.
+        path = root / "fixtures/warlock-l20-p71.request.json"
+        return path if path.is_file() else None
     # Native-owned request assets are keyed by checkpoint. A missing L30/L40
     # fixture must not silently fall back to the proven but different L20 actor.
     path = (root / "integrations/mythicsim-rust/engine"
@@ -156,7 +169,7 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
     options, not a copied L60 saved reference. Native PREPARE and SIM are the
     only authorities on the resulting actor and executable candidate.
     """
-    if class_key != "druid" or spec != "unrestricted" or level not in (20, 30, 40):
+    if not _generated_checkpoint_selected(class_key, level, spec):
         return _blocked("P7_1_GENERATED_REFERENCE_CHECKPOINT_NOT_SELECTED")
     out = destination or _reference_directory(root, class_key, level, spec)
     if (out / "request.json").exists() or (out / "reference.json").exists():
@@ -183,7 +196,7 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
             actor = _prepare_actor(binary, path, level)
             if actor["status"] != "PREPARED":
                 return _blocked("P7_1_NATIVE_PREPARE_REFUSED", native_refusal=actor)
-            if actor["class"] != "ClassDruid" or actor["level"] != level:
+            if actor["class"] != "Class" + class_key.capitalize() or actor["level"] != level:
                 return _blocked("P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH",
                                 native_actor=actor)
             paid = _native_score(_native(root), binary, path, level)
@@ -221,7 +234,7 @@ def produce_reference(root: Path, class_key: str, level: int, spec: str,
 
 
 def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict:
-    if class_key != "druid" or spec != "unrestricted" or level not in (20, 30, 40):
+    if not _generated_checkpoint_selected(class_key, level, spec):
         return _blocked("P7_1_GENERATED_REFERENCE_CHECKPOINT_NOT_SELECTED")
     directory = _reference_directory(root, class_key, level, spec)
     request_path, manifest_path = directory / "request.json", directory / "reference.json"
@@ -268,7 +281,7 @@ def run_generated_p71(root: Path, class_key: str, level: int, spec: str) -> dict
         actor = _prepare_actor(binary, request_path, level)
         if actor["status"] != "PREPARED":
             return _blocked("P7_1_NATIVE_PREPARE_REFUSED", native_refusal=actor)
-        if actor["class"] != "ClassDruid" or actor["level"] != level:
+        if actor["class"] != "Class" + class_key.capitalize() or actor["level"] != level:
             return _blocked("P7_1_NATIVE_PREPARED_ACTOR_LEVEL_MISMATCH",
                             native_actor=actor)
         # The pinned reference's own executed 1,000-fight stochastic sample
