@@ -37,6 +37,16 @@ _RUN_ASSIGNMENT_ID = re.compile(
     r"\s*=\s*([1-9]\d*)\b"
 )
 
+# Retained YAML/plain-text receipts can use unquoted colon keys rather than
+# JSON-quoted keys or shell key=value pairs. Without these patterns GC can
+# silently discard the only artifact/run referenced by a paid receipt.
+# Reject prefixes (not_artifact_id), zero and malformed numeric suffixes.
+_ARTIFACT_COLON_ID = re.compile(
+    r"""(?<!\\w)artifact_id\\s*:\\s*["']?([1-9]\\d*)["']?(?=$|[\\s,}\\]])""")
+_RUN_COLON_ID = re.compile(
+    r"""(?<!\\w)(?:run_id|workflow_run_id|github_run_id|engine_build_run_id)"""
+    r"""\\s*:\\s*["']?([1-9]\\d*)["']?(?=$|[\\s,}\\]])""")
+
 # Issue/PR discussions also cite Actions runs without URLs or JSON fields:
 # "Actions run #123", "workflow run ID: 123", and "run #123".
 # Require the explicit hash or ID marker; generic "run 42" is ambiguous.
@@ -61,6 +71,8 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     artifacts.update(int(match) for match in _ARTIFACT_PROSE_ID.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_ASSIGNMENT_ID.findall(text))
     runs.update(int(match) for match in _RUN_ASSIGNMENT_ID.findall(text))
+    artifacts.update(int(match) for match in _ARTIFACT_COLON_ID.findall(text))
+    runs.update(int(match) for match in _RUN_COLON_ID.findall(text))
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
     runs.update(int(match) for match in _RUN_PROSE_ID.findall(text))
     runs.update(int(match) for match in _ACTIONS_NUMBER.findall(text))
