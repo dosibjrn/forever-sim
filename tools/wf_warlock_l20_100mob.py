@@ -85,7 +85,8 @@ def native_failure_receipt(exc: BaseException) -> dict:
 
 def classify_native_chain(result: dict, requested_targets: int, *,
                           recovery_policy: str,
-                          require_native_consumption: bool = False) -> tuple[str, bool]:
+                          require_native_consumption: bool = False,
+                          require_native_health_damage: bool = False) -> tuple[str, bool]:
     """Score only native-reported paid 2D kills, never a policy fallback.
 
     For an explicit eight-target Decisions proof, demand source-reported
@@ -116,6 +117,17 @@ def classify_native_chain(result: dict, requested_targets: int, *,
             return "NO_NATIVE_FOOD_WATER_RESOURCE_GAIN", False
     elif recovery_policy != "fixed":
         raise ValueError("UNKNOWN_NATIVE_RECOVERY_POLICY")
+    if require_native_health_damage:
+        # The native/gsim bridge reports damage from the Rust actor, never
+        # from the synthetic 2D player or target attack assumptions.
+        damage = result.get("native_health_damage")
+        if (not isinstance(damage, dict) or damage.get("observed") is not True
+                or type(damage.get("damage_taken")) not in (float, int)
+                or not isfinite(damage["damage_taken"])
+                or damage["damage_taken"] <= 0
+                or type(damage.get("damage_events")) is not int
+                or damage["damage_events"] <= 0):
+            return "INCOMPLETE_NATIVE_HEALTH_DAMAGE_RECEIPT", False
     return f"COMPLETED_{requested_targets}_REAL_NATIVE_GSIM_KILLS", True
 
 
@@ -133,6 +145,9 @@ def main() -> None:
     p.add_argument("--recovery-seconds", type=int)
     p.add_argument("--health-threshold", type=float, default=0.5)
     p.add_argument("--mana-threshold", type=float, default=0.1)
+    p.add_argument("--require-native-health-damage", action="store_true",
+                   help="Require real positive incoming damage to the Rust actor "
+                        "on the same retained native/2D world chain")
     p.add_argument("--require-native-consumption", action="store_true",
                    help="Eight-target Decisions smoke: native paid food/water "
                         "with a positive HP or mana gain")
@@ -168,7 +183,8 @@ def main() -> None:
                   "mob_level": 20, "mob_hp_classic_proxy": representative_hp(20),
                   "synthetic_min_base_damage": 20,
                   "recovery_request": native_recovery,
-                  "native_2d_paid_objective_eligible": False}
+                  "native_2d_paid_objective_eligible": False,
+                  "native_health_damage_proof_required": args.require_native_health_damage}
         try:
             cmd = [str(args.binary.resolve()), "prepare", "--request",
                    str(source_path.resolve()), "--actor-level", "20",
@@ -192,7 +208,7 @@ def main() -> None:
             result = native_world_chain(
                 args.binary, prepared_path, target_count=args.targets,
                 classic_mob_level=20, rng_mode="balanced",
-                require_native_health_damage=False,
+                require_native_health_damage=args.require_native_health_damage,
                 **native_recovery,
             )
             (base / "chain_native_world.json").write_text(
@@ -202,7 +218,8 @@ def main() -> None:
             seconds_per_mob = result.get("world_seconds_per_target_paid_recovery")
             status, complete = classify_native_chain(
                 result, args.targets, recovery_policy=args.recovery_policy,
-                require_native_consumption=args.require_native_consumption)
+                require_native_consumption=args.require_native_consumption,
+                require_native_health_damage=args.require_native_health_damage)
             record.update(
                 status=status,
                 killed=killed,
@@ -227,6 +244,8 @@ def main() -> None:
                 native_water_mana_gain=result.get("native_water_mana_gain_total"),
                 native_consumption_proof_required=args.require_native_consumption,
                 native_consumption_proven=complete and args.require_native_consumption,
+                native_health_damage=result.get("native_health_damage"),
+                native_health_damage_proven=complete and args.require_native_health_damage,
                 walk_paid_s=result["gsim_route_paid_movement_s"],
                 native_damage_events=result["native_damage_events"],
                 # Frozen-build screen only: never promote it to cold-search
@@ -261,6 +280,7 @@ def main() -> None:
         "target_count_requested": args.targets,
         "native_recovery_requested": native_recovery,
         "native_consumption_proof_required": args.require_native_consumption,
+        "native_health_damage_proof_required": args.require_native_health_damage,
         "cold_30_300_search_executed": False,
         "p4_p5_p6_pass": False,
         "results": attempts,
