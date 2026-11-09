@@ -113,7 +113,7 @@ def test_rogue_auxiliary_native_diagnostic_cannot_veto_actual_p3(
 
 def test_rogue_auxiliary_cli_failure_is_not_a_shell_veto():
     workflow = WORKFLOW.read_text(encoding="utf-8")
-    rogue = workflow.split(f"      - name: {STEPS[0][0]}\\n", 1)[1].split(
+    rogue = workflow.split(f"      - name: {STEPS[0][0]}", 1)[1].split(
         "      - name: Run no-record Priest and Mage L20 P3", 1)[0]
     assert "|| native_rc=$?" in rogue
     assert rogue.index("|| native_rc=$?") < rogue.index("python tools/wf_gate.py")
