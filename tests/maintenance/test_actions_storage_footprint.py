@@ -431,7 +431,7 @@ def test_post_delete_unexpected_direct_get_status_fails_closed(status):
             fetch_deleted_status=lambda _artifact_id: status)
 
 
-def test_post_delete_checks_every_id_and_retries_only_pending_gets():
+def test_post_delete_checks_every_id_on_each_complete_snapshot():
     calls = []
     responses = {7: [404, 404], 8: [200, 404]}
     def get(artifact_id):
