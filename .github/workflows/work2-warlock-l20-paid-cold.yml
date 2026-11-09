@@ -7,14 +7,22 @@ on:
     paths:
       - .github/workflows/work2-warlock-l20-paid-cold.yml
       - tests/test_work2_warlock_native_cold_cli.py
+  # Single explicitly authorized paid continuation after the exact-HEAD
+  # native two-target proposal completed 2/2 in Actions #42668615603.
+  # Only editing this workflow on the owned Work2 branch launches it; later
+  # unrelated code and test pushes cannot replay the 300s search.
+  push:
+    branches: [work2/warlock-l20-native-apl-composition-20261109]
+    paths:
+      - .github/workflows/work2-warlock-l20-paid-cold.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Preserve a started paid run. This workflow only auto-launches on the
-# initial PR or a corrective change to this paid workflow/CLI fixture.
-# Unrelated production edits run focused PR CI without restarting paid search.
+# Preserve a started paid run. Auto-launch only on the initial PR or this
+# one explicitly changed paid-workflow file after a proven native 2/2 screen.
+# Subsequent source/test edits run focused CI without restarting the search.
 concurrency:
   group: work2-warlock-l20-paid-cold
   cancel-in-progress: false
