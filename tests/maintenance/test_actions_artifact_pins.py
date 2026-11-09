@@ -67,14 +67,18 @@ def test_numeric_actions_run_ids_in_json_pin_evidence_without_url():
 
 
 
-def test_malformed_utf8_paid_receipt_aborts_artifact_pin_scan(tmp_path):
+@pytest.mark.parametrize("damaged_path", [
+    "docs/evidence/damaged-receipt.json",
+    "PROCESS.md",
+])
+def test_malformed_utf8_paid_receipt_aborts_artifact_pin_scan(tmp_path, damaged_path):
     """Never delete on a lossy decode that can conceal an evidence pin."""
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
                  "docs/planning/M1_PASSES.tsv"):
         path = tmp_path / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("", encoding="utf-8")
-    corrupt = tmp_path / "docs/evidence/damaged-receipt.json"
+    corrupt = tmp_path / damaged_path
     corrupt.parent.mkdir(parents=True, exist_ok=True)
     # Replacement decoding would conceal artifact_id=9001, making GC
     # falsely treat its artifact as unreferenced.
