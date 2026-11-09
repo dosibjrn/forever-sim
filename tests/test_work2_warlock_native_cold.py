@@ -865,3 +865,43 @@ def test_cold_finalist_partial_native_refusal_keeps_real_100_target_evidence(
     persisted = json.loads((tmp_path / "cold/cold_summary.json").read_text())
     assert persisted["finalists"]["30s"]["native_receipt"] == refused_receipt
     assert persisted["p6_comparison"] is None
+
+
+def test_paid_world_scenario_preserves_explicit_hostile_source_parameters():
+    """The changed-hostile 100-target native request must retain attack inputs."""
+    from tools import wf_warlock_l20_100mob as paid_world
+
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = [{"id": 100}] * 17
+    target = reference["encounter"]["targets"][0]
+    target.update({
+        "name": "Explicit attacking source L20 target",
+        "stats": [0] * 40,
+        "swingSpeed": 0.75,
+        "minBaseDamage": 4,
+        "tankIndex": 0,
+    })
+    before = copy.deepcopy(reference)
+    scenario = paid_world.create_scenario(reference, variant="best_apl")
+    native_target = scenario["encounter"]["targets"][0]
+    assert native_target["name"] == "Explicit attacking source L20 target"
+    assert native_target["swingSpeed"] == 0.75
+    assert native_target["minBaseDamage"] == 4
+    assert native_target["tankIndex"] == 0
+    assert scenario["encounter"]["duration"] == 30
+    assert reference == before  # no source mutation across paid candidates
+
+
+def test_paid_world_scenario_uses_proxy_attacks_only_when_not_supplied():
+    """Existing stationary fixture with absent attack fields retains defaults."""
+    from tools import wf_warlock_l20_100mob as paid_world
+
+    reference = source()
+    cold.actor(reference)["equipment"]["items"] = [{"id": 100}] * 17
+    reference["encounter"]["targets"][0]["stats"] = [0] * 40
+    scenario = paid_world.create_scenario(reference, variant="best_apl")
+    native_target = scenario["encounter"]["targets"][0]
+    assert native_target["name"] == "CMaNGOS Classic-proxy ordinary L20 enemy"
+    assert native_target["swingSpeed"] == 2.0
+    assert native_target["minBaseDamage"] == 20.0
+    assert "swingSpeed" not in reference["encounter"]["targets"][0]
