@@ -100,7 +100,8 @@ def completed_run_candidates(
         expected_name_prefix: str | None = None,
         allowed_events: tuple[str, ...] | None = None,
         require_success_conclusion: bool = False,
-        require_single_attempt: bool = False) -> tuple[list[dict], int]:
+        require_single_attempt: bool = False,
+        protected_branches: set[str] | None = None) -> tuple[list[dict], int]:
     """Keep only artifacts from confirmed completed workflow runs.
 
     Query each distinct originating run once. A missing/malformed/mismatched
@@ -117,6 +118,9 @@ def completed_run_candidates(
     A missing or ambiguous conclusion also fails closed. When single-attempt
     protection is enabled, an absent/ambiguous run_attempt or a rerun is kept:
     the latest successful conclusion cannot classify earlier attempt artifacts.
+    With protected_branches, verify the artifact's branch against the fetched
+    authoritative run before considering deletion. Unknown branches stay
+    protected; mismatched branch claims abort the entire plan fail-closed.
     """
     runs_by_id: dict[int, dict] = {}
     ready: list[dict] = []
@@ -139,6 +143,21 @@ def completed_run_candidates(
                     f"does not match {expected_workflow!r}")
             runs_by_id[run_id] = run
         run = runs_by_id[run_id]
+        if protected_branches is not None:
+            origin_branch = artifact["workflow_run"].get("head_branch")
+            actual_branch = run.get("head_branch")
+            if (not isinstance(origin_branch, str) or not origin_branch
+                    or not isinstance(actual_branch, str) or not actual_branch):
+                # No authoritative branch identity: never delete an artifact.
+                deferred += 1
+                continue
+            if origin_branch != actual_branch:
+                raise ValueError(
+                    f"run {run_id}: artifact branch {origin_branch!r} "
+                    f"does not match run branch {actual_branch!r}")
+            if actual_branch in protected_branches:
+                deferred += 1
+                continue
         if allowed_events is not None and run.get("event") not in allowed_events:
             # A manual sweep explicitly opted into retaining full native
             # request/response evidence. Do not treat it as disposable PR CI.
