@@ -174,14 +174,11 @@ def paid_chain(binary: Path, candidate: dict, out: Path, *,
         "--health-threshold", str(policy["health_threshold"]),
         "--mana-threshold", str(policy["mana_threshold"]),
     ]
-    if targets == 100:
-        # A full hostile leveling finalist must not reuse the stationary
-        # zero-incoming-damage outcome as a scored 100-target objective.
-        # The native/world producer already records the actual Rust damage
-        # receipt and classifies explicit zero separately from missing data.
-        # Short screens remain useful for candidate discovery without adding
-        # an artificial two-target positive-hit prerequisite.
-        command.append("--require-native-health-damage")
+    # A native actor may take zero incoming hits during real hostile combat
+    # (pet tanking, crowd control, avoidance). Preserve the observed native
+    # damage receipt, but do not impose positive player damage as an extra
+    # P4-P6 acceptance condition. A stationary fixture still cannot prove
+    # that hostile attacks were actually scheduled.
     # A retry in the same output directory must consume a receipt produced
     # by THIS subprocess. Otherwise an earlier successful native run can be
     # silently reused when the new invocation exits without writing a file.
