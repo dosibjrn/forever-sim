@@ -174,10 +174,11 @@ jobs:
             --targets 2
 
   warlock-l20-cold-30-300:
-    # The hostile 100/100 frozen Decisions receipt was measured on this exact
-    # Rust source in run 42632306093. Spend the NEXT paid run on the actual
-    # cold 30/300 whole-build search and distinct 100-target finalists, not a
-    # duplicate of that frozen baseline. This branch job does not record M1.
+    # This genuinely cold producer now starts from the same Rust revision's
+    # source-native L20 Troll actor (no allocated talents or equipped winner
+    # gear), not its saved best-paid optimized build. Native options provide
+    # mutations, and the executable Rust/world backend scores candidates.
+    # This branch job does not record M1.
     if: startsWith(github.head_ref, 'work2/warlock-l20-')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -203,14 +204,14 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
           cargo build --locked --bin forever-engine
-          sha256sum target/debug/forever-engine fixtures/warlock-l20-troll-best-paid.request.json
+          sha256sum target/debug/forever-engine fixtures/warlock-l20-troll-native.request.json
       - name: Execute real cold 30s snapshot, 300s continuation and paid 100-target finalists
         working-directory: project
         run: |
           set -euo pipefail
           python -u tools/wf_warlock_l20_native_cold.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --source ../engine/fixtures/warlock-l20-troll-native.request.json \
             --out ../warlock-l20-cold-paid \
             --budget 300 --snapshot 30 --seed 20261109
       - name: Show exact cold-search receipt or native refusal
