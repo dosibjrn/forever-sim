@@ -446,6 +446,8 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
             result = replay_cache[key]
             attempts.append({"candidate_sha256": key,
                              "status": result["status"],
+                             "native_response_status": result.get("native_response_status"),
+                             "refusal_reason": result.get("reason"),
                              "screen_paid_s_per_mob": winner["screen_paid_s_per_mob"],
                              "paid_completed_elapsed_s":
                                  winner["paid_completed_elapsed_s"],
@@ -518,6 +520,7 @@ def run_cold(reference: dict, options: dict, *, binary: Path, out: Path,
         "final_300": ({k: v for k, v in final.items() if k != "native_receipt"}
                       if final else None),
         "finalists": finalists,
+        "native_100mob_replay_attempts": replay_attempts,
         "p6_comparison": p6_comparison,
         "gate_recorded": False, "p4_p5_p6_pass": False,
     }
