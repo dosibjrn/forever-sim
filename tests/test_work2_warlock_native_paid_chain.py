@@ -117,6 +117,7 @@ def test_warlock_driver_forwards_native_decisions_and_never_scores_short_as_100(
         assert kwargs["target_count"] == targets
         return {
             "world_targets_killed": targets,
+            "world_target_hp": _WARLOCK["representative_hp"](20),
             "world_elapsed_seconds": targets * 7.,
             "world_seconds_per_target_paid_recovery": 7. if paid else None,
             "minimum_native_actor_health": 150.,
@@ -294,9 +295,15 @@ def test_native_failure_records_real_partial_ack_count_not_completion(
 
 
 def test_decisions_paid_chain_requires_native_mode_food_receipts_and_resource_proof():
-    classify = _WARLOCK["classify_native_chain"]
+    native_classify = _WARLOCK["classify_native_chain"]
+    # This fixture models the existing source-selected ordinary L20 2D world.
+    def classify(result, targets, **kwargs):
+        return native_classify(
+            result, targets,
+            expected_world_hp=_WARLOCK["representative_hp"](20), **kwargs)
     payload = {
         "world_targets_killed": 8,
+        "world_target_hp": _WARLOCK["representative_hp"](20),
         "world_seconds_per_target_paid_recovery": 15.,
         "paid_recovery": True,
         "native_recovery_clock_accounted": True,
@@ -397,6 +404,7 @@ def test_eight_mob_consumption_proof_cannot_be_faked_by_paid_passive_ticks(
         assert kwargs["require_native_health_damage"] is False  # defer strict proof until full receipt
         return {
             "world_targets_killed": 8,
+            "world_target_hp": _WARLOCK["representative_hp"](20),
             "world_seconds_per_target_paid_recovery": 20.,
             "world_elapsed_seconds": 160.,
             "minimum_native_actor_health": 200.,
@@ -464,6 +472,7 @@ def test_strict_health_refusal_retains_real_eight_target_decisions_receipt(
         assert kwargs["recovery_policy"] == "decisions"
         return {
             "world_targets_killed": 8,
+            "world_target_hp": _WARLOCK["representative_hp"](20),
             "world_seconds_per_target_paid_recovery": 16.,
             "world_elapsed_seconds": 128.,
             "minimum_native_actor_health": 1894.,
@@ -548,6 +557,7 @@ def test_hundred_kills_without_complete_native_actor_trace_cannot_be_scored(
             mana[-1] = float("inf")
         return {
             "world_targets_killed": 100,
+            "world_target_hp": _WARLOCK["representative_hp"](20),
             "world_elapsed_seconds": 1400.,
             "world_seconds_per_target_paid_recovery": 14.,
             "minimum_native_actor_health": 500.,
