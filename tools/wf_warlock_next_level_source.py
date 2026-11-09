@@ -98,8 +98,30 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
              "--outfile", str(prepared_file.resolve())],
             capture_output=True, text=True, timeout=60, check=False)
         if result.returncode:
+            raw = (result.stderr or result.stdout)[-1200:]
+            try:
+                native_refusal = json.loads(raw).get("refusal")
+            except (ValueError, AttributeError):
+                native_refusal = None
+            code = (native_refusal.get("code") if isinstance(native_refusal, dict)
+                    else None)
             rejected.append({"field_name": field, "tree_index": ti,
-                             "reason": (result.stderr or result.stdout)[-1200:]})
+                             "reason": raw, "native_refusal_code": code})
+            if code == "actor_level_source":
+                # This exact native source refusal is about missing level/race
+                # base stats, not the candidate's talent choice. Do not pay
+                # for another 29 identical native preparations or fake L21.
+                receipt = {
+                    "kind": "adjacent_native_warlock_candidate",
+                    "status": "NATIVE_ACTOR_LEVEL_UNSUPPORTED",
+                    "from_level": from_level, "to_level": to_level,
+                    "original_source_sha256": sha256(source),
+                    "native_binary_sha256": sha256(binary),
+                    "native_options_source_revision": options.get("source_revision"),
+                    "attempted": number, "native_refusals": rejected,
+                }
+                (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
+                return receipt
             continue
         try:
             prepared_actor = json.loads(prepared_file.read_text())["player"]
@@ -150,7 +172,10 @@ def main() -> None:
     parser.add_argument("--to-level", type=int, default=21)
     parser.add_argument("--max-proposals", type=int, default=30)
     args = parser.parse_args()
-    print(json.dumps(propose(**vars(args)), indent=2))
+    result = propose(**vars(args))
+    print(json.dumps(result, indent=2))
+    if result["status"] != "NATIVE_PREPARED_NOT_YET_PAID":
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":
