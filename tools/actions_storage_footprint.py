@@ -88,7 +88,8 @@ def requires_evidence_pin_scan(total_bytes: int, ceiling_bytes: int,
 def verify_deleted_artifacts_absent(deleted_ids, list_artifacts, *,
                                     attempts: int = 12,
                                     delay_seconds: float = 5,
-                                    sleep=None) -> list[dict]:
+                                    sleep=None,
+                                    fetch_deleted_status=None) -> list[dict]:
     """Certify post-DELETE absence using a COMPLETE, stable inventory.
 
     GitHub can temporarily expose stale artifact pages after DELETE 204;
@@ -97,6 +98,9 @@ def verify_deleted_artifacts_absent(deleted_ids, list_artifacts, *,
     the pre-delete verified_artifacts() snapshot must still fail closed.
     An API or provenance error other than transient inventory ValueError
     propagates immediately. Never claim success from a partial inventory.
+    When supplied, fetch_deleted_status(id) must also return HTTP 404 for
+    every deleted ID; a briefly stale direct GET=200 is retryable, but an
+    unexpected status fails closed. The production GC supplies this callback.
     """
     import time
 
@@ -116,9 +120,27 @@ def verify_deleted_artifacts_absent(deleted_ids, list_artifacts, *,
         else:
             remaining = deleted.intersection(int(row["id"]) for row in after)
             if not remaining:
-                return after
-            print(f"Deletion pending visibility for {len(remaining)} IDs; "
-                  f"retry {attempt + 1}/{attempts}")
+                if fetch_deleted_status is None:
+                    return after
+                # An absent list entry alone can be a stale/moving view.
+                # Demand the same GET=404 proof as the live disposal smoke.
+                get_pending = set()
+                for artifact_id in sorted(deleted):
+                    status = fetch_deleted_status(artifact_id)
+                    if status == 200:
+                        get_pending.add(artifact_id)
+                    elif status != 404:
+                        raise RuntimeError(
+                            f"artifact {artifact_id}: unexpected GET HTTP {status} "
+                            "after DELETE")
+                if not get_pending:
+                    return after
+                remaining = get_pending
+                print(f"Direct GET still visible for {len(remaining)} deleted IDs; "
+                      f"retry {attempt + 1}/{attempts}")
+            else:
+                print(f"Deletion pending visibility for {len(remaining)} IDs; "
+                      f"retry {attempt + 1}/{attempts}")
         if attempt + 1 < attempts:
             sleep(delay_seconds)
     raise RuntimeError(
