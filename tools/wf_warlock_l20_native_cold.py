@@ -44,9 +44,14 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
     player = actor(reference)
     items = player["equipment"]["items"]
     gear = native_equipment_proposals(options, items)
+    source_talents = player.get("talentsString", "0-0-0")
+    # The frozen request is already submitted first as a real paid baseline.
+    # Do not advertise it again as a native talent mutation when Rust supplied
+    # no distinct alternative; doing so defeated sparse-axis scheduling.
     talents = list(dict.fromkeys(
         row["talents"] for row in proposals_from_native_talents(
-            options, player.get("talentsString", "0-0-0"), seed)
+            options, source_talents, seed)
+        if row["talents"] != source_talents
     ))
     apl = copy.deepcopy(player["rotation"]["priorityList"])
     apl_variants = [apl]
@@ -80,8 +85,11 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
                     proposal = copy.deepcopy(apl)
                     proposal[index] = copy.deepcopy(action)
                     apl_variants.append(proposal)
+    # Likewise the unchanged APL is already in the reference paid trial.
+    # The mutation domain must represent actual candidate edits, not a
+    # synthetic Rust-option axis containing only the existing policy.
     unique_apl = list({json.dumps(x, sort_keys=True): x
-                       for x in apl_variants}.values())
+                       for x in apl_variants if x != apl}.values())
     unique_actions = list({json.dumps(x, sort_keys=True): x
                            for x in native_actions}.values())
     # The native Warlock options endpoint supplies the exact proto enum numbers.
@@ -91,7 +99,7 @@ def native_candidate_domain(reference: dict, options: dict, seed: int) -> dict:
         row["proto_enum_value"] for row in options.get("pets", [])
         if isinstance(row, dict) and type(row.get("proto_enum_value")) is int
     ))
-    return {"gear": gear, "talents": talents or [player.get("talentsString", "0-0-0")],
+    return {"gear": gear, "talents": talents,
             "apl": unique_apl, "apl_actions": unique_actions, "pets": pets,
             # These are recovery *policy proposals*, not Python regen mechanics.
             "recovery": [(0.35, 0.10), (0.50, 0.10),
