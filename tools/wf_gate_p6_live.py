@@ -143,6 +143,9 @@ def run_live(root: Path, class_key: str, level: int, *,
     # Full 30/300s paid searches are deliberately explicit, never hourly.
     # This is the SAME source-paid production runner, not a gate-only scorer.
     import os
+    from tools.wf_warlock_l20_gate_bridge import OPT_IN, PAIR, run_warlock_l20_gate
+    if (class_key, level, spec) == PAIR and os.environ.get(OPT_IN) == "1":
+        return run_warlock_l20_gate(class_key, level, spec, gate="P6")
     if ((class_key, level, spec) == ("priest", 20, "unrestricted")
             and os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1"):
         return _run_priest_native_p6(class_key, level, spec)
