@@ -208,7 +208,8 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
     For approved cold gates, the first proposal must also be a native-sourced
     mutation, not a replay of a previously selected reference winner.
     """
-    def mutate(candidate: dict, rng: random.Random, *, cold: bool = False) -> dict:
+    def mutate(candidate: dict, rng: random.Random, *, cold: bool = False,
+               first_prepared_proposal: bool = False) -> dict:
         value = {"source": copy.deepcopy(reference),
                  "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1}
                  } if cold else copy.deepcopy(candidate)
@@ -310,8 +311,16 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
                         alternatives = [action for action in actions
                                         if action not in rotation]
                     if alternatives:
-                        additions = rng.sample(
-                            alternatives, min(2, len(alternatives)))
+                        # The first cold probe should be reproducibly sourced
+                        # from Rust's registered-spell order, not a blind RNG
+                        # pick from periodic/channel/direct native actions.
+                        # Later cold mutations still explore the entire list.
+                        count = min(2, len(alternatives))
+                        additions = (
+                            alternatives[:count]
+                            if first_prepared_proposal and prepared_actions
+                            else rng.sample(alternatives, count)
+                        )
                         player["rotation"]["priorityList"] = [
                             *copy.deepcopy(additions), *copy.deepcopy(rotation)]
                     elif domain.get("apl"):
@@ -362,9 +371,10 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
     # short 30s window; the Rust/world evaluator, not this scheduler, still
     # decides whether it executes and earns a score.
     reference_proposed = False
+    cold_proposals = 0
 
     def propose(rng):
-        nonlocal reference_proposed
+        nonlocal reference_proposed, cold_proposals
         reference_candidate = {
             "source": copy.deepcopy(reference),
             "recovery": {"health_threshold": 0.5, "mana_threshold": 0.1},
@@ -380,9 +390,12 @@ def candidate_factory(reference: dict, domain: dict, *, unseeded: bool = False):
         # the report below must then mark the cold start as NOT unseeded.
         candidate = reference_candidate
         for _ in range(16):
-            candidate = mutate({}, rng, cold=True)
+            candidate = mutate(
+                {}, rng, cold=True,
+                first_prepared_proposal=(cold_proposals == 0))
             if candidate != reference_candidate:
                 break
+        cold_proposals += 1
         return candidate
 
     def change(previous, rng):
