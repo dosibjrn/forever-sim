@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 RETIRED_TOOLS = (
+    "integrations/mythicsim-rust/p74_audit_wf669.py",  # obsolete independent native-item legality audit
     "tools/wf332_druid20_acquisition_evidence.py",
     "tests/test_wf_gen03a4c2b2_completeness.py",
     "tests/test_wf_gen03a4c2b2_proof_contract.py",
@@ -187,6 +188,7 @@ RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_index_composite_l1.py",
 )
 RETIRED_IMPORT_NAMES = (
+    "p74_audit_wf669",
     "wf332_druid20_acquisition_evidence",
     "wf291_source_acquisition_route_benchmark",
     "audit_forever_source_coverage",
