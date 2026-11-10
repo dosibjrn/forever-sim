@@ -66,19 +66,24 @@ def _candidate_sources(shortlist: dict, directory: Path, original: dict,
         if row.get("tree_index") not in (0, 1, 2):
             raise ValueError("missing source-native talent tree identity")
         seen.add(row["source_request_sha256"])
-        results.append((row, source))
-    # A source-native shortlist may have several prepared proposals from the
-    # same talent tree before a different tree's first successful prepare.
-    # Preserve Rust's order within each tree, but pay a bounded spread across
-    # source-labeled trees rather than accidentally comparing one tree thrice.
-    by_tree = {tree: [] for tree in (0, 1, 2)}
-    for candidate in results:
-        by_tree[candidate[0]["tree_index"]].append(candidate)
+        family = _dominant_talent_tree(_talent_points_by_tree(row["candidate_talents"]))
+        results.append((row, source, family))
+    # The tree receiving a new rank is not necessarily the build's dominant
+    # family. Spread the paid budget across actual allocation families when
+    # multiple families have source-native prepared candidates. For the common
+    # adjacent-level one-rank shortlist (all one family), retain the existing
+    # round-robin across new-rank trees and stable proposal order.
+    diverse_families = len({family for _, _, family in results}) > 1
+    keys = (0, 1, 2, None) if diverse_families else (0, 1, 2)
+    groups = {key: [] for key in keys}
+    for row, source, family in results:
+        key = family if diverse_families else row["tree_index"]
+        groups[key].append((row, source))
     balanced = []
-    for depth in range(max(map(len, by_tree.values()), default=0)):
-        for tree in (0, 1, 2):
-            if depth < len(by_tree[tree]):
-                balanced.append(by_tree[tree][depth])
+    for depth in range(max(map(len, groups.values()), default=0)):
+        for key in keys:
+            if depth < len(groups[key]):
+                balanced.append(groups[key][depth])
                 if len(balanced) == limit:
                     return balanced
     return balanced
@@ -98,6 +103,19 @@ def _dominant_talent_tree(points: list[int]) -> int | None:
     """Tree with strictly the most invested points; ties have no unique family."""
     largest = max(points)
     return points.index(largest) if largest > 0 and points.count(largest) == 1 else None
+
+
+def _requires_talent_respec(source_talents: str, candidate_talents: str) -> bool:
+    """Report decreased rank digits; leave respec legality and cost to native."""
+    _talent_points_by_tree(source_talents)
+    _talent_points_by_tree(candidate_talents)
+    for before, after in zip(source_talents.split("-"), candidate_talents.split("-")):
+        for index in range(max(len(before), len(after))):
+            old_rank = int(before[index]) if index < len(before) else 0
+            new_rank = int(after[index]) if index < len(after) else 0
+            if new_rank < old_rank:
+                return True
+    return False
 
 
 def _paid_row(*, route: Path, summary: Path, source: Path, binary_sha: str,
@@ -205,8 +223,8 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
             or not isinstance(proposal.get("candidates"), list)):
         raise ValueError("not a matching source-native prepared shortlist")
     original = _json(source)
-    source_talent_points = _talent_points_by_tree(
-        original["raid"]["parties"][0]["players"][0]["talentsString"])
+    source_talents = original["raid"]["parties"][0]["players"][0]["talentsString"]
+    source_talent_points = _talent_points_by_tree(source_talents)
     level = proposal["to_level"]
     paid = proposal.get("paid_predecessor")
     if not isinstance(paid, dict) or paid != native_source.verified_paid_predecessor(
@@ -243,6 +261,8 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
                "talent": candidate["field_name"], "talents": candidate["candidate_talents"],
                "talent_points_by_tree": candidate_points,
                "dominant_talent_tree_index": _dominant_talent_tree(candidate_points),
+               "requires_talent_respec_from_paid_source": _requires_talent_respec(
+                   source_talents, candidate["candidate_talents"]),
                "original_source_sha256": candidate["source_request_sha256"],
                "native_screen_dps_30s": candidate.get("screen_dps_30s")}
         if summary.is_file() and not route.is_file():
@@ -286,7 +306,8 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
     # A tie is genuinely measured, but selecting the first row as a "winner"
     # fabricates an Affliction advantage when the native world elapsed times
     # are equal. Do not introduce a Python gameplay tie-breaker.
-    comparison_complete = not pending and len(ranked) >= 2 and len(trees) >= 2
+    comparison_complete = (not pending and len(ranked) >= 2
+                           and (len(trees) >= 2 or actual_cross_family))
     tied_best = ([row for row in ranked
                   if row["elapsed_seconds"] == ranked[0]["elapsed_seconds"]]
                  if comparison_complete else [])
@@ -309,6 +330,9 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
             family for family in families if family is not None),
         "distinct_build_families_compared": actual_cross_family,
         "tree_index_meaning": "new_rank_allocated_to_tree_not_build_family",
+        "contains_counterfactual_respec": any(
+            row["requires_talent_respec_from_paid_source"] for row in rows),
+        "talent_respec_cost_measured": False,
         "paid_predecessor": paid, "native_binary_sha256": binary_sha,
         "recovery": recovery, "new_native_100_trials": spent,
         "reused_native_100_trials": sum(
