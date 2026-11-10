@@ -93,6 +93,11 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     # The level point budget and each possible rank come from the selected
     # Rust binary. Forever only proposes a one-rank mutation; Rust decides
     # whether the proposed actor can be prepared and executed.
+    # A reused output directory must never present a previous run\'s selected
+    # actor or receipt as belonging to this native invocation.
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "source_request.json").unlink(missing_ok=True)
+    (out / "proposal.json").unlink(missing_ok=True)
     options_call = subprocess.run(
         [str(binary.resolve()), "options", "--class", "warlock",
          "--level", str(to_level)],
@@ -173,6 +178,9 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         request_file = attempts_dir / f"candidate_{number:02d}.json"
         prepared_file = attempts_dir / f"candidate_{number:02d}.prepared.json"
         request_file.write_text(json.dumps(mutated, indent=2) + "\n")
+        # A successful exit without a newly written prepared actor is not proof
+        # of preparation; remove any artifact from an earlier run first.
+        prepared_file.unlink(missing_ok=True)
         result = subprocess.run(
             [str(binary.resolve()), "prepare", "--request",
              str(request_file.resolve()), "--actor-level", str(to_level),
@@ -265,6 +273,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             request = attempts_dir / f"fallback_{tag}.json"
             prepared = attempts_dir / f"fallback_{tag}.prepared.json"
             request.write_text(json.dumps(frozen, indent=2) + "\n")
+            prepared.unlink(missing_ok=True)
             response = subprocess.run(
                 [str(binary.resolve()), "prepare", "--request",
                  str(request.resolve()), "--actor-level", str(to_level),
@@ -318,6 +327,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                     request = attempts_dir / f"recovered_talent_{retry:02d}.json"
                     prepared = attempts_dir / f"recovered_talent_{retry:02d}.prepared.json"
                     request.write_text(json.dumps(candidate, indent=2) + "\n")
+                    prepared.unlink(missing_ok=True)
                     response = subprocess.run(
                         [str(binary.resolve()), "prepare", "--request",
                          str(request.resolve()), "--actor-level", str(to_level),
