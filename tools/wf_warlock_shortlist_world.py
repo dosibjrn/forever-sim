@@ -39,7 +39,9 @@ def _candidate_sources(shortlist: dict, directory: Path, original: dict,
     results = []
     seen = set()
     level = shortlist["to_level"]
-    for row in shortlist["candidates"][:limit]:
+    # Validate all source-receipt candidates before choosing the bounded paid
+    # finalists, even when a candidate falls beyond the paid trial budget.
+    for row in shortlist["candidates"]:
         label = row.get("source_request")
         if (not isinstance(label, str)
                 or not label.startswith("candidate_attempts/candidate_")
@@ -65,7 +67,21 @@ def _candidate_sources(shortlist: dict, directory: Path, original: dict,
             raise ValueError("missing source-native talent tree identity")
         seen.add(row["source_request_sha256"])
         results.append((row, source))
-    return results
+    # A source-native shortlist may have several prepared proposals from the
+    # same talent tree before a different tree's first successful prepare.
+    # Preserve Rust's order within each tree, but pay a bounded spread across
+    # source-labeled trees rather than accidentally comparing one tree thrice.
+    by_tree = {tree: [] for tree in (0, 1, 2)}
+    for candidate in results:
+        by_tree[candidate[0]["tree_index"]].append(candidate)
+    balanced = []
+    for depth in range(max(map(len, by_tree.values()), default=0)):
+        for tree in (0, 1, 2):
+            if depth < len(by_tree[tree]):
+                balanced.append(by_tree[tree][depth])
+                if len(balanced) == limit:
+                    return balanced
+    return balanced
 
 
 def _paid_row(*, route: Path, summary: Path, source: Path, binary_sha: str,
