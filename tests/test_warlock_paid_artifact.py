@@ -214,3 +214,23 @@ def test_workflow_explicitly_restores_l10_before_paying_world_mobs():
     assert "restore_l10_root_cache(" in workflow
     assert workflow.index("restore_l10_root_cache(") < workflow.index(
         "- name: Bootstrap a genuine L10 Rust actor")
+
+
+def test_paid_l10_root_artifact_survives_multi_dispatch_continuation():
+    """Original L10 ACK/refusal must remain restorable after the next cycles.
+
+    Unlike disposable diagnostics, this archive is the only native provenance
+    for L11-L19. A three-day expiry would undermine source-verified resume.
+    """
+    from pathlib import Path
+
+    workflow = (Path(__file__).resolve().parents[1]
+                / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+                ).read_text()
+    upload = workflow.split(
+        "      - name: Preserve selected source, native 100-mob receipts, "
+        "refusal and route output", 1)[1]
+    assert "if: always()" in upload
+    assert "warlock-paid-range/" in upload
+    assert "          retention-days: 30" in upload
+    assert "          retention-days: 3\\n" not in upload
