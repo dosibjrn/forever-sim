@@ -110,14 +110,25 @@ def evaluate_request(
     if not isinstance(native_refusals, list) or any(
             not isinstance(row, dict) for row in native_refusals):
         raise ValueError("NATIVE_PREPARED_MANIFEST_REFUSALS_INVALID")
-    if len(native_refusals) > budget:
+    # Reusable manifests may combine several sampled levels or different
+    # continuing parents. A refusal spends only the request that produced it,
+    # just as a prepared entry does. Historical single-request manifests omit
+    # row scope; inherit the manifest scope (or this request as a legacy case).
+    # Newly produced native refusals carry both fields explicitly.
+    scoped_refusals = [
+        row for row in native_refusals
+        if row.get("level", source.get("level", level)) == level
+        and row.get("parent_source_sha256",
+                    source.get("parent_source_sha256", parent_sha)) == parent_sha
+    ]
+    if len(scoped_refusals) > budget:
         raise ValueError("NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET")
     # Count every already-prepared matching attempt, never silently slice it.
     # Unrelated levels/parents in a reusable manifest do not spend this budget.
     selected = [entry for entry in source["entries"]
                 if isinstance(entry, dict) and entry.get("level") == level
                 and entry.get("parent_source_sha256") == parent_sha]
-    if len(selected) + len(native_refusals) > budget:
+    if len(selected) + len(scoped_refusals) > budget:
         raise ValueError("NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET")
 
     # A native producer can fail to prepare a proposal before the paid scorer
@@ -128,7 +139,7 @@ def evaluate_request(
          "candidate_id": row.get("candidate_id"), "native_prepared": False,
          "native_refusal": row.get("native_refusal"),
          "source_request_sha256": row.get("source_request_sha256")}
-        for row in native_refusals
+        for row in scoped_refusals
     ]
     candidates: dict[str, tuple[Path, dict, str, dict]] = {}
     requested_builds: dict[str, dict] = {}
