@@ -81,18 +81,23 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
             or type(terminal.get("end_clock_ns")) is not int
             or terminal["end_clock_ns"] < last_clock):
         return None, "NATIVE_TERMINAL_RECOVERY_CLOCK_NOT_PAID"
-    if (not all(_nonnegative(terminal.get(key)) for key in (
-            "health_before", "mana_before", "health_after", "mana_after"))
+    # Buffs may change the live actor's maximum resources after prepare.
+    # Only the selected Rust Fight reports authoritative end-of-world caps;
+    # prepared base stats are not a substitute for these source-native values.
+    max_health, max_mana = terminal.get("max_health"), terminal.get("max_mana")
+    if (not _positive(max_health) or not _positive(max_mana)
+            or not all(_nonnegative(terminal.get(key)) for key in (
+                "health_before", "mana_before", "health_after", "mana_after"))
             or not math.isclose(terminal["health_before"],
                                 windows[-1]["actor_health"], abs_tol=1e-6)
             or not math.isclose(terminal["mana_before"], mana[-1], abs_tol=1e-6)
             or not math.isclose(terminal["health_after"],
-                                stats["Health"], abs_tol=1e-6)
+                                max_health, abs_tol=1e-6)
             or not math.isclose(terminal["mana_after"],
-                                stats["Mana"], abs_tol=1e-6)):
+                                max_mana, abs_tol=1e-6)):
         return None, "NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL"
-    debt = (terminal["health_before"] < stats["Health"] - 1e-6
-            or terminal["mana_before"] < stats["Mana"] - 1e-6)
+    debt = (terminal["health_before"] < max_health - 1e-6
+            or terminal["mana_before"] < max_mana - 1e-6)
     if debt and terminal["end_clock_ns"] == last_clock:
         return None, "NATIVE_TERMINAL_FREE_RESOURCE_RESET"
     return terminal["end_clock_ns"] / 1e9, "MEASURED_NATIVE_FULLY_RECOVERED"
