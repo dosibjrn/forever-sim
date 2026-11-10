@@ -85,6 +85,38 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
     stopped = None
     progress_path = out / "range_progress.json"
 
+    def stop_unverified(*, level: int, paid_dir: Path, paid_route: Path,
+                        selected_source: Path, status: str, error: str) -> dict:
+        """Keep a failed producer/ACK attempt inspectable and never pay it twice.
+
+        This receipt describes Forever transport or publication, not a native
+        Warcraft refusal. Never overwrite the original route or native guide.
+        """
+        nonlocal stopped
+        paid_dir.mkdir(parents=True, exist_ok=True)
+        report = {
+            "kind": "warlock_paid_range_unverified_v1", "level": level,
+            "status": status, "error": error,
+            "native_binary_sha256": engine_sha,
+            "selected_source_sha256": next_level.sha256(selected_source),
+        }
+        error_path = paid_dir / "driver_error.json"
+        error_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        error_guide = paid_dir / "DRIVER_ERROR_GUIDE.md"
+        error_guide.write_text(
+            f"# Warlock L{level}: {status}\n\n"
+            f"Native paid 100/100 completion is **not verified**.\n\n"
+            f"Forever producer/receipt error: {error}\n\n"
+            "Preserve the original paid attempt and source; do not advance "
+            "or repeat it without an explicit corrected attempt.\n"
+        )
+        stopped = {
+            "level": level, "status": status, "error": error,
+            "driver_error": str(error_path), "guide": str(error_guide),
+            "route": str(paid_route) if paid_route.is_file() else None,
+        }
+        return save()
+
     def save() -> dict:
         # Every genuine native guide run writes a route.json and a GUIDE.md
         # together. Publish the latest human-facing guide beside range_progress
@@ -96,7 +128,11 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             refusal_route = Path(stopped["route"])
             if refusal_route.is_file():
                 published_route = refusal_route
-        native_guide = published_route.with_name("GUIDE.md")
+        # An unverified payment must never republish the last successful
+        # predecessor guide as though the new level were measured.
+        native_guide = (Path(stopped["guide"])
+                        if stopped and stopped.get("guide")
+                        else published_route.with_name("GUIDE.md"))
         latest_guide = out / "GUIDE.md"
         if native_guide.is_file():
             tmp_guide = latest_guide.with_suffix(".tmp")
@@ -194,6 +230,32 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
                 or proposal.get("selected_source_sha256") != next_level.sha256(selected_source)):
             raise ValueError(f"prepared L{level} source bytes do not match native proposal")
 
+        # Resume a previously attempted but unverified native world without
+        # silently re-paying it. The marker is scoped to exact predecessor,
+        # selected source, binary, scenario and recovery by the cache key.
+        error_path = paid_dir / "driver_error.json"
+        if error_path.is_file():
+            error = _read(error_path)
+            if (error.get("kind") != "warlock_paid_range_unverified_v1"
+                    or error.get("level") != level
+                    or error.get("status") not in (
+                        "PAID_DRIVER_ERROR", "PAID_RECEIPT_MISSING",
+                        "PAID_ACK_UNVERIFIED")
+                    or not isinstance(error.get("error"), str)
+                    or not error["error"]
+                    or error.get("native_binary_sha256") != engine_sha
+                    or error.get("selected_source_sha256")
+                    != next_level.sha256(selected_source)):
+                raise ValueError(f"cached L{level} unverified paid error has mismatched identity")
+            stopped = {
+                "level": level, "status": error["status"],
+                "error": error["error"],
+                "driver_error": str(error_path),
+                "guide": str(paid_dir / "DRIVER_ERROR_GUIDE.md"),
+                "route": str(paid_route) if paid_route.is_file() else None,
+            }
+            return save()
+
         if paid_route.is_file():
             # A failed paid attempt also publishes route.json. Preserve its
             # actual native refusal on resume: neither pretend it was paid
@@ -213,25 +275,43 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             if new_levels >= max_new_levels:
                 stopped = {"level": level, "status": "BOUNDED_NEW_LEVEL_BUDGET"}
                 return save()
-            code = guide.main([
-                "--execute-native", "--actor-level", str(level),
-                "--binary", str(binary), "--source", str(selected_source),
-                "--health-threshold", str(health_threshold),
-                "--mana-threshold", str(mana_threshold),
-                "--baseline-observations", str(current_route),
-                "--trial", f"paid-source-native-L{level}-{key}",
-                "--out", str(paid_dir),
-                *(['--run-url', run_url] if run_url else []),
-            ])
+            try:
+                code = guide.main([
+                    "--execute-native", "--actor-level", str(level),
+                    "--binary", str(binary), "--source", str(selected_source),
+                    "--health-threshold", str(health_threshold),
+                    "--mana-threshold", str(mana_threshold),
+                    "--baseline-observations", str(current_route),
+                    "--trial", f"paid-source-native-L{level}-{key}",
+                    "--out", str(paid_dir),
+                    *(['--run-url', run_url] if run_url else []),
+                ])
+            except Exception as exc:
+                return stop_unverified(
+                    level=level, paid_dir=paid_dir, paid_route=paid_route,
+                    selected_source=selected_source, status="PAID_DRIVER_ERROR",
+                    error=f"{type(exc).__name__}: {exc}")
             if code != 0:
+                if not paid_route.is_file():
+                    return stop_unverified(
+                        level=level, paid_dir=paid_dir, paid_route=paid_route,
+                        selected_source=selected_source,
+                        status="PAID_RECEIPT_MISSING",
+                        error=f"native guide exited {code} without route.json")
                 stopped = {"level": level, "status": "NATIVE_PAID_REFUSAL",
                            "proposal": str(proposal_file), "route": str(paid_route)}
                 return save()
             # Publication status 0 alone cannot certify a new measured level;
             # validate the exact persisted paid 100/100 receipt before advancing.
-            next_level.verified_paid_predecessor(
-                route=paid_route, source=selected_source, binary=binary,
-                from_level=level)
+            try:
+                next_level.verified_paid_predecessor(
+                    route=paid_route, source=selected_source, binary=binary,
+                    from_level=level)
+            except (ValueError, TypeError, KeyError, OSError) as exc:
+                return stop_unverified(
+                    level=level, paid_dir=paid_dir, paid_route=paid_route,
+                    selected_source=selected_source, status="PAID_ACK_UNVERIFIED",
+                    error=f"{type(exc).__name__}: {exc}")
             completed.append(level)
             new_levels += 1
         current_source, current_route = selected_source, paid_route
