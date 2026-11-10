@@ -61,6 +61,15 @@ _RUN_PROSE_ID = re.compile(
 # must pin its origin artifacts as safely as an Actions URL does.
 _ACTIONS_NUMBER = re.compile(r"\bactions\s+#\s*([1-9]\d*)\b", re.IGNORECASE)
 
+# A retained P7.5 receipt cites "Actions run 41108670861 artifact
+# 13002676953" without a URL, hash, or ID key. Protect this concrete
+# source-evidence syntax, but do not treat ordinary short run/artifact
+# counts as GitHub IDs.
+_ACTIONS_PLAIN_RUN_ID = re.compile(
+    r"\bactions\s+run\s+([1-9]\d{7,})\b", flags=re.IGNORECASE)
+_ARTIFACT_PLAIN_ID = re.compile(
+    r"\bartifact\s+([1-9]\d{7,})\b", flags=re.IGNORECASE)
+
 # Retained paid/native receipts and PR discussions can give a reproducible
 # GitHub CLI command instead of a link: "gh run view 123" or "gh run download
 # 123". Both identify an originating Actions run whose artifacts must be pinned.
@@ -86,6 +95,8 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     runs.update(int(quoted or bare) for quoted, bare in _RUN_ID_FIELD.findall(text))
     runs.update(int(match) for match in _RUN_PROSE_ID.findall(text))
     runs.update(int(match) for match in _ACTIONS_NUMBER.findall(text))
+    runs.update(int(match) for match in _ACTIONS_PLAIN_RUN_ID.findall(text))
+    artifacts.update(int(match) for match in _ARTIFACT_PLAIN_ID.findall(text))
     runs.update(int(match) for match in _GH_RUN_COMMAND.findall(text))
 
 
