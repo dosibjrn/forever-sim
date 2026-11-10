@@ -695,13 +695,15 @@ def test_independent_l30_uses_native_level_points_and_preserves_scaled_apl_root(
         ("00-0-55551", 101),
         ("55551-0-0", 102),
         ("55551-0-0", 103),
+        ("11-0-0", 101),  # Native-prepared baseline, not level-sized optimization.
         ("45551-1-0", 101),
-        ("45551-0-1", 101),
     ]
-    # Both the first three families and later native-sourced rank transfers
-    # must spend the L30 option budget; only Rust prepare judges legality.
+    # The scaled families and rank transfers spend L30 native points. The
+    # separately prepared original seed is explicitly a lower-point baseline;
+    # it is not a verified high-level winner or continuing level transition.
     assert all(sum(int(c) for tree in talents.split("-") for c in tree) == 21
-               for talents, _ in proposed)
+               for i, (talents, _) in enumerate(proposed) if i != 5)
+    assert sum(int(c) for tree in proposed[5][0].split("-") for c in tree) == 2
     assert all(entry["parent_source_sha256"] is None for entry in result["entries"])
 
 
