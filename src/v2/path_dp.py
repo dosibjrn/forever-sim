@@ -2,10 +2,10 @@ from __future__ import annotations
 
 """Exact layered shortest-path DP over supplied per-level candidate pools.
 
-Candidate generation is deliberately separate.  Given a finite pool at each
-level, this module is exact: a no-respec edge exists iff the child allocation is
-exactly the parent plus one legal talent point; a respec edge may jump to any
-legal allocation while consuming one respec budget.
+Candidate generation is deliberately separate. The historical analytical
+mode retains full-spend, one-point and respec semantics. Native mode uses
+explicit source-request SHA transitions supplied by the native caller, including
+a banked (unchanged talent) level. It does not interpret Warcraft talent rules.
 """
 
 from dataclasses import dataclass
@@ -35,7 +35,7 @@ class LevelNode:
 @dataclass(frozen=True)
 class PathStep:
     node:LevelNode
-    kind:str              # start | point | respec
+    kind:str              # start | point | hold | respec
     talent_added:str|None
     respecs_used:int
     cumulative_s:float
@@ -89,10 +89,24 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel)->l
 
 def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
                   weights:Mapping[int,float]|None=None,start_level:int|None=None,
-                  end_level:int|None=None, model:ClassModel|None=None)->PathResult:
+                  end_level:int|None=None, model:ClassModel|None=None,
+                  native_edges:Mapping[tuple[str,str],tuple[str,str|None]]|None=None)->PathResult:
+    """Solve a contiguous observed route, without inventing missing native steps.
+
+    In native mode, each node needs the SHA256 of its actually submitted source
+    request in details["source_request_sha256"]. The native caller provides
+    edges keyed by (parent_request_sha, child_request_sha), with value
+    ("hold", None) or ("point", native_talent_label). An omitted/refused edge
+    is unreachable. The solver does not infer build legality from talent strings.
+    Native respecs remain unavailable until explicit native transitions exist.
+    Native chain observations are *not* evidence of a continuous full-route replay.
+    """
     if not pools:
         raise ValueError('no level pools')
-    model = model or active_class_model()
+    if native_edges is None:
+        model = model or active_class_model()
+    elif max_respecs:
+        raise ValueError('native route respec requires explicit prepared transition; set max_respecs=0')
     levels=sorted(int(x) for x in pools)
     lo=levels[0] if start_level is None else int(start_level)
     hi=levels[-1] if end_level is None else int(end_level)
@@ -102,7 +116,29 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
     if any(b!=a+1 for a,b in zip(levels,levels[1:])):
         raise ValueError('path DP requires contiguous level pools')
     max_respecs=max(0,int(max_respecs))
-    pp={l:_dedup_level_nodes(l,pools[l],model) for l in levels}
+    if native_edges is None:
+        pp={l:_dedup_level_nodes(l,pools[l],model) for l in levels}
+    else:
+        # Preserve separate native-equipped/APL requests even with identical
+        # talents. The old analytical full-spend and dedup policy cannot apply.
+        pp={}
+        for level in levels:
+            seen=set()
+            nodes=[]
+            for node in pools[level]:
+                if int(node.level)!=level:
+                    raise ValueError(f'node level mismatch: expected {level}, got {node.level}')
+                sha=(node.details or {}).get('source_request_sha256')
+                if (not isinstance(sha,str) or len(sha)!=64 or
+                        any(c not in '0123456789abcdef' for c in sha.lower())):
+                    raise ValueError('native node requires exact source_request_sha256')
+                if sha in seen:
+                    raise ValueError(f'duplicate native source request at level {level}')
+                if not math.isfinite(float(node.score_s_per_100)) or node.score_s_per_100<=0:
+                    raise ValueError('native observation requires finite positive paid score')
+                seen.add(sha)
+                nodes.append(node)
+            pp[level]=sorted(nodes,key=lambda n:(n.score_s_per_100,n.details['source_request_sha256']))
     if any(not pp[l] for l in levels):
         raise ValueError('empty candidate pool')
     w=weights or {l:level_weight_per_100(l) for l in levels}
@@ -128,9 +164,24 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
         # simpler and less error-prone than reconstructing all possible parents.
         for j,child in enumerate(nodes):
             for i,parent in enumerate(prev_nodes):
-                added=_added_talent(parent.talents,child.talents,model)
-                if added is None:
-                    continue
+                if native_edges is None:
+                    added=_added_talent(parent.talents,child.talents,model)
+                    if added is None:
+                        continue
+                    kind='point'
+                else:
+                    parent_sha=parent.details['source_request_sha256']
+                    child_sha=child.details['source_request_sha256']
+                    edge=native_edges.get((parent_sha,child_sha))
+                    if edge is None:
+                        continue
+                    if (not isinstance(edge,tuple) or len(edge)!=2 or
+                            edge[0] not in ('hold','point') or
+                            (edge[0]=='hold' and edge[1] is not None) or
+                            (edge[0]=='point' and
+                             (not isinstance(edge[1],str) or not edge[1]))):
+                        raise ValueError('malformed native-prepared route edge')
+                    kind,added=edge
                 for r in range(max_respecs+1):
                     pc=prev_layer.get((i,r))
                     if pc is None:
@@ -138,7 +189,7 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
                     cost=pc.cost+float(child.score_s_per_100)*float(w.get(level,0.0))
                     key=(j,r); old=nxt.get(key)
                     if old is None or cost<old.cost-1e-12:
-                        nxt[key]=_Cell(cost,(i,r),'point',added)
+                        nxt[key]=_Cell(cost,(i,r),kind,added)
 
         # Respec jump: because the jump cost itself is zero and the destination
         # local score depends only on the child, only the cheapest source at r-1
