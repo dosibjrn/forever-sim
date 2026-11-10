@@ -161,3 +161,74 @@ def test_live_native_frontier_emits_refusal_scope_for_reusable_manifest(tmp_path
     assert result["refusals"][0]["level"] == 20
     assert result["refusals"][0]["parent_source_sha256"] is None
     assert "Rust native prepare refused" in result["refusals"][0]["native_refusal"]
+
+
+def _paid_range_row(level, label, engine, elapsed):
+    """Transport-level sample: native ACK/recovery already classified by scorer."""
+    return {
+        "status": "MEASURED_NATIVE_FULLY_RECOVERED",
+        "candidate_id": label,
+        "level": level, "mob_count": 3, "targets_killed": 3,
+        "rng_mode": "balanced", "iterations": 1,
+        "native_prepared": True, "native_world_ack": True,
+        "native_full_recovery_paid": True, "recover_to_full": True,
+        "terminal_hp": 100, "terminal_max_hp": 100,
+        "terminal_mana": 200, "terminal_max_mana": 200,
+        "terminal_recovery_seconds": 1.0, "elapsed_seconds": elapsed,
+        "source_request_sha256": hashlib.sha256(
+            f"{level}:{label}".encode()).hexdigest(),
+        "engine_binary_sha256": engine,
+    }
+
+
+def test_native_range_does_not_rank_faster_cross_engine_candidate():
+    """Different Rust executables cannot compete on one measured objective."""
+    from src.v2.native_range_optimizer import optimize
+
+    def evaluator(**request):
+        level = request["level"]
+        assert request["parent"] is None
+        return [
+            _paid_range_row(level, "same_a", "a" * 64, 10.0),
+            _paid_range_row(level, "same_b", "a" * 64, 9.0),
+            _paid_range_row(level, "other_fast", "b" * 64, 1.0),
+        ]
+
+    result = optimize(20, 30, 10, 3, 8, evaluate=evaluator)
+    assert result["status"] == "INDEPENDENT_NATIVE_ANCHORS_RANKED"
+    assert result["native_engine_binary_sha256"] == "a" * 64
+    assert result["native_candidates_examined"] == 6
+    assert result["sampled_levels_completed"] == [20, 30]
+    for level in (20, 30):
+        ranked = result["independent_level_rankings"][str(level)]
+        assert [row["receipt"]["candidate_id"] for row in ranked] == [
+            "same_b", "same_a"
+        ]
+        assert all(row["engine_binary_sha256"] == "a" * 64 for row in ranked)
+    assert len(result["rejected_native_attempts"]) == 2
+    assert all("engine binary differs" in row["reason"]
+               and row["candidate_id"] == "other_fast"
+               for row in result["rejected_native_attempts"])
+    assert result["independent_sample_sum_is_route_time"] is False
+
+
+def test_independent_next_level_different_engine_is_not_measured_coverage():
+    """A changed native binary mid-request must not fabricate five-level rank."""
+    from src.v2.native_range_optimizer import optimize
+
+    def evaluator(**request):
+        level = request["level"]
+        engine = "a" * 64 if level == 20 else "b" * 64
+        return [
+            _paid_range_row(level, "candidate_a", engine, 12.0),
+            _paid_range_row(level, "candidate_b", engine, 10.0),
+        ]
+
+    result = optimize(20, 30, 10, 3, 8, evaluate=evaluator)
+    assert result["status"] == "INDEPENDENT_NATIVE_ANCHORS_PARTIAL"
+    assert result["sampled_levels_completed"] == [20]
+    assert result["independent_level_rankings"]["30"] == []
+    assert result["native_attempts_by_level"]["30"] == 2
+    assert len(result["rejected_native_attempts"]) == 2
+    assert result["independent_sample_winner_elapsed_sum_seconds"] is None
+    assert result["ranked_alternatives"] == []
