@@ -142,6 +142,26 @@ def test_accepted_druid_l30_one_shot_paid_workflows_remain_retired():
     assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
 
 
+
+def test_accepted_druid_l30_p73_retired_without_losing_native_forwarding():
+    """Recorded L30 P7.3 PASS is permanent; do not pay a branch one-shot again.
+
+    Only the old repeatable workflow is retired. Native candidate/refusal tests
+    remain executable on source changes; generic M1 stays available for other
+    still-unaccepted gates. Historical reference receipts are untouched.
+    """
+    assert not (ROOT / ".github/workflows/work1-druid-l30-p73-native.yml").exists()
+    ci = (ROOT / ".github/workflows/generic-source-search-regressions.yml").read_text(
+        encoding="utf-8")
+    assert "      - 'tests/test_work1_druid_l30_p73.py'\n" in ci
+    for source in ("tools/wf_gate_p7_3_live.py",
+                   "src/engine_client/native_talent_proposals.py"):
+        assert "      - '" + source + "'\n" in ci
+    assert "          tests/test_work1_druid_l30_p73.py\n" in ci
+    assert "          tests/gates/test_wf_gate_p7_3_live.py\n" in ci
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+
 def test_retired_l20_cold_keeps_fast_forever_regressions():
     """Cold producer and native refusal bridge still receive cheap PR tests."""
     ci = (ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml").read_text(
