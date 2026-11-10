@@ -11,7 +11,7 @@ def source_file(tmp_path):
     source = {
         "encounter": {"targets": [{"level": 20, "stats": [0] * 40}]},
         "raid": {"parties": [{"players": [{
-            "class": "ClassWarlock", "talentsString": "0-0-011",
+            "class": "ClassWarlock", "level": 20, "talentsString": "0-0-011",
             "rotation": {"priorityList": []},
         }]}]},
     }
@@ -87,6 +87,26 @@ def test_native_refusal_is_preserved_without_false_candidate(tmp_path, monkeypat
     assert receipt["native_refusals"]
     assert "PREPARE_UNSUPPORTED" in receipt["native_refusals"][0]["reason"]
     assert not (out / "source_request.json").exists()
+
+
+def test_adjacent_source_refuses_stale_or_missing_actor_level_before_native_calls(tmp_path, monkeypatch):
+    """A target-level label cannot launder an unrelated actor into a route."""
+    source, binary = source_file(tmp_path)
+    calls = []
+    monkeypatch.setattr(next_level.subprocess, "run",
+                        lambda *args, **kwargs: calls.append(args) or None)
+    original = json.loads(source.read_text())
+    actor = original["raid"]["parties"][0]["players"][0]
+    for wrong_level in (19, 21, None, True):
+        if wrong_level is None:
+            actor.pop("level", None)
+        else:
+            actor["level"] = wrong_level
+        source.write_text(json.dumps(original))
+        with pytest.raises(ValueError, match="source actor level differs from from_level"):
+            next_level.propose(binary=binary, source=source,
+                               out=tmp_path / f"wrong-{wrong_level}")
+    assert calls == []
 
 
 def test_native_options_budget_and_source_level_must_match(tmp_path, monkeypatch):
@@ -188,6 +208,7 @@ def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatc
     source, binary = source_file(tmp_path)
     original = json.loads(source.read_text())
     original["encounter"]["targets"][0]["level"] = 21
+    original["raid"]["parties"][0]["players"][0]["level"] = 21
     original["raid"]["parties"][0]["players"][0]["equipment"] = {
         "items": [{"id": 101}, {"id": 202}],
     }
