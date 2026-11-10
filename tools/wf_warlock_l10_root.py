@@ -13,7 +13,14 @@ import copy
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
+
+# Workflow invokes this as "python tools/wf_warlock_l10_root.py". Ensure
+# package imports work without PYTHONPATH, as in the adjacent-range driver.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools import wf_warlock_native_start_source as same_level
 from tools import wf_warlock_next_level_source as next_level
@@ -184,7 +191,16 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
     def save(next_level_number: int) -> dict:
         native_guide = latest_route.with_name("GUIDE.md")
         latest_guide = out / "GUIDE.md"
-        if native_guide.is_file():
+        if stopped and stopped.get("status") == "PAID_ACK_UNVERIFIED":
+            # Keep the producer's original guide in the paid artifact, but do
+            # not publish it as verified when its source-linked ACK failed.
+            latest_guide.parent.mkdir(parents=True, exist_ok=True)
+            latest_guide.write_text(
+                "# Warlock L10 — paid ACK not verified\n\n"
+                "No source-linked native 100/100 L10 completion was verified. "
+                "Inspect the preserved native route and "
+                "ack_verification_error.json before any continuation.\n")
+        elif native_guide.is_file():
             latest_guide.parent.mkdir(parents=True, exist_ok=True)
             latest_guide.write_bytes(native_guide.read_bytes())
         else:
@@ -202,8 +218,29 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
         _write(out / "range_progress.json", result)
         return result
 
+    def unverified_ack(exc: Exception) -> dict:
+        nonlocal stopped
+        # A producer can publish a route/guide without the complete original
+        # native 100/100 source-linked ACK. Preserve those bytes and record the
+        # exact forwarding/receipt-verification failure; never pay/advance it.
+        reason = f"{type(exc).__name__}: {exc}"
+        _write(paid_dir / "ack_verification_error.json", {
+            "status": "PAID_ACK_UNVERIFIED", "level": 10, "error": reason,
+            "native_binary_sha256": engine_sha,
+            "selected_source_sha256": (
+                next_level.sha256(source) if source.is_file() else None),
+            "route": str(route),
+        })
+        stopped = {"level": 10, "status": "PAID_ACK_UNVERIFIED",
+                   "route": str(route), "error": reason}
+        return save(10)
+
     if route.is_file():
-        if paid_range._cached_paid_refusal(route, 10):
+        try:
+            paid_refusal = paid_range._cached_paid_refusal(route, 10)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return unverified_ack(exc)
+        if paid_refusal:
             # Keep the original class of refusal on resumed runs rather than
             # converting a paid-driver exception into a Warcraft failure.
             refusal = next(row for row in json.loads(route.read_text())["native_refusals"]
@@ -211,19 +248,34 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
                            and row.get("status"))
             stopped = {"level": 10, "status": refusal["status"], "route": str(route)}
             return save(10)
-        next_level.verified_paid_predecessor(
-            route=route, source=source, binary=binary, from_level=10)
+        try:
+            next_level.verified_paid_predecessor(
+                route=route, source=source, binary=binary, from_level=10)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return unverified_ack(exc)
         reused.append(10)
     else:
-        if not source.is_file():
+        proposal_file = proposal_dir / "proposal.json"
+        if proposal_file.is_file():
+            # A previous process may have written the native options/prepare
+            # refusal before its guide. Resume that exact refused attempt
+            # instead of asking Rust to repeat unchanged native work.
+            proposal = json.loads(proposal_file.read_text())
+            if (proposal.get("native_binary_sha256") != engine_sha
+                    or proposal.get("original_template_sha256") != template_sha):
+                raise ValueError("cached L10 proposal has mismatched native identity")
+            if source.is_file():
+                if (proposal.get("status") != "NATIVE_PREPARED_NOT_YET_PAID"
+                        or proposal.get("selected_source_sha256") != next_level.sha256(source)):
+                    raise ValueError("cached L10 prepared source has mismatched native identity")
+            elif proposal.get("status") not in (
+                    "NATIVE_OPTIONS_REFUSED", "NATIVE_PREPARE_REFUSED_ALL_SOURCES"):
+                raise ValueError("cached L10 prepared proposal has no selected source")
+        elif source.is_file():
+            raise ValueError("cached L10 source has no native proposal receipt")
+        else:
             proposal = propose_root(binary=binary, template=template,
                                     out=proposal_dir, max_proposals=max_proposals)
-        else:
-            proposal = json.loads((proposal_dir / "proposal.json").read_text())
-            if (proposal.get("selected_source_sha256") != next_level.sha256(source)
-                    or proposal.get("native_binary_sha256") != engine_sha
-                    or proposal.get("original_template_sha256") != template_sha):
-                raise ValueError("cached L10 prepared source has mismatched native identity")
         if proposal["status"] != "NATIVE_PREPARED_NOT_YET_PAID":
             reason = json.dumps(proposal.get("native_refusals", []))[-3000:]
             _refusal_report(paid_dir, status=proposal["status"], reason=reason,
@@ -270,9 +322,13 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
                 stopped = {"level": 10, "status": "NATIVE_PAID_REFUSAL",
                            "route": str(route)}
             return save(10)
-        # A return code alone cannot establish a paid 100/100 root.
-        next_level.verified_paid_predecessor(
-            route=route, source=source, binary=binary, from_level=10)
+        # A return code alone cannot establish a paid 100/100 root. Publish
+        # a resumable machine/human refusal without overwriting native bytes.
+        try:
+            next_level.verified_paid_predecessor(
+                route=route, source=source, binary=binary, from_level=10)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return unverified_ack(exc)
         completed.append(10)
     if end_level == 10:
         return save(11)
