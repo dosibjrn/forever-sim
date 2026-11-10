@@ -94,6 +94,8 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         pieces = list(allocations)
         pieces[ti] = "".join(slots)
         mutated["raid"]["parties"][0]["players"][0]["talentsString"] = "-".join(pieces)
+        # The submitted actor and target must refer to the same next-level encounter.
+        mutated["raid"]["parties"][0]["players"][0]["level"] = to_level
         mutated["encounter"]["targets"][0]["level"] = to_level
         request_file = attempts_dir / f"candidate_{number:02d}.json"
         prepared_file = attempts_dir / f"candidate_{number:02d}.prepared.json"

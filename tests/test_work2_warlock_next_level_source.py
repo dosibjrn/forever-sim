@@ -53,6 +53,7 @@ def test_adjacent_source_uses_native_options_and_prepares_selected_actor(tmp_pat
         assert cmd[1] == "prepare" and cmd[cmd.index("--actor-level") + 1] == "21"
         request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
         assert request["encounter"]["targets"][0]["level"] == 21
+        assert request["raid"]["parties"][0]["players"][0]["level"] == 21
         assert request["raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-021"
         with open(cmd[cmd.index("--outfile") + 1], "w") as f:
             json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, f)
@@ -149,6 +150,7 @@ def test_banked_l21_point_does_not_stop_source_native_l22_proposal(tmp_path, mon
         candidate = json.loads(open(cmd[cmd.index("--request") + 1]).read())
         assert candidate["raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-021"
         assert candidate["encounter"]["targets"][0]["level"] == 22
+        assert candidate["raid"]["parties"][0]["players"][0]["level"] == 22
         with open(cmd[cmd.index("--outfile") + 1], "w") as f:
             json.dump({"player": {"level": 22, "class": "ClassWarlock"}}, f)
         return subprocess.CompletedProcess(cmd, 0)
