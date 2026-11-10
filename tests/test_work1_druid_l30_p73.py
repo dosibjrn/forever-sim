@@ -146,3 +146,31 @@ def test_p73_druid_l30_missing_native_options_does_not_pay(
     result = gate.run_live(tmp_path, "druid", 30)
     assert result["status"] == "BLOCKED"
     assert result["reasons"] == ["P7_3_NATIVE_TALENT_OPTIONS_UNAVAILABLE"]
+
+
+def test_p73_surfaces_frozen_native_engine_revision_mismatch_without_paying(
+        monkeypatch, tmp_path):
+    """A different pin must not be mistaken for rejected talent mechanics."""
+    checks = []
+    def refused_reference(*args):
+        checks.append(args)
+        return {"status": "BLOCKED",
+                "reasons": ["P7_1_GENERATED_REFERENCE_ENGINE_CHANGED"]}
+
+    def no_binary(_root):
+        raise AssertionError("no native scorer/options may run on a wrong pin")
+
+    monkeypatch.setattr(reference, "run_generated_p71", refused_reference)
+    monkeypatch.setattr(reference, "_binary_and_pin", no_binary)
+    result = reference_route._pinned_source_runtime(
+        tmp_path, "druid", 30, "unrestricted", "P7.3",
+        require_world=False)
+    assert result == {
+        "status": "BLOCKED",
+        "reasons": [
+            "P7_3_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED",
+            "P7_1_GENERATED_REFERENCE_ENGINE_CHANGED",
+        ],
+        "native_reference_status": "BLOCKED",
+    }
+    assert checks == [(tmp_path, "druid", 30, "unrestricted")]
