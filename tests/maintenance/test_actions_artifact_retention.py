@@ -89,6 +89,10 @@ def test_completed_warlock_one_shot_paid_ci_is_replaced():
         *(f"work2-warlock-l{level}-native-trial.yml" for level in range(26, 29)),
         *(f"work2-warlock-l{level}-native-successor.yml" for level in range(29, 33)),
         "work2-warlock-l33-l40-native-batch.yml",
+        # Already-paid L20 experiments must not stay as dispatchable
+        # native 100-target workloads after the route advanced to L44.
+        "warlock-l20-100mob-chain.yml",
+        "warlock-l20-talent-apl-100mob.yml",
     ]
     for name in retired:
         obsolete = ROOT / ".github/workflows" / name
