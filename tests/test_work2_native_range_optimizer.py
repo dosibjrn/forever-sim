@@ -436,6 +436,7 @@ def test_one_call_cli_directly_runs_work1_native_scorer_manifest_adapter(tmp_pat
     code = cli.main([
         "--start-level", "20", "--end-level", "30", "--level-stride", "10",
         "--mob-count", "3", "--budget", "10", "--beam-width", "2",
+        "--mode", "continuing",
         "--native-prepared-manifest", str(tmp_path / "manifest.json"),
         "--native-binary", str(tmp_path / "pinned-rust"),
         "--native-target-hp", "400", "--native-receipts-dir",
