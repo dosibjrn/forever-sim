@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Live Rust-owned Warlock proposals for the one-call native range optimizer.
 
-The source binary provides options and prepares each same-level talent proposal.
-A prepared actor is not evidence of cross-level continuity: until native
-continuation is proved, non-root requests return an explicit refusal.
+Root candidates use Rust options/prepare; continuing sampled paths must start
+from an exact paid native parent and obtain source-prepared actors at *every*
+skipped level before more native-paid comparisons. This is source-build
+continuity, not an earned XP/travel or continuous world-leveling receipt.
 """
 from __future__ import annotations
 
