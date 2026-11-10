@@ -210,7 +210,11 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         mutated["encounter"]["targets"][0]["level"] = to_level
         request_file = attempts_dir / f"candidate_{number:02d}.json"
         prepared_file = attempts_dir / f"candidate_{number:02d}.prepared.json"
+        paid_file = attempts_dir / f"candidate_{number:02d}.paid.json"
         request_file.write_text(json.dumps(mutated, indent=2) + "\n")
+        if native_paid_shortlist:
+            # A refused prepare must not leave an older paid screen on disk.
+            paid_file.unlink(missing_ok=True)
         # A short native DPS screen is only a routing heuristic. Preserve the
         # untouched full-world candidate request for later real 100-target runs.
         screen_request = request_file
@@ -282,8 +286,6 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                              "reason": "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH"})
             continue
         if native_paid_shortlist:
-            paid_file = attempts_dir / f"candidate_{number:02d}.paid.json"
-            paid_file.unlink(missing_ok=True)
             screen_result = {
                 "tree_index": ti, "field_name": field,
                 "candidate_talents": mutated["raid"]["parties"][0]["players"][0]["talentsString"],
@@ -335,13 +337,16 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         }
         (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
         return receipt
-    if native_paid_shortlist and shortlist:
-        # No single-spec route winner is selected by short native DPS.
-        # A caller must pay matching 100-target worlds (survival + elapsed)
-        # before replacing the current paid predecessor or claiming optimality.
+    if native_paid_shortlist:
+        # Never fall through into the legacy first-preparable gear/banked-point
+        # selection. Even when every ranked talent proposal is refused by
+        # Rust, opt-in comparison mode cannot silently choose an unmeasured
+        # successor. The continuity fallback remains available in default mode.
+        status = ("NATIVE_SCREENED_NOT_WORLD_PAID" if shortlist else
+                  "NATIVE_SHORTLIST_NO_PREPARABLE_CANDIDATES")
         receipt = {
             "kind": "adjacent_native_warlock_candidate",
-            "status": "NATIVE_SCREENED_NOT_WORLD_PAID",
+            "status": status,
             "from_level": from_level, "to_level": to_level,
             "original_source_sha256": sha256(source),
             "native_binary_sha256": sha256(binary),
@@ -352,7 +357,11 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             "candidates": shortlist,
             "native_refusals": rejected,
             "world_winner": None,
-            "next_step": "pay authentic retained-actor hostile 100-target worlds for competing source-native builds",
+            "next_step": (
+                "pay authentic retained-actor hostile 100-target worlds for competing source-native builds"
+                if shortlist else
+                "no ranked actor prepared; inspect native refusals or run the separate continuity policy"
+            ),
         }
         serialized = json.dumps(receipt, indent=2) + "\n"
         (out / "native_paid_shortlist.json").write_text(serialized)
