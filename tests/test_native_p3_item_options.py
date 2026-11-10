@@ -278,6 +278,46 @@ def test_native_p3_unmapped_rating_is_reported_not_a_python_veto():
     assert report["verified_stat_assertions"] == 1
 
 
+def test_native_p3_ordinary_unmeasured_fields_do_not_veto_paid_score_sensitivity():
+    # Two distinct native-legal chest alternatives are scored by the real
+    # production selector, using an already paid source-policy coefficient.
+    # Spirit is present but has no measured effect in this selected policy.
+    # P3's approved contract does not demand a weight for every item field.
+    # Unique test-only IDs avoid process-global production item-vector cache
+    # collisions with unrelated native gear fixtures.
+    items = (
+        ItemRecord(
+            item_id=9888123451, name="Native caster chest A", slot="chest",
+            item_level=3, required_level=1, spell_power=6.0, spirit=4.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+        ItemRecord(
+            item_id=9888123452, name="Native caster chest B", slot="chest",
+            item_level=2, required_level=1, spell_power=2.0, spirit=8.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+    )
+    metadata = {"status": "ok", "unverified_candidate_count": 0,
+                "source": "mythicsim:data/items.jsonl"}
+    with patch(
+        "src.game.native_p3_item_options.native_p3_item_records",
+        return_value=(items, {}, metadata),
+    ):
+        report = fast_p3_smoke(
+            class_key="priest", level=20, weights={"spell_power": 0.25},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+
+    scored = report["slots"]["chest"]["items"]
+    assert len(scored) == 2
+    assert [row["score"] for row in scored] == [1.5, 0.5]
+    assert all("spirit" in row["stat_values"] for row in scored)
+    assert all("spirit" not in row["contributions"] for row in scored)
+    assert report["tested_stat_assertions"] == 4
+    assert report["verified_stat_assertions"] == 2
+    assert report["blockers"] == []
+    assert report["p3_pass"] is True
+
+
 def test_native_p3_never_rechecks_native_item_level_legality():
     items = [{"item_id": 700, "item_level": 8, "required_level": 60,
               "slot": "chest", "stats": {}},

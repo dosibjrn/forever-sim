@@ -249,9 +249,11 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                     tested_stat_assertions += 1
                     item_weight_checks += 1
                 if weight is None:
-                    # Only named required ordinary axes must have positive
-                    # weights. Unmodeled resistances/procs cannot veto P3.
-                    if axis in POSITIVE_WHEN_PRESENT:
+                    # Native P3 does not require every ordinary item stat to
+                    # affect this selected policy. Keep its raw item fields
+                    # visible; only measured axes contribute to the score.
+                    # The transitional SQLite caller retains its old check.
+                    if native_options_binary is None and axis in POSITIVE_WHEN_PRESENT:
                         blockers.add('MISSING_WEIGHT:' + axis)
                     continue
                 contribution = weight * amount
