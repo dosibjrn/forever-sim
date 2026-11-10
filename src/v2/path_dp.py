@@ -5,7 +5,9 @@ from __future__ import annotations
 Candidate generation is deliberately separate.  Given a finite pool at each
 level, this module is exact: a no-respec edge exists iff the child allocation is
 exactly the parent plus one legal talent point; a respec edge may jump to any
-legal allocation while consuming one respec budget.
+legal allocation while consuming one respec budget.  Native-paid, Rust-prepared
+observations may also carry an unchanged allocation across a banked-point level
+without making the legacy analytic full-spend contract permissive.
 """
 
 from dataclasses import dataclass
@@ -24,6 +26,9 @@ class LevelNode:
     policy:Any=None
     source:str='analytic'
     details:dict|None=None
+    # Set only by the native-receipt adapter after a real prepared and paid
+    # observation; never infer this from a proposed build or analytic score.
+    native_paid_prepared:bool=False
 
     @property
     def key(self):
@@ -35,7 +40,7 @@ class LevelNode:
 @dataclass(frozen=True)
 class PathStep:
     node:LevelNode
-    kind:str              # start | point | respec
+    kind:str              # start | point | hold | respec
     talent_added:str|None
     respecs_used:int
     cumulative_s:float
@@ -75,12 +80,17 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel)->l
     """
     best={}
     for n in nodes:
+        if type(n.native_paid_prepared) is not bool:
+            raise ValueError('native_paid_prepared must be boolean')
         if int(n.level)!=int(level):
             raise ValueError(f'node level mismatch: expected {level}, got {n.level}')
         points=model.build_points(n.talents)
-        if points!=int(level)-9:
-            raise ValueError(f'level {level} node has {points} talent points; expected {level-9}')
-        k=model.build_key(n.talents)
+        expected=int(level)-9
+        if points!=expected and not (n.native_paid_prepared and 0<=points<expected):
+            raise ValueError(f'level {level} node has {points} talent points; expected {expected}')
+        # An analytic proposal must never displace a paid native observation of
+        # the same talents; the latter alone can justify a banked-point hold.
+        k=(model.build_key(n.talents),n.native_paid_prepared)
         old=best.get(k)
         if old is None or (n.score_s_per_100,model.policy_description(n.policy,level) if n.policy else '') < (old.score_s_per_100,model.policy_description(old.policy,level) if old.policy else ''):
             best[k]=n
@@ -128,8 +138,15 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
         # simpler and less error-prone than reconstructing all possible parents.
         for j,child in enumerate(nodes):
             for i,parent in enumerate(prev_nodes):
-                added=_added_talent(parent.talents,child.talents,model)
-                if added is None:
+                # A banked point can be carried only between *two* actual
+                # native-paid prepared observations of the same allocation.
+                # This is a route transition, not a Python talent-legality
+                # decision. All new point allocations still use the model hook.
+                hold=(parent.native_paid_prepared and child.native_paid_prepared
+                      and model.build_key(parent.talents)==model.build_key(child.talents)
+                      and model.build_points(parent.talents)==model.build_points(child.talents))
+                added=None if hold else _added_talent(parent.talents,child.talents,model)
+                if not hold and added is None:
                     continue
                 for r in range(max_respecs+1):
                     pc=prev_layer.get((i,r))
@@ -138,7 +155,7 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
                     cost=pc.cost+float(child.score_s_per_100)*float(w.get(level,0.0))
                     key=(j,r); old=nxt.get(key)
                     if old is None or cost<old.cost-1e-12:
-                        nxt[key]=_Cell(cost,(i,r),'point',added)
+                        nxt[key]=_Cell(cost,(i,r),'hold' if hold else 'point',added)
 
         # Respec jump: because the jump cost itself is zero and the destination
         # local score depends only on the child, only the cheapest source at r-1
