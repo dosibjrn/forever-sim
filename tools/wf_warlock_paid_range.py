@@ -36,6 +36,28 @@ def _read(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def _cached_paid_refusal(route: Path, level: int) -> bool:
+    """Recognize a persisted native refusal without mistaking it for paid work.
+
+    A failed native 100-target attempt can still publish route.json with the
+    previous measured levels plus a new-level refusal. The file's existence
+    alone is not a paid ACK. Only the same-level native refusal is resumable;
+    malformed or mismatched paid receipts still go through strict verification.
+    """
+    report = _read(route)
+    if report.get("class") != "warlock" or level in report.get("measured_levels", []):
+        return False
+    refusals = report.get("native_refusals", [])
+    return isinstance(refusals, list) and any(
+        isinstance(row, dict)
+        and row.get("level") == level
+        and isinstance(row.get("status"), str)
+        and bool(row["status"])
+        and row["status"] != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+        for row in refusals
+    )
+
+
 def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
         from_level: int, end_level: int, max_new_levels: int = 2,
         predecessor_binary_sha256: str | None = None,
@@ -146,8 +168,16 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             raise ValueError(f"prepared L{level} source bytes do not match native proposal")
 
         if paid_route.is_file():
+            # A failed paid attempt also publishes route.json. Preserve its
+            # actual native refusal on resume: neither pretend it was paid
+            # nor re-execute an unchanged failed 100-target scenario.
+            if _cached_paid_refusal(paid_route, level):
+                stopped = {"level": level, "status": "NATIVE_PAID_REFUSAL",
+                           "proposal": str(proposal_file), "route": str(paid_route)}
+                return save()
             # A completed equivalent native run is permanently reusable: no
-            # 'staleness' veto and no repeated 100-mob payment.
+            # 'staleness' veto and no repeated 100-mob payment. Any malformed
+            # or nonmatching measured receipt still fails strict verification.
             next_level.verified_paid_predecessor(
                 route=paid_route, source=selected_source, binary=binary,
                 from_level=level)
