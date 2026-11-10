@@ -4,8 +4,10 @@ No ledger writes or synthetic DPS. GitHub's authenticated M1 workflow retrieves
 the *original* registered run logs, never a reference build or an optimizer
 screen score. The official recorder supplies a pre-run TSV snapshot so a P7.5
 target in a multi-gate batch cannot mistake its own in-progress P7.1-P7.4 run
-for a completed accepted prior. P7.5's existing receipt/engine/source validation
-remains final.
+for a completed accepted prior. P7.5 uses the original officially recorded receipts as immutable historical
+observations. Never search for or request newer reruns of accepted M1 gates.
+A prior can be excluded from the current P7.5 numerical comparison when its
+engine/source/scenario differs; that does not invalidate its historical PASS.
 """
 from __future__ import annotations
 
@@ -111,34 +113,8 @@ def _read_approved_run(repository: str, run_id: int) -> str:
     return log.stdout
 
 
-def _recent_successful_m1_run_ids(repository: str) -> list[int]:
-    """Only official completed-successful M1 workflows, not user-provided URLs.
-
-    Revalidating an old PASS on a materially changed native engine does not
-    increase the 1628 numerator and the one-row ledger retains the original
-    accepted stamp. Its newer genuine M1 PASS still needs to be usable as a
-    compatible P7.5 prior. The caller reopens each candidate run via the
-    existing authenticated workflow/log validator; a green workflow alone is
-    never evidence that an individual gate passed.
-    """
-    completed = subprocess.run(
-        ["gh", "run", "list", "--repo", repository,
-         "--workflow", "m1-on-demand-record.yml", "--branch", "main",
-         "--status", "success", "--limit", "50",
-         "--json", "databaseId"],
-        capture_output=True, text=True, check=True, timeout=90)
-    entries = json.loads(completed.stdout)
-    if not isinstance(entries, list):
-        raise ValueError("P75_INVALID_RECENT_M1_RUN_LIST")
-    return [row["databaseId"] for row in entries
-            if isinstance(row, dict) and type(row.get("databaseId")) is int
-            and row["databaseId"] > 0]
-
-
 def collect_accepted_receipts(root: Path, repository: str, class_key: str,
                               level: int, spec: str, *, read_run=_read_approved_run,
-                              selected_engine: str | None = None,
-                              recent_run_ids=None,
                               ledger_path: Path | None = None):
     rows = _approved_rows(root, class_key, level, spec,
                           ledger_path=ledger_path)
@@ -155,56 +131,8 @@ def collect_accepted_receipts(root: Path, repository: str, class_key: str,
             level=level, spec=spec, gate=gate)
         receipts.append({"gate": gate, "run_url": run_url, "report": report})
 
-    # Only a gate ALREADY genuinely accepted in the sole M1 ledger may use a
-    # newer Merge-launched, actually passing, matching-source revalidation.
-    # This does not invent a PASS, change a timestamp or write the register.
-    pending = {
-        r["gate"]: r for r in receipts
-        if selected_engine and
-        r["report"].get("native_source_revision") != selected_engine
-    }
-    if pending:
-        run_ids = (recent_run_ids if recent_run_ids is not None
-                   else _recent_successful_m1_run_ids(repository))
-        old_ids = {
-            gate: _registered_run_id(r["run_url"], repository)
-            for gate, r in pending.items()
-        }
-        for run_id in run_ids:
-            if not pending:
-                break
-            if type(run_id) is not int or run_id <= min(old_ids.values()):
-                continue
-            try:
-                log = read_run(repository, run_id)  # trusted M1 SUCCESS + event
-            except (OSError, ValueError, subprocess.SubprocessError,
-                    json.JSONDecodeError):
-                continue
-            for gate, old in list(pending.items()):
-                if run_id <= old_ids[gate]:
-                    continue
-                try:
-                    report = _parse_accepted_gate_line(
-                        log, class_key=class_key, level=level,
-                        spec=spec, gate=gate)
-                except ValueError:
-                    continue  # The M1 workflow ran a different gate.
-                if (report.get("native_source_revision") != selected_engine
-                        or report.get("source_request_raw_sha256")
-                        != old["report"].get("source_request_raw_sha256")):
-                    continue
-                next_receipt = {
-                    "gate": gate,
-                    "run_url": f"https://github.com/{repository}/actions/runs/{run_id}",
-                    "registered_run_url": old["run_url"],
-                    "m1_revalidated": True,
-                    "report": report,
-                }
-                receipts = [
-                    next_receipt if r["gate"] == gate else r
-                    for r in receipts
-                ]
-                del pending[gate]
+    # Only the registered original official PASS is returned. A newer engine
+    # does not authorize rerunning, replacing or revalidating accepted gates.
     return {"receipts": receipts}
 
 
@@ -226,15 +154,10 @@ def main() -> int:
     if not os.environ.get("GH_TOKEN"):
         parser.error("GH_TOKEN needed to read accepted Actions logs")
     root = Path(__file__).resolve().parents[1]
-    # Read the exact selected fork gitlink; do not infer the native pin from
-    # an old accepted P7.1 receipt or from a floating remote branch.
-    selected_engine = subprocess.check_output(
-        ["git", "-C", str(root / "integrations/mythicsim-rust/engine"),
-         "rev-parse", "HEAD"], text=True).strip()
     try:
         receipts = collect_accepted_receipts(
             root, args.repository, args.class_key, args.level, args.spec,
-            selected_engine=selected_engine, ledger_path=args.ledger)
+            ledger_path=args.ledger)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError,
             json.JSONDecodeError) as exc:
         parser.error(f"Cannot supply genuine accepted prior receipts: {exc}")
