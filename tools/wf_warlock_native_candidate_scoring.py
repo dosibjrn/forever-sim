@@ -188,14 +188,34 @@ def compare_prepared_candidates(*, binary: Path,
                                  recovery_policy="decisions",
                                  health_threshold=1.0, mana_threshold=1.0,
                                  require_native_health_damage=False)
-            if artifact_dir is not None:
-                (artifact_dir / f"{candidate_id}.native.json").write_text(
+            native_receipt_path = (
+                artifact_dir / f"{candidate_id}.native.json"
+                if artifact_dir is not None else None)
+            if native_receipt_path is not None:
+                native_receipt_path.write_text(
                     json.dumps(receipt, indent=2, allow_nan=False) + "\n")
             score, status = score_native_chain(receipt, prepared,
                                                mob_count=mob_count,
                                                expected_target_hp=target_hp)
             row.update(status=status, elapsed_seconds=score,
                        acked_world_kills=receipt.get("world_targets_killed"))
+            if score is not None:
+                # Forward the same verified Rust/2D ACK receipt used for the
+                # ranking. World elapsed includes kills, travel and any
+                # between-pull rest; terminal time is additional, not free.
+                terminal = receipt["native_terminal_recovery"]
+                row.update(
+                    world_elapsed_before_terminal_seconds=receipt["world_elapsed_seconds"],
+                    terminal_recovery_seconds=(
+                        terminal["end_clock_ns"] - terminal["start_clock_ns"]) / 1e9,
+                    terminal_health=terminal["health_after"],
+                    terminal_max_health=terminal["max_health"],
+                    terminal_mana=terminal["mana_after"],
+                    terminal_max_mana=terminal["max_mana"],
+                )
+                if native_receipt_path is not None:
+                    row.update(native_raw_receipt_file=str(native_receipt_path),
+                               native_raw_receipt_sha256=_sha256(native_receipt_path))
         except (RuntimeError, AssertionError, ValueError, OSError) as exc:
             row.update(status="NATIVE_REFUSAL", elapsed_seconds=None,
                        refusal=str(exc)[-1500:])
