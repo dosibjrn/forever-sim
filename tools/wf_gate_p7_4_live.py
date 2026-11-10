@@ -10,151 +10,14 @@ import copy
 import hashlib
 import json
 from pathlib import Path
-import random
 import subprocess
 import sys
 import tempfile
 import time
 
 
-from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
-                                     _source_native_world_parity)
+from tools.wf_gate_p7_1_live import PINNED_RUST, SAVED_BALANCE_RAW_SHA
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
-
-
-def _source_ranked_item_choice(items, rng: random.Random, *, ranked: bool):
-    """Sample *all* admitted source items, while exploiting their stat order.
-
-    candidate_pool sorts the complete pinned source/Rust-admitted item list by
-    spellpower/intellect/hit/crit/spirit. The top-32 preference is a proposal
-    distribution only: every item still has nonzero probability of selection,
-    and periodic wholly-uniform cold restarts keep full-pool exploration.
-    Neither the saved reference loadout nor another gate's winner is a seed.
-    """
-    if ranked and rng.random() < 0.90:
-        return rng.choice(items[:min(32, len(items))])
-    return rng.choice(items)
-
-
-def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
-               pool=None, enchant_pools=None, elite=None,
-               source_ranked=False, neighbor_mode="mixed",
-               native_authoritative=False):
-    """Independent cold discovery or local edits of this run's paid winner.
-
-    The saved loadout is never a search seed. An elite is only supplied after
-    its native+2D candidate has been legally executed and scored.
-    """
-    if pool is None:
-        pool, _ = gear_search.candidate_pool(validator, limit=15)
-    original_items = base["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-    reference = [item["id"] for item in original_items]
-    original_enchants = [item.get("enchant") for item in original_items]
-    paid_items = None
-    if elite is not None:
-        fixed = base["raid"]["parties"][0]["players"][0]
-        paid = elite["raid"]["parties"][0]["players"][0]
-        if (paid.get("talentsString") != fixed.get("talentsString")
-                or paid.get("rotation") != fixed.get("rotation")):
-            raise ValueError("P74_PAID_ELITE_CHANGED_FIXED_AXES")
-        paid_items = paid["equipment"]["items"]
-        if len(paid_items) != len(reference):
-            raise ValueError("P74_PAID_ELITE_CHANGED_GEAR_SLOTS")
-    if neighbor_mode not in ("mixed", "single", "enchant"):
-        raise ValueError("P74_INVALID_PAID_NEIGHBOR_MODE")
-    for _ in range(60):
-        if paid_items is None:
-            ids = [_source_ranked_item_choice(pool[i], rng, ranked=source_ranked)
-                   for i in range(len(reference))]
-            enchants = ([rng.choice(enchant_pools[i]) for i in range(len(reference))]
-                        if enchant_pools is not None else list(original_enchants))
-        else:
-            # Reuse the old source-native P7.4 search's 1–5-slot neighborhood
-            # idea, but score each candidate with the actual live native+2D
-            # engine. Keep the elite immutable; sample only source pools.
-            ids = [int(item["id"]) for item in paid_items]
-            enchants = [item.get("enchant") for item in paid_items]
-            if neighbor_mode == "enchant":
-                # Keep this genuinely paid item's gear fixed while testing a
-                # separate source-legal enchant choice. The previous search
-                # changed enchants only as a side effect of swapping gear.
-                if enchant_pools is None:
-                    raise ValueError("P74_ENCHANT_NEIGHBOR_REQUIRES_SOURCE_POOLS")
-                # A random slot may have no alternative enchant at all.
-                # Choosing it repeatedly wastes the entire 60-attempt
-                # proposal even when another legal slot can be changed.
-                mutable = [
-                    slot for slot in range(len(reference))
-                    if any(value != enchants[slot]
-                           for value in enchant_pools[slot])
-                ]
-                if not mutable:
-                    raise ValueError("P74_NO_SOURCE_ENCHANT_ALTERNATIVE")
-                slot = rng.choice(mutable)
-                alternatives = [
-                    value for value in enchant_pools[slot]
-                    if value != enchants[slot]
-                ]
-                enchants[slot] = rng.choice(alternatives)
-            else:
-                # One-slot refinement must select a slot that can actually
-                # change, not retry an immutable slot 60 times while another
-                # source-admitted slot contains alternatives.
-                if neighbor_mode == "single":
-                    moves = []
-                    for slot in range(len(reference)):
-                        if any(item_id != ids[slot] for item_id in pool[slot]):
-                            moves.append(("item", slot))
-                        if (enchant_pools is not None and
-                                any(value != enchants[slot]
-                                    for value in enchant_pools[slot])):
-                            moves.append(("enchant", slot))
-                    if not moves:
-                        raise ValueError("P74_NO_SOURCE_SINGLE_SLOT_ALTERNATIVE")
-                    kind, slot = rng.choice(moves)
-                    if kind == "item":
-                        alternatives = [item_id for item_id in pool[slot]
-                                        if item_id != ids[slot]]
-                        ids[slot] = _source_ranked_item_choice(
-                            alternatives, rng, ranked=source_ranked)
-                        if enchant_pools is not None:
-                            enchants[slot] = rng.choice(enchant_pools[slot])
-                    else:
-                        alternatives = [value for value in enchant_pools[slot]
-                                        if value != enchants[slot]]
-                        enchants[slot] = rng.choice(alternatives)
-                else:
-                    # Retain the independent mixed 1-5-slot exploration.
-                    for _step in range(rng.randint(1, min(5, len(reference)))):
-                        slot = rng.randrange(len(reference))
-                        ids[slot] = _source_ranked_item_choice(
-                            pool[slot], rng, ranked=source_ranked)
-                        if enchant_pools is not None:
-                            enchants[slot] = rng.choice(enchant_pools[slot])
-            if (ids == [int(item["id"]) for item in paid_items]
-                    and enchants == [item.get("enchant") for item in paid_items]):
-                continue  # unchanged paid elite is not a new discovery
-        # This candidate was drawn independently from source-admitted pools.
-        # Matching the saved reference by chance is legal discovery, never
-        # evidence that the reference was used to seed the search.
-        if not native_authoritative:
-            try:
-                if enchant_pools is None:
-                    validator.validate(ids)
-                else:
-                    validator.validate(ids, enchants)
-            except gear_search.RejectedGear:
-                continue  # legacy callers retain their Python admission path
-        candidate = gear_search._swap(base, ids)
-        if enchant_pools is not None:
-            actual_items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-            for item, enchant_id in zip(actual_items, enchants):
-                item.pop("enchant", None)
-                if enchant_id is not None:
-                    item["enchant"] = int(enchant_id)
-            gear_search.preflight(base, candidate)
-        return candidate
-    raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
 def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
@@ -202,56 +65,6 @@ def _next_p74_deep_confirmation(reranked, confirmed, attempted, elapsed_s):
                      enumerate(reranked),
                      key=lambda item: item[1][0], reverse=True)
                  if row[2] in confirmed and row[2] not in attempted), None)
-
-
-def _paid_p74_balanced_finalist(production, binary, request, distance, *,
-                                seeds=("1955004", "1955047")):
-    """Re-score an already paid gear candidate with independent balanced seeds.
-
-    These are native+2D measurements inside the same 300s search, not a
-    stochastic holdout. Keep the original paid request immutable for freezing.
-    """
-    scores = []
-    latest_live = None
-    for seed in seeds:
-        candidate = copy.deepcopy(request)
-        candidate.setdefault("simOptions", {})["randomSeed"] = str(seed)
-        with tempfile.TemporaryDirectory(prefix="forever_p74_balanced_") as tmp:
-            path = Path(tmp) / "paid-balanced-gear.json"
-            path.write_text(json.dumps(candidate))
-            native = production.native_source_control(
-                binary, path, 3, rng_mode="balanced")
-            live = production.run(
-                binary, path, distance=distance, iterations=3,
-                rng_mode="balanced")
-            mismatch = _source_native_world_parity(native, live, 3, allow_world_lethal=True)
-            if mismatch is not None:
-                raise ValueError("P74_BALANCED_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
-        if (live.get("iterations_done") != 3
-                or live.get("native_damage_events", 0) <= 0
-                or live.get("native_world_ticks", 0) <= 0):
-            raise ValueError("P74_BALANCED_FINALIST_WORLD_INCOMPLETE")
-        score = float(live["world_mean_dps"])
-        if not 0 <= score < float("inf"):
-            raise ValueError("P74_BALANCED_FINALIST_DPS_INVALID")
-        scores.append(score)
-        latest_live = live
-    return sum(scores) / len(scores), latest_live
-
-
-def _freeze_paid_p74_balanced_winner(screen_best, reranked, confirmed):
-    """Pick on independent balanced measurements, never the 1,000 holdout."""
-    if reranked:
-        confirmed_rows = [row for row in reranked if row[2] in confirmed]
-        score, live, sha, request, screen_score = max(
-            confirmed_rows or reranked, key=lambda row: row[0])
-        label = ("paid_4x3_balanced_native_world_confirmed"
-                 if confirmed_rows else "paid_2x3_balanced_native_world_finalist")
-        return score, live, sha, request, screen_score, label
-    score, live, sha, request = screen_best
-    return score, live, sha, request, score, "best_balanced_live_screen"
-
-
 
 
 def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> dict:
