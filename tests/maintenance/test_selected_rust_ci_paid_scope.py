@@ -80,3 +80,34 @@ def test_unaccepted_p3_probes_require_fresh_opt_in_label():
     assert guard is not None
     assert "always()" in guard.group(1)
     assert pin in guard.group(1) and label in guard.group(1)
+
+
+def test_warlock_shoot_cargo_regression_is_explicitly_requested():
+    """One selected Rust pin PR should not launch a second Cargo-build job.
+
+    The underlying native Shoot test stays available through manual dispatch,
+    and normal selected pin PRs still run the shared engine verification.
+    This is a CI cost/duplicate-work rule, not an M1 acceptance predicate.
+    """
+    shoot = WORKFLOW.with_name("warlock-native-shoot-integration.yml")
+    text = shoot.read_text(encoding="utf-8")
+    assert text.count("\non:\n") == 1
+    events = text.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+    assert "  workflow_dispatch:\n" in events
+    for automatic in ("  pull_request:", "  push:", "  schedule:"):
+        assert automatic not in events, (
+            f"Warlock Shoot test may only be run explicitly: {automatic}"
+        )
+    assert (
+        "cargo test --locked "
+        "warlock_wand_registers_native_shoot_for_apl_and_combat -- --nocapture"
+    ) in text
+    assert "Assert selected Rust gitlink and official source repository" in text
+    assert "working-directory: integrations/mythicsim-rust/engine" in text
+
+    pin_workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert "  pull_request:\n" in pin_workflow
+    assert "      - integrations/mythicsim-rust/engine\n" in pin_workflow
+    assert "      - name: Require exact selected engine pin" in pin_workflow
+    assert "      - name: Build the exact selected engine" in pin_workflow
+    assert "      - name: Probe unified get_options JSON on two class/level pairs" in pin_workflow

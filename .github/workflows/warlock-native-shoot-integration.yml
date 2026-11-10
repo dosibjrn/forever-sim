@@ -1,10 +1,10 @@
 name: Warlock selected Rust Shoot integration
 
+# The canonical Rust fork runs this mechanic regression in its own CI.
+# rust-submodule-verify.yml already validates selected-engine pins on PRs.
+# Keep the extra selected-shoot cargo test manually runnable, not automatic
+# for every routine Rust pin promotion (a duplicate full Cargo build).
 on:
-  pull_request:
-    paths:
-      - integrations/mythicsim-rust/engine
-      - .github/workflows/warlock-native-shoot-integration.yml
   workflow_dispatch:
 
 permissions:
