@@ -23,8 +23,7 @@ def sha256(path: Path) -> str:
 
 def verified_paid_predecessor(*, route: Path, source: Path, binary: Path,
                               from_level: int,
-                              predecessor_binary_sha256: str | None = None,
-            native_paid_shortlist: bool = False) -> dict:
+                              predecessor_binary_sha256: str | None = None) -> dict:
     """Require a real paid prior-level receipt for automatic route extension.
 
     This matches an executed native actor to the exact persisted request
@@ -75,7 +74,8 @@ def verified_paid_predecessor(*, route: Path, source: Path, binary: Path,
 def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             to_level: int = 21, max_proposals: int = 30,
             predecessor_route: Path | None = None,
-            predecessor_binary_sha256: str | None = None) -> dict:
+            predecessor_binary_sha256: str | None = None,
+            native_paid_shortlist: bool = False) -> dict:
     if to_level != from_level + 1 or not 10 <= from_level < 60:
         raise ValueError("source proposals require exactly one adjacent level in 10..60")
     if max_proposals < 1:
