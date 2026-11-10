@@ -1,0 +1,140 @@
+name: Work2 Warlock L21 source-native successor of paid L20
+
+on:
+  push:
+    branches:
+      - work2/warlock-l20-start-identity-repair-20261110
+    paths:
+      - .github/workflows/work2-warlock-l21-native-successor.yml
+      - tools/wf_warlock_next_level_source.py
+      - tests/test_work2_warlock_next_level_source.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paid-native-l21:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact Forever Work2 commit
+        uses: actions/checkout@v4
+        with:
+          path: project
+          ref: ${{ github.sha }}
+      - name: Checkout exact selected Rust executor
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          path: engine
+          ref: 35d2c65c21263fe185facc1b5d2743b450fcad47
+      - name: Assert pinned Rust source
+        run: |
+          test "$(git -C engine rev-parse HEAD)" = "35d2c65c21263fe185facc1b5d2743b450fcad47"
+          git -C project rev-parse HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install minimal Forever dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Regress paid-predecessor binary and source identity
+        working-directory: project
+        run: |
+          python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_warlock_native_start_source.py tests/test_work2_native_paid_route_publisher.py tests/test_work2_native_paid_banked_path_dp.py
+      - name: Build exact source-native executor
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Retrieve already-paid L20 source and route, never rerun historical levels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous
+          curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13745634593/zip" \
+            -o previous.zip
+          unzip -q previous.zip -d previous
+          test -s previous/warlock-l20-native-start/route.json
+      - name: Select exact executed paid L20 source request and compiled binary lineage
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          root = Path("previous")
+          route = json.loads((root / "warlock-l20-native-start/route.json").read_text())
+          binary = hashlib.sha256(Path("engine/target/debug/forever-engine").read_bytes()).hexdigest()
+          eligible = [r for r in route["observations"]
+                      if r.get("level") == 20
+                      and r.get("status") == "measured_native_chain"
+                      and r.get("engine_binary_sha256") == binary
+                      and r.get("native_world_ack") is True
+                      and r.get("paid_native_recovery") is True
+                      and r.get("targets_requested") == r.get("targets_killed") == 100
+                      and isinstance(r.get("native_actor"), dict)
+                      and r["native_actor"].get("class") == "ClassWarlock"
+                      and r["native_actor"].get("level") == 20]
+          assert eligible, "No exact-binary, Rust-prepared, actually paid L20 predecessor"
+          matches = []
+          for candidate in (root / "warlock-l20-native-start").rglob("source_request.json"):
+              actual_hash = hashlib.sha256(candidate.read_bytes()).hexdigest()
+              if any(r.get("source_request_sha256") == actual_hash for r in eligible):
+                  matches.append(candidate)
+          assert matches, "The archived executed L20 source request does not match its paid receipt"
+          selected = sorted(matches)[0]
+          source = json.loads(selected.read_text())
+          actor = source["raid"]["parties"][0]["players"][0]
+          assert actor["class"] == "ClassWarlock"
+          assert source["encounter"]["targets"][0]["level"] == 20
+          dest = root / "exact_paid_l20_source.json"
+          dest.write_bytes(selected.read_bytes())
+          print("PAID_L20_NATIVE_PREDECESSOR", eligible[0]["id"], binary,
+                str(selected), hashlib.sha256(dest.read_bytes()).hexdigest(), flush=True)
+          PY
+      - name: Request native L21 options and prepare a same-binary candidate
+        working-directory: project
+        run: |
+          python -u tools/wf_warlock_next_level_source.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../previous/exact_paid_l20_source.json \
+            --predecessor-route ../previous/warlock-l20-native-start/route.json \
+            --from-level 20 --to-level 21 \
+            --out ../warlock-l21-source
+      - name: Pay one hostile L21 100-target native Decisions chain and publish bounded route
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python -u tools/wf_warlock_route_guide.py \
+            --execute-native --actor-level 21 \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../warlock-l21-source/source_request.json \
+            --health-threshold 0.7 --mana-threshold 0.25 \
+            --baseline-observations ../previous/warlock-l20-native-start/route.json \
+            --trial same-binary-paid-l21-successor \
+            --out ../warlock-l21-native-route
+      - name: Publish native refusal as an unmeasured route when source preparation fails
+        if: failure()
+        working-directory: project
+        run: |
+          if test -s ../warlock-l21-source/proposal.json; then
+            python -u tools/wf_warlock_route_guide.py \
+              --native-proposal ../warlock-l21-source/proposal.json \
+              --baseline-observations ../previous/warlock-l20-native-start/route.json \
+              --out ../warlock-l21-native-refusal || true
+          fi
+      - name: Preserve candidate options, paid actor/source and route or exact refusal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l21-successor-${{ github.run_id }}
+          path: |
+            previous/exact_paid_l20_source.json
+            previous/warlock-l20-native-start/route.json
+            warlock-l21-source/
+            warlock-l21-native-route/
+            warlock-l21-native-refusal/
+          if-no-files-found: warn
+          retention-days: 3
