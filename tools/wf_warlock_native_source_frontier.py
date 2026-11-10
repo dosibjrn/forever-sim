@@ -22,39 +22,84 @@ def _sha256(path: Path) -> str:
 
 
 def _variants(seed: str, trees: list[dict]):
-    """Propose rank transfers among Rust-listed slots; Rust judges legality."""
+    """Sample transfers between Rust-listed talent slots; Rust judges proposals.
+
+    A small paid budget must reach alternatives in *other* native trees before
+    spending every slot on tweaks to the seed tree. No Warcraft tier or talent
+    eligibility is asserted here: only Rust prepare can accept or refuse each
+    proposed build.
+    """
     fields = seed.split("-")
     if len(fields) != 3 or not all(s.isascii() and s.isdigit() for s in fields):
         raise ValueError("source talents are not three numeric trees")
-    yield seed
-    seen = {seed}
-    for tree_index, tree in enumerate(trees):
+    slots_by_tree = []
+    for tree in trees:
         slots = tree.get("talents")
         if not isinstance(slots, list):
             raise ValueError("native options lack tree slots")
-        for from_slot in slots:
-            src = from_slot.get("index")
-            if type(src) is not int or src < 0:
-                raise ValueError("native option source index invalid")
-            before = int(fields[tree_index][src]) if src < len(fields[tree_index]) else 0
-            if before == 0:
+        slots_by_tree.append(slots)
+    yield seed
+    seen = {seed}
+
+    def transfer(source_tree: int, src: int, dest_tree: int, dst: int,
+                 cap: int):
+        if (type(src) is not int or src < 0 or type(dst) is not int
+                or dst < 0 or type(cap) is not int or cap < 1
+                or (source_tree == dest_tree and src == dst)):
+            return None
+        source_rank = (int(fields[source_tree][src])
+                       if src < len(fields[source_tree]) else 0)
+        dest_rank = (int(fields[dest_tree][dst])
+                     if dst < len(fields[dest_tree]) else 0)
+        if source_rank < 1 or dest_rank >= cap:
+            return None
+        changed = list(fields)
+        for tree_idx, slot, delta in (
+            (source_tree, src, -1), (dest_tree, dst, 1)
+        ):
+            digits = list(changed[tree_idx])
+            digits.extend("0" for _ in range(slot + 1 - len(digits)))
+            digits[slot] = str(int(digits[slot]) + delta)
+            changed[tree_idx] = "".join(digits)
+        return "-".join(changed)
+
+    # Round-robin destinations *across* native trees first, so even a budget
+    # of three tests seed + other-tree alternatives instead of only tree-0
+    # rearrangements. Source-listed slots only; no Python legality table.
+    sources = [
+        (tree_idx, row.get("index"))
+        for tree_idx, slots in enumerate(slots_by_tree)
+        for row in slots
+        if type(row.get("index")) is int
+        and 0 <= row["index"] < len(fields[tree_idx])
+        and fields[tree_idx][row["index"]] != "0"
+    ]
+    for slot_position in range(max((len(slots) for slots in slots_by_tree), default=0)):
+        for dest_tree, slots in enumerate(slots_by_tree):
+            if slot_position >= len(slots):
                 continue
-            for to_slot in slots:
-                dst, cap = to_slot.get("index"), to_slot.get("max_rank")
-                if (type(dst) is not int or type(cap) is not int or dst < 0
-                        or cap < 1 or dst == src):
+            dst_row = slots[slot_position]
+            for source_tree, src in sources:
+                if source_tree == dest_tree:
                     continue
-                current = int(fields[tree_index][dst]) if dst < len(fields[tree_index]) else 0
-                if current >= cap:
-                    continue
-                mutated = list(fields)
-                digits = list(mutated[tree_index])
-                digits.extend("0" for _ in range(max(src, dst) + 1 - len(digits)))
-                digits[src] = str(before - 1)
-                digits[dst] = str(current + 1)
-                mutated[tree_index] = "".join(digits)
-                candidate = "-".join(mutated)
-                if candidate not in seen:
+                candidate = transfer(
+                    source_tree, src, dest_tree,
+                    dst_row.get("index"), dst_row.get("max_rank"),
+                )
+                if candidate is not None and candidate not in seen:
+                    seen.add(candidate)
+                    yield candidate
+
+    # Once competing native trees have been exposed, spend remaining budget
+    # on within-tree rank transfers; preparation still has final authority.
+    for tree_idx, slots in enumerate(slots_by_tree):
+        for source in slots:
+            for target in slots:
+                candidate = transfer(
+                    tree_idx, source.get("index"), tree_idx,
+                    target.get("index"), target.get("max_rank"),
+                )
+                if candidate is not None and candidate not in seen:
                     seen.add(candidate)
                     yield candidate
 
