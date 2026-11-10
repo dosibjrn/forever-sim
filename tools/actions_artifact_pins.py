@@ -171,8 +171,15 @@ def unmerged_pr_branch_refs(pull_requests: list[dict], repository: str) -> set[s
                 # that this unmerged PR came from an external fork. Abort
                 # evidence GC rather than risk losing a deleted local branch.
                 raise ValueError("unmerged PR has no trustworthy head origin")
+            label_owner, _, label_ref = label.partition(":")
+            if not label_owner or not label_ref or ":" in label_ref:
+                raise ValueError("unmerged PR has no trustworthy head origin")
             if not label.startswith(owner + ":"):
-                # A named different owner is an identifiable external fork.
+                # A foreign owner is identified only when the label's
+                # branch agrees with the API ref. Otherwise classification
+                # is ambiguous and GC must not approve deletion.
+                if head.get("ref") != label_ref:
+                    raise ValueError("unmerged PR has no trustworthy head origin")
                 continue
             ref = head.get("ref")
             if not isinstance(ref, str) or not ref or label != f"{owner}:{ref}":
