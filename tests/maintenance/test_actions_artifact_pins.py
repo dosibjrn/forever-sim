@@ -208,7 +208,7 @@ def test_bare_markdown_artifact_id_collected_from_retained_evidence(tmp_path):
         path.write_text("", encoding="utf-8")
     receipt = tmp_path / "docs/evidence/source-native.md"
     receipt.parent.mkdir(parents=True, exist_ok=True)
-    receipt.write_text("Native failure artifact `13241065075`.\\n", encoding="utf-8")
+    receipt.write_text("Native failure artifact `13241065075`.\n", encoding="utf-8")
     runs, artifacts = collect_local_references(tmp_path)
     assert runs == set()
     assert artifacts == {13241065075}
