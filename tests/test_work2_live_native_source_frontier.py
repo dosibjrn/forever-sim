@@ -284,6 +284,7 @@ def test_live_frontier_is_called_in_same_range_optimizer_request(tmp_path, monke
     code = cli.main([
         "--start-level", "20", "--end-level", "60", "--level-stride", "10",
         "--mob-count", "3", "--budget", "20", "--beam-width", "2",
+        "--mode", "continuing",
         "--native-frontier-command", "native-source-frontier --pinned",
         "--native-binary", str(binary), "--native-target-hp", "400",
         "--native-scorer-command", "work1-scorer",
