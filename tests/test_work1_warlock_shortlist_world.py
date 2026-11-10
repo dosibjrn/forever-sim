@@ -261,11 +261,13 @@ def test_bounded_native_finalists_spread_across_prepared_trees(
     proposal = json.loads(args["shortlist"].read_text())
     original_first = proposal["candidates"][0]
     extra = []
-    for number, points in ((4, 2), (5, 3)):
+    for number, destruction_ranks in ((4, "012"), (5, "013")):
         variant = json.loads(
             (args["shortlist"].parent / original_first["source_request"]).read_text())
+        # These all remain Destruction-dominant: verify the one-family
+        # fallback still balances the Rust-labeled new-rank trees.
         variant["raid"]["parties"][0]["players"][0]["talentsString"] = (
-            f"{points}-0-011")
+            f"1-0-{destruction_ranks}")
         path = args["shortlist"].parent / "candidate_attempts" / (
             f"candidate_{number:02d}.json")
         path.write_text(json.dumps(variant))
