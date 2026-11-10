@@ -2,6 +2,7 @@
 import copy
 import random
 from types import SimpleNamespace
+import pytest
 from tools import wf_gate_p7_4_live as gate
 
 
@@ -666,8 +667,9 @@ def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
 
 
 
+@pytest.mark.parametrize("checkpoint_level", [30, 60])
 def test_p74_native_axis_pays_changed_gear_without_world_or_holdout(
-        monkeypatch, tmp_path):
+        monkeypatch, tmp_path, checkpoint_level):
     """Native owns game legality; P7.4 needs only one changed paid gear axis."""
     import json
     import pytest
@@ -699,10 +701,11 @@ def test_p74_native_axis_pays_changed_gear_without_world_or_holdout(
         {0: [None], 1: [None, 222]},
         {"unique_item_options": 3, "unique_enchant_options": 1}))
     calls = []
-    def native(binary_arg, request_path, n, *, rng_mode):
+    def native(binary_arg, request_path, n, *, rng_mode, actor_level=None):
         request = json.loads(request_path.read_text())
         calls.append(request)
         assert n == 3 and rng_mode == "balanced"
+        assert actor_level == (checkpoint_level if checkpoint_level != 60 else None)
         original_player = original["raid"]["parties"][0]["players"][0]
         player = request["raid"]["parties"][0]["players"][0]
         assert player["talentsString"] == original_player["talentsString"]
@@ -719,7 +722,7 @@ def test_p74_native_axis_pays_changed_gear_without_world_or_holdout(
     monkeypatch.setattr(gate, "_source_module", lambda path, *a: (
         source if "p74_gear_search" in str(path) else
         SimpleNamespace(native_source_control=native, run=world)))
-    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    report = gate.run_live(tmp_path, "druid", checkpoint_level, spec="unrestricted")
     assert preflights[0][0][-1] == "P7.4"
     assert preflights[0][1] == {"require_world": False}
     assert report["status"] == "PASS"
