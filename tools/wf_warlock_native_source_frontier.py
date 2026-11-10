@@ -347,6 +347,7 @@ def produce_frontier(
     talent_variants = iter((_continuing_variants if parent is not None else _variants)(
         actor["talentsString"], trees))
     root_prepared: dict | None = None
+    root_proposal: dict | None = None
 
     def proposals():
         for _ in range(3):
@@ -355,7 +356,7 @@ def produce_frontier(
                 break
             yield variant, None
         if root_prepared is not None:
-            for native_apl in _native_apl_variants(seed, root_prepared):
+            for native_apl in _native_apl_variants(root_proposal, root_prepared):
                 yield None, native_apl
         for variant in talent_variants:
             yield variant, None
@@ -390,8 +391,11 @@ def produce_frontier(
             refusals.append({"candidate_id": cid, "status": "NATIVE_PREPARE_REFUSED",
                              "native_prepared": False, "native_refusal": str(exc)[-1500:]})
             continue
-        if index == 0:
+        # Native may reject the first candidate. Use the earliest actually
+        # prepared source for APL exploration, not a failed original seed.
+        if root_prepared is None and talents_string is not None:
             root_prepared = prepared
+            root_proposal = proposal
         entry = {"id": cid, "level": level,
                  "parent_source_sha256": (parent["source_request_sha256"]
                                           if parent is not None else None),
