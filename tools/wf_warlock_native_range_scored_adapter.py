@@ -189,9 +189,12 @@ def evaluate_request(
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refused.append(_refusal(entry, "NATIVE_PREPARED_OR_CONTINUITY_REFUSAL:"
                                     + str(exc)[-180:], None))
-    # Work1's comparator requires two distinct prepared alternatives. Paying a
-    # single first-preparable candidate would be baseline work, not optimization.
-    if not candidates or (len(candidates) == 1 and parent is None):
+    # A single legal *independent* anchor is still useful bounded 3-mob
+    # measurement when other source-native proposals were refused. It must
+    # remain a provisional noncompetitive anchor, never a chosen route or an
+    # optimized winner. Continuing root bootstrap retains its two-choice guard.
+    if not candidates or (len(candidates) == 1 and parent is None
+                          and request.get("search_mode") != "independent"):
         return refused + [
             _refusal({"id": cid}, "NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER", src)
             for cid, (_, _, src, _) in candidates.items()
