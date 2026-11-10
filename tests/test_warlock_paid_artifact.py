@@ -73,6 +73,23 @@ def test_paid_batch_token_can_download_predecessor_artifacts():
     assert "actions: read" in permissions
 
 
+def test_range_workflow_rejects_stale_cached_progress_after_execution_error():
+    """Previous Actions artifacts contain progress; they are not this run's ACK."""
+    from pathlib import Path
+
+    workflow = (
+        Path(__file__).resolve().parents[1]
+        / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+    ).read_text()
+    assert "RANGE_STEP_OUTCOME: ${{ steps.range.outcome }}" in workflow
+    check = workflow.split(
+        "      - name: Check actual newly paid/reused levels", 1)[1]
+    guard = 'if [ "$RANGE_STEP_OUTCOME" != "success" ]; then'
+    assert guard in check
+    assert check.index(guard) < check.index(
+        "test -s warlock-paid-range/range_progress.json")
+
+
 def test_same_origin_range_artifact_restores_paid_cache(tmp_path):
     archive = tmp_path / "unzip"
     predecessor = archive / "predecessor-staged"
