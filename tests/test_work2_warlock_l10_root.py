@@ -73,6 +73,40 @@ def test_seed_from_l20_shape_asks_exact_l10_native_options_and_prepare(
     assert json.loads(template.read_text())["encounter"]["targets"][0]["level"] == 20
 
 
+
+@pytest.mark.parametrize("override", [
+    {"max_proposals": 31},
+    {"health_threshold": 0.8},
+    {"mana_threshold": 0.3},
+])
+def test_restored_paid_l10_root_never_repaid_with_changed_cache_identity(
+        tmp_path, monkeypatch, override):
+    """Changing resume search parameters must not pay an existing L10 again."""
+    binary, template = _inputs(tmp_path)
+    out = tmp_path / "paid"
+    original_key = root.paid_range._digest({
+        "level": 10, "native_binary": root.next_level.sha256(binary),
+        "template": root.next_level.sha256(template),
+        "max_proposals": 30, "health_threshold": 0.7,
+        "mana_threshold": 0.25, "recovery": "decisions",
+        "target_count": 100, "hostile": True,
+    })
+    original_route = out / "L10" / original_key / "paid" / "route.json"
+    original_route.parent.mkdir(parents=True)
+    original_route.write_text('{"original_native_paid_attempt":true}')
+
+    def unexpected(**kwargs):
+        raise AssertionError("must not run native options or pay L10 again")
+
+    monkeypatch.setattr(root, "propose_root", unexpected)
+    monkeypatch.setattr(root.guide, "main", unexpected)
+    with pytest.raises(ValueError, match="incompatible cache identity"):
+        root.run(binary=binary, template=template, out=out,
+                 end_level=10, **override)
+    assert original_route.read_text() == '{"original_native_paid_attempt":true}'
+    assert len(list((out / "L10").glob("*/paid/route.json"))) == 1
+
+
 def test_root_paid_once_then_reused_and_extended_from_actual_l10_ack(
         tmp_path, monkeypatch):
     binary, template = _inputs(tmp_path)
