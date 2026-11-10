@@ -154,7 +154,9 @@ def optimize(
                 if error:
                     rejected.append({
                         "level": level, "source_request_sha256": row.get("source_request_sha256"),
+                        "candidate_id": row.get("candidate_id"),
                         "reason": error, "native_status": row.get("status"),
+                        "native_refusal": row.get("native_refusal"),
                     })
                     continue
                 cost = base_cost + float(row["elapsed_seconds"])
