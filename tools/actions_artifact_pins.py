@@ -320,6 +320,16 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
     # Scan this bounded receipt pattern, not the large general game-data tree.
     for path in (root / "data").glob("*/native_route_observations.json"):
         record_references(path.read_text(encoding="utf-8"), runs, artifacts)
+    # Published native-paid player guides are also durable receipt records.
+    # Their original Actions artifact/run can be referenced ONLY from data/,
+    # not the linked README or issue body. Scan the bounded authored guide and
+    # continuation files; never crawl large native result dumps under data/.
+    for pattern in ("native_*guide.md", "native_*guide.json",
+                    "native_*paid_continuation.md",
+                    "native_*paid_continuation.json"):
+        for path in (root / "data").glob(f"*/{pattern}"):
+            record_references(path.read_text(encoding="utf-8"),
+                              runs, artifacts)
     # Workflow definitions can be the sole remaining pointer to a paid
     # predecessor artifact used by an active native route. Do not delete it
     # merely because the artifact URL lives in executable YAML, not prose.

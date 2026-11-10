@@ -1147,3 +1147,43 @@ def test_markdown_paid_run_id_collected_from_retained_evidence(tmp_path):
     runs, artifacts = collect_local_references(tmp_path)
     assert runs == {42669041997}
     assert artifacts == set()
+
+
+def test_published_native_paid_guides_pin_original_action_receipts(tmp_path):
+    """Retained player guides are evidence even when only README links to them."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        required = tmp_path / name
+        required.parent.mkdir(parents=True, exist_ok=True)
+        required.write_text("", encoding="utf-8")
+    guide_root = tmp_path / "data/warlock"
+    guide_root.mkdir(parents=True)
+    (guide_root / "native_l47_paid_family_guide.md").write_text(
+        "Native paid receipt: https://github.com/o/r/actions/runs/"
+        "42836075370/artifacts/13774186358", encoding="utf-8")
+    (guide_root / "native_l47_l60_paid_continuation.md").write_text(
+        "Predecessor run: https://github.com/o/r/actions/runs/42822112684",
+        encoding="utf-8")
+    (guide_root / "native_l47_paid_family_guide.json").write_text(
+        '{"original_artifact_url": "https://github.com/o/r/actions/runs/'
+        '42840000001/artifacts/13770000001"}', encoding="utf-8")
+    (guide_root / "unrelated_large_result.json").write_text(
+        "https://github.com/o/r/actions/runs/99999999999/artifacts/99999999998",
+        encoding="utf-8")
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42836075370, 42822112684, 42840000001}
+    assert artifacts == {13774186358, 13770000001}
+
+
+def test_unreadable_published_native_guide_fails_evidence_scan_closed(tmp_path):
+    """A corrupt published paid guide cannot silently lose its receipt pin."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        required = tmp_path / name
+        required.parent.mkdir(parents=True, exist_ok=True)
+        required.write_text("", encoding="utf-8")
+    guide = tmp_path / "data/warlock/native_l47_paid_family_guide.json"
+    guide.parent.mkdir(parents=True, exist_ok=True)
+    guide.write_bytes(b'{"original_artifact_url": "\xff"}')
+    with pytest.raises(UnicodeDecodeError):
+        collect_local_references(tmp_path)
