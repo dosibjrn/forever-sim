@@ -165,9 +165,15 @@ jobs:
           assert all(start < level <= end for level in seen)
           assert len(seen) == len(set(seen))
           if result["stopped"] is not None:
-              raise SystemExit(f"Range stopped with original receipts preserved: {result['stopped']}")
-          assert sorted(seen) == list(range(start + 1, end + 1)), (
-              "not every requested level has a verified paid native receipt")
+              if result["stopped"]["status"] == "BOUNDED_NEW_LEVEL_BUDGET":
+                  assert len(result["completed_new_levels"]) == budget
+                  assert result["next_level"] == result["stopped"]["level"]
+                  print("BOUNDED_RANGE_PAUSE: continue from original paid receipts", flush=True)
+              else:
+                  raise SystemExit(f"Range stopped with original receipts preserved: {result['stopped']}")
+          else:
+              assert sorted(seen) == list(range(start + 1, end + 1)), (
+                  "not every requested level has a verified paid native receipt")
           PY
       - name: Preserve selected source, native 100-mob receipts, refusal and route output
         if: always()
