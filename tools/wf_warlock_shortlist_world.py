@@ -231,7 +231,10 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
     ranked = sorted((row for row in rows if row.get("status") == "MEASURED_NATIVE_100"),
                     key=lambda row: (row["elapsed_seconds"], row["index"])) if comparable else []
     trees = {row["tree_index"] for row in ranked}
-    winner = ranked[0] if len(ranked) >= 2 and len(trees) >= 2 else None
+    # Never advertise a completed comparison while a bounded finalist is still
+    # awaiting an actual 100-mob world. A partial measured leader is not a winner.
+    winner = (ranked[0] if not pending and len(ranked) >= 2
+              and len(trees) >= 2 else None)
     result = {
         "kind": "warlock_native_world_finalist_comparison_v1",
         "status": ("INCOMPARABLE_NATIVE_SCENARIOS" if not comparable
