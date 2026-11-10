@@ -271,3 +271,63 @@ def test_accepted_priest_l20_cold_once_remains_retired():
         assert "          " + test + "\n" in ci, (
             f"Priest native transport regression not executed in shared CI: {test}")
     assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+
+def test_accepted_paladin_holy_l60_p3_no_record_is_retired():
+    """Keep native HPS/TPS/DPS forwarding tested without replaying an accepted gate.
+
+    Holy L60 P3 was officially recorded PASS on 2026-11-05. A label-triggered
+    300-second Rust rebuild and optional paid recheck cannot revise that PASS.
+    Generic native P3 regressions and the unaccepted-gate recorder stay live.
+    """
+    assert not (ROOT / ".github/workflows/work2-paladin-holy-p3.yml").exists()
+    ci = (ROOT / ".github/workflows/generic-source-search-regressions.yml"
+          ).read_text(encoding="utf-8")
+    for test in (
+        "tests/test_work2_paladin_holy_native_p3.py",
+        "tests/test_work2_paladin_protection_native_p3.py",
+        "tests/test_work2_paladin_retribution_native_p3.py",
+    ):
+        assert f"      - '{test}'\n" in ci, (
+            f"source change or test edit must trigger native Paladin P3 coverage: {test}"
+        )
+        assert f"          {test}\n" in ci, (
+            f"shared CI must actually run Paladin native P3 regression: {test}"
+        )
+    for source in (
+        "tools/wf_gate_p3_live.py",
+        "integrations/mythicsim-rust/native_p3_equipped.py",
+        "integrations/mythicsim-rust/tests/test_native_p3_equipped.py",
+    ):
+        assert f"      - '{source}'\n" in ci
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+
+def test_obsolete_druid_native_p7_branch_paid_jobs_retired_without_losing_fast_tests():
+    """Retire branch-specific Rust rebuild/paid upload jobs, not native gate support.
+
+    The L20 reference has a reusable frozen receipt; L30 P7.4 already has a
+    paid no-record attempt. Neither old Work1 branch-push job is the official
+    Merge recorder. Unaccepted P7.1/P7.4 remain runnable there when needed.
+    """
+    workflows = ROOT / ".github/workflows"
+    for legacy in (
+        "work1-druid-l20-p71-native.yml",
+        "work1-druid-l30-p74-native.yml",
+    ):
+        assert not (workflows / legacy).exists(), (
+            f"obsolete branch-only paid Druid P7 producer still scheduled: {legacy}"
+        )
+
+    shared = (workflows / "generic-source-search-regressions.yml").read_text(
+        encoding="utf-8")
+    for suite in (
+        "tests/test_work1_p71_native_generated.py",
+        "tests/test_work1_p7_1_live_entry.py",
+        "tests/gates/test_wf_gate_p7_4_live.py",
+    ):
+        assert f"      - '{suite}'\n" in shared, (
+            f"fast PR trigger missing for {suite}")
+        assert f"          {suite}\n" in shared, (
+            f"fast native-transport regression lost for {suite}")
+    assert (workflows / "m1-on-demand-record.yml").is_file()
