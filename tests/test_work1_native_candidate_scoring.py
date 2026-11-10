@@ -32,6 +32,7 @@ def _receipt(sha, *, kill_seconds=15, recovery_seconds=5, last_mana=900):
                 "end_clock_ns": int((kill_seconds + recovery_seconds) * 1e9),
                 "health_before": 600., "mana_before": last_mana,
                 "health_after": 1000., "mana_after": 1500.,
+                "max_health": 1000., "max_mana": 1500.,
             }}
 
 
@@ -83,6 +84,27 @@ def test_terminal_time_changes_winner_even_when_combat_is_faster(tmp_path):
     assert result["winner_candidate_id"] == "fully_fast"
     assert result["winner_elapsed_seconds"] == 19
 
+
+
+def test_native_resource_caps_take_precedence_over_prepared_base_stats():
+    prepared = _prepared("a" * 64)
+    result = _receipt("a" * 64)
+    terminal = result["native_terminal_recovery"]
+    # A source-native buff raises live caps beyond prepared base stats.
+    terminal.update(health_after=1200.0, mana_after=1700.0,
+                    max_health=1200.0, max_mana=1700.0)
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        20.0, "MEASURED_NATIVE_FULLY_RECOVERED")
+
+
+def test_terminal_receipt_must_include_native_full_resource_caps():
+    prepared = _prepared("a" * 64)
+    result = _receipt("a" * 64)
+    del result["native_terminal_recovery"]["max_mana"]
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        None, "NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL")
 
 def test_missing_native_terminal_never_becomes_free_recovery():
     prepared = _prepared("a" * 64)
