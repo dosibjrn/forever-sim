@@ -63,7 +63,7 @@ jobs:
           route=json.loads(Path("previous/warlock-l28-native-route/route.json").read_text())
           source=Path("previous/warlock-l28-native-route/native_l28/best_apl/source_request.json").read_bytes()
           assert route["measured_levels"] == [20,21,22,23,24,25,26,27,28],route["measured_levels"]
-          l28=[r for r in route["observations"] if r["level"]==27]
+          l28=[r for r in route["observations"] if r["level"]==28]
           assert l28 and any(r["source_request_sha256"]==hashlib.sha256(source).hexdigest()
                              for r in l28), "L28 actual paid-world source fingerprint mismatch"
           assert hashlib.sha256(source).hexdigest() == "a95614c6c995686a3ef9091547ffdd6379446ac65d60a878b8cbb3e24fa1cc76", "Unexpected L28 source request"
