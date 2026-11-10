@@ -252,6 +252,11 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
             for path in (root / folder).rglob(pattern):
                 record_references(path.read_text(encoding="utf-8"),
                                   runs, artifacts)
+    # Native route observations are live product inputs and can be the only
+    # remaining references to paid 100-mob runs or their source artifacts.
+    # Scan this bounded receipt pattern, not the large general game-data tree.
+    for path in (root / "data").glob("*/native_route_observations.json"):
+        record_references(path.read_text(encoding="utf-8"), runs, artifacts)
     # Workflow definitions can be the sole remaining pointer to a paid
     # predecessor artifact used by an active native route. Do not delete it
     # merely because the artifact URL lives in executable YAML, not prose.
