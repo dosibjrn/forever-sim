@@ -21,13 +21,9 @@ def _run_link(url: str) -> str:
     parsed = urlparse(url)
     path = parsed.path.strip("/").split("/")
     if (parsed.scheme != "https" or parsed.netloc != "github.com"
-            or len(path) != 6 or path[2:4] != ["actions", "runs"]
-            or not path[4].isdigit() or path[5] != ""):
-        # urlparse('/owner/repo/actions/runs/123') produces five components.
-        if (parsed.scheme != "https" or parsed.netloc != "github.com"
-                or len(path) != 5 or path[2:4] != ["actions", "runs"]
-                or not path[4].isdigit() or parsed.query or parsed.fragment):
-            raise ValueError("source run must be a concrete GitHub Actions run URL")
+            or len(path) != 5 or path[2:4] != ["actions", "runs"]
+            or not path[4].isdigit() or parsed.query or parsed.fragment):
+        raise ValueError("source run must be a concrete GitHub Actions run URL")
     return url.rstrip("/")
 
 
@@ -136,10 +132,9 @@ def build(comparison: dict, *, source_run_url: str, artifact_id: int) -> dict:
                                    else None),
         "tied_fastest_families": ([row["family"] for row in tied]
                                  if complete and len(tied) > 1 else []),
-        "other_or_unpaid_candidate_indexes": [
-            row.get("index") for row in rows
-            if row.get("status") != "MEASURED_NATIVE_100"
-        ] + pending,
+        "other_or_unpaid_candidate_indexes": sorted(
+            {row["index"] for row in rows
+             if row.get("status") != "MEASURED_NATIVE_100"} | set(pending)),
         "actual_respec_execution_measured": False,
         "talent_respec_cost_measured": False,
         "continuous_level_route_measured": False,
