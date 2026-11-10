@@ -429,13 +429,15 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         ap.error("the current native adapter supports --tree unconstrained only")
     if args.backend != "rust" or args.rng != "balanced" or args.iterations != 1:
         ap.error("the current native adapter supports rust/balanced/one iteration")
+    output = args.out or Path("runs") / (
+        f"optimize_{cls}_L{args.start_level}-{args.end_level}"
+        f"_stride{args.level_stride}_mobs{args.n_mobs}.json"
+    )
     if evaluate is None:
         if not args.native_binary.is_file() or not args.source.is_file():
             ap.error("native engine and initial source request must exist")
         from tools.wf_warlock_native_range_optimize import live_native_frontier_evaluator
-        if args.out is None:
-            ap.error("--out is required for native runs to retain paid receipts")
-        base = args.out.parent / (args.out.stem + ".native-receipts")
+        base = output.parent / (output.stem + ".native-receipts")
         base.mkdir(parents=True, exist_ok=True)
         producer = [
             sys.executable, "tools/wf_warlock_native_source_frontier.py",
@@ -465,9 +467,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
             iterations=args.iterations, mode="compatible",
             class_name=cls, talent_tree=args.tree, backend=args.backend,
         )
-    if args.out is not None:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
     if result["ranked_alternatives"]:
         best = result["ranked_alternatives"][0]
         print(f"{cls}: sampled compatible build path, "
