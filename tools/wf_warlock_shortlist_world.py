@@ -256,13 +256,19 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
     ranked = sorted((row for row in rows if row.get("status") == "MEASURED_NATIVE_100"),
                     key=lambda row: (row["elapsed_seconds"], row["index"])) if comparable else []
     trees = {row["tree_index"] for row in ranked}
-    # Never advertise a completed comparison while a bounded finalist is still
-    # awaiting an actual 100-mob world. A partial measured leader is not a winner.
-    winner = (ranked[0] if not pending and len(ranked) >= 2
-              and len(trees) >= 2 else None)
+    # A tie is genuinely measured, but selecting the first row as a "winner"
+    # fabricates an Affliction advantage when the native world elapsed times
+    # are equal. Do not introduce a Python gameplay tie-breaker.
+    comparison_complete = not pending and len(ranked) >= 2 and len(trees) >= 2
+    tied_best = ([row for row in ranked
+                  if row["elapsed_seconds"] == ranked[0]["elapsed_seconds"]]
+                 if comparison_complete else [])
+    winner = (ranked[0] if comparison_complete and len(tied_best) == 1
+              else None)
     result = {
         "kind": "warlock_native_world_finalist_comparison_v1",
         "status": ("INCOMPARABLE_NATIVE_SCENARIOS" if not comparable
+                   else "MEASURED_CROSS_TREE_TIE_100" if len(tied_best) > 1
                    else "MEASURED_CROSS_TREE_100" if winner
                    else "PARTIAL_WORLD_PAID"),
         "from_level": level - 1, "level": level,
@@ -271,6 +277,8 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
         "reused_native_100_trials": sum(
             row.get("status") != "PENDING_UNPAID" for row in rows) - spent,
         "pending_candidate_indexes": pending,
+        "tied_best_candidate_indexes": ([row["index"] for row in tied_best]
+                                        if len(tied_best) > 1 else []),
         "candidates": rows,
         "world_winner": ({"candidate_index": winner["index"],
                           "tree_index": winner["tree_index"],
