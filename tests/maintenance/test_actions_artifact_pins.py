@@ -804,9 +804,9 @@ def test_plaintext_and_streaming_native_receipts_pin_runs_before_gc(tmp_path):
         "evidence/world/partial.jsonl":
             '{"artifact_id": 13750000001, "status": "NATIVE_PAID"}\\n',
         "gate_evidence/warlock/receipt.yaml":
-            "artifact_id: 13750000002\\n",
+            "artifact_id: 13750000002",
         "gate_sources/warlock/receipt.yml":
-            "github_run_id: 42780000124\\n",
+            "github_run_id: 42780000124",
     }
     for name, contents in receipts.items():
         path = tmp_path / name
