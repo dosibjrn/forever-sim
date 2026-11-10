@@ -4,6 +4,7 @@ import argparse
 import json
 import multiprocessing as mp
 import os
+import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -368,6 +369,10 @@ def _run_analytic_views(args, model: ClassModel):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "optimize":
+        # One generic optimizer CLI, with the selected class/backend as inputs.
+        from .native_range_optimizer import main as native_optimize_main
+        return native_optimize_main(sys.argv[2:])
     ap=argparse.ArgumentParser(description='Analytic v2 leveling optimizer with live listener snapshot')
     game_context.add_game_arguments(ap)
     ap.add_argument('--start-level',type=int,default=11)
