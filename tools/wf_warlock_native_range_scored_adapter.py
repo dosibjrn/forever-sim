@@ -77,6 +77,7 @@ def evaluate_request(
 
     refused: list[dict] = []
     candidates: dict[str, tuple[Path, dict, str, dict]] = {}
+    seen_native_sources: set[str] = set()
     for entry in selected:
         candidate_id = entry.get("id")
         if (not isinstance(candidate_id, str) or not candidate_id
@@ -108,6 +109,13 @@ def evaluate_request(
                             and lineage.get("native_intermediate_levels_verified")
                             is not True)):
                     raise ValueError("NATIVE_SOURCE_CONTINUITY_NOT_RECORDED")
+            # Two manifest labels for identical native request bytes are one
+            # candidate, never evidence of a competitive source-native search.
+            if native_source_sha in seen_native_sources:
+                refused.append(_refusal(
+                    entry, "DUPLICATE_NATIVE_SOURCE_CANDIDATE", native_source_sha))
+                continue
+            seen_native_sources.add(native_source_sha)
             candidates[candidate_id] = (prepared_path, prepared, native_source_sha, lineage)
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refused.append(_refusal(entry, "NATIVE_PREPARED_OR_CONTINUITY_REFUSAL:"
