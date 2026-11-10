@@ -141,6 +141,7 @@ jobs:
             --predecessor-binary-sha256 "$PREDECESSOR_BINARY_SHA256" \
             --from-level "$FROM_LEVEL" --end-level "$END_LEVEL" \
             --max-new-levels "$MAX_NEW_LEVELS" --max-proposals "$MAX_PROPOSALS" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             --out ../warlock-paid-range
       - name: Check actual newly paid/reused levels or report precise native refusal
         if: always() && steps.range.outcome != 'skipped'

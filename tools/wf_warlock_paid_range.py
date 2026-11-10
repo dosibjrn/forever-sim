@@ -62,13 +62,17 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
         from_level: int, end_level: int, max_new_levels: int = 2,
         predecessor_binary_sha256: str | None = None,
         max_proposals: int = 30, health_threshold: float = 0.7,
-        mana_threshold: float = 0.25) -> dict:
+        mana_threshold: float = 0.25, run_url: str | None = None) -> dict:
     if not 10 <= from_level < end_level <= 60:
         raise ValueError("expected increasing adjacent range within L10..60")
     if max_new_levels < 1 or max_proposals < 1:
         raise ValueError("paid range budgets must be positive")
     if not 0 < health_threshold <= 1 or not 0 < mana_threshold <= 1:
         raise ValueError("native Decisions thresholds must be in (0,1]")
+    if run_url is not None and (
+            not run_url.startswith("https://github.com/")
+            or "/actions/runs/" not in run_url):
+        raise ValueError("run_url must identify an actual GitHub Actions run")
     if not binary.is_file() or not source.is_file() or not predecessor_route.is_file():
         raise ValueError("binary, source and paid predecessor route must exist")
     out.mkdir(parents=True, exist_ok=True)
@@ -217,6 +221,7 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
                 "--baseline-observations", str(current_route),
                 "--trial", f"paid-source-native-L{level}-{key}",
                 "--out", str(paid_dir),
+                *(['--run-url', run_url] if run_url else []),
             ])
             if code != 0:
                 stopped = {"level": level, "status": "NATIVE_PAID_REFUSAL",
@@ -248,6 +253,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--health-threshold", type=float, default=0.7)
     parser.add_argument("--mana-threshold", type=float, default=0.25)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--run-url",
+                        help="Exact Actions URL for newly executed native paid levels; never relabel cached receipts")
     result = run(**vars(parser.parse_args(argv)))
     print(json.dumps(result, indent=2))
     return 2 if result["stopped"] and result["stopped"]["status"] not in (
