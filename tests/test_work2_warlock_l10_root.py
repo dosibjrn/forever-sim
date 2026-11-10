@@ -1,6 +1,8 @@
 """New native L10 root must never inherit an L20 paid predecessor."""
 import json
 import subprocess
+
+import pytest
 from pathlib import Path
 
 from tools import wf_warlock_l10_root as root
@@ -169,3 +171,66 @@ def test_native_options_refusal_never_pays_or_uses_l20_as_predecessor(
     assert route["native_refusals"][0]["level"] == 10
     assert "L10 source unsupported" in route["native_refusals"][0]["error"]
     assert "L10" in (out / "GUIDE.md").read_text()
+
+
+@pytest.mark.parametrize("failure,expected_status", [
+    ("nonzero", "PAID_RECEIPT_MISSING"),
+    ("exception", "PAID_DRIVER_ERROR"),
+])
+def test_paid_driver_failure_without_receipt_keeps_unmeasured_root_and_resumes(
+        tmp_path, monkeypatch, failure, expected_status):
+    binary, template = _inputs(tmp_path)
+
+    def propose(**kwargs):
+        out = kwargs["out"]
+        out.mkdir(parents=True)
+        source = out / "source_request.json"
+        source.write_text(json.dumps({"native": "prepared L10"}))
+        receipt = {
+            "status": "NATIVE_PREPARED_NOT_YET_PAID",
+            "native_binary_sha256": root.next_level.sha256(binary),
+            "original_template_sha256": root.next_level.sha256(template),
+            "selected_source_sha256": root.next_level.sha256(source),
+        }
+        root._write(out / "proposal.json", receipt)
+        return receipt
+
+    calls = []
+
+    def paid(args):
+        calls.append(args)
+        if failure == "exception":
+            raise RuntimeError("native transport unexpectedly disconnected")
+        return 2  # The native caller failed before it could write route.json.
+
+    monkeypatch.setattr(root, "propose_root", propose)
+    monkeypatch.setattr(root.guide, "main", paid)
+    monkeypatch.setattr(root.paid_range, "run",
+                        lambda **kwargs: (_ for _ in ()).throw(
+                            AssertionError("must never advance without paid L10")))
+    monkeypatch.setattr(root.next_level, "verified_paid_predecessor",
+                        lambda **kwargs: (_ for _ in ()).throw(
+                            AssertionError("cannot verify a refused L10")))
+
+    out = tmp_path / "paid"
+    args = dict(binary=binary, template=template, out=out)
+    first = root.run(**args)
+    assert first["stopped"]["status"] == expected_status
+    assert first["completed_new_levels"] == []
+    assert first["next_level"] == 10
+    report = json.loads(Path(first["last_paid_route"]).read_text())
+    assert report["measured_levels"] == []
+    assert report["native_refusals"][0]["status"] == expected_status
+    assert report["native_refusals"][0]["level"] == 10
+    assert (out / "GUIDE.md").is_file()
+    if failure == "exception":
+        assert "native transport unexpectedly disconnected" in (
+            out / "L10" / next((out / "L10").iterdir()).name / "paid" /
+            "driver_error.json").read_text()
+    else:
+        assert "exit code 2" in report["native_refusals"][0]["error"]
+
+    second = root.run(**args)
+    assert second["stopped"]["status"] == expected_status
+    assert second["completed_new_levels"] == []
+    assert len(calls) == 1  # Resume never pays an equivalent failed attempt.
