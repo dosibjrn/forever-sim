@@ -182,3 +182,33 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
                     f"to observed L{observed_start} is established."
                     if observed_start > first_level else "")),
     }
+
+def disjoint_native_paid_frontiers(
+    observations: Sequence[Mapping[str, Any]], *, first_level: int = 20
+) -> list[dict[str, Any]]:
+    """Expose every separately connected observed level segment, longest first.
+
+    A source/native binary transition or an unobserved level is a *boundary*,
+    not an excuse to drop a later genuine paid segment. Reuse the same strict
+    existing paid-node and talent-transition checks for each segment, then
+    remove only the levels already represented by that segment. Alternative
+    candidates at the same levels remain represented by the primary selector,
+    not misreported as a second independently traversed route.
+
+    Results must never be summed into an end-to-end XP/travel leveling claim.
+    """
+    remaining = list(observations)
+    segments: list[dict[str, Any]] = []
+    while remaining:
+        segment = connected_native_paid_frontier(
+            remaining, first_level=first_level
+        )
+        covered = set(segment.get("levels", []))
+        if not segment.get("steps") or not covered:
+            break
+        segments.append(segment)
+        remaining = [
+            row for row in remaining
+            if not isinstance(row, Mapping) or row.get("level") not in covered
+        ]
+    return segments

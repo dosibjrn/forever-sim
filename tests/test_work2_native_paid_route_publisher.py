@@ -280,3 +280,45 @@ def test_same_levels_faster_paid_binary_wins_over_lexicographic_binary():
         "native-b-l20", "native-b-l21",
     ]
     assert path["xp_progression_simulated"] is False
+
+
+def test_publisher_keeps_both_measured_talent_segments_across_engine_boundary():
+    """The later paid range must not disappear behind a longer early range."""
+    early = [
+        _engine_observation(20, "0-0-11111111111", "a"),
+        _engine_observation(21, "0-0-11111111111", "a"),
+        _engine_observation(22, "0-0-111111111111", "a"),
+    ]
+    late = [
+        _engine_observation(23, "0-0-1111111111111", "b"),
+        _engine_observation(24, "0-0-11111111111111", "b"),
+    ]
+    result = report(*early, *late)
+    segments = result["native_paid_talent_segments"]
+    assert [part["levels"] for part in segments] == [[20, 21, 22], [23, 24]]
+    assert result["native_paid_talent_continuity"] == segments[0]
+    assert [part["engine_binary_sha256"] for part in segments] == [
+        "a" * 64, "b" * 64
+    ]
+    assert segments[0]["observed_100_mob_total_seconds"] == 4200.0
+    assert segments[1]["observed_100_mob_total_seconds"] == 2800.0
+    assert result["full_10_60_native_replay_executed"] is False
+    assert result["elapsed_10_60_seconds"] is None
+    rendered = render_guide(result)
+    assert "Other independently paid native talent segments" in rendered
+    assert "L23-L24 (binary " + "b" * 64 + ")" in rendered
+    assert "native receipt native-b-l24" in rendered
+    assert "No cross-binary talent transition" in rendered
+
+
+def test_gapped_same_binary_paid_segments_remain_separate_in_guide():
+    result = report(
+        _engine_observation(20, "0-0-11111111111", "b"),
+        _engine_observation(21, "0-0-11111111111", "b"),
+        _engine_observation(23, "0-0-1111111111111", "b"),
+    )
+    assert [p["levels"] for p in result["native_paid_talent_segments"]] == [
+        [20, 21], [23]
+    ]
+    assert "L23-L23" in render_guide(result)
+    assert result["full_10_60_native_replay_executed"] is False

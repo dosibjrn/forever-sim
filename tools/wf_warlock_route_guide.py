@@ -358,8 +358,14 @@ def build_route_report(payload: dict) -> dict:
     # adaptor provides only actual paid execution receipts, not XP weights.
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from src.v2.native_paid_route import connected_native_paid_frontier
-    native_continuity = connected_native_paid_frontier(observations)
+    from src.v2.native_paid_route import (
+        connected_native_paid_frontier, disjoint_native_paid_frontiers,
+    )
+    native_segments = disjoint_native_paid_frontiers(observations)
+    native_continuity = (
+        native_segments[0] if native_segments
+        else connected_native_paid_frontier(observations)
+    )
     return {
         "schema_version": 1, "class": "warlock", "start_level": start,
         "end_level": end, "authority": "source_native_observations",
@@ -370,6 +376,7 @@ def build_route_report(payload: dict) -> dict:
         "elapsed_10_60_seconds": None,
         "levels": levels, "observations": observations, "comparisons": comparisons,
         "native_paid_talent_continuity": native_continuity,
+        "native_paid_talent_segments": native_segments,
         "native_refusals": refusals,
         "measured_levels": [level for level in by_level if by_level[level]],
         "unmeasured_levels": missing,
@@ -495,6 +502,37 @@ def render_guide(report: dict) -> str:
         "",
         report["next_step"], "",
     ]
+    # The existing primary talent path may stop at an authentic binary switch
+    # even though later levels were independently paid and source-prepared.
+    # Display those real path segments without inventing a cross-binary edge.
+    additional = report.get("native_paid_talent_segments", [])[1:]
+    if additional:
+        lines += [
+            "",
+            "## Other independently paid native talent segments",
+            "",
+            "These are separate native-prepared 100-mob level observations. "
+            "No cross-binary talent transition, continuous XP journey, "
+            "travel/training time or full L10-60 replay is inferred.",
+            "",
+        ]
+        for segment in additional:
+            levels = segment["levels"]
+            lines += [
+                f"### L{levels[0]}-L{levels[-1]} (binary "
+                f"{segment['engine_binary_sha256']})",
+                "",
+                f"Independently observed 100-mob chain total: "
+                f"{segment['observed_100_mob_total_seconds']:.4f} s "
+                "(not end-to-end leveling time).",
+                *[
+                    f"- L{step['level']}: {step['kind']}, "
+                    f"talents {step['talents']}, "
+                    f"native receipt {step['native_observation_id']}"
+                    for step in segment["steps"]
+                ],
+                "",
+            ]
     return "\n".join(lines)
 
 
