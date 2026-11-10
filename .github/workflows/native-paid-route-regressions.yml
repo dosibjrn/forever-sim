@@ -8,7 +8,9 @@ on:
       - src/v2/path_dp.py
       - src/v2/native_paid_route.py
       - tools/wf_warlock_next_level_source.py
+      - tools/wf_warlock_full_family_shortlist.py
       - tests/test_work2_warlock_next_level_source.py
+      - tests/test_work1_full_family_shortlist.py
       - tools/wf_warlock_paid_range.py
       - tools/wf_warlock_l10_root.py
       - tests/test_work2_warlock_l10_root.py
@@ -44,10 +46,10 @@ on:
         type: string
         default: "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458"
       max_proposals:
-        description: "Maximum native prepared+30s source proposals"
+        description: "Maximum native prepare probes per complete talent family"
         required: true
         type: number
-        default: 12
+        default: 240
       max_finalists:
         description: "Maximum distinct paid 100-mob finalists"
         required: true
@@ -71,7 +73,7 @@ jobs:
       - name: Install focused test runner
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
       - name: Test native paid receipt continuity and no-respec safety
-        run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work1_warlock_shortlist_world.py
+        run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work1_warlock_shortlist_world.py tests/test_work1_full_family_shortlist.py
 
   # The real native 100/100 comparison is deliberately opt-in, never an
   # automatic response to every source push or a rerun of paid L20–L60 routes.
@@ -91,7 +93,7 @@ jobs:
       PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id || '13767012142' }}
       PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 || '133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458' }}
       SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha || '7b811d37969bd1886cf123835fc87b699d1f5fbd' }}
-      MAX_PROPOSALS: ${{ inputs.max_proposals || 12 }}
+      MAX_PROPOSALS: ${{ inputs.max_proposals || 240 }}
       MAX_FINALISTS: ${{ inputs.max_finalists || 3 }}
     steps:
       - name: Checkout exact comparison source
@@ -115,7 +117,7 @@ jobs:
           [[ "$MAX_PROPOSALS" =~ ^[0-9]+$ ]]
           [[ "$MAX_FINALISTS" =~ ^[0-9]+$ ]]
           test "$FROM_LEVEL" -ge 10 && test "$FROM_LEVEL" -lt 60
-          test "$MAX_PROPOSALS" -ge 1 && test "$MAX_PROPOSALS" -le 30
+          test "$MAX_PROPOSALS" -ge 1 && test "$MAX_PROPOSALS" -le 1000
           test "$MAX_FINALISTS" -ge 1 && test "$MAX_FINALISTS" -le 6
       - uses: actions/setup-python@v5
         with:
@@ -124,7 +126,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Test only changed Forever candidate/receipt forwarding
         working-directory: project
-        run: python -m pytest -q tests/test_work1_warlock_shortlist_world.py tests/test_work2_warlock_next_level_source.py tests/test_warlock_paid_artifact.py
+        run: python -m pytest -q tests/test_work1_warlock_shortlist_world.py tests/test_work2_warlock_next_level_source.py tests/test_warlock_paid_artifact.py tests/test_work1_full_family_shortlist.py
       - name: Build exact Rust executor (no source-rules audit)
         working-directory: engine
         run: cargo build --locked --bin forever-engine
@@ -161,19 +163,19 @@ jobs:
               predecessor_binary_sha256=os.environ["PREDECESSOR_BINARY_SHA256"])
           print("VERIFIED_PAID_NATIVE_PREDECESSOR", receipt, flush=True)
           PY
-      - name: Obtain source-native prepared cross-tree L+1 shortlist and paid 30s screens
+      - name: Construct genuine distinct full native-prepared talent families and 30s screens
         working-directory: project
         env:
           PYTHONUNBUFFERED: "1"
         run: |
           set -euo pipefail
-          python -u tools/wf_warlock_next_level_source.py \
+          python -u tools/wf_warlock_full_family_shortlist.py \
             --binary ../engine/target/debug/forever-engine \
             --source ../predecessor-staged/source_request.json \
             --predecessor-route ../predecessor-staged/route.json \
             --predecessor-binary-sha256 "$PREDECESSOR_BINARY_SHA256" \
             --from-level "$FROM_LEVEL" --to-level "$((FROM_LEVEL + 1))" \
-            --native-paid-shortlist --max-proposals "$MAX_PROPOSALS" \
+            --max-native-probes-per-family "$MAX_PROPOSALS" \
             --out ../cross-tree/shortlist
       - name: Pay actual bounded distinct native/gsim hostile 100/100 worlds
         working-directory: project
