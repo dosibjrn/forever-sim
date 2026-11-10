@@ -125,3 +125,41 @@ def test_i17_optional_single_baseline_survives_missing_second_named_route():
     assert row['best_single_objective_seconds'] == pytest.approx(120)
     assert row['recommended_strategy'] == 'single_spec'
     assert row['dual_spec_purchase_recommended'] is False
+
+
+def test_i17_incomplete_named_route_cannot_skip_an_expensive_level():
+    """A missing native-paid level must not be treated as zero elapsed time."""
+    result = _result()
+    routes = dict(result.targets[23])
+    # The missing L21 would previously disappear from the pair intersection.
+    routes['fire'] = RouteResult(
+        'fire', 23, 'available', {'kind': 'tree_points', 'tree': 'fire'},
+        _path('fire', {20: 110, 22: 10, 23: 10}))
+    actual = DecisionResult('mage', (), {23: routes}, published_targets=(23,))
+    row = solve_decision_result(actual, unlock_level=20, target_level=23,
+                                verified_level_cap=30)
+    assert row['status'] == 'insufficient_canonical_routes'
+    assert row['pair'] is None
+    assert row['recommended_strategy'] == 'single_spec'
+    assert row['dual_spec_purchase_recommended'] is False
+    assert row['best_single_route'] == 'unconstrained'
+    assert row['best_single_objective_seconds'] == pytest.approx(120)
+
+
+def test_i17_incomplete_unrestricted_route_is_not_comparable_single_baseline():
+    """Only full-length paths can establish the single-vs-dual gain."""
+    result = _result()
+    routes = dict(result.targets[23])
+    routes['unconstrained'] = RouteResult(
+        'unconstrained', 23, 'available', {'kind': 'unconstrained'},
+        _path('partial', {20: 1, 22: 1, 23: 1}))
+    actual = DecisionResult('mage', (), {23: routes}, published_targets=(23,))
+    row = solve_decision_result(actual, unlock_level=20, target_level=23,
+                                verified_level_cap=30)
+    assert row['status'] == 'available'
+    assert row['best_single_route'] == 'frost'
+    assert row['best_single_objective_seconds'] == pytest.approx(220)
+    assert row['pair_candidate_objective_seconds'] == pytest.approx(40)
+    assert row['objective_seconds'] == pytest.approx(40)
+    assert row['gain_seconds'] == pytest.approx(180)
+    assert row['recommended_strategy'] == 'dual_spec'
