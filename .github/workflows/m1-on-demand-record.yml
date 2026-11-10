@@ -119,6 +119,45 @@ jobs:
               seen[$entry]=1
             fi
           done
+          # An official accepted M1 PASS is final. Before checkout or a Rust
+          # build, use the live main ledger to discard only those targets.
+          # PARTIAL and never-executed targets remain eligible; a mixed batch
+          # must not lose its still-unaccepted gates.
+          gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=main" \
+            --jq '.content' | base64 -d > "$RUNNER_TEMP/m1-current-preflight.tsv"
+          pending="$(
+            python3 - "$RUNNER_TEMP/m1-current-preflight.tsv" "${unique[@]}" <<'PY'
+          import csv
+          import sys
+
+          with open(sys.argv[1], newline="", encoding="utf-8") as stream:
+              reader = csv.DictReader(stream, delimiter="\t")
+              fields = ("class", "level", "spec", "gate", "status")
+              if not set(fields).issubset(reader.fieldnames or ()):
+                  raise SystemExit("M1_PREFLIGHT_INVALID_LEDGER_SCHEMA")
+              accepted = set()
+              for row in reader:
+                  if row["status"] not in ("PASS", "PARTIAL"):
+                      raise SystemExit("M1_PREFLIGHT_INVALID_LEDGER_STATUS")
+                  if row["status"] == "PASS":
+                      accepted.add(":".join(row[field] for field in fields[:4]))
+          for candidate in sys.argv[2:]:
+              if candidate in accepted:
+                  print(f"M1_ALREADY_ACCEPTED_SKIP {candidate}", file=sys.stderr)
+              else:
+                  print(candidate)
+          PY
+          )"
+          unique=()
+          if [[ -n "$pending" ]]; then
+            mapfile -t unique <<< "$pending"
+          fi
+          if (( ${#unique[@]} == 0 )); then
+            printf 'skip_all=true\n' >> "$GITHUB_OUTPUT"
+            echo "All requested gates are already accepted M1 PASSes; skipping all builds and reruns."
+          else
+            printf 'skip_all=false\n' >> "$GITHUB_OUTPUT"
+          fi
           printf 'invalidate=false\n' >> "$GITHUB_OUTPUT"
           printf 'targets=%s\n' "$(IFS=' '; echo "${unique[*]}")" >> "$GITHUB_OUTPUT"
           printf 'heavy=%s\n' "$heavy" >> "$GITHUB_OUTPUT"
@@ -158,6 +197,7 @@ jobs:
           echo "Accepted ${#unique[@]} production targets"
 
       - name: Checkout current main, without saved write credentials
+        if: steps.targets.outputs.skip_all != 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: main
@@ -166,6 +206,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
+        if: steps.targets.outputs.skip_all != 'true'
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.11'
@@ -241,7 +282,7 @@ jobs:
           test -x target/debug/forever-engine
 
       - name: Run real production gates and update one TSV
-        if: steps.targets.outputs.invalidate != 'true'
+        if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.skip_all != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -456,6 +497,7 @@ jobs:
           retention-days: 7
 
       - name: Publish M1 ledger and README chart atomically
+        if: steps.targets.outputs.skip_all != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
