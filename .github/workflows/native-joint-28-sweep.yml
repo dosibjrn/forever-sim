@@ -1,5 +1,8 @@
 name: Work2 — Native Rust joint 28-profile stage-5 sweep
 
+# This 28-profile native-paid experiment is explicitly on-demand. Fast PR
+# regressions run in work2-native-joint-python-contract.yml instead; PR/push
+# must not silently rebuild Rust, repay the sweep, or upload new receipts.
 on:
   workflow_dispatch:
     inputs:
@@ -8,45 +11,6 @@ on:
         type: boolean
         default: false
         required: false
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/native-joint-28-sweep.yml
-      - integrations/mythicsim-rust/native_joint_28_sweep.py
-      - integrations/mythicsim-rust/native_joint_two_class.py
-      - integrations/mythicsim-rust/native_source_donors.py
-      - integrations/mythicsim-rust/native_matrix.py
-      - integrations/mythicsim-rust/native_joint_composition.py
-      - integrations/mythicsim-rust/native_gear_adapter.py
-      - integrations/mythicsim-rust/native_l60_matrix.py
-      - integrations/mythicsim-rust/native_executor.py
-      - integrations/mythicsim-rust/p73_talent_search_v2.py
-      - integrations/mythicsim-rust/apl_mutation.py
-      - integrations/mythicsim-rust/port_native_typed_rng.py
-      - integrations/mythicsim-rust/tests/**
-      - config/validation/checkpoint_148.json
-      - integrations/mythicsim-rust/engine
-      - .gitmodules
-  push:
-    branches:
-      - work/work2-native-joint-28-sweep-20261103
-    paths:
-      - .github/workflows/native-joint-28-sweep.yml
-      - integrations/mythicsim-rust/native_joint_28_sweep.py
-      - integrations/mythicsim-rust/native_joint_two_class.py
-      - integrations/mythicsim-rust/native_source_donors.py
-      - integrations/mythicsim-rust/native_matrix.py
-      - integrations/mythicsim-rust/native_joint_composition.py
-      - integrations/mythicsim-rust/native_gear_adapter.py
-      - integrations/mythicsim-rust/native_l60_matrix.py
-      - integrations/mythicsim-rust/p73_talent_search_v2.py
-      - integrations/mythicsim-rust/apl_mutation.py
-      - integrations/mythicsim-rust/port_native_typed_rng.py
-      - integrations/mythicsim-rust/tests/**
-      - config/validation/checkpoint_148.json
-      - integrations/mythicsim-rust/engine
-      - .gitmodules
 
 permissions:
   contents: read
