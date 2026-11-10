@@ -118,11 +118,15 @@ def _gate_verdict(cold: dict, gate: str, *, run_id: str) -> dict:
             or type(first.get("paid_completed_elapsed_s")) not in (int, float)
             or not 0 <= first["paid_completed_elapsed_s"] <= 30):
         reasons.append("P4_NATIVE_PAID_30S_SNAPSHOT_MISSING")
-    if not isinstance(last, dict):
-        reasons.append("P5_NATIVE_PAID_300S_WINNER_MISSING")
-    elif (type(last.get("paid_completed_elapsed_s")) not in (int, float)
-          or last["paid_completed_elapsed_s"] > 300):
-        reasons.append("P5_NATIVE_PAID_WINNER_OUTSIDE_BUDGET")
+    # P4 certifies its frozen 30s build after the shared 300s search; it
+    # does not depend on P5 finding or correctly recording a final winner.
+    # Keep the actual 300s boundary above mandatory for all three gates.
+    if gate in ("P5", "P6"):
+        if not isinstance(last, dict):
+            reasons.append("P5_NATIVE_PAID_300S_WINNER_MISSING")
+        elif (type(last.get("paid_completed_elapsed_s")) not in (int, float)
+              or last["paid_completed_elapsed_s"] > 300):
+            reasons.append("P5_NATIVE_PAID_WINNER_OUTSIDE_BUDGET")
     # The two winner legs are independently payable. A missing P5 finalist
     # does not invent a P4 failure when its own 30s build survived, and vice
     # versa; P6 must have both genuinely comparable paid routes.
