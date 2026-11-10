@@ -62,17 +62,22 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
             or not isinstance(windows, list) or len(windows) != mob_count
             or not isinstance(mana, list) or len(mana) != mob_count):
         return None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT"
-    # This scorer is for hostile leveling mobs, not a passive target dummy.
-    # The bridge carries original Rust incoming-damage receipts even when the
-    # caller did not ask it to fail early. A 3-kill zero-damage chain must not
-    # outrank a genuine survivor simply because it needed less food.
+    # Preserve selected-native player-damage telemetry without converting it
+    # into a hostility veto: a Voidwalker can tank all incoming attacks while
+    # the Warlock legitimately receives zero damage. Source Rust owns whether
+    # an enemy was configured and how its attacks/pet mitigation execute.
     incoming = receipt.get("native_health_damage")
-    if (not isinstance(incoming, dict)
-            or incoming.get("observed") is not True
-            or not _positive(incoming.get("damage_taken"))
-            or type(incoming.get("damage_events")) is not int
-            or incoming["damage_events"] < 1):
-        return None, "NATIVE_HOSTILE_INCOMING_DAMAGE_NOT_OBSERVED"
+    if incoming is not None:
+        if not isinstance(incoming, dict) or type(incoming.get("observed")) is not bool:
+            return None, "MALFORMED_NATIVE_PLAYER_DAMAGE_RECEIPT"
+        if incoming["observed"]:
+            damage, events = incoming.get("damage_taken"), incoming.get("damage_events")
+            if (not _nonnegative(damage) or type(events) is not int or events < 0
+                    or (damage > 0 and events == 0)):
+                return None, "MALFORMED_NATIVE_PLAYER_DAMAGE_RECEIPT"
+        elif (incoming.get("damage_taken") is not None
+              or incoming.get("damage_events") is not None):
+            return None, "MALFORMED_NATIVE_PLAYER_DAMAGE_RECEIPT"
     last_clock = 0
     for index, (window, value) in enumerate(zip(windows, mana)):
         if (not isinstance(window, dict) or window.get("index") != index
@@ -184,8 +189,7 @@ def compare_prepared_candidates(*, binary: Path,
             receipt = run_native(binary, path, target_count=mob_count,
                                  mob_health=target_hp, rng_mode="balanced",
                                  recovery_policy="decisions",
-                                 health_threshold=1.0, mana_threshold=1.0,
-                                 require_native_health_damage=True)
+                                 health_threshold=1.0, mana_threshold=1.0)
             if artifact_dir is not None:
                 (artifact_dir / f"{candidate_id}.native.json").write_text(
                     json.dumps(receipt, indent=2, allow_nan=False) + "\n")
@@ -193,7 +197,10 @@ def compare_prepared_candidates(*, binary: Path,
                                                mob_count=mob_count,
                                                expected_target_hp=target_hp)
             row.update(status=status, elapsed_seconds=score,
-                       acked_world_kills=receipt.get("world_targets_killed"))
+                       acked_world_kills=receipt.get("world_targets_killed"),
+                       # Recorded source-native PLAYER damage, not a proxy for
+                       # target hostility or pet damage. Zero can be legitimate.
+                       native_player_damage_receipt=receipt.get("native_health_damage"))
         except (RuntimeError, AssertionError, ValueError, OSError) as exc:
             row.update(status="NATIVE_REFUSAL", elapsed_seconds=None,
                        refusal=str(exc)[-1500:])
