@@ -112,6 +112,7 @@ def unmerged_pr_branch_refs(pull_requests: list[dict], repository: str) -> set[s
     alone does not make evidence disposable.
     """
     branches: set[str] = set()
+    owner = repository.partition("/")[0]
     for pr in pull_requests:
         if pr.get("merged_at") is not None:
             continue
@@ -119,8 +120,19 @@ def unmerged_pr_branch_refs(pull_requests: list[dict], repository: str) -> set[s
         if not isinstance(head, dict):
             continue
         head_repo = head.get("repo")
-        if not isinstance(head_repo, dict) or head_repo.get("full_name") != repository:
-            continue
+        if isinstance(head_repo, dict):
+            if head_repo.get("full_name") != repository:
+                continue
+        else:
+            # GitHub can return head.repo=null after a local PR branch is
+            # deleted. Its owner:branch label still identifies the source;
+            # dropping it here would let GC erase an unmerged native receipt.
+            label = head.get("label")
+            if not isinstance(label, str) or not label.startswith(owner + ":"):
+                continue
+            ref = head.get("ref")
+            if not isinstance(ref, str) or not ref or label != f"{owner}:{ref}":
+                raise ValueError("unmerged local PR has no trustworthy head branch")
         ref = head.get("ref")
         if not isinstance(ref, str) or not ref:
             raise ValueError("unmerged local PR has no trustworthy head branch")
