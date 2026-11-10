@@ -783,3 +783,61 @@ def test_native_apl_fallback_uses_first_prepared_family_after_seed_refusal(tmp_p
     assert report["refusals"][0]["status"] == "NATIVE_PREPARE_REFUSED"
     assert len(report["entries"]) == 3
     assert all(Path(entry["prepared"]).exists() for entry in report["entries"])
+
+
+def test_scaled_independent_native_family_refusals_keep_original_root_as_baseline(tmp_path):
+    """A level-scaled search must not spend every attempt on rejected families.
+
+    Higher-point proposals are native options driven and remain subject to
+    Rust prepare.  If all fail, the original source root still gets one real
+    preparation attempt, never an invented scaled or optimized measurement.
+    """
+    seed, binary = _root_source(tmp_path)
+    attempts = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            assert cmd[-1] == "50"
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 50,
+                "talents": {
+                    "status": "ok", "points_available": 21,
+                    "trees": [
+                        {"talents": [{"index": i, "max_rank": 5}
+                                     for i in range(5)]}
+                        for _ in range(3)
+                    ],
+                },
+            }))
+        source = Path(cmd[cmd.index("--request") + 1])
+        destination = Path(cmd[cmd.index("--outfile") + 1])
+        player = json.loads(source.read_text())["raid"]["parties"][0]["players"][0]
+        assert player["level"] == 50
+        talents = player["talentsString"]
+        attempts.append(talents)
+        if talents != "11-0-0":
+            return subprocess.CompletedProcess(cmd, 2, stderr="native rank prerequisite refusal")
+        destination.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 50},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    found = produce_frontier(
+        {**_request(level=50, budget=4), "search_mode": "independent"},
+        binary=binary, seed_source=seed, out=tmp_path / "native",
+        runner=native,
+    )
+    assert len(attempts) == 4
+    assert all(
+        sum(int(rank) for part in talents.split("-") for rank in part) == 21
+        for talents in attempts[:3]
+    )
+    assert attempts[3] == "11-0-0"
+    assert len(found["refusals"]) == 3
+    assert all(row["status"] == "NATIVE_PREPARE_REFUSED"
+               for row in found["refusals"])
+    assert len(found["entries"]) == 1
+    assert found["entries"][0]["id"] == "source_003"
+    assert found["entries"][0]["parent_source_sha256"] is None
+    assert not any("native_continuity_receipt" in row for row in found["entries"])
