@@ -96,3 +96,24 @@ def test_native_paid_point_bank_does_not_legalize_extra_or_multiple_points():
             21: [_node(21, talents, 9, paid=True)],
             22: [_node(22, (*talents, 90, 91), 8, paid=True)],
         })
+
+
+def test_native_and_analytic_scores_cannot_be_spliced_across_a_point_edge():
+    talents = tuple(range(11))
+    with pytest.raises(ValueError, match="no legal path reaches level 21"):
+        _solve({
+            20: [_node(20, talents, 10, paid=True)],
+            21: [_node(21, (*talents, 90), 1)],  # Cheap but unmeasured proposal.
+        })
+
+
+def test_native_and_analytic_scores_cannot_be_spliced_by_respec():
+    talents = tuple(range(11))
+    with pytest.raises(ValueError, match="no legal path reaches level 21"):
+        solve_path_dp(
+            {
+                20: [_node(20, talents, 10, paid=True)],
+                21: [_node(21, (*talents, 90), 1)],
+            },
+            max_respecs=1, model=_OpaqueBuildModel(), weights={20: 1, 21: 1},
+        )
