@@ -103,6 +103,10 @@ def test_completed_warlock_one_shot_paid_ci_is_replaced():
         # This completed L20 30/300s experiment already yielded real paid
         # receipts; its old PR-open/dispatch job must not restart it.
         "work2-warlock-l20-paid-cold.yml",
+        # All three L20 P7.1/P7.2/P7.3 axes are officially PASS;
+        # retain source-native forwarding tests, not paid one-shot launchers.
+        "work2-warlock-l20-p71-native.yml",
+        "work2-warlock-l20-p73-native.yml",
     ]
     for name in retired:
         obsolete = ROOT / ".github/workflows" / name
@@ -152,3 +156,29 @@ def test_retired_l20_cold_keeps_fast_forever_regressions():
             assert f"          {path}" in ci, f"cheap regression suite lost {path}"
     assert "python -m pytest -q" in ci
     assert not (ROOT / ".github/workflows/work2-warlock-l20-paid-cold.yml").exists()
+
+
+def test_accepted_warlock_l20_p7_axes_keep_fast_source_forwarding_tests():
+    """Protect useful Forever transport tests, never reschedule accepted paid P7."""
+    ci = (ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml").read_text(
+        encoding="utf-8")
+    for path in (
+        "tools/wf_p7_native_reference.py",
+        "tools/wf_gate_p7_1_live.py",
+        "tools/wf_gate_p7_2_live.py",
+        "tools/wf_gate_p7_3_live.py",
+        "src/engine_client/native_talent_proposals.py",
+        "fixtures/warlock-l20-p71.request.json",
+        "docs/evidence/native-references/warlock-l20-unrestricted/**",
+        "tests/test_work2_warlock_l20_p71.py",
+        "tests/test_work2_warlock_l20_p72.py",
+        "tests/test_work2_warlock_l20_p73.py",
+    ):
+        assert ci.count("      - " + path + "\n") == 2, (
+            "PR and push triggers must cover " + path)
+    for name in ("p71", "p72", "p73"):
+        assert "          tests/test_work2_warlock_l20_" + name + ".py\n" in ci
+    assert "          submodules: true\n" in ci, (
+        "fixture provenance test reads the selected native Rust submodule")
+    assert not (ROOT / ".github/workflows/work2-warlock-l20-p71-native.yml").exists()
+    assert not (ROOT / ".github/workflows/work2-warlock-l20-p73-native.yml").exists()
