@@ -1,0 +1,68 @@
+name: Clean - preserve original Warlock L47-L60 native paid receipts
+
+# One-off evidence rescue, not simulation or M1. Branch trigger preserves
+# the source before 2026-11-13 expiry; main trigger verifies the durable copy.
+on:
+  push:
+    branches:
+      - main
+      - work/clean-native-paid-release-20261110
+    paths:
+      - .github/workflows/clean-preserve-warlock-native-receipts.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write   # release asset; no code push
+  actions: read      # original paid artifact
+
+concurrency:
+  group: clean-preserve-warlock-paid-42822112684
+  cancel-in-progress: false
+
+jobs:
+  durable-native-receipts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: native-paid-warlock-l47-l60-42822112684
+      ASSET: warlock-l47-l60-original-native-42822112684.zip
+      ORIGINAL_SHA256: 2e0fbf2ad8ea1bfdeb997bae578bed62faaeaf81357565fa31a68c4fc32ccf0d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify existing durable Release or capture exact expiring original
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/native-paid-release" "$RUNNER_TEMP/native-paid-verify"
+          archive="$RUNNER_TEMP/native-paid-release/$ASSET"
+          verified="$RUNNER_TEMP/native-paid-verify/$ASSET"
+
+          # Verify the durable copy first: a rerun after Actions expiry must
+          # succeed without touching the original, even when already expired.
+          if gh release view "$RELEASE_TAG" --json assets \
+              --jq '.assets[].name' 2>/dev/null | grep -Fxq "$ASSET"; then
+            echo 'Release already exists; do not request expiring Actions artifact'
+          else
+            curl --fail --show-error --silent --location --retry 3 \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/13767792611/zip" \
+              --output "$archive"
+            python tools/actions_preserve_paid_receipts.py \
+              --archive "$archive" --sha256 "$ORIGINAL_SHA256"
+            if ! gh release view "$RELEASE_TAG" --json tagName >/dev/null 2>&1; then
+              gh release create "$RELEASE_TAG" --target main \
+                --title 'Warlock L47-L60 original native-paid receipts (run 42822112684)' \
+                --notes 'Immutable raw original Actions artifact 13767792611. SHA256: 2e0fbf2ad8ea1bfdeb997bae578bed62faaeaf81357565fa31a68c4fc32ccf0d. Contains 14 original hostile 100/100 native ACK paid worlds, not a certified continuous or optimized route. Preserve permanently; see issue #1102.'
+            fi
+            # No asset overwrite and no replayed native combat.
+            gh release upload "$RELEASE_TAG" "$archive"
+          fi
+
+          gh release download "$RELEASE_TAG" --pattern "$ASSET" \
+            --dir "$RUNNER_TEMP/native-paid-verify"
+          python tools/actions_preserve_paid_receipts.py \
+            --archive "$verified" --sha256 "$ORIGINAL_SHA256"
+          echo "DURABLE_READBACK_VERIFIED tag=$RELEASE_TAG sha256=$ORIGINAL_SHA256"
