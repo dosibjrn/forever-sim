@@ -1,4 +1,4 @@
-name: Work1 Druid L30 P7.3 native changed APL (no M1)
+name: Work1 Druid L30 P7.3 native changed talents (no M1)
 
 on:
   push:
@@ -72,7 +72,7 @@ jobs:
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --release --bin forever-engine
 
-      - name: Pay real Druid L30 P7.3 changed APL on selected native scorer
+      - name: Pay real Druid L30 P7.3 changed talents on selected native scorer
         shell: bash
         run: |
           set -euo pipefail
