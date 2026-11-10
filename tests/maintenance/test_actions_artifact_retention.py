@@ -421,15 +421,22 @@ def test_historical_paid_l44_l46_range_is_not_prefilled_on_manual_dispatch():
         "\npermissions:\n", 1)[0]
     assert "  pull_request:" not in workflow.split("\non:\n", 1)[1].split(
         "\npermissions:\n", 1)[0]
+
+    def input_body(field):
+        # Match the NEXT six-space input key, not the nested eight-space
+        # description/required/default keys inside the current input.
+        remainder = dispatch.split(f"      {field}:\n", 1)[1]
+        return re.split(r"(?m)^      [a-z_]+:[ \t]*$", remainder, maxsplit=1)[0]
+
     for field in (
         "predecessor_artifact_id", "from_level", "end_level",
         "selected_rust_sha", "predecessor_binary_sha256",
     ):
-        body = dispatch.split(f"      {field}:\n", 1)[1].split("\n      ", 1)[0]
+        body = input_body(field)
         assert "\n        default:" not in body, field
     # Explicit input is still available for authentic new continuation; this
     # does not delete paid receipts or restrict the generic route optimizer.
     for field in ("from_level", "end_level", "selected_rust_sha"):
-        body = dispatch.split(f"      {field}:\n", 1)[1].split("\n      ", 1)[0]
+        body = input_body(field)
         assert "\n        required: true\n" in body, field
     assert "      - name: Preserve selected source, native 100-mob receipts" in workflow
