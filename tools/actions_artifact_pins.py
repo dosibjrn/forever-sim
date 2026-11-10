@@ -153,7 +153,10 @@ def unmerged_pr_branch_refs(pull_requests: list[dict], repository: str) -> set[s
             continue
         head = pr.get("head")
         if not isinstance(head, dict):
-            continue
+            # A deleted or redacted unmerged PR may still own unique paid
+            # CI receipts. Without its head, an artifact's head_branch cannot
+            # be matched to the protected PR set. Abort before any DELETE.
+            raise ValueError("unmerged PR has no trustworthy head metadata")
         head_repo = head.get("repo")
         if isinstance(head_repo, dict):
             if head_repo.get("full_name") != repository:
