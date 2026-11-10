@@ -365,3 +365,69 @@ def test_unverified_l10_paid_ack_preserves_original_receipt_and_stops_resume(
     assert second["completed_new_levels"] == second["reused_levels"] == []
     assert len(paid_calls) == 1  # original receipt never silently repaid
     assert Path(second["last_paid_route"]).read_text() == receipt_text
+
+@pytest.mark.parametrize("continuation_has_guide", [True, False])
+def test_root_publishes_continuation_refusal_guide_not_stale_paid_l10(
+        tmp_path, monkeypatch, continuation_has_guide):
+    """A stopped L11+ attempt has its own guide, not the last paid L10 guide."""
+    binary, template = _inputs(tmp_path)
+    out = tmp_path / "range"
+    key = root.paid_range._digest({
+        "level": 10, "native_binary": root.next_level.sha256(binary),
+        "template": root.next_level.sha256(template), "max_proposals": 30,
+        "health_threshold": 0.7, "mana_threshold": 0.25,
+        "recovery": "decisions", "target_count": 100, "hostile": True,
+    })
+    folder = out / "L10" / key
+    paid_route = folder / "paid" / "route.json"
+    paid_source = folder / "proposal" / "source_request.json"
+    root._write(paid_route, {"class": "warlock", "measured_levels": [10]})
+    root._write(paid_source, {"native": "prepared L10"})
+    (paid_route.parent / "GUIDE.md").write_text("# Last paid L10 guide\\n")
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "GUIDE.md").write_text("# Stale earlier publication\\n")
+
+    verified = []
+    def verify(**kwargs):
+        verified.append(kwargs["from_level"])
+        assert kwargs["route"] == paid_route
+        assert kwargs["source"] == paid_source
+        return {"level": 10}
+
+    monkeypatch.setattr(root.next_level, "verified_paid_predecessor", verify)
+
+    def refused_continuation(**kwargs):
+        assert kwargs["from_level"] == 10
+        assert kwargs["predecessor_route"] == paid_route
+        child_dir = kwargs["out"]
+        child_dir.mkdir(parents=True, exist_ok=True)
+        guide_path = child_dir / "GUIDE.md"
+        if continuation_has_guide:
+            guide_path.write_text("# Native L11 refused\\n")
+        return {
+            "completed_new_levels": [],
+            "reused_levels": [],
+            "stopped": {"level": 11, "status": "NATIVE_PAID_REFUSAL"},
+            "next_level": 11,
+            "last_paid_route": str(paid_route),
+            "last_paid_source": str(paid_source),
+            "latest_guide": str(guide_path) if continuation_has_guide else None,
+        }
+
+    monkeypatch.setattr(root.paid_range, "run", refused_continuation)
+    result = root.run(binary=binary, template=template, out=out,
+                      end_level=11, max_new_levels=2)
+    assert verified == [10]
+    assert result["completed_new_levels"] == []
+    assert result["reused_levels"] == [10]
+    assert result["stopped"]["status"] == "NATIVE_PAID_REFUSAL"
+    assert result["last_paid_route"] == str(paid_route)
+    assert result["last_paid_source"] == str(paid_source)
+    assert result["next_level"] == 11
+    assert (paid_route.parent / "GUIDE.md").read_text() == "# Last paid L10 guide\\n"
+    if continuation_has_guide:
+        assert Path(result["latest_guide"]).read_text() == "# Native L11 refused\\n"
+    else:
+        assert result["latest_guide"] is None
+        assert not (out / "GUIDE.md").exists()
+

@@ -187,9 +187,14 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
     completed, reused = [], []
     stopped = None
     latest_route, latest_source = route, source
+    # The range driver can publish a refusal guide without advancing its
+    # last *paid* route. Keep those two identities separate for readers.
+    continuation_guide: Path | None = None
+    continuation_ran = False
 
     def save(next_level_number: int) -> dict:
-        native_guide = latest_route.with_name("GUIDE.md")
+        native_guide = (continuation_guide if continuation_ran
+                        else latest_route.with_name("GUIDE.md"))
         latest_guide = out / "GUIDE.md"
         if stopped and stopped.get("status") == "PAID_ACK_UNVERIFIED":
             # Keep the producer's original guide in the paid artifact, but do
@@ -200,7 +205,7 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
                 "No source-linked native 100/100 L10 completion was verified. "
                 "Inspect the preserved native route and "
                 "ack_verification_error.json before any continuation.\n")
-        elif native_guide.is_file():
+        elif native_guide is not None and native_guide.is_file():
             latest_guide.parent.mkdir(parents=True, exist_ok=True)
             latest_guide.write_bytes(native_guide.read_bytes())
         else:
@@ -347,6 +352,12 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
     stopped = child["stopped"]
     latest_route = Path(child["last_paid_route"])
     latest_source = Path(child["last_paid_source"])
+    # A paid L11+ refusal leaves last_paid_route pointing at L10, while the
+    # continuation publishes the refusal guide separately. Forward that
+    # exact guide (or its absence), never silently substitute L10's guide.
+    continuation_ran = True
+    continuation_guide = (Path(child["latest_guide"])
+                          if child.get("latest_guide") else None)
     return save(child["next_level"])
 
 
