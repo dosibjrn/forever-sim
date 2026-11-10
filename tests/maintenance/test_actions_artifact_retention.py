@@ -75,16 +75,24 @@ def test_rust_pin_pr_no_record_p3_uploads_expire_after_seven_days():
         assert retention == [7], f"{workflow.name}:{index + 1}: expected seven days"
 
 
-def test_completed_warlock_l21_l25_one_shot_trial_ci_is_replaced():
-    """Retire completed per-level PR triggers, preserve fast producer coverage.
+def test_completed_warlock_one_shot_paid_ci_is_replaced():
+    """Retire completed per-level PR/push/dispatch workflows, keep fast coverage.
 
     Historic native 100-target observations and uploaded evidence are NOT
     deleted. The shared route CI tests proposal and publication without
     accidentally repaying already executed Warlock levels.
     """
-    for level in range(21, 26):
-        obsolete = ROOT / ".github/workflows" / f"work2-warlock-l{level}-native-trial.yml"
-        assert not obsolete.exists(), f"obsolete per-level CI still active: {obsolete.name}"
+    retired = [f"work2-warlock-l{level}-native-trial.yml" for level in range(21, 26)]
+    retired += [
+        "work2-warlock-l21-native-successor.yml",
+        "work2-warlock-l22-native-successor.yml",
+        *(f"work2-warlock-l{level}-native-trial.yml" for level in range(26, 29)),
+        *(f"work2-warlock-l{level}-native-successor.yml" for level in range(29, 33)),
+        "work2-warlock-l33-l40-native-batch.yml",
+    ]
+    for name in retired:
+        obsolete = ROOT / ".github/workflows" / name
+        assert not obsolete.exists(), f"completed paid per-level CI still active: {name}"
 
     shared = (ROOT / ".github/workflows/work2-warlock-route-guide.yml").read_text(
         encoding="utf-8")
