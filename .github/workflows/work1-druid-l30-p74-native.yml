@@ -6,6 +6,7 @@ on:
     branches:
       - work/work1-druid-l30-p74-native-actor-level-20261110
       - work/work1-druid-l30-p74-paid-request-20261110
+      - work/work1-druid-l30-p74-select-frozen-reference-20261110
     paths:
       - .github/workflows/work1-druid-l30-p74-native.yml
       - tools/wf_gate_p7_4_live.py
@@ -85,7 +86,7 @@ jobs:
 
       - name: Verify actual L30 and L60 native scorer invocation forwarding
         working-directory: frozen
-        run: python -m pytest -q tests/gates/test_wf_gate_p7_4_live.py -k native_axis_pays_changed_gear_without_world_or_holdout
+        run: python -m pytest -q tests/gates/test_wf_gate_p7_4_live.py -k "native_axis_pays_changed_gear_without_world_or_holdout or l30_p74"
 
       - name: Build exact frozen native Rust source
         working-directory: frozen/integrations/mythicsim-rust/engine

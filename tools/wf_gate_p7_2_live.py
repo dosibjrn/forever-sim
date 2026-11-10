@@ -77,6 +77,7 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     if (class_key, level, spec, gate) in (
             ("druid", 30, "unrestricted", "P7.2"),
             ("druid", 30, "unrestricted", "P7.3"),
+            ("druid", 30, "unrestricted", "P7.4"),
             ("warlock", 20, "unrestricted", "P7.2"),
             ("warlock", 20, "unrestricted", "P7.3")):
         # The checkpoint reference is a distinct frozen native request, not
