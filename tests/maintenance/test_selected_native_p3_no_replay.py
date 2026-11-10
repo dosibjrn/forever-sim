@@ -34,7 +34,7 @@ def test_accepted_l60_p3_gate_replays_and_attachments_are_retired():
     assert "paladin-retribution-l60-native-p3-no-record" not in workflow
     assert "paladin-protection-l60-native-p3-no-record" not in workflow
     assert not re.search(
-        r"tools/wf_gate\\.py --class (?:druid|mage|paladin) --level 60\\b",
+        r"tools/wf_gate\.py --class (?:druid|mage|paladin) --level 60\b",
         workflow,
     )
 
