@@ -394,7 +394,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="M1 live-PASS scoreboard (no gate reruns)")
     parser.add_argument("--ledger", type=Path, default=LEDGER)
     parser.add_argument("--invalidate", nargs=4, metavar=("CLASS", "LEVEL", "SPEC", "GATE"),
-                        help="Remove a materially invalidated active PASS or PARTIAL receipt")
+                        help="Remove a materially incompatible PARTIAL measurement only; accepted PASS is permanent")
     parser.add_argument("--merge-snapshots", nargs=4, type=Path,
                         metavar=("BASE", "MEASURED", "LATEST", "OUTPUT"),
                         help="Actions CAS retry: merge changed gate receipts onto newest TSV")
@@ -411,6 +411,11 @@ def main(argv=None):
             parser.error("Retired P1/P2 history is immutable")
         if del_key not in rows:
             parser.error("No such active receipt to invalidate")
+        # Owner decision (2026-11-10): an officially recorded PASS is final.
+        # Only provisional PARTIAL measurements can be removed, even by Merge.
+        # Fail BEFORE touching the ledger or its derived history SVG.
+        if rows[del_key]["status"] == "PASS":
+            parser.error("Accepted M1 PASS is permanent and cannot be invalidated")
         del rows[del_key]
         _write(rows, args.ledger)
     if args.plot_svg:
