@@ -17,7 +17,8 @@ def _job(name: str) -> str:
     source = WORKFLOW.read_text(encoding="utf-8")
     _, separator, body = source.partition(f"  {name}:\n")
     assert separator, f"missing native diagnostic job {name}"
-    # Match a *top-level job* at exactly two spaces, not nested job keys.\n    return re.split(r"(?m)^  [a-z][\\w-]*:\\s*$", body, maxsplit=1)[0]
+    # Match a top-level job at exactly two spaces, not nested YAML keys.
+    return re.split(r"(?m)^  [a-z][a-z0-9_-]*:[ ]*$", body, maxsplit=1)[0]
 
 
 def _condition(name: str) -> str:
