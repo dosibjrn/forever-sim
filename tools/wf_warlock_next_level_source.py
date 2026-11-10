@@ -20,7 +20,9 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def verified_paid_predecessor(*, route: Path, source: Path, binary: Path, from_level: int) -> dict:
+def verified_paid_predecessor(*, route: Path, source: Path, binary: Path,
+                              from_level: int,
+                              predecessor_binary_sha256: str | None = None) -> dict:
     """Require a real paid prior-level receipt for automatic route extension.
 
     This matches an executed native actor to the exact persisted request
@@ -36,7 +38,14 @@ def verified_paid_predecessor(*, route: Path, source: Path, binary: Path, from_l
             or any(type(l) is not int for l in levels) or from_level not in levels):
         raise ValueError("predecessor does not include the paid source level")
     fingerprint = sha256(source)
-    engine_fingerprint = sha256(binary)
+    # An adjacent native source upgrade can retain a genuinely paid prior
+    # request while executing the successor on a different pinned binary.
+    # Require an explicit original binary digest, never silently equate them.
+    if predecessor_binary_sha256 is not None and (
+            len(predecessor_binary_sha256) != 64 or any(
+                char not in "0123456789abcdef" for char in predecessor_binary_sha256)):
+        raise ValueError("predecessor binary digest must be 64 lowercase hex characters")
+    engine_fingerprint = predecessor_binary_sha256 or sha256(binary)
     matches = [
         row for row in previous["observations"]
         if isinstance(row, dict)
@@ -56,21 +65,27 @@ def verified_paid_predecessor(*, route: Path, source: Path, binary: Path, from_l
         raise ValueError("source request has no matching completed paid native predecessor")
     return {"level": from_level, "observation_id": matches[0]["id"],
             "source_request_sha256": fingerprint,
-            "engine_binary_sha256": engine_fingerprint}
+            "engine_binary_sha256": engine_fingerprint,
+            "successor_engine_binary_sha256": sha256(binary),
+            "cross_engine_source_transition": engine_fingerprint != sha256(binary)}
 
 
 def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             to_level: int = 21, max_proposals: int = 30,
-            predecessor_route: Path | None = None) -> dict:
+            predecessor_route: Path | None = None,
+            predecessor_binary_sha256: str | None = None) -> dict:
     if to_level != from_level + 1 or not 10 <= from_level < 60:
         raise ValueError("source proposals require exactly one adjacent level in 10..60")
     if max_proposals < 1:
         raise ValueError("max_proposals must be positive")
     if not binary.is_file() or not source.is_file():
         raise ValueError("native binary and original source request are required")
+    if predecessor_binary_sha256 is not None and predecessor_route is None:
+        raise ValueError("cross-engine predecessor requires an exact paid route receipt")
     predecessor = (verified_paid_predecessor(
         route=predecessor_route, source=source, binary=binary,
-        from_level=from_level)
+        from_level=from_level,
+        predecessor_binary_sha256=predecessor_binary_sha256)
         if predecessor_route is not None else None)
     original = json.loads(source.read_text())
     actor = original["raid"]["parties"][0]["players"][0]
@@ -118,6 +133,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             "from_level": from_level, "to_level": to_level,
             "original_source_sha256": sha256(source),
             "native_binary_sha256": sha256(binary),
+            "paid_predecessor": predecessor,
             "attempted": 0,
             "native_refusals": [{
                 "stage": "options", "reason": reason,
@@ -218,6 +234,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                     "from_level": from_level, "to_level": to_level,
                     "original_source_sha256": sha256(source),
                     "native_binary_sha256": sha256(binary),
+            "paid_predecessor": predecessor,
                     "native_options_source_revision": options.get("source_revision"),
                     "attempted": number, "native_refusals": rejected,
                 }
@@ -243,6 +260,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             "from_level": from_level, "to_level": to_level,
             "original_source_sha256": sha256(source),
             "native_binary_sha256": sha256(binary),
+            "paid_predecessor": predecessor,
             "selected_source_sha256": sha256(selected),
             "native_prepared_sha256": sha256(prepared_file),
             "native_options_source_revision": options.get("source_revision"),
@@ -384,6 +402,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                     "from_level": from_level, "to_level": to_level,
                     "original_source_sha256": sha256(source),
                     "native_binary_sha256": sha256(binary),
+            "paid_predecessor": predecessor,
                     "selected_source_sha256": sha256(selected),
                     "native_prepared_sha256": sha256(final_prepared),
                     "native_options_source_revision": options.get("source_revision"),
@@ -408,6 +427,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                "from_level": from_level, "to_level": to_level,
                "original_source_sha256": sha256(source),
                "native_binary_sha256": sha256(binary),
+            "paid_predecessor": predecessor,
                "native_refusals": rejected,
                "native_gear_refusals": native_gear_refusals}
     (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
@@ -424,6 +444,9 @@ def main() -> None:
     parser.add_argument("--max-proposals", type=int, default=30)
     parser.add_argument("--predecessor-route", type=Path,
                         help="Require exact executed paid previous-level source receipt")
+    parser.add_argument("--predecessor-binary-sha256",
+                        help="Exact paid predecessor binary SHA256 when changing native engine; "
+                             "requires --predecessor-route and never implies same-engine continuity")
     args = parser.parse_args()
     result = propose(**vars(args))
     print(json.dumps(result, indent=2))
