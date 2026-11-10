@@ -21,6 +21,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from src.v2.native_range_optimizer import optimize
+from src.scenarios.leveling_targets import representative_hp
 
 
 def native_command_evaluator(command: list[str], *, timeout_s: float = 300):
@@ -46,7 +47,7 @@ def native_command_evaluator(command: list[str], *, timeout_s: float = 300):
 
 
 def live_native_frontier_evaluator(
-    command: list[str], *, binary: Path, target_hp: float,
+    command: list[str], *, binary: Path, target_hp: float | None,
     scorer_command: list[str], artifact_dir: Path,
     run_command=None,
 ):
@@ -99,7 +100,9 @@ def live_native_frontier_evaluator(
         manifest.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
         from tools.wf_warlock_native_range_scored_adapter import evaluate_request
         return evaluate_request(
-            request, manifest=manifest, binary=binary, target_hp=target_hp,
+            request, manifest=manifest, binary=binary,
+            target_hp=(representative_hp(request["level"])
+                       if target_hp is None else target_hp),
             scorer_command=scorer_command, artifact_dir=folder,
         )
 
@@ -131,7 +134,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--native-binary", type=Path,
                         help="Exact pinned native executable for manifest scoring")
     parser.add_argument("--native-target-hp", type=float,
-                        help="Exact native 2D world target HP for manifest scoring")
+                        help="Optional fixed target HP for compatible replay; default "
+                             "uses scenario-owned ordinary-mob HP at each level")
     parser.add_argument("--native-scorer-command",
                         default=sys.executable + " tools/wf_warlock_native_candidate_scoring.py",
                         help="Work1 native prepared-candidate scorer CLI")
@@ -141,9 +145,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if (args.native_prepared_manifest is not None
             or args.native_frontier_command is not None):
-        if (args.native_binary is None or args.native_target_hp is None
-                or args.native_receipts_dir is None):
-            parser.error("native manifest requires --native-binary, --native-target-hp "
+        if args.native_binary is None or args.native_receipts_dir is None:
+            parser.error("native manifest requires --native-binary "
                          "and --native-receipts-dir")
         args.native_receipts_dir.mkdir(parents=True, exist_ok=True)
         if args.native_frontier_command is not None:
@@ -158,7 +161,10 @@ def main(argv: list[str] | None = None) -> int:
             def native_evaluator(**request: Any):
                 return evaluate_request(
                     request, manifest=args.native_prepared_manifest,
-                    binary=args.native_binary, target_hp=args.native_target_hp,
+                    binary=args.native_binary,
+                    target_hp=(representative_hp(request["level"])
+                               if args.native_target_hp is None
+                               else args.native_target_hp),
                     scorer_command=shlex.split(args.native_scorer_command),
                     artifact_dir=args.native_receipts_dir,
                 )
