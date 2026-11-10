@@ -499,3 +499,93 @@ def test_source_parent_mismatch_never_asks_native_for_an_edge(tmp_path):
     assert result["entries"] == []
     assert "engine" in result["refusals"][0]["native_refusal"]
     assert result["refusals"][0]["native_prepared"] is False
+
+
+def test_scored_child_rechecks_rust_infill_before_any_native_payment(tmp_path):
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    seed, binary, parent = _scored_parent(tmp_path)
+
+    def prepare_native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 30, "talents": {"status": "ok", "trees": [
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                    {"talents": []}, {"talents": []},
+                ]},
+            }))
+        source = Path(cmd[cmd.index("--request") + 1])
+        payload = json.loads(source.read_text())
+        level = payload["raid"]["parties"][0]["players"][0]["level"]
+        prepared = Path(cmd[cmd.index("--outfile") + 1])
+        prepared.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": level},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    found = produce_frontier(
+        _request(level=30, parent=parent, budget=2),
+        binary=binary, seed_source=seed, out=tmp_path / "native",
+        runner=prepare_native)
+    assert len(found["entries"]) == 2
+    manifest = tmp_path / "native-manifest.json"
+    manifest.write_text(json.dumps(found))
+    score_calls = []
+
+    def scorer(cmd, **kwargs):
+        score_calls.append(cmd)
+        output = Path(cmd[cmd.index("--out") + 1])
+        rows = []
+        for arg in [cmd[index + 1] for index, name in enumerate(cmd[:-1])
+                    if name == "--prepared"]:
+            cid, prepared_file = arg.split("=", 1)
+            prepared_path = Path(prepared_file)
+            prepared = json.loads(prepared_path.read_text())
+            src = prepared["request_sha256"]
+            rows.append({
+                "candidate_id": cid, "prepared_sha256": hashlib.sha256(
+                    prepared_path.read_bytes()).hexdigest(),
+                "source_sha256": src, "mob_count": 3,
+                "rng_mode": "balanced", "iterations": 1,
+                "status": "MEASURED_NATIVE_FULLY_RECOVERED",
+                "elapsed_seconds": 10.0,
+            })
+            (output / f"{cid}.native.json").write_text(json.dumps({
+                "source_sha256": src, "actual_2d_ack": True,
+                "world_targets_killed": 3,
+                "native_terminal_recovery": {
+                    "paid": True, "native_clock_accounted": True,
+                    "start_clock_ns": 8_000_000_000,
+                    "end_clock_ns": 10_000_000_000,
+                    "max_health": 100, "max_mana": 200,
+                    "health_after": 100, "mana_after": 200,
+                },
+            }))
+        return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+            "candidates": rows,
+        }))
+
+    request = _request(level=30, parent=parent, budget=2)
+    rows = evaluate_request(
+        request, manifest=manifest, binary=binary, target_hp=400,
+        scorer_command=["work1-native-scorer"],
+        artifact_dir=tmp_path / "paid", run_command=scorer)
+    assert len(score_calls) == 1
+    assert len(rows) == 2
+    assert all(row["native_continuity_ack"] is True
+               and row["native_intermediate_levels_verified"] is True
+               and row["terminal_recovery_seconds"] == 2.0 for row in rows)
+
+    lineage = json.loads(Path(found["entries"][0]["native_continuity_receipt"]).read_text())
+    prepared_infill = Path(lineage["infill"][3]["prepared"])
+    prepared_infill.write_text(prepared_infill.read_text() + "tampered")
+    score_calls.clear()
+    rejected = evaluate_request(
+        request, manifest=manifest, binary=binary, target_hp=400,
+        scorer_command=["work1-native-scorer"],
+        artifact_dir=tmp_path / "unpaid", run_command=scorer)
+    assert score_calls == []
+    assert len(rejected) == 2
+    assert all("NATIVE_SOURCE_CHAIN_FILE_IDENTITY_MISMATCH" in row["status"]
+               for row in rejected)
