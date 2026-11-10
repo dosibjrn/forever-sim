@@ -2,24 +2,24 @@ name: Warlock native-paid adjacent range (parameterized and resumable)
 
 # Explicit dispatch only: do not automatically repay native mob runs on push.
 # Exact paid predecessor source/route and native binary remain separately verified.
+# Never prefill the already-paid L44→L46 artifact/source parameters: a one-click
+# manual dispatch would incur two redundant 100-mob native payments.
+# This is a historical baseline continuation, NOT the Decisions-style optimizer.
 on:
   workflow_dispatch:
     inputs:
       predecessor_artifact_id:
-        description: "Existing paid predecessor artifact ID (ignored for new L10 root)"
+        description: "Explicit genuine predecessor artifact ID (not needed for new L10 root)"
         required: false
         type: string
-        default: "13757719649"
       from_level:
-        description: "Already paid predecessor level, or 10 to start a brand-new native L10 actor"
+        description: "Explicit predecessor level, or 10 for new L10 actor; L20-L60 baselines are already paid"
         required: true
         type: number
-        default: 44
       end_level:
-        description: "Last desired newly paid level (inclusive, max L60)"
+        description: "Explicit last genuinely unmeasured level (inclusive, max L60)"
         required: true
         type: number
-        default: 46
       max_new_levels:
         description: "Upper bound on newly paid levels (does not repay completed ones)"
         required: true
@@ -31,20 +31,18 @@ on:
         type: number
         default: 30
       selected_rust_sha:
-        description: "Exact selected MythicSim native source commit"
+        description: "Explicit exact MythicSim native source commit (never inherit an old baseline pin)"
         required: true
         type: string
-        default: "7b811d37969bd1886cf123835fc87b699d1f5fbd"
       resume_root_artifact_id:
         description: "Prior same-source L10 range artifact ID (optional; prevents repaying L10)"
         required: false
         type: string
         default: ""
       predecessor_binary_sha256:
-        description: "SHA256 of paid predecessor binary (ignored for new L10 root)"
+        description: "Explicit paid predecessor binary SHA256 (not needed for new L10 root)"
         required: false
         type: string
-        default: "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458"
 
 permissions:
   contents: read
