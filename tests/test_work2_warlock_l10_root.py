@@ -115,11 +115,11 @@ def test_root_paid_once_then_reused_and_extended_from_actual_l10_ack(
     def advance(**kwargs):
         continuation_calls.append(kwargs)
         assert kwargs["from_level"] == 10
-        assert kwargs["max_new_levels"] == 1
+        assert kwargs["max_new_levels"] == (1 if len(continuation_calls) == 1 else 2)
         assert kwargs["predecessor_route"].is_file()
         return {
-            "completed_new_levels": [11],
-            "reused_levels": [],
+            "completed_new_levels": [11] if len(continuation_calls) == 1 else [],
+            "reused_levels": [] if len(continuation_calls) == 1 else [11],
             "stopped": {"level": 12, "status": "BOUNDED_NEW_LEVEL_BUDGET"},
             "next_level": 12, "last_paid_route": str(kwargs["predecessor_route"]),
             "last_paid_source": str(kwargs["source"]),
@@ -136,8 +136,8 @@ def test_root_paid_once_then_reused_and_extended_from_actual_l10_ack(
     assert first["next_level"] == 12
     assert paid_calls == [10]
     again = root.run(**kwargs)
-    assert again["reused_levels"] == [10]
-    assert again["completed_new_levels"] == [11]
+    assert again["reused_levels"] == [10, 11]
+    assert again["completed_new_levels"] == []
     assert paid_calls == [10]  # no duplicate paid L10
     assert proposals == [10]
     assert len(continuation_calls) == 2
