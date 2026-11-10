@@ -279,7 +279,10 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     # candidate search, not a Python decision about item or talent legality.
     source_items = actor.get("equipment", {}).get("items")
     native_gear_refusals = []
-    if isinstance(source_items, list) and source_items:
+    # An explicitly empty native equipment list is still a valid candidate:
+    # when every new rank is refused, ask Rust whether the same banked talents
+    # prepare at the next level. Do not require an inherited item to try this.
+    if isinstance(source_items, list):
         frozen = copy.deepcopy(original)
         frozen_actor = frozen["raid"]["parties"][0]["players"][0]
         frozen_actor["level"] = to_level

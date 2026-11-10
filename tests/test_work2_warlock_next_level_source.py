@@ -718,3 +718,45 @@ def test_l41_cross_engine_requires_explicit_paid_l40_binary_provenance(tmp_path,
             out=tmp_path / "unpaid", from_level=23, to_level=24,
             predecessor_binary_sha256=old_sha)
     assert calls == ["options", "prepare"]
+
+
+def test_gearless_actor_can_native_prepare_banked_talents_after_rank_refusals(tmp_path, monkeypatch):
+    """A real empty loadout must not prevent native testing of a banked-point successor.
+
+    Talent options are proposed by Forever, but only successful Rust prepare
+    can authorize an unchanged-talent next-level actor. No paid run is faked.
+    """
+    source, binary = source_file(tmp_path)
+    raw = json.loads(source.read_text())
+    raw["raid"]["parties"][0]["players"][0]["equipment"] = {"items": []}
+    source.write_text(json.dumps(raw))
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        assert cmd[1] == "prepare"
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        actor = request["raid"]["parties"][0]["players"][0]
+        assert actor["level"] == 21
+        assert actor["equipment"]["items"] == []
+        calls.append((actor["talentsString"], cmd[cmd.index("--request") + 1]))
+        if actor["talentsString"] != "0-0-011":
+            return subprocess.CompletedProcess(cmd, 1, stderr="native rejected talent rank")
+        with open(cmd[cmd.index("--outfile") + 1], "w") as file:
+            json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, file)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "banked-no-gear"
+    receipt = next_level.propose(binary=binary, source=source, out=out, max_proposals=2)
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["selection"] == "native_prepared_carry_forward_with_item_probes"
+    assert receipt["talent_points_newly_spent"] == 0
+    assert receipt["native_gear_kept"] == []
+    assert len(receipt["native_refusals_before_selection"]) == 2
+    assert any("fallback_empty" in path for _, path in calls)
+    assert any("fallback_final" in path for _, path in calls)
+    assert json.loads((out / "source_request.json").read_text())[
+        "raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-011"
+    assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
