@@ -271,3 +271,33 @@ def test_accepted_priest_l20_cold_once_remains_retired():
         assert "          " + test + "\n" in ci, (
             f"Priest native transport regression not executed in shared CI: {test}")
     assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+
+def test_accepted_paladin_holy_l60_p3_no_record_is_retired():
+    """Keep native HPS/TPS/DPS forwarding tested without replaying an accepted gate.
+
+    Holy L60 P3 was officially recorded PASS on 2026-11-05. A label-triggered
+    300-second Rust rebuild and optional paid recheck cannot revise that PASS.
+    Generic native P3 regressions and the unaccepted-gate recorder stay live.
+    """
+    assert not (ROOT / ".github/workflows/work2-paladin-holy-p3.yml").exists()
+    ci = (ROOT / ".github/workflows/generic-source-search-regressions.yml"
+          ).read_text(encoding="utf-8")
+    for test in (
+        "tests/test_work2_paladin_holy_native_p3.py",
+        "tests/test_work2_paladin_protection_native_p3.py",
+        "tests/test_work2_paladin_retribution_native_p3.py",
+    ):
+        assert f"      - '{test}'\n" in ci, (
+            f"source change or test edit must trigger native Paladin P3 coverage: {test}"
+        )
+        assert f"          {test}\n" in ci, (
+            f"shared CI must actually run Paladin native P3 regression: {test}"
+        )
+    for source in (
+        "tools/wf_gate_p3_live.py",
+        "integrations/mythicsim-rust/native_p3_equipped.py",
+        "integrations/mythicsim-rust/tests/test_native_p3_equipped.py",
+    ):
+        assert f"      - '{source}'\n" in ci
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
