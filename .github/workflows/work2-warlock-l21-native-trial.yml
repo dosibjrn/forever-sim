@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened]
     branches:
       - work2/warlock-l20-paid-route-receipts-20261109-2230
+      - main
     paths:
       - tools/wf_warlock_next_level_source.py
       - tools/wf_warlock_route_guide.py
@@ -35,7 +36,7 @@ jobs:
   # One changed-behavior paid L21 trial when this stacked PR first opens.
   # Synchronize repeats only focused Python tests, never the 100-mob run.
   paid-native-l21:
-    if: github.event.action == 'opened'
+    if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'work2/warlock-l20-paid-route-receipts-20261109-2230'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
