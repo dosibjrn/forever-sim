@@ -17,9 +17,11 @@ _ARTIFACT_ID_FIELD = re.compile(
     r"""["']artifact_id["']\s*:\s*["']?([1-9]\d*)["']?\s*(?=[,}])""")
 # Human prose in retained evidence and issue/PR discussion often records only
 # "artifact #123" or "artifact ID: 123", without a URL or JSON field.
-# Those are explicit artifact references and must pin the original evidence.
+# Receipts also render IDs as Markdown, e.g. artifact ID **`13075957889`**.
+# Preserve those explicit artifact references even without a run URL. Never
+# accept a numeric prefix of a malformed alphanumeric identifier.
 _ARTIFACT_PROSE_ID = re.compile(
-    r"\bartifact\s+(?:#\s*|id\s*[:=#]?\s*)([1-9]\d*)\b",
+    r"\bartifact\s+(?:#\s*|id\s*[:=#]?\s*)(?:\*\*)?`?([1-9]\d*)`?(?:\*\*)?(?!\w)",
     flags=re.IGNORECASE,
 )
 # Machine-readable receipts can reference a workflow run only by numeric ID.
