@@ -1,16 +1,45 @@
-name: Work2 Warlock source-native paid range L43-L44 (resumable)
+name: Warlock native-paid adjacent range (parameterized and resumable)
 
-# One actual bounded batch, not a new workflow for each Warlock level.
-# Existing L20-L42 paid measurements remain accepted and are NOT repaid.
+# Explicit dispatch only: do not automatically repay native mob runs on push.
+# Exact paid predecessor source/route and native binary remain separately verified.
 on:
-  push:
-    branches:
-      - work2/warlock-l42-paid-20261110
-    paths:
-      - .github/workflows/work2-warlock-l41-l50-native-batch.yml
-      - tools/wf_warlock_paid_range.py
-      - tests/test_work2_warlock_paid_range.py
   workflow_dispatch:
+    inputs:
+      predecessor_artifact_id:
+        description: "Existing paid Actions artifact ID containing the from-level receipt"
+        required: true
+        type: string
+        default: "13757719649"
+      from_level:
+        description: "Already paid predecessor level (inclusive starting point)"
+        required: true
+        type: number
+        default: 44
+      end_level:
+        description: "Last desired newly paid level (inclusive, max L60)"
+        required: true
+        type: number
+        default: 46
+      max_new_levels:
+        description: "Upper bound on newly paid levels (does not repay completed ones)"
+        required: true
+        type: number
+        default: 2
+      max_proposals:
+        description: "Per-level native candidate proposal budget"
+        required: true
+        type: number
+        default: 30
+      selected_rust_sha:
+        description: "Exact selected MythicSim native source commit"
+        required: true
+        type: string
+        default: "7b811d37969bd1886cf123835fc87b699d1f5fbd"
+      predecessor_binary_sha256:
+        description: "SHA256 of binary that executed the paid predecessor"
+        required: true
+        type: string
+        default: "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458"
 
 permissions:
   contents: read
@@ -20,7 +49,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 65
     steps:
-      - name: Checkout exact Work2 source
+      - name: Checkout exact Forever source
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -29,10 +58,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 7b811d37969bd1886cf123835fc87b699d1f5fbd
+          ref: ${{ inputs.selected_rust_sha }}
           path: engine
       - name: Verify exact Rust source
-        run: test "$(git -C engine rev-parse HEAD)" = "7b811d37969bd1886cf123835fc87b699d1f5fbd"
+        env:
+          SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha }}
+        run: test "$(git -C engine rev-parse HEAD)" = "$SELECTED_RUST_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -45,66 +76,104 @@ jobs:
             tests/test_work2_warlock_next_level_source.py \
             tests/test_work2_warlock_route_guide.py \
             tests/test_work2_native_paid_banked_path_dp.py \
-            tests/test_work2_native_paid_route_publisher.py
+            tests/test_work2_native_paid_route_publisher.py \
+            tests/test_warlock_paid_artifact.py
       - name: Build exact native executor
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Reuse archived actual L42 100/100 route (do not replay L20-L42)
+      - name: Download only selected paid predecessor artifact (no native replay)
         env:
           GH_TOKEN: ${{ github.token }}
+          PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}
         run: |
           set -euo pipefail
-          mkdir -p predecessor
+          [[ "$PREDECESSOR_ARTIFACT_ID" =~ ^[0-9]+$ ]]
+          mkdir -p predecessor-archive
           curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13757204616/zip" \
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/$PREDECESSOR_ARTIFACT_ID/zip" \
             -o predecessor.zip
-          unzip -q predecessor.zip -d predecessor
-          test -s predecessor/warlock-l42-source/source_request.json
-          test -s predecessor/warlock-l42-native-route/route.json
-      - name: Confirm old L42 paid 100/100 and exact submitted source
+          unzip -q predecessor.zip -d predecessor-archive
+      - name: Stage exactly one paid predecessor source/receipt for requested level
         working-directory: project
+        env:
+          FROM_LEVEL: ${{ inputs.from_level }}
+        run: |
+          python tools/wf_warlock_paid_artifact.py \
+            --archive-dir ../predecessor-archive \
+            --from-level "$FROM_LEVEL" --out ../predecessor-staged
+      - name: Confirm authentic predecessor 100/100 and source/binary lineage
+        working-directory: project
+        env:
+          FROM_LEVEL: ${{ inputs.from_level }}
+          PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}
         run: |
           python - <<'PY'
+          import os
           from pathlib import Path
           from tools.wf_warlock_next_level_source import verified_paid_predecessor
-          before = verified_paid_predecessor(
-              route=Path("../predecessor/warlock-l42-native-route/route.json"),
-              source=Path("../predecessor/warlock-l42-source/source_request.json"),
+          result = verified_paid_predecessor(
+              route=Path("../predecessor-staged/route.json"),
+              source=Path("../predecessor-staged/source_request.json"),
               binary=Path("../engine/target/debug/forever-engine"),
-              from_level=42,
-              predecessor_binary_sha256="133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458")
-          print("REUSED_ACTUAL_PAID_L42", before, flush=True)
+              from_level=int(os.environ["FROM_LEVEL"]),
+              predecessor_binary_sha256=os.environ["PREDECESSOR_BINARY_SHA256"])
+          print("REUSED_AUTHENTIC_PAID_PREDECESSOR", result, flush=True)
           PY
-      - name: Generate and pay only new L43-L44 100-target levels, resumably
+      - name: Pay only genuinely missing adjacent native levels, resumably
         id: range
         continue-on-error: true
         working-directory: project
         env:
           PYTHONUNBUFFERED: '1'
+          FROM_LEVEL: ${{ inputs.from_level }}
+          END_LEVEL: ${{ inputs.end_level }}
+          MAX_NEW_LEVELS: ${{ inputs.max_new_levels }}
+          MAX_PROPOSALS: ${{ inputs.max_proposals }}
+          PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}
         run: |
           python -u tools/wf_warlock_paid_range.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../predecessor/warlock-l42-source/source_request.json \
-            --predecessor-route ../predecessor/warlock-l42-native-route/route.json \
-            --predecessor-binary-sha256 133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458 \
-            --from-level 42 --end-level 44 --max-new-levels 2 \
+            --source ../predecessor-staged/source_request.json \
+            --predecessor-route ../predecessor-staged/route.json \
+            --predecessor-binary-sha256 "$PREDECESSOR_BINARY_SHA256" \
+            --from-level "$FROM_LEVEL" --end-level "$END_LEVEL" \
+            --max-new-levels "$MAX_NEW_LEVELS" --max-proposals "$MAX_PROPOSALS" \
             --out ../warlock-paid-range
-      - name: Check real paid or refused result, never claim a full route
+      - name: Check actual newly paid/reused levels or report precise native refusal
         if: always() && steps.range.outcome != 'skipped'
+        env:
+          FROM_LEVEL: ${{ inputs.from_level }}
+          END_LEVEL: ${{ inputs.end_level }}
+          MAX_NEW_LEVELS: ${{ inputs.max_new_levels }}
         run: |
           test -s warlock-paid-range/range_progress.json
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
           result = json.loads(Path("warlock-paid-range/range_progress.json").read_text())
           print(json.dumps(result, indent=2), flush=True)
+          start, end = int(os.environ["FROM_LEVEL"]), int(os.environ["END_LEVEL"])
+          budget = int(os.environ["MAX_NEW_LEVELS"])
+          assert result["from_level"] == start and result["end_level"] == end
           assert result["full_10_60_native_replay_executed"] is False
           assert result["elapsed_10_60_seconds"] is None
           assert result["selected_engine_binary_sha256"]
-          assert result["completed_new_levels"] == [43, 44], (
-              "Native paid L43-L44 not both completed; see exact proposal/refusal receipts")
-          assert result["stopped"] is None
+          assert len(result["completed_new_levels"]) <= budget
+          seen = result["completed_new_levels"] + result["reused_levels"]
+          assert all(start < level <= end for level in seen)
+          assert len(seen) == len(set(seen))
+          if result["stopped"] is not None:
+              if result["stopped"]["status"] == "BOUNDED_NEW_LEVEL_BUDGET":
+                  assert len(result["completed_new_levels"]) == budget
+                  assert result["next_level"] == result["stopped"]["level"]
+                  print("BOUNDED_RANGE_PAUSE: continue from original paid receipts", flush=True)
+              else:
+                  raise SystemExit(f"Range stopped with original receipts preserved: {result['stopped']}")
+          else:
+              assert sorted(seen) == list(range(start + 1, end + 1)), (
+                  "not every requested level has a verified paid native receipt")
           PY
       - name: Preserve selected source, native 100-mob receipts, refusal and route output
         if: always()
@@ -112,8 +181,7 @@ jobs:
         with:
           name: work2-warlock-paid-range-${{ github.run_id }}
           path: |
-            predecessor/warlock-l42-source/source_request.json
-            predecessor/warlock-l42-native-route/route.json
+            predecessor-staged/
             warlock-paid-range/
           if-no-files-found: warn
           retention-days: 3
