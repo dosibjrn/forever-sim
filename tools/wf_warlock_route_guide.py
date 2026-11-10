@@ -77,6 +77,7 @@ def _observation(raw: dict, start: int, end: int) -> dict:
         "apl": raw.get("apl"), "pet": raw.get("pet"),
         "pulls": raw.get("pulls"), "recovery_policy": raw.get("recovery_policy"),
         "notes": raw.get("notes"),
+        "native_actor": raw.get("native_actor"),
         "native_final_hp": raw.get("native_final_hp"),
         "native_final_mana": raw.get("native_final_mana"),
         "native_health_damage": raw.get("native_health_damage"),
@@ -262,6 +263,7 @@ def observations_from_native_chain_summary(summary: dict, *, summary_path: Path,
             "pet": actor.get("warlockOptions"),
             "pulls": None,
             "recovery_policy": result.get("recovery_request"),
+            "native_actor": result.get("native_actor"),
             "native_final_hp": result.get("final_hp"),
             "native_final_mana": result.get("final_mana"),
             "native_health_damage": result.get("native_health_damage"),
@@ -352,6 +354,12 @@ def build_route_report(payload: dict) -> dict:
         for level in range(start, end + 1)
     ]
     missing = [level for level in by_level if not by_level[level]]
+    # The existing source-native route solver owns path continuity; this
+    # adaptor provides only actual paid execution receipts, not XP weights.
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from src.v2.native_paid_route import connected_native_paid_frontier
+    native_continuity = connected_native_paid_frontier(observations)
     return {
         "schema_version": 1, "class": "warlock", "start_level": start,
         "end_level": end, "authority": "source_native_observations",
@@ -361,6 +369,7 @@ def build_route_report(payload: dict) -> dict:
         "full_10_60_native_replay_executed": False,
         "elapsed_10_60_seconds": None,
         "levels": levels, "observations": observations, "comparisons": comparisons,
+        "native_paid_talent_continuity": native_continuity,
         "native_refusals": refusals,
         "measured_levels": [level for level in by_level if by_level[level]],
         "unmeasured_levels": missing,
@@ -452,8 +461,17 @@ def render_guide(report: dict) -> str:
         "## Route and dual spec",
         "",
         "No contiguous source-native L10–60 level frontier or full replay is available "
-        "in these observations. The existing gsim path DP and dual-spec solver must "
-        "not be run with invented intermediate candidates.",
+        "in these observations. Only individually paid native chain receipts may "
+        "enter the optional gsim talent-continuity DP; XP/travel are not inferred.",
+        "",
+        "Native talent continuity: " +
+        str(report["native_paid_talent_continuity"]["status"]) +
+        " at " + _ranges(report["native_paid_talent_continuity"]["levels"]) + ".",
+        *[
+            f"- L{step['level']}: {step['kind']}, talents {step['talents']}, "
+            f"actual native observation {step['native_observation_id']}"
+            for step in report["native_paid_talent_continuity"]["steps"]
+        ],
         "",
         "L40 optional dual spec: **not measured**. No switch, savings or cost claim.",
         "",
