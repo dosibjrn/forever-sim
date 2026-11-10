@@ -162,9 +162,9 @@ def test_native_stage5_source_comment_pins_split_artifact_reference(tmp_path):
     source = tmp_path / "integrations/mythicsim-rust/tests/test_native_joint_two_class.py"
     source.parent.mkdir(parents=True, exist_ok=True)
     source.write_text(
-        "    # Reduced exact reproducer from stage-5 run #41655733807, artifact\\n"
-        "    # #13241065075: zero-DPS native Life Tap failure\\n"
-        "    # malformed artifact #13241065075x and bare 99999999999 are not pins\\n",
+        "    # Reduced exact reproducer from stage-5 run #41655733807, artifact\n"
+        "    # #13241065075: zero-DPS native Life Tap failure\n"
+        "    # malformed artifact #13241065075x and bare 99999999999 are not pins\n",
         encoding="utf-8")
     runs, artifacts = collect_local_references(tmp_path)
     assert runs == {41655733807}
