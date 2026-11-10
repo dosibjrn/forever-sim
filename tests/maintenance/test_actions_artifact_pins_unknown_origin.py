@@ -4,7 +4,7 @@ import pytest
 from tools.actions_artifact_pins import unmerged_pr_branch_refs
 
 
-@pytest.mark.parametrize("label", [None, "", "deleted", "dosibjrn", 42])
+@pytest.mark.parametrize("label", [None, "", "deleted", "dosibjrn", ":work/deleted", "someone:", "other:branch:extra", 42])
 def test_redacted_unmerged_pr_without_identifiable_origin_aborts_gc(label):
     """A missing owner cannot be assumed to identify an external fork."""
     with pytest.raises(ValueError, match="trustworthy head origin"):
@@ -37,4 +37,14 @@ def test_unknown_deleted_branch_stops_before_any_next_pr_is_classified():
                       "label": "dosibjrn:work/known"}},
             {"merged_at": None,
              "head": {"ref": "work/unknown", "repo": None, "label": None}},
+        ], "dosibjrn/forever-sim")
+
+
+@pytest.mark.parametrize("label", ["other-owner:another-branch", "other-owner:"])
+def test_redacted_foreign_pr_must_match_its_reported_branch(label):
+    """A mismatched foreign label cannot prove that the origin is external."""
+    with pytest.raises(ValueError, match="trustworthy head origin"):
+        unmerged_pr_branch_refs([
+            {"state": "open", "merged_at": None,
+             "head": {"ref": "work/candidate", "repo": None, "label": label}},
         ], "dosibjrn/forever-sim")
