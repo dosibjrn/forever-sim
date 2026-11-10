@@ -124,6 +124,7 @@ jobs:
           tests/generic/search/test_per_level_fixed_point_v0114846.py
           tests/generic/search/test_stat_weight_model.py
           tests/generic/search/test_v2_analytic_scorer.py
+          tests/generic/search/test_v2_native_paid_talent_holds.py
           tests/generic/search/test_v2_analytic_scorer_edges.py
           tests/generic/search/test_v2_analytic_frontier_extra.py
           tests/generic/search/test_generic_search_layout.py
