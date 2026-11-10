@@ -106,6 +106,39 @@ def test_terminal_receipt_must_include_native_full_resource_caps():
                               expected_target_hp=1200.) == (
         None, "NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL")
 
+def test_decisions_no_between_pull_refill_still_scores_source_clock():
+    # The Rust bridge may report paid_recovery=False when Decisions needed
+    # no between-kill refill. Its separate native_recovery_clock_accounted
+    # receipt still certifies those actual shared-clock travel gaps.
+    prepared = _prepared("a" * 64)
+    result = _receipt("a" * 64)
+    result["paid_recovery"] = False
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        20.0, "MEASURED_NATIVE_FULLY_RECOVERED")
+    # The same conditional chain must still pay its final full HP+mana debt.
+    result["native_terminal_recovery"]["end_clock_ns"] = 15_000_000_000
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        None, "NATIVE_TERMINAL_FREE_RESOURCE_RESET")
+
+
+def test_decisions_conditional_rest_requires_native_gap_receipts():
+    prepared = _prepared("a" * 64)
+    result = _receipt("a" * 64)
+    result["paid_recovery"] = False
+    result["native_recovery_clock_accounted"] = False
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT")
+    # An unknown legacy/native flag is not permission to assume no rest.
+    result["native_recovery_clock_accounted"] = True
+    del result["paid_recovery"]
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT")
+
+
 def test_missing_native_terminal_never_becomes_free_recovery():
     prepared = _prepared("a" * 64)
     result = _receipt("a" * 64)
