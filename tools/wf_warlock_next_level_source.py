@@ -94,6 +94,8 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         pieces = list(allocations)
         pieces[ti] = "".join(slots)
         mutated["raid"]["parties"][0]["players"][0]["talentsString"] = "-".join(pieces)
+        # The submitted actor and target must refer to the same next-level encounter.
+        mutated["raid"]["parties"][0]["players"][0]["level"] = to_level
         mutated["encounter"]["targets"][0]["level"] = to_level
         request_file = attempts_dir / f"candidate_{number:02d}.json"
         prepared_file = attempts_dir / f"candidate_{number:02d}.prepared.json"
@@ -159,12 +161,93 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         }
         (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
         return receipt
+    # A full source loadout can become unpreparable on the next level even
+    # when its prior actor was native-accepted (e.g. missing rating conversions).
+    # After trying native-supplied talent alternatives, test carrying forward
+    # the *unchanged* talents with native-prepared equipment subsets. This is
+    # candidate search, not a Python decision about item or talent legality.
+    source_items = actor.get("equipment", {}).get("items")
+    native_gear_refusals = []
+    if isinstance(source_items, list) and source_items:
+        frozen = copy.deepcopy(original)
+        frozen_actor = frozen["raid"]["parties"][0]["players"][0]
+        frozen_actor["level"] = to_level
+        frozen["encounter"]["targets"][0]["level"] = to_level
+        original_items = copy.deepcopy(source_items)
+        frozen_actor["equipment"]["items"] = [{"id": 0} for _ in original_items]
+
+        def try_native_gear(tag: str) -> tuple[bool, str, Path, Path]:
+            request = attempts_dir / f"fallback_{tag}.json"
+            prepared = attempts_dir / f"fallback_{tag}.prepared.json"
+            request.write_text(json.dumps(frozen, indent=2) + "\n")
+            response = subprocess.run(
+                [str(binary.resolve()), "prepare", "--request",
+                 str(request.resolve()), "--actor-level", str(to_level),
+                 "--outfile", str(prepared.resolve())],
+                capture_output=True, text=True, timeout=60, check=False)
+            if response.returncode:
+                return False, (response.stderr or response.stdout)[-1200:], request, prepared
+            try:
+                native_actor = json.loads(prepared.read_text())["player"]
+            except (ValueError, KeyError, OSError):
+                return False, "NATIVE_PREPARED_ACTOR_MISSING", request, prepared
+            if (native_actor.get("level") != to_level or
+                    native_actor.get("class") != "ClassWarlock"):
+                return False, "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH", request, prepared
+            return True, "", request, prepared
+
+        empty_ok, empty_reason, _, _ = try_native_gear("empty")
+        if empty_ok:
+            kept = []
+            for index, item in enumerate(original_items):
+                if isinstance(item, dict) and item.get("id") in (None, 0):
+                    continue
+                frozen_actor["equipment"]["items"][index] = copy.deepcopy(item)
+                item_ok, item_reason, _, _ = try_native_gear(f"slot_{index:02d}")
+                if item_ok:
+                    kept.append({"slot": index, "id": item.get("id") if isinstance(item, dict) else None})
+                else:
+                    frozen_actor["equipment"]["items"][index] = {"id": 0}
+                    native_gear_refusals.append({
+                        "slot": index, "id": item.get("id") if isinstance(item, dict) else None,
+                        "reason": item_reason,
+                    })
+            final_ok, final_reason, final_request, final_prepared = try_native_gear("final")
+            if final_ok:
+                selected = out / "source_request.json"
+                selected.write_bytes(final_request.read_bytes())
+                receipt = {
+                    "kind": "adjacent_native_warlock_candidate",
+                    "status": "NATIVE_PREPARED_NOT_YET_PAID",
+                    "from_level": from_level, "to_level": to_level,
+                    "original_source_sha256": sha256(source),
+                    "native_binary_sha256": sha256(binary),
+                    "selected_source_sha256": sha256(selected),
+                    "native_prepared_sha256": sha256(final_prepared),
+                    "native_options_source_revision": options.get("source_revision"),
+                    "source_talents": actor["talentsString"],
+                    "candidate_talents": frozen_actor["talentsString"],
+                    "selection": "native_prepared_carry_forward_with_item_probes",
+                    "talent_points_newly_spent": 0,
+                    "native_gear_kept": kept,
+                    "native_gear_refusals": native_gear_refusals,
+                    "attempted": len(rejected),
+                    "native_refusals_before_selection": rejected,
+                    "next_step": "execute actual retained-actor hostile 100-kill native/gsim chain",
+                }
+                (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
+                return receipt
+            native_gear_refusals.append({"phase": "final", "reason": final_reason})
+        else:
+            native_gear_refusals.append({"phase": "empty", "reason": empty_reason})
+
     receipt = {"kind": "adjacent_native_warlock_candidate",
                "status": "NATIVE_PREPARE_REFUSED_ALL_PROPOSALS",
                "from_level": from_level, "to_level": to_level,
                "original_source_sha256": sha256(source),
                "native_binary_sha256": sha256(binary),
-               "native_refusals": rejected}
+               "native_refusals": rejected,
+               "native_gear_refusals": native_gear_refusals}
     (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
     raise RuntimeError("native refused all proposed adjacent-level Warlock actors")
 

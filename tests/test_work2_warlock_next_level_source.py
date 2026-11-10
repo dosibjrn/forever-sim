@@ -53,6 +53,7 @@ def test_adjacent_source_uses_native_options_and_prepares_selected_actor(tmp_pat
         assert cmd[1] == "prepare" and cmd[cmd.index("--actor-level") + 1] == "21"
         request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
         assert request["encounter"]["targets"][0]["level"] == 21
+        assert request["raid"]["parties"][0]["players"][0]["level"] == 21
         assert request["raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-021"
         with open(cmd[cmd.index("--outfile") + 1], "w") as f:
             json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, f)
@@ -149,6 +150,7 @@ def test_banked_l21_point_does_not_stop_source_native_l22_proposal(tmp_path, mon
         candidate = json.loads(open(cmd[cmd.index("--request") + 1]).read())
         assert candidate["raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-021"
         assert candidate["encounter"]["targets"][0]["level"] == 22
+        assert candidate["raid"]["parties"][0]["players"][0]["level"] == 22
         with open(cmd[cmd.index("--outfile") + 1], "w") as f:
             json.dump({"player": {"level": 22, "class": "ClassWarlock"}}, f)
         return subprocess.CompletedProcess(cmd, 0)
@@ -180,3 +182,53 @@ def test_native_budget_with_no_available_point_remains_unproposed(tmp_path, monk
     with pytest.raises(ValueError, match="native options cannot advance"):
         next_level.propose(binary=binary, source=source, out=tmp_path / "blocked")
     assert len(calls) == 1
+
+
+def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatch):
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["encounter"]["targets"][0]["level"] = 21
+    original["raid"]["parties"][0]["players"][0]["equipment"] = {
+        "items": [{"id": 101}, {"id": 202}],
+    }
+    source.write_text(json.dumps(original))
+    options = native_options()
+    options["level"] = 22
+    options["talents"]["points_available"] = 4
+    requests = []
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        requests.append(request)
+        actor = request["raid"]["parties"][0]["players"][0]
+        assert cmd[cmd.index("--actor-level") + 1] == "22"
+        assert request["encounter"]["targets"][0]["level"] == 22
+        items = actor["equipment"]["items"]
+        if actor["talentsString"] != "0-0-011" or any(
+                item.get("id") == 202 for item in items):
+            return subprocess.CompletedProcess(cmd, 1, stderr=json.dumps({
+                "refusal": {"code": "level", "reason": "native source refused loadout"}}))
+        assert actor["level"] == 22
+        with open(cmd[cmd.index("--outfile") + 1], "w") as f:
+            json.dump({"player": {"level": 22, "class": "ClassWarlock"}}, f)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "l22"
+    receipt = next_level.propose(
+        binary=binary, source=source, out=out,
+        from_level=21, to_level=22, max_proposals=2)
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["selection"] == "native_prepared_carry_forward_with_item_probes"
+    assert receipt["talent_points_newly_spent"] == 0
+    assert receipt["candidate_talents"] == "0-0-011"
+    assert receipt["native_gear_kept"] == [{"slot": 0, "id": 101}]
+    assert receipt["native_gear_refusals"][0]["id"] == 202
+    assert len(receipt["native_refusals_before_selection"]) == 2
+    selected = json.loads((out / "source_request.json").read_text())
+    assert selected["raid"]["parties"][0]["players"][0]["equipment"]["items"] == [
+        {"id": 101}, {"id": 0}]
+    assert requests[-1] == selected
+    assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
