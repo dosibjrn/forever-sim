@@ -33,6 +33,10 @@ Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md
 
 **Never build a new Clean gate:** the review is a fast decision aid, not a required certificate, report, scoreboard, repeat run, review approval or prerequisite to safe merges. Use real existing receipts, source and minimal targeted regression; no duplicate cold 300s/1000-stochastic rerun just to prove a false-gate hypothesis. If no actionable waste is found, proceed immediately to the next useful code-retirement/caller simplification task. Reuse existing issues and `WORK_PRIORITY.md`; keep at most three current, nonduplicate Clean escalations; remove resolved/stale entries.
 
+## Owner permanence and automation efficiency (2026-11-10)
+
+Never turn a previously officially accepted M1 PASS into a fresh validation task, even for a later source, code, compatibility or regression concern. Existing PASS acceptance is final through 148/148; a real new implementation defect is a forward repair, not a reason to question earned historical credit. During the two-level false-gate review also identify per-level PR/workflow churn, manual orchestration that can be replaced by the generic M0.6 range driver, duplicate native-paid evaluations and missing compatible receipt reuse. Remove the smallest real waste without creating a new gate, auxiliary PASS audit, mandatory cache attestation or second progress ledger. Preserve necessary independent M1 cold/holdout runs for only **unaccepted** gates.
+
 ## Next implementation priority: delete retired P1/P2 and unnecessary GameIR — do not reimplement them
 
 Owner clarification 2026-11-04: **P1, P2 and GameIR were meant to be removed.** Their existence, regression tests and obsolete bounded-route diagnostic outputs are not independent justification to preserve or port them.
