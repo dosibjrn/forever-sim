@@ -182,11 +182,12 @@ def test_paid_resume_reuses_exact_native_receipts_and_only_pays_missing(
     assert paid == [1, 2]
     assert second["new_native_100_trials"] == 1
     assert second["reused_native_100_trials"] == 1
-    assert second["world_winner"]["candidate_index"] == 2
+    assert second["world_winner"] is None  # third finalist has not run
     third = world.run(**args, max_new_trials=1)
     assert paid == [1, 2, 3]
     assert third["new_native_100_trials"] == 1
     assert third["reused_native_100_trials"] == 2
+    assert third["world_winner"]["candidate_index"] == 2
     fourth = world.run(**args, max_new_trials=0)
     assert paid == [1, 2, 3]
     assert fourth["new_native_100_trials"] == 0
