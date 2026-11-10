@@ -693,17 +693,17 @@ def test_independent_l30_uses_native_level_points_and_preserves_scaled_apl_root(
         ("55551-0-0", 101),
         ("00-55551-0", 101),
         ("00-0-55551", 101),
+        ("11-0-0", 101),  # Native-prepared baseline precedes optional APL.
         ("55551-0-0", 102),
         ("55551-0-0", 103),
-        ("11-0-0", 101),  # Native-prepared baseline, not level-sized optimization.
         ("45551-1-0", 101),
     ]
     # The scaled families and rank transfers spend L30 native points. The
     # separately prepared original seed is explicitly a lower-point baseline;
     # it is not a verified high-level winner or continuing level transition.
     assert all(sum(int(c) for tree in talents.split("-") for c in tree) == 21
-               for i, (talents, _) in enumerate(proposed) if i != 5)
-    assert sum(int(c) for tree in proposed[5][0].split("-") for c in tree) == 2
+               for i, (talents, _) in enumerate(proposed) if i != 3)
+    assert sum(int(c) for tree in proposed[3][0].split("-") for c in tree) == 2
     assert all(entry["parent_source_sha256"] is None for entry in result["entries"])
 
 
