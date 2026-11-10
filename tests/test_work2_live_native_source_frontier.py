@@ -100,10 +100,53 @@ def test_tight_native_budget_reaches_other_talent_trees_before_seed_tweaks(tmp_p
     )
     assert len(result["entries"]) == 3
     assert result["refusals"] == []
-    assert prepared_talents == ["11-0-0", "01-1-0", "01-0-1"]
+    assert prepared_talents == ["11-0-0", "00-2-0", "00-0-2"]
     # The source is authoritative even though Forever constructed trial
     # variants: no candidate is measured unless Rust actually prepares it.
     assert all(Path(entry["prepared"]).is_file() for entry in result["entries"])
+
+
+def test_small_budget_proposes_materially_different_full_tree_families(tmp_path):
+    """Rust, not Forever, decides if multi-rank family reallocations are valid."""
+    seed, binary = _root_source(tmp_path)
+    source = json.loads(seed.read_text())
+    source["raid"]["parties"][0]["players"][0]["talentsString"] = "551-0-0"
+    seed.write_text(json.dumps(source))
+    options = {"level": 20, "talents": {"status": "ok", "trees": [
+        {"talents": [{"index": i, "max_rank": 5} for i in range(3)]}
+        for _ in range(3)
+    ]}}
+    proposals = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        source_path = Path(cmd[cmd.index("--request") + 1])
+        prepared_path = Path(cmd[cmd.index("--outfile") + 1])
+        talents = json.loads(source_path.read_text())["raid"]["parties"][0]["players"][0]["talentsString"]
+        proposals.append(talents)
+        if talents == "000-551-0":
+            return subprocess.CompletedProcess(
+                cmd, 2, stderr="native rejected alternate tree")
+        prepared_path.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 20},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        _request(budget=3), binary=binary, seed_source=seed,
+        out=tmp_path / "native", runner=native,
+    )
+    # All 11 talent points move across trees: one-rank tweaks cannot yield
+    # either distinct family. Rejected native prepares still cost one attempt.
+    assert proposals == ["551-0-0", "000-551-0", "000-0-551"]
+    assert [sum(int(rank) for part in proposal.split("-") for rank in part)
+            for proposal in proposals] == [11, 11, 11]
+    assert len(result["entries"]) == 2
+    assert len(result["refusals"]) == 1
+    assert result["refusals"][0]["status"] == "NATIVE_PREPARE_REFUSED"
+    assert "native rejected alternate tree" in result["refusals"][0]["native_refusal"]
 
 
 def test_cross_tree_native_refusal_is_not_replaced_by_unpaid_candidate(tmp_path):
@@ -123,7 +166,7 @@ def test_cross_tree_native_refusal_is_not_replaced_by_unpaid_candidate(tmp_path)
         destination = Path(cmd[cmd.index("--outfile") + 1])
         talents = json.loads(source.read_text())["raid"]["parties"][0]["players"][0]["talentsString"]
         prepared_talents.append(talents)
-        if talents == "01-1-0":
+        if talents == "00-2-0":
             return subprocess.CompletedProcess(cmd, 2, stderr="native source refusal")
         destination.write_text(json.dumps({
             "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -135,7 +178,7 @@ def test_cross_tree_native_refusal_is_not_replaced_by_unpaid_candidate(tmp_path)
         _request(budget=3), binary=binary, seed_source=seed,
         out=tmp_path / "native", runner=native,
     )
-    assert prepared_talents == ["11-0-0", "01-1-0", "01-0-1"]
+    assert prepared_talents == ["11-0-0", "00-2-0", "00-0-2"]
     assert len(result["entries"]) == 2
     assert len(result["refusals"]) == 1
     assert result["refusals"][0]["status"] == "NATIVE_PREPARE_REFUSED"
