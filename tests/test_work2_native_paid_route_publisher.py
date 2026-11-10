@@ -68,3 +68,55 @@ def test_changed_engine_is_not_silently_merged_into_same_native_path():
     path = report(l20, l21)["native_paid_talent_continuity"]
     assert path["levels"] == [20]
     assert path["status"] == "single_native_paid_level"
+
+
+def _engine_observation(level: int, talents: str, engine: str) -> dict:
+    row = observation(level, talents)
+    row["id"] = f"native-{engine}-l{level}"
+    row["engine_binary_sha256"] = engine * 64
+    return row
+
+
+def test_frontier_selects_longest_real_single_engine_prefix():
+    l20 = "0-0-11111111111"
+    # Both binaries paid the starting level; lexicographic 'a' ends there,
+    # while 'b' supplies a genuine contiguous banked/spent progression.
+    path = report(
+        _engine_observation(20, l20, "a"),
+        _engine_observation(20, l20, "b"),
+        _engine_observation(21, l20, "b"),
+        _engine_observation(22, "0-0-111111111111", "b"),
+    )["native_paid_talent_continuity"]
+    assert path["status"] == "connected_native_paid_talent_frontier"
+    assert path["engine_binary_sha256"] == "b" * 64
+    assert path["levels"] == [20, 21, 22]
+    assert [step["kind"] for step in path["steps"]] == ["start", "hold", "point"]
+    assert [step["native_observation_id"] for step in path["steps"]] == [
+        "native-b-l20", "native-b-l21", "native-b-l22"]
+
+
+def test_disconnected_paid_candidate_does_not_hide_another_engine_path():
+    l20 = "0-0-11111111111"
+    path = report(
+        _engine_observation(20, l20, "a"),
+        # The 'a' actor was paid, but its allocation cannot descend from
+        # the selected 'a' L20 allocation without an unexecuted respec.
+        _engine_observation(21, "0-0-11111111110", "a"),
+        _engine_observation(20, l20, "b"),
+        _engine_observation(21, l20, "b"),
+    )["native_paid_talent_continuity"]
+    assert path["status"] == "connected_native_paid_talent_frontier"
+    assert path["engine_binary_sha256"] == "b" * 64
+    assert path["levels"] == [20, 21]
+    assert path["steps"][1]["native_observation_id"] == "native-b-l21"
+
+
+def test_disconnected_native_binary_retains_proven_start_not_false_respec():
+    l20 = "0-0-11111111111"
+    path = report(
+        _engine_observation(20, l20, "a"),
+        _engine_observation(21, "0-0-11111111110", "a"),
+    )["native_paid_talent_continuity"]
+    assert path["status"] == "single_native_paid_level"
+    assert path["levels"] == [20]
+    assert path["steps"][0]["native_observation_id"] == "native-a-l20"
