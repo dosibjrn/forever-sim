@@ -542,7 +542,7 @@ def test_gc_only_credits_successful_204_deletes_not_concurrently_absent_404():
     workflow = (Path(__file__).resolve().parents[2]
                 / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
                     encoding="utf-8")
-    assert 'if status == 204:\\n                      deleted.append(aid)' .replace('\\n', '\n') in workflow
+    assert workflow.index("if status == 204:") < workflow.index("deleted.append(aid)")
     assert 'elif status == 404:' in workflow
     assert 'already_absent.append(aid)' in workflow
     assert 'deleted + already_absent, list_artifacts' in workflow
@@ -550,3 +550,11 @@ def test_gc_only_credits_successful_204_deletes_not_concurrently_absent_404():
     assert 'if status not in (204, 404):' not in workflow
     assert workflow.index('deleted + already_absent, list_artifacts') < workflow.index(
         'all_artifacts, after_artifacts, deleted)')
+
+
+
+def test_concurrent_artifact_expiry_not_misattributed_to_gc_deleted_bytes():
+    """Confirmed DELETE IDs and other vanished IDs have distinct accounting."""
+    before = [{"id": 11, "size_in_bytes": 200},
+              {"id": 12, "size_in_bytes": 350}]
+    assert module.verified_removed_footprint(before, [], [11]) == (200, 550)
