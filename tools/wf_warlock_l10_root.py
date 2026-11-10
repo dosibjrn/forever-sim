@@ -47,6 +47,28 @@ def _refusal_report(out: Path, *, status: str, reason: str, binary_sha: str,
     (out / "GUIDE.md").write_text(guide.render_guide(report))
 
 
+
+def _bounded_native_proposals(talent_strings: list[str], spells: list[dict],
+                              limit: int):
+    """Visit both native-source axes before a small proposal budget expires.
+
+    Talent-major enumeration spends 30 proposals on spells of one allocation
+    when Rust offers many. Diagonals interleave spell and talent alternatives;
+    every candidate still needs a real Rust prepare acceptance.
+    """
+    if limit < 1:
+        return
+    issued = 0
+    for diagonal in range(len(talent_strings) + len(spells) - 1):
+        first = max(0, diagonal - len(spells) + 1)
+        last = min(diagonal, len(talent_strings) - 1)
+        for talent_index in range(first, last + 1):
+            yield talent_strings[talent_index], spells[diagonal - talent_index]
+            issued += 1
+            if issued >= limit:
+                return
+
+
 def propose_root(*, binary: Path, template: Path, out: Path,
                  max_proposals: int = 30) -> dict:
     """Offer native-discovered talent/spell proposals; accept only Rust prepare."""
@@ -104,47 +126,43 @@ def propose_root(*, binary: Path, template: Path, out: Path,
                 allocation[tree_number][index] = "1"
                 talent_strings.append("-".join("".join(t) for t in allocation))
         tried = 0
-        for talents in dict.fromkeys(talent_strings):
-            for spell in choices:
-                if tried >= max_proposals:
-                    break
-                tried += 1
-                request = copy.deepcopy(original)
-                actor = request["raid"]["parties"][0]["players"][0]
-                actor["level"] = 10
-                actor["talentsString"] = talents
-                request["encounter"]["targets"][0]["level"] = 10
-                # A minimal candidate APL uses a native-offered spell ID.
-                # Rust prepare, not Forever, judges whether it is usable.
-                actor.setdefault("rotation", {})["priorityList"] = [{
-                    "action": {"castSpell": {"spellId": {"spellId": spell["spell_id"]}}}
-                }]
-                candidate = out / "attempts" / f"root_{tried:02d}"
-                request_path = candidate / "template_request.json"
-                _write(request_path, request)
-                result = same_level.select_prepared_source(
-                    binary=binary, source=request_path, out=candidate / "native",
-                    actor_level=10)
-                if result["status"] == "NATIVE_PREPARED_NOT_YET_PAID":
-                    selected.write_bytes((candidate / "native" / "source_request.json").read_bytes())
-                    receipt = {
-                        "kind": "warlock_native_l10_root",
-                        "status": "NATIVE_PREPARED_NOT_YET_PAID",
-                        "level": 10, "paid_predecessor": None,
-                        "original_template_sha256": template_sha,
-                        "native_binary_sha256": binary_sha,
-                        "native_options_source_revision": options.get("source_revision"),
-                        "selected_source_sha256": next_level.sha256(selected),
-                        "selected_talents": talents, "selected_spell_id": spell["spell_id"],
-                        "attempted": tried, "native_refusals_before_selection": refusals,
-                    }
-                    _write(out / "proposal.json", receipt)
-                    return receipt
-                refusals.append({"stage": "prepare", "talents": talents,
-                                 "spell_id": spell["spell_id"],
-                                 "native_refusals": result["native_refusals"]})
-            if tried >= max_proposals:
-                break
+        for talents, spell in _bounded_native_proposals(
+                list(dict.fromkeys(talent_strings)), choices, max_proposals):
+            tried += 1
+            request = copy.deepcopy(original)
+            actor = request["raid"]["parties"][0]["players"][0]
+            actor["level"] = 10
+            actor["talentsString"] = talents
+            request["encounter"]["targets"][0]["level"] = 10
+            # A minimal candidate APL uses a native-offered spell ID.
+            # Rust prepare, not Forever, judges whether it is usable.
+            actor.setdefault("rotation", {})["priorityList"] = [{
+                "action": {"castSpell": {"spellId": {"spellId": spell["spell_id"]}}}
+            }]
+            candidate = out / "attempts" / f"root_{tried:02d}"
+            request_path = candidate / "template_request.json"
+            _write(request_path, request)
+            result = same_level.select_prepared_source(
+                binary=binary, source=request_path, out=candidate / "native",
+                actor_level=10)
+            if result["status"] == "NATIVE_PREPARED_NOT_YET_PAID":
+                selected.write_bytes((candidate / "native" / "source_request.json").read_bytes())
+                receipt = {
+                    "kind": "warlock_native_l10_root",
+                    "status": "NATIVE_PREPARED_NOT_YET_PAID",
+                    "level": 10, "paid_predecessor": None,
+                    "original_template_sha256": template_sha,
+                    "native_binary_sha256": binary_sha,
+                    "native_options_source_revision": options.get("source_revision"),
+                    "selected_source_sha256": next_level.sha256(selected),
+                    "selected_talents": talents, "selected_spell_id": spell["spell_id"],
+                    "attempted": tried, "native_refusals_before_selection": refusals,
+                }
+                _write(out / "proposal.json", receipt)
+                return receipt
+            refusals.append({"stage": "prepare", "talents": talents,
+                             "spell_id": spell["spell_id"],
+                             "native_refusals": result["native_refusals"]})
     receipt = {
         "kind": "warlock_native_l10_root",
         "status": ("NATIVE_OPTIONS_REFUSED" if options is None
