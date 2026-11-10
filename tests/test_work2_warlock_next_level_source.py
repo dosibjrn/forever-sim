@@ -841,3 +841,58 @@ def test_work1_native_paid_shortlist_retains_prepared_screen_refusal(
     assert result["candidates"][0]["screen_dps_30s"] is None
     assert result["world_winner"] is None
     assert not (out / "source_request.json").exists()
+
+
+def test_work1_native_paid_shortlist_does_not_select_legacy_banked_fallback(
+        tmp_path, monkeypatch):
+    """All refused ranked candidates cannot be promoted by continuity fallback."""
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["raid"]["parties"][0]["players"][0]["equipment"] = {"items": []}
+    source.write_text(json.dumps(original))
+    calls = []
+
+    def native(cmd, **kwargs):
+        calls.append(cmd[1])
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        assert cmd[1] == "prepare"  # no paid sim for refused candidates
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        talents = request["raid"]["parties"][0]["players"][0]["talentsString"]
+        if talents != "0-0-011":
+            return subprocess.CompletedProcess(cmd, 2, stderr="native talent refusal")
+        # The legacy continuity mode can still prepare an unchanged banked rank.
+        with open(cmd[cmd.index("--outfile") + 1], "w") as file:
+            json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, file)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    out = tmp_path / "shortlist"
+    attempts_dir = out / "candidate_attempts"
+    attempts_dir.mkdir(parents=True)
+    stale_paid = attempts_dir / "candidate_01.paid.json"
+    stale_paid.write_text('{"stale_native_screen":true}')
+
+    receipt = next_level.propose(binary=binary, source=source, out=out,
+                                 max_proposals=3, native_paid_shortlist=True)
+    assert calls == ["options", "prepare", "prepare", "prepare"]
+    assert receipt["status"] == "NATIVE_SHORTLIST_NO_PREPARABLE_CANDIDATES"
+    assert receipt["attempted"] == 3
+    assert receipt["candidates"] == []
+    assert len(receipt["native_refusals"]) == 3
+    assert all("native talent refusal" in row["reason"]
+               for row in receipt["native_refusals"])
+    assert receipt["world_winner"] is None
+    assert receipt["original_source_sha256"] == next_level.sha256(source)
+    assert receipt["native_binary_sha256"] == next_level.sha256(binary)
+    assert not stale_paid.exists()
+    assert not (out / "source_request.json").exists()
+    assert json.loads((out / "native_paid_shortlist.json").read_text()) == receipt
+    assert json.loads((out / "proposal.json").read_text()) == receipt
+
+    # Banked talent continuity is a separate policy, not a paid-build winner.
+    continuity = next_level.propose(binary=binary, source=source,
+                                    out=tmp_path / "continuity", max_proposals=3)
+    assert continuity["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert continuity["selection"] == "native_prepared_carry_forward_with_item_probes"
+    assert continuity["candidate_talents"] == "0-0-011"
