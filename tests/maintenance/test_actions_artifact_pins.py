@@ -1009,3 +1009,49 @@ def test_corrupt_product_route_receipt_aborts_artifact_cleanup(tmp_path):
     route.write_bytes(b'{"run_url": "https://github.com/o/r/actions/runs/123"}\xff')
     with pytest.raises(UnicodeDecodeError):
         collect_local_references(tmp_path)
+
+
+def test_executable_tool_and_native_entrypoint_provenance_pins_gc(tmp_path):
+    """Source-only run/artifact references must survive automatic GC."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+
+    for name, contents in {
+        "tools/wf_gate_p7_5_live.py":
+            "# Exact paid reference: Actions run #42780000141, "
+            "artifact ID: 13750000141\n",
+        "integrations/mythicsim-rust/native_joint_28_sweep.py":
+            "# Source reproduction: run_id=42780000142 "
+            "artifact_id=13750000142\n",
+        # Nested synthetic fixtures are not retention authorities.
+        "tools/fixtures/test_synthetic.py":
+            "# run_id=99900000141 artifact_id=99900000142\n",
+    }.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents, encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42780000141, 42780000142}
+    assert artifacts == {13750000141, 13750000142}
+
+
+@pytest.mark.parametrize("name", [
+    "tools/wf_gate_p7_5_live.py",
+    "integrations/mythicsim-rust/native_joint_28_sweep.py",
+])
+def test_unreadable_executable_provenance_fails_closed(tmp_path, name):
+    """Corrupt source must not silently release a paid evidence pin."""
+    for canonical in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                      "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / canonical
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    path = tmp_path / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"# artifact_id=13750000141 \xff")
+    with pytest.raises(UnicodeDecodeError):
+        collect_local_references(tmp_path)
