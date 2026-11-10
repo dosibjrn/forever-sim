@@ -717,11 +717,11 @@ def test_active_workflow_yaml_pins_prior_paid_native_artifacts(tmp_path):
     workflows = tmp_path / ".github/workflows"
     workflows.mkdir(parents=True)
     (workflows / "work2-next-level.yml").write_text(
-        'curl https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13741511234/zip\\n'
-        'prior_run: https://github.com/dosibjrn/forever-sim/actions/runs/42774902067\\n',
+        'curl https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13741511234/zip\n'
+        'prior_run: https://github.com/dosibjrn/forever-sim/actions/runs/42774902067\n',
         encoding="utf-8")
     (workflows / "another-native-run.yaml").write_text(
-        "artifact_id: 13742256789\\nworkflow_run_id: 42777550123\\n",
+        "artifact_id: 13742256789\nworkflow_run_id: 42777550123\n",
         encoding="utf-8")
 
     runs, artifacts = collect_local_references(tmp_path)
@@ -738,7 +738,7 @@ def test_unreadable_workflow_evidence_fails_closed(tmp_path):
         path.write_text("", encoding="utf-8")
     path = tmp_path / ".github/workflows/paid-ancestor.yml"
     path.parent.mkdir(parents=True)
-    path.write_bytes(b"artifact_id: 123\\n\\xff")
+    path.write_bytes(b"artifact_id: 123\n\xff")
 
     with pytest.raises(UnicodeDecodeError):
         collect_local_references(tmp_path)
