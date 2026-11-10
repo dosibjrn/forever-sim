@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - src/v2/path_dp.py
+      - src/v2/native_range_optimizer.py
+      - tools/wf_warlock_native_range_optimize.py
+      - tests/test_work2_native_range_optimizer.py
       - src/v2/native_paid_route.py
       - tools/wf_warlock_next_level_source.py
       - tools/wf_warlock_full_family_shortlist.py
@@ -77,7 +80,7 @@ jobs:
       - name: Install focused test runner
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
       - name: Test native paid receipt continuity and no-respec safety
-        run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work1_warlock_shortlist_world.py tests/test_work1_full_family_shortlist.py tests/test_work1_paid_family_guide.py
+        run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_range_optimizer.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work1_warlock_shortlist_world.py tests/test_work1_full_family_shortlist.py tests/test_work1_paid_family_guide.py
 
   # The real native 100/100 comparison is deliberately opt-in, never an
   # automatic response to every source push or a rerun of paid L20–L60 routes.
