@@ -71,3 +71,56 @@ def test_paid_batch_token_can_download_predecessor_artifacts():
     permissions = workflow.split("\npermissions:\n", 1)[1].split("\njobs:\n", 1)[0]
     assert "contents: read" in permissions
     assert "actions: read" in permissions
+
+
+def test_same_origin_range_artifact_restores_paid_cache(tmp_path):
+    archive = tmp_path / "unzip"
+    predecessor = archive / "predecessor-staged"
+    predecessor.mkdir(parents=True)
+    (predecessor / "source_request.json").write_text('{"actor_level":44}')
+    (predecessor / "route.json").write_text('{"class":"warlock"}')
+    (predecessor / "predecessor_manifest.json").write_text(
+        json.dumps({"from_level": 44}))
+    cache = archive / "warlock-paid-range"
+    paid = cache / "L45" / "same-source-key" / "paid"
+    paid.mkdir(parents=True)
+    (paid / "route.json").write_text('{"paid": true}')
+    (cache / "range_progress.json").write_text(json.dumps({
+        "kind": "warlock_native_paid_range_v1", "from_level": 44,
+        "end_level": 46, "completed_new_levels": [45],
+    }))
+    restored = tmp_path / "resume"
+    result = stage(archive, 44, tmp_path / "staged",
+                   resume_cache_out=restored)
+    assert result["source_original"] == str(predecessor / "source_request.json")
+    assert result["resume_cache"]["restored"] is True
+    assert (restored / "L45" / "same-source-key" / "paid" / "route.json").read_text() == '{"paid": true}'
+    assert (restored / "range_progress.json").is_file()
+
+
+def test_different_origin_cache_is_not_restored(tmp_path):
+    archive = tmp_path / "unzip"
+    _pair(archive, 45)
+    cache = archive / "warlock-paid-range"
+    (cache / "range_progress.json").write_text(json.dumps({
+        "kind": "warlock_native_paid_range_v1", "from_level": 44,
+        "completed_new_levels": [45],
+    }))
+    result = stage(archive, 45, tmp_path / "staged",
+                   resume_cache_out=tmp_path / "untouched")
+    assert result["resume_cache"] == {"restored": False}
+    assert not (tmp_path / "untouched").exists()
+
+
+def test_ambiguous_same_origin_resume_caches_are_refused(tmp_path):
+    archive = tmp_path / "unzip"
+    _pair(archive, 44)
+    for name in ("first", "second"):
+        cache = archive / name / "warlock-paid-range"
+        cache.mkdir(parents=True)
+        (cache / "range_progress.json").write_text(json.dumps({
+            "kind": "warlock_native_paid_range_v1", "from_level": 44,
+        }))
+    with pytest.raises(ValueError, match="ambiguous same-origin"):
+        stage(archive, 44, tmp_path / "staged",
+              resume_cache_out=tmp_path / "restored")

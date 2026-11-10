@@ -13,7 +13,34 @@ import shutil
 from pathlib import Path
 
 
-def stage(archive_dir: Path, from_level: int, out: Path) -> dict:
+def restore_resume_cache(archive_dir: Path, from_level: int, out: Path) -> dict:
+    """Restore a same-origin paid-range cache from an earlier Actions artifact.
+
+    This only transports prior files; wf_warlock_paid_range independently
+    verifies the predecessor/source/binary and each native paid receipt before
+    considering a level reusable. No unsupported Warcraft facts are inferred.
+    """
+    matches = []
+    for marker in archive_dir.rglob("range_progress.json"):
+        if marker.parent.name != "warlock-paid-range":
+            continue
+        progress = json.loads(marker.read_text())
+        if (isinstance(progress, dict)
+                and progress.get("kind") == "warlock_native_paid_range_v1"
+                and progress.get("from_level") == from_level):
+            matches.append(marker.parent)
+    if len(matches) > 1:
+        raise ValueError(f"ambiguous same-origin paid range caches: {len(matches)}")
+    if not matches:
+        return {"restored": False}
+    if out.exists():
+        raise ValueError(f"resume output already exists: {out}")
+    shutil.copytree(matches[0], out)
+    return {"restored": True, "original": str(matches[0])}
+
+
+def stage(archive_dir: Path, from_level: int, out: Path,
+          resume_cache_out: Path | None = None) -> dict:
     if not 10 <= from_level < 60:
         raise ValueError("predecessor level must be L10..L59")
     if not archive_dir.is_dir():
@@ -26,6 +53,16 @@ def stage(archive_dir: Path, from_level: int, out: Path) -> dict:
         route = source.parent.parent / "paid" / "route.json"
         if route.is_file():
             pairs.append((source, route))
+
+    # Retain the original paid source when retrying a prior parameterized range.
+    # A range artifact includes a copy of its starting source and route.
+    for manifest in archive_dir.rglob("predecessor_manifest.json"):
+        info = json.loads(manifest.read_text())
+        if isinstance(info, dict) and info.get("from_level") == from_level:
+            source = manifest.parent / "source_request.json"
+            route = manifest.parent / "route.json"
+            if source.is_file() and route.is_file():
+                pairs.append((source, route))
 
     # Legacy L42 artifact has a separately named source and paid-route folder.
     if from_level == 42 and not pairs:
@@ -57,6 +94,9 @@ def stage(archive_dir: Path, from_level: int, out: Path) -> dict:
         "source_sha256": hashlib.sha256(staged_source.read_bytes()).hexdigest(),
         "route_sha256": hashlib.sha256(staged_route.read_bytes()).hexdigest(),
     }
+    if resume_cache_out is not None:
+        result["resume_cache"] = restore_resume_cache(
+            archive_dir, from_level, resume_cache_out)
     (out / "predecessor_manifest.json").write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n"
     )
@@ -68,8 +108,11 @@ def main() -> None:
     parser.add_argument("--archive-dir", type=Path, required=True)
     parser.add_argument("--from-level", type=int, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--resume-cache-out", type=Path,
+                        help="Reuse a same-origin paid-range cache from the artifact")
     args = parser.parse_args()
-    print(json.dumps(stage(args.archive_dir, args.from_level, args.out), indent=2))
+    print(json.dumps(stage(args.archive_dir, args.from_level, args.out,
+                           resume_cache_out=args.resume_cache_out), indent=2))
 
 
 if __name__ == "__main__":
