@@ -126,6 +126,11 @@ def optimize(
     competing: dict[str, int] = {}
     last_frontier: list[tuple[float, Mapping[str, Any] | None, list[dict[str, Any]]]] = []
     native_attempts_by_level: dict[str, int] = {}
+    # One optimizer request compares costs only under a single exact native
+    # engine executable, including the independent sampled-level mode. A
+    # different engine can produce a legitimate receipt but not a comparable
+    # winner against the first source-native scorer identity.
+    selected_engine_sha: str | None = None
     independent_rankings: dict[str, list[dict[str, Any]]] = {}
     for level_index, level in enumerate(levels):
         if mode == "independent":
@@ -168,6 +173,9 @@ def optimize(
                     row, level=level, parent=parent, mob_count=mob_count,
                     rng_mode=rng_mode, iterations=iterations,
                 )
+                if error is None and selected_engine_sha is not None:
+                    if row["engine_binary_sha256"] != selected_engine_sha:
+                        error = "native engine binary differs within optimization request"
                 if error:
                     rejected.append({
                         "level": level, "source_request_sha256": row.get("source_request_sha256"),
@@ -176,6 +184,8 @@ def optimize(
                         "native_refusal": row.get("native_refusal"),
                     })
                     continue
+                if selected_engine_sha is None:
+                    selected_engine_sha = row["engine_binary_sha256"]
                 cost = base_cost + float(row["elapsed_seconds"])
                 step = {
                     "level": level, "source_request_sha256": row["source_request_sha256"],
@@ -250,6 +260,7 @@ def optimize(
         "mob_count": mob_count, "rng_mode": rng_mode, "iterations": iterations,
         "recover_to_full": True, "candidate_budget": budget,
         "native_candidates_examined": examined, "beam_width": beam_width,
+        "native_engine_binary_sha256": selected_engine_sha,
         "native_attempts_by_level": native_attempts_by_level,
         "competing_qualified_paths_by_level": competing,
         "ranked_alternatives": ranked,
