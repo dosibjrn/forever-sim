@@ -11,6 +11,26 @@ from tools.actions_artifact_pins import (artifact_run_id, collect_local_referenc
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.mark.parametrize("missing_head", [None, "redacted", []])
+def test_gc_unmerged_pr_without_head_metadata_fails_closed(missing_head):
+    """Incomplete PR metadata must not silently unpin paid CI origin branches."""
+    with pytest.raises(ValueError, match="trustworthy head metadata"):
+        unmerged_pr_branch_refs([
+            {"state": "open", "merged_at": None, "head": missing_head}
+        ], "dosibjrn/forever-sim")
+
+
+def test_gc_missing_head_on_already_merged_pr_does_not_block_pruning():
+    """A merged PR has no pending unmerged-branch receipts to protect."""
+    assert unmerged_pr_branch_refs([
+        {"state": "closed", "merged_at": "2026-11-10T11:00:00Z", "head": None},
+        {"state": "open", "merged_at": None, "head": {
+            "repo": {"full_name": "dosibjrn/forever-sim"},
+            "ref": "work/keep",
+        }},
+    ], "dosibjrn/forever-sim") == {"work/keep"}
+
+
 def test_gc_protects_closed_but_never_merged_pr_evidence():
     """Closed without merge is not a license to delete old native receipts."""
     repo = "dosibjrn/forever-sim"
