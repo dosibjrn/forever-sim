@@ -252,3 +252,56 @@ def test_cached_attempt_must_match_exact_paid_candidate_even_on_refusal(
     with pytest.raises(ValueError, match="cached native attempt differs"):
         world.run(**args, max_new_trials=0)
     assert paid == [1, 2]  # genuine refused native trials are never replayed
+
+
+def test_bounded_native_finalists_spread_across_prepared_trees(
+        tmp_path, monkeypatch):
+    """A successful later tree cannot be crowded out by early same-tree rows."""
+    args, predecessor = _setup(tmp_path)
+    proposal = json.loads(args["shortlist"].read_text())
+    original_first = proposal["candidates"][0]
+    extra = []
+    for number, points in ((4, 2), (5, 3)):
+        variant = json.loads(
+            (args["shortlist"].parent / original_first["source_request"]).read_text())
+        variant["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            f"{points}-0-011")
+        path = args["shortlist"].parent / "candidate_attempts" / (
+            f"candidate_{number:02d}.json")
+        path.write_text(json.dumps(variant))
+        row = copy.deepcopy(original_first)
+        row["source_request"] = f"candidate_attempts/candidate_{number:02d}.json"
+        row["source_request_sha256"] = world.native_source.sha256(path)
+        row["candidate_talents"] = variant["raid"]["parties"][0]["players"][0]["talentsString"]
+        extra.append(row)
+    # Before this production fix, the first three prepared requests all came
+    # from tree 0. The bounded paid budget never measured Demo/Destruction.
+    proposal["candidates"] = [
+        proposal["candidates"][0], *extra,
+        proposal["candidates"][1], proposal["candidates"][2],
+    ]
+    args["shortlist"].write_text(json.dumps(proposal))
+    selected = world._candidate_sources(
+        proposal, args["shortlist"].parent, json.loads(args["source"].read_text()), 3)
+    assert [row["tree_index"] for row, _ in selected] == [0, 1, 2]
+
+    paid = _fake_native(monkeypatch, predecessor, times=(900, 750, 1000))
+    result = world.run(**args, max_candidates=3, max_new_trials=3)
+    assert paid == [1, 2, 3]
+    assert [row["tree_index"] for row in result["candidates"]] == [0, 1, 2]
+    assert result["status"] == "MEASURED_CROSS_TREE_100"
+    assert result["world_winner"]["tree_index"] == 1
+    assert result["world_winner"]["elapsed_seconds"] == 750
+
+
+def test_native_cross_tree_workflow_opt_in_and_evidence_preservation():
+    """Only explicit label/dispatch may spend native 100-mob world compute."""
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
+                / "native-paid-route-regressions.yml").read_text()
+    assert "workflow_dispatch:" in workflow
+    assert "github.event.action == 'labeled'" in workflow
+    assert "github.event.label.name == 'work1-native-world'" in workflow
+    assert "wf_warlock_next_level_source.py" in workflow
+    assert "wf_warlock_shortlist_world.py" in workflow
+    assert "wf_warlock_paid_artifact.py" in workflow
+    assert "actions/upload-artifact@v4" in workflow
