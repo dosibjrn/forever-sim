@@ -240,6 +240,13 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
             for path in (root / folder).rglob(pattern):
                 record_references(path.read_text(encoding="utf-8"),
                                   runs, artifacts)
+    # Workflow definitions can be the sole remaining pointer to a paid
+    # predecessor artifact used by an active native route. Do not delete it
+    # merely because the artifact URL lives in executable YAML, not prose.
+    for pattern in ("*.yml", "*.yaml"):
+        for path in (root / ".github/workflows").rglob(pattern):
+            record_references(path.read_text(encoding="utf-8"),
+                              runs, artifacts)
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
                  "docs/planning/M1_PASSES.tsv"):
         record_references((root / name).read_text(encoding="utf-8"),
