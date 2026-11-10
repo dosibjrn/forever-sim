@@ -141,3 +141,76 @@ def test_ambiguous_same_origin_resume_caches_are_refused(tmp_path):
     with pytest.raises(ValueError, match="ambiguous same-origin"):
         stage(archive, 44, tmp_path / "staged",
               resume_cache_out=tmp_path / "restored")
+
+
+def test_l10_root_resumes_from_exact_artifact_without_reconstructing_paid_state(tmp_path):
+    """An original root artifact can survive a second Actions dispatch intact."""
+    from tools.wf_warlock_paid_artifact import restore_l10_root_cache
+    import hashlib
+    archive = tmp_path / "unzip"
+    cache = archive / "warlock-paid-range"
+    source = cache / "L10" / "root-key" / "proposal" / "source_request.json"
+    route = cache / "L10" / "root-key" / "paid" / "route.json"
+    source.parent.mkdir(parents=True)
+    route.parent.mkdir(parents=True)
+    source.write_bytes(b'{"prepared":"native L10"}')
+    route.write_bytes(b'{"class":"warlock","measured_levels":[10]}')
+    (cache / "range_progress.json").write_text(json.dumps({
+        "kind": "warlock_native_l10_root_range_v1",
+        "from_level": 10, "end_level": 10,
+        "completed_new_levels": [10], "next_level": 11,
+    }))
+    restored = tmp_path / "restored"
+    receipt = restore_l10_root_cache(archive, restored)
+    assert receipt["restored"] is True
+    assert (restored / source.relative_to(cache)).read_bytes() == source.read_bytes()
+    assert (restored / route.relative_to(cache)).read_bytes() == route.read_bytes()
+    assert receipt["l10_route_sha256"] == hashlib.sha256(route.read_bytes()).hexdigest()
+    # Native-paid ACK itself is checked by wf_warlock_l10_root.run, not staging.
+
+
+@pytest.mark.parametrize("kind", [
+    "warlock_native_paid_range_v1", "other", None,
+])
+def test_l10_root_restoration_refuses_wrong_origin(tmp_path, kind):
+    from tools.wf_warlock_paid_artifact import restore_l10_root_cache
+    cache = tmp_path / "archive" / "warlock-paid-range"
+    cache.mkdir(parents=True)
+    (cache / "range_progress.json").write_text(json.dumps({
+        "kind": kind, "from_level": 10,
+    }))
+    destination = tmp_path / "resume"
+    with pytest.raises(ValueError, match="exactly one L10"):
+        restore_l10_root_cache(tmp_path / "archive", destination)
+    assert not destination.exists()
+
+
+@pytest.mark.parametrize("route_count", [0, 2])
+def test_l10_root_restoration_never_replays_missing_or_ambiguous_receipt(
+        tmp_path, route_count):
+    from tools.wf_warlock_paid_artifact import restore_l10_root_cache
+    cache = tmp_path / "archive" / "warlock-paid-range"
+    cache.mkdir(parents=True)
+    (cache / "range_progress.json").write_text(json.dumps({
+        "kind": "warlock_native_l10_root_range_v1", "from_level": 10,
+    }))
+    for i in range(route_count):
+        route = cache / "L10" / f"key-{i}" / "paid" / "route.json"
+        route.parent.mkdir(parents=True)
+        route.write_text("{}")
+    with pytest.raises(ValueError, match="one original paid/refusal route"):
+        restore_l10_root_cache(tmp_path / "archive", tmp_path / "resume")
+    assert not (tmp_path / "resume").exists()
+
+
+def test_workflow_explicitly_restores_l10_before_paying_world_mobs():
+    from pathlib import Path
+    workflow = (Path(__file__).resolve().parents[1]
+                / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+                ).read_text()
+    assert "resume_root_artifact_id:" in workflow
+    assert "inputs.from_level == 10 && inputs.resume_root_artifact_id != ''" in workflow
+    assert '[[ "$ROOT_ARTIFACT_ID" =~ ^[0-9]+$ ]]' in workflow
+    assert "restore_l10_root_cache(" in workflow
+    assert workflow.index("restore_l10_root_cache(") < workflow.index(
+        "- name: Bootstrap a genuine L10 Rust actor")

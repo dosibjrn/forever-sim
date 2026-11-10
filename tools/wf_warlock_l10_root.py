@@ -202,6 +202,20 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
     folder = out / "L10" / key
     proposal_dir, paid_dir = folder / "proposal", folder / "paid"
     source, route = proposal_dir / "source_request.json", paid_dir / "route.json"
+    # A restored paid L10 root has already consumed 100 hostile targets.
+    # A changed proposal budget, threshold, template or binary changes the
+    # cache key; silently starting a new key would repay the same L10 root.
+    # Refuse the incompatible resume before native options, prepare or combat.
+    incompatible_paid_roots = [
+        previous for previous in (out / "L10").glob("*/paid/route.json")
+        if previous != route
+    ]
+    if incompatible_paid_roots:
+        raise ValueError(
+            "existing L10 paid/refusal receipt has incompatible cache identity; "
+            "refusing to repay L10. Resume with the original native binary, "
+            "template, proposal budget and thresholds"
+        )
     completed, reused = [], []
     stopped = None
     latest_route, latest_source = route, source
