@@ -46,6 +46,12 @@ def test_live_root_asks_native_options_and_prepares_distinct_proposals(tmp_path)
             }))
         source = Path(cmd[cmd.index("--request") + 1])
         prepared = Path(cmd[cmd.index("--outfile") + 1])
+        # The production Rust prepare CLI has no --actor-level flag. The
+        # request's actor level is already present in the native source JSON.
+        assert cmd == [
+            str(binary.resolve()), "prepare", "--request", str(source.resolve()),
+            "--outfile", str(prepared.resolve()),
+        ]
         original = json.loads(source.read_text())
         assert original["raid"]["parties"][0]["players"][0]["level"] == 20
         prepared.write_text(json.dumps({
