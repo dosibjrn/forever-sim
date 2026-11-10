@@ -210,3 +210,21 @@ def test_accepted_warlock_l20_p3_keeps_fast_native_transport_coverage():
         assert "          " + path + "\n" in ci
     assert not (ROOT / ".github/workflows/work2-warlock-l20-native-p3.yml").exists()
     assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+def test_native_ack_ci_does_not_rerun_completed_warlock_l20_cold_search():
+    """Real native/2D ACK tests stay live without replaying the paid 300s job."""
+    shared = (ROOT / ".github/workflows/native-session-ack-regressions.yml"
+              ).read_text(encoding="utf-8")
+    assert "  clock-ack:" in shared
+    assert "  source-health-world:" in shared
+    assert "  warlock-l20-cold-30-300:" not in shared
+    assert "wf_warlock_l20_native_cold.py \\" not in shared
+    assert "--budget 300 --snapshot 30 --seed 20261109" not in shared
+
+    # Cheap source/transport coverage survives on PRs; this must not prevent
+    # genuinely unaccepted P4/P5 cold runs via the official generic recorder.
+    fast = (ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml"
+            ).read_text(encoding="utf-8")
+    assert "          tests/test_work2_warlock_native_cold.py" in fast
+    assert "          tests/test_work2_warlock_native_cold_cli.py" in fast
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
