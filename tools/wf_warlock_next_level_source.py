@@ -76,6 +76,11 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     actor = original["raid"]["parties"][0]["players"][0]
     if actor.get("class") != "ClassWarlock":
         raise ValueError("expected original Warlock actor")
+    # An adjacent-level transition must start from the actual predecessor actor,
+    # not merely a target fixture labeled as that level. This is request
+    # provenance/forwarding integrity; native prepare still owns game legality.
+    if type(actor.get("level")) is not int or actor["level"] != from_level:
+        raise ValueError("source actor level differs from from_level")
     encounter_level = original["encounter"]["targets"][0].get("level")
     if encounter_level != from_level:
         raise ValueError("original source target level differs from from_level")
