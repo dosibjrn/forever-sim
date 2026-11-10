@@ -109,7 +109,13 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel,
                 raise ValueError(f'level {level} native node has impossible point count {points}')
         elif points!=int(level)-9:
             raise ValueError(f'level {level} node has {points} talent points; expected {level-9}')
+        # Native measurements from different executable revisions are not
+        # interchangeable, even when the talent allocations are identical.
+        # Keep one best observation per (allocation, engine) so a slower but
+        # compatible candidate is not discarded before path solving.
         k=model.build_key(n.talents)
+        if native_paid:
+            k=(k, n.details["native_receipt"]["engine_binary_sha256"])
         old=best.get(k)
         if old is None or (n.score_s_per_100,model.policy_description(n.policy,level) if n.policy else '') < (old.score_s_per_100,model.policy_description(old.policy,level) if old.policy else ''):
             best[k]=n
@@ -140,15 +146,6 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int|None=
     if native_paid and max_respecs:
         raise ValueError('native paid path has no prepared respec edges; set max_respecs=0')
     pp={l:_dedup_level_nodes(l,pools[l],model,native_paid=native_paid) for l in levels}
-    if native_paid:
-        # Do not silently join paid world chains run on different native
-        # executables. The caller must select one comparable source identity.
-        binaries={
-            n.details["native_receipt"]["engine_binary_sha256"]
-            for nodes in pp.values() for n in nodes
-        }
-        if len(binaries)!=1:
-            raise ValueError('native paid path mixes engine binary identities')
     if any(not pp[l] for l in levels):
         raise ValueError('empty candidate pool')
     w=weights or {l:level_weight_per_100(l) for l in levels}
@@ -174,6 +171,13 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int|None=
         # simpler and less error-prone than reconstructing all possible parents.
         for j,child in enumerate(nodes):
             for i,parent in enumerate(prev_nodes):
+                # Compare actual adjacent receipts, not every unused candidate
+                # in the input pools. Different binaries can coexist as
+                # alternatives but must never be joined into one native path.
+                if (native_paid and
+                        parent.details["native_receipt"]["engine_binary_sha256"] !=
+                        child.details["native_receipt"]["engine_binary_sha256"]):
+                    continue
                 # Both native-paid endpoints carry actual actor/chain receipts.
                 # Unchanged talents are a banked-point hold, not a respec.
                 hold = (native_paid and
