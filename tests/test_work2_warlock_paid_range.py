@@ -89,12 +89,21 @@ def test_new_level_budget_preserves_intermediate_paid_checkpoint(tmp_path, monke
                   out=tmp_path / "range", from_level=42, end_level=45)
     first = paid_range.run(**kwargs, max_new_levels=1)
     assert first["completed_new_levels"] == [43]
+    assert first["next_level"] == 44
     assert first["stopped"] == {"level": 44, "status": "BOUNDED_NEW_LEVEL_BUDGET"}
     assert Path(first["latest_guide"]).read_text() == "Paid native L43\n"
     second = paid_range.run(**kwargs, max_new_levels=2)
     assert second["reused_levels"] == [43]
     assert second["completed_new_levels"] == [44, 45]
+    # The old implementation concatenated completed + reused and reported L44
+    # as the next level, even though L45 had just been paid and verified.
+    assert second["next_level"] == 46
     assert calls["paid"] == [43, 44, 45]
+    third = paid_range.run(**kwargs, max_new_levels=1)
+    assert third["completed_new_levels"] == []
+    assert third["reused_levels"] == [43, 44, 45]
+    assert third["next_level"] == 46
+    assert calls["paid"] == [43, 44, 45]  # never repay existing receipts
 
 
 def test_native_prepare_refusal_is_published_and_stops(tmp_path, monkeypatch):
