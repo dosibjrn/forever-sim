@@ -55,7 +55,7 @@ def _unified_payload(*, item_eligible=False):
     }
 
 
-def test_unified_mage_options_only_forward_confirmed_native_slot(monkeypatch):
+def test_unified_mage_options_preserve_native_slots_and_unknown_ids(monkeypatch):
     seen = []
 
     def fake_cli(command, **kwargs):
