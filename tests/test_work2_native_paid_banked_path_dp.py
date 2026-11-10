@@ -96,3 +96,39 @@ def test_native_mode_does_not_launder_analytic_nodes_or_over_budget_points():
         solve_path_dp(
             {20: [paid_node(20, build + ("z",), 18.0)]},
             model=OpaqueNativeBuildModel(), native_paid=True)
+
+
+def test_native_route_defaults_to_no_unobserved_respec():
+    initial = tuple("abcdefghijk")
+    result = solve_path_dp(
+        {20: [paid_node(20, initial, 18.0)],
+         21: [paid_node(21, initial, 17.0)]},
+        model=OpaqueNativeBuildModel(), native_paid=True)
+    assert [step.kind for step in result.steps] == ["start", "hold"]
+    assert result.respecs_used == 0
+
+
+def test_native_route_rejects_respec_without_executed_native_edge():
+    initial = tuple("abcdefghijk")
+    with pytest.raises(ValueError, match="no prepared respec edges"):
+        solve_path_dp(
+            {20: [paid_node(20, initial, 18.0)]},
+            max_respecs=1, model=OpaqueNativeBuildModel(),
+            native_paid=True)
+
+
+def test_native_route_mixed_binary_cannot_create_fake_continuity():
+    initial = tuple("abcdefghijk")
+    parent = paid_node(20, initial, 18.0)
+    child = paid_node(21, initial, 17.0)
+    altered = replace(child, details={
+        "native_receipt": {
+            **child.details["native_receipt"],
+            "engine_binary_sha256": "c" * 64,
+        },
+    })
+    with pytest.raises(ValueError, match="mixes engine binary identities"):
+        solve_path_dp(
+            {20: [parent], 21: [altered]},
+            max_respecs=0, model=OpaqueNativeBuildModel(),
+            native_paid=True)

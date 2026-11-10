@@ -116,7 +116,7 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel,
     return sorted(best.values(),key=lambda n:(n.score_s_per_100,model.build_preference_key(n.talents),model.build_key(n.talents)))
 
 
-def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
+def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int|None=None,
                   weights:Mapping[int,float]|None=None,start_level:int|None=None,
                   end_level:int|None=None, model:ClassModel|None=None,
                   native_paid:bool=False)->PathResult:
@@ -131,8 +131,24 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
         raise ValueError('no levels in requested range')
     if any(b!=a+1 for a,b in zip(levels,levels[1:])):
         raise ValueError('path DP requires contiguous level pools')
+    # Native-paid observations are independently executed chains. They cannot
+    # establish an unmeasured respec jump, even if both endpoint builds were
+    # accepted by Rust. The historical analytical mode still defaults to two.
+    if max_respecs is None:
+        max_respecs = 0 if native_paid else 2
     max_respecs=max(0,int(max_respecs))
+    if native_paid and max_respecs:
+        raise ValueError('native paid path has no prepared respec edges; set max_respecs=0')
     pp={l:_dedup_level_nodes(l,pools[l],model,native_paid=native_paid) for l in levels}
+    if native_paid:
+        # Do not silently join paid world chains run on different native
+        # executables. The caller must select one comparable source identity.
+        binaries={
+            n.details["native_receipt"]["engine_binary_sha256"]
+            for nodes in pp.values() for n in nodes
+        }
+        if len(binaries)!=1:
+            raise ValueError('native paid path mixes engine binary identities')
     if any(not pp[l] for l in levels):
         raise ValueError('empty candidate pool')
     w=weights or {l:level_weight_per_100(l) for l in levels}
