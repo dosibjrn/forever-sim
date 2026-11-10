@@ -467,6 +467,16 @@ def render_guide(report: dict) -> str:
         "Native talent continuity: " +
         str(report["native_paid_talent_continuity"]["status"]) +
         " at " + _ranges(report["native_paid_talent_continuity"]["levels"]) + ".",
+        *(
+            ["**No native-prepared link from L" +
+             str(report["native_paid_talent_continuity"]["requested_start_level"]) +
+             " to L" +
+             str(report["native_paid_talent_continuity"]["observed_start_level"]) +
+             "**: the later paid segment is independent; no missing transition "
+             "or leveling time was inferred."]
+            if report["native_paid_talent_continuity"].get("missing_preceding_levels")
+            else []
+        ),
         *[
             f"- L{step['level']}: {step['kind']}, talents {step['talents']}, "
             f"actual native observation {step['native_observation_id']}"

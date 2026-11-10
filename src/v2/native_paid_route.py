@@ -84,8 +84,16 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         if _is_paid_native_level_node(node, level):
             candidates[level].append(node)
 
+    # Legacy L20 paid receipts may lack a prepared-actor identity while
+    # later levels independently have real native-prepared paid observations.
+    # Expose that interior segment, never a fabricated L20 -> L21 link.
+    observed_start = first_level
+    if not candidates.get(observed_start):
+        eligible_later = sorted(l for l in candidates if l > first_level)
+        if eligible_later:
+            observed_start = eligible_later[0]
     levels = []
-    level = first_level
+    level = observed_start
     while candidates.get(level):
         levels.append(level)
         level += 1
@@ -103,7 +111,7 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
     # comparisons across different level/scenario observations.
     binaries = sorted({
         node.details["native_receipt"]["engine_binary_sha256"]
-        for node in candidates[first_level]
+        for node in candidates[observed_start]
         if isinstance(node.details["native_receipt"].get("engine_binary_sha256"), str)
     })
     if not binaries:
@@ -150,8 +158,13 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         "talents": step.node.talents,
     } for step in path.steps]
     return {
-        "status": ("connected_native_paid_talent_frontier" if len(steps) > 1
+        "status": ("interior_native_paid_talent_frontier" if observed_start > first_level and len(steps) > 1
+                   else "single_interior_native_paid_level" if observed_start > first_level
+                   else "connected_native_paid_talent_frontier" if len(steps) > 1
                    else "single_native_paid_level"),
+        "requested_start_level": first_level,
+        "observed_start_level": observed_start,
+        "missing_preceding_levels": list(range(first_level, observed_start)),
         "engine_binary_sha256": selected_engine,
         "levels": [step["level"] for step in steps],
         "steps": steps,
@@ -159,5 +172,8 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         "xp_progression_simulated": False,
         "cumulative_leveling_seconds": None,
         "note": ("Source-native paid 100-target candidate chains with contiguous "
-                 "talent identities only; no XP/travel/training, no full replay."),
+                 "talent identities only; no XP/travel/training, no full replay."
+                 + (f" No native-prepared paid transition from requested L{first_level} "
+                    f"to observed L{observed_start} is established."
+                    if observed_start > first_level else "")),
     }
