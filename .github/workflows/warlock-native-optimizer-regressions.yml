@@ -11,6 +11,16 @@ on:
       - tests/test_work2_warlock_native_cold.py
       - tests/test_work2_warlock_native_cold_cli.py
       - tests/test_work2_warlock_gate_bridge.py
+      - tools/wf_p7_native_reference.py
+      - tools/wf_gate_p7_1_live.py
+      - tools/wf_gate_p7_2_live.py
+      - tools/wf_gate_p7_3_live.py
+      - src/engine_client/native_talent_proposals.py
+      - fixtures/warlock-l20-p71.request.json
+      - docs/evidence/native-references/warlock-l20-unrestricted/**
+      - tests/test_work2_warlock_l20_p71.py
+      - tests/test_work2_warlock_l20_p72.py
+      - tests/test_work2_warlock_l20_p73.py
       - .github/workflows/warlock-native-optimizer-regressions.yml
   push:
     branches:
@@ -23,6 +33,16 @@ on:
       - tests/test_work2_warlock_native_cold.py
       - tests/test_work2_warlock_native_cold_cli.py
       - tests/test_work2_warlock_gate_bridge.py
+      - tools/wf_p7_native_reference.py
+      - tools/wf_gate_p7_1_live.py
+      - tools/wf_gate_p7_2_live.py
+      - tools/wf_gate_p7_3_live.py
+      - src/engine_client/native_talent_proposals.py
+      - fixtures/warlock-l20-p71.request.json
+      - docs/evidence/native-references/warlock-l20-unrestricted/**
+      - tests/test_work2_warlock_l20_p71.py
+      - tests/test_work2_warlock_l20_p72.py
+      - tests/test_work2_warlock_l20_p73.py
       - .github/workflows/warlock-native-optimizer-regressions.yml
 
 permissions:
@@ -34,6 +54,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -46,3 +68,6 @@ jobs:
           tests/test_work2_warlock_native_cold.py
           tests/test_work2_warlock_native_cold_cli.py
           tests/test_work2_warlock_gate_bridge.py
+          tests/test_work2_warlock_l20_p71.py
+          tests/test_work2_warlock_l20_p72.py
+          tests/test_work2_warlock_l20_p73.py
