@@ -77,7 +77,7 @@ jobs:
           assert request["encounter"]["targets"][0]["level"] == 41
           assert route["measured_levels"] == list(range(20, 42))
           matches = [row for row in route["observations"]
-                     if row.get("level") == 42
+                     if row.get("level") == 41
                      and row.get("status") == "measured_native_chain"
                      and row.get("source_request_sha256") == source_sha
                      and row.get("engine_binary_sha256") == old_binary_sha
