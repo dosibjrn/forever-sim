@@ -108,3 +108,96 @@ def test_native_prepared_actor_level_mismatch_rejected(tmp_path, monkeypatch):
     receipt = start.select_prepared_source(binary=binary, source=source, out=out)
     assert receipt["status"] == "NATIVE_PREPARE_REFUSED_ALL_SOURCES"
     assert not (out / "source_request.json").exists()
+
+
+def _accept_native_prepare(cmd, **kwargs):
+    # Native is the only judge of request legality and prepared actor identity.
+    request_path = cmd[cmd.index("--request") + 1]
+    assert "--actor-level" not in cmd
+    import hashlib
+    with open(cmd[-1], "w") as output:
+        json.dump({"request_sha256": hashlib.sha256(
+            open(request_path, "rb").read()).hexdigest(),
+            "player": {"class": "ClassWarlock", "race": "RaceTroll",
+                       "level": 20, "stats": {
+                           "Health": 1000.0, "Mana": 1200.0}}}, output)
+    return subprocess.CompletedProcess(cmd, 0)
+
+
+def test_paid_source_selects_later_recovered_native_candidate(tmp_path, monkeypatch):
+    from tools import wf_warlock_native_candidate_scoring as scorer
+    source, binary = _fixture(tmp_path)
+    monkeypatch.setattr(start.subprocess, "run", _accept_native_prepare)
+    seen = []
+
+    def native_paid(*, binary, prepared_paths, actor_level, mob_count,
+                    target_hp, artifact_dir):
+        seen.append((list(prepared_paths), actor_level, mob_count,
+                     target_hp, artifact_dir))
+        assert set(("full", "empty", "without_slot_01")).issubset(prepared_paths)
+        assert all(path.is_file() for path in prepared_paths.values())
+        return {"comparable_candidates": 2, "candidates": [
+            {"candidate_id": "full", "status": "MEASURED_NATIVE_FULLY_RECOVERED",
+             "elapsed_seconds": 29.0},
+            {"candidate_id": "without_slot_01",
+             "status": "MEASURED_NATIVE_FULLY_RECOVERED",
+             "elapsed_seconds": 18.0},
+            {"candidate_id": "empty", "status": "NATIVE_REFUSAL",
+             "elapsed_seconds": None}]}
+
+    monkeypatch.setattr(scorer, "compare_prepared_candidates", native_paid)
+    out = tmp_path / "scored"
+    receipt = start.select_prepared_source(
+        binary=binary, source=source, out=out, mob_count=3,
+        target_hp=900.0, max_scored_candidates=4)
+    assert len(seen) == 1
+    assert seen[0][1:4] == (20, 3, 900.0)
+    assert receipt["status"] == "NATIVE_PAID_BOUNDED_COMPARISON"
+    assert receipt["selected_candidate_id"] == "without_slot_01"
+    assert receipt["kept_equipment_slots"] == [0, 2]
+    assert receipt["rng_mode"] == "balanced"
+    assert receipt["recover_to_full"] is True
+    assert receipt["iterations"] == 1
+    assert [entry["candidate"] for entry in receipt["native_accepted"]][:2] == [
+        "full", "empty"]
+    selected = json.loads((out / "source_request.json").read_text())
+    assert [row["id"] for row in selected["raid"]["parties"][0][
+        "players"][0]["equipment"]["items"]] == [101, 0, 303]
+
+
+def test_paid_source_refuses_to_publish_unrecovered_preparable_actor(
+        tmp_path, monkeypatch):
+    from tools import wf_warlock_native_candidate_scoring as scorer
+    source, binary = _fixture(tmp_path)
+    monkeypatch.setattr(start.subprocess, "run", _accept_native_prepare)
+
+    def native_unrecovered(*, prepared_paths, **kwargs):
+        return {"comparable_candidates": 0, "candidates": [
+            {"candidate_id": tag,
+             "status": "NATIVE_TERMINAL_FULL_RECOVERY_NOT_RECORDED",
+             "elapsed_seconds": None} for tag in prepared_paths]}
+
+    monkeypatch.setattr(scorer, "compare_prepared_candidates",
+                        native_unrecovered)
+    out = tmp_path / "unrecovered"
+    receipt = start.select_prepared_source(
+        binary=binary, source=source, out=out, mob_count=3, target_hp=900.0)
+    assert receipt["status"] == "NATIVE_PAID_NO_FULLY_RECOVERED_CANDIDATE"
+    assert receipt["selected_candidate_id"] is None
+    assert not (out / "source_request.json").exists()
+    assert receipt["proposals_prepared"] >= 2
+    assert json.loads((out / "proposal.json").read_text()) == receipt
+
+
+def test_paid_mode_rejects_free_reset_and_one_mob_configuration(tmp_path):
+    import pytest
+    source, binary = _fixture(tmp_path)
+    for mobs, hp in ((1, 1000.0), (3, None), (3, 0.0), (101, 1000.0)):
+        with pytest.raises(ValueError):
+            start.select_prepared_source(
+                binary=binary, source=source, out=tmp_path / "bad",
+                mob_count=mobs, target_hp=hp)
+    with pytest.raises(ValueError):
+        start.select_prepared_source(
+            binary=binary, source=source, out=tmp_path / "bad",
+            target_hp=1000.0)
