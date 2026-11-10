@@ -68,7 +68,8 @@ def test_nine_active_passes_certify_without_auxiliary_identity(monkeypatch, tmp_
     assert score["certified_checkpoints"] == 1
 
 
-def test_nine_passes_and_invalidation(monkeypatch, tmp_path):
+def test_nine_passes_are_permanent_even_on_explicit_invalidation(monkeypatch, tmp_path, capsys):
+    """No authorized Merge CLI can delete a genuine accepted gate PASS."""
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "passes.tsv"
     for gate in m1.GATES:
@@ -76,9 +77,15 @@ def test_nine_passes_and_invalidation(monkeypatch, tmp_path):
                        gate=gate, report={"status": "PASS", "reasons": []},
                        path=path)
     assert m1.scoreboard(path)["certified_checkpoints"] == 1
-    assert m1.main(["--ledger", str(path), "--invalidate",
-                    "druid", "60", "balance", "P3"]) == 0
-    assert m1.scoreboard(path)["certified_checkpoints"] == 0
+    before = path.read_bytes()
+    with pytest.raises(SystemExit) as error:
+        m1.main(["--ledger", str(path), "--invalidate",
+                 "druid", "60", "balance", "P3"])
+    assert error.value.code == 2
+    assert "Accepted M1 PASS is permanent" in capsys.readouterr().err
+    assert path.read_bytes() == before
+    assert m1.scoreboard(path)["certified_checkpoints"] == 1
+    assert m1.scoreboard(path)["passed_gates"] == 9
 
 
 def _behavior_partial(verified=83, total=103):
