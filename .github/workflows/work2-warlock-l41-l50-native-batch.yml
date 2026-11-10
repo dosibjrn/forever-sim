@@ -53,6 +53,38 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 65
     steps:
+      # Do not spend Rust checkout/build time on a malformed old-baseline
+      # dispatch. This checks the request envelope, not Warcraft legality or
+      # an optimizer/M1 acceptance condition.
+      - name: Validate manual paid-range request before native checkout and build
+        shell: bash
+        env:
+          FROM_LEVEL: ${{ inputs.from_level }}
+          END_LEVEL: ${{ inputs.end_level }}
+          MAX_NEW_LEVELS: ${{ inputs.max_new_levels }}
+          MAX_PROPOSALS: ${{ inputs.max_proposals }}
+          SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha }}
+          PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}
+          PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}
+          RESUME_ROOT_ARTIFACT_ID: ${{ inputs.resume_root_artifact_id }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::Invalid manual paid-range request: $1"; exit 1; }
+          for value in "$FROM_LEVEL" "$END_LEVEL" "$MAX_NEW_LEVELS" "$MAX_PROPOSALS"; do
+            [[ "$value" =~ ^[1-9][0-9]*$ ]] || fail "levels and budgets must be positive decimal integers"
+          done
+          (( FROM_LEVEL >= 10 && FROM_LEVEL < END_LEVEL && END_LEVEL <= 60 )) || fail "expected 10 <= from_level < end_level <= 60"
+          [[ "$SELECTED_RUST_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "selected_rust_sha must be an explicit 40-hex commit"
+          if (( FROM_LEVEL == 10 )); then
+            [[ -z "$PREDECESSOR_ARTIFACT_ID" && -z "$PREDECESSOR_BINARY_SHA256" ]] || fail "L10 root must not reuse a paid predecessor"
+            if [[ -n "$RESUME_ROOT_ARTIFACT_ID" ]]; then
+              [[ "$RESUME_ROOT_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]] || fail "resume_root_artifact_id must be a positive artifact ID"
+            fi
+          else
+            [[ "$PREDECESSOR_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]] || fail "continuation needs an explicit predecessor artifact ID"
+            [[ "$PREDECESSOR_BINARY_SHA256" =~ ^[0-9a-f]{64}$ ]] || fail "continuation needs its exact 64-hex paid binary SHA256"
+            [[ -z "$RESUME_ROOT_ARTIFACT_ID" ]] || fail "resume_root_artifact_id is only valid for an L10 root"
+          fi
       - name: Checkout exact Forever source
         uses: actions/checkout@v4
         with:

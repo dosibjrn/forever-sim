@@ -6,7 +6,9 @@ additional M1 acceptance predicate. Native no-record evidence is still uploaded.
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import re
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -440,3 +442,63 @@ def test_historical_paid_l44_l46_range_is_not_prefilled_on_manual_dispatch():
         body = input_body(field)
         assert "\n        required: true\n" in body, field
     assert "      - name: Preserve selected source, native 100-mob receipts" in workflow
+
+
+def test_paid_range_dispatch_preflight_executes_before_native_checkout():
+    """Invalid manual provenance must cost zero Rust build time.
+
+    Extract and *execute* the same bash run block shipped in the workflow;
+    this is input validation for a retired baseline launcher, not an M1 gate.
+    """
+    workflow = (ROOT / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+                ).read_text(encoding="utf-8")
+    marker = "      - name: Validate manual paid-range request before native checkout and build\n"
+    checkout = "      - name: Checkout exact Forever source\n"
+    assert workflow.count(marker) == 1
+    assert workflow.index(marker) < workflow.index(checkout)
+    step = workflow.split(marker, 1)[1].split(checkout, 1)[0]
+    assert "        run: |\n" in step
+    source = step.split("        run: |\n", 1)[1]
+    script = "\n".join(row[10:] if row.startswith(" " * 10) else row
+                       for row in source.splitlines())
+
+    base = {
+        "FROM_LEVEL": "10", "END_LEVEL": "12",
+        "MAX_NEW_LEVELS": "2", "MAX_PROPOSALS": "30",
+        "SELECTED_RUST_SHA": "a" * 40,
+        "PREDECESSOR_ARTIFACT_ID": "",
+        "PREDECESSOR_BINARY_SHA256": "",
+        "RESUME_ROOT_ARTIFACT_ID": "",
+    }
+
+    def check(overrides, *, accepted, expected=None):
+        completed = subprocess.run(
+            ["bash", "-c", script],
+            env={**os.environ, **base, **overrides},
+            text=True, capture_output=True, check=False,
+        )
+        assert (completed.returncode == 0) is accepted, (
+            overrides, completed.stdout, completed.stderr)
+        if expected is not None:
+            assert expected in completed.stdout + completed.stderr
+
+    check({}, accepted=True)
+    check({"RESUME_ROOT_ARTIFACT_ID": "123"}, accepted=True)
+    continuation = {
+        "FROM_LEVEL": "45", "END_LEVEL": "47",
+        "PREDECESSOR_ARTIFACT_ID": "54321",
+        "PREDECESSOR_BINARY_SHA256": "b" * 64,
+    }
+    check(continuation, accepted=True)
+    for bad, error in (
+        ({"END_LEVEL": "10"}, "from_level < end_level"),
+        ({"END_LEVEL": "61"}, "end_level <= 60"),
+        ({"MAX_PROPOSALS": "0"}, "positive decimal integers"),
+        ({"SELECTED_RUST_SHA": "not-a-commit"}, "40-hex commit"),
+        ({"PREDECESSOR_ARTIFACT_ID": "54321"}, "must not reuse a paid predecessor"),
+        ({"RESUME_ROOT_ARTIFACT_ID": "-1"}, "positive artifact ID"),
+        ({**continuation, "PREDECESSOR_ARTIFACT_ID": ""}, "predecessor artifact ID"),
+        ({**continuation, "PREDECESSOR_BINARY_SHA256": ""}, "paid binary SHA256"),
+        ({**continuation, "RESUME_ROOT_ARTIFACT_ID": "123"}, "only valid for an L10 root"),
+    ):
+        check(bad, accepted=False, expected=error)
