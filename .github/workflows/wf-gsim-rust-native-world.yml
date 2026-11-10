@@ -1,19 +1,10 @@
 name: Live exact-submodule MythicSim Rust fight to real gsim world (NOT P7)
+# Historical 10,000-fight stochastic and 1,000-fight balanced source probes
+# are explicit diagnostics, not automatic CI or the current three-mob
+# multi-level optimizer. Preserve manual execution and native assertions.
 on:
   workflow_dispatch:
-  push:
-    # One controlled exact-HEAD Work1 P7.3 regression run. No generic push CI.
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p73-native-world-cold-final-20261102]
-    paths:
-      - .github/workflows/wf-gsim-rust-native-world.yml
-      - .gitmodules
-      - integrations/mythicsim-rust/engine
-      - integrations/mythicsim-rust/rng_extreme_probability_fix.py
-      - tests/test_work1_p7_balanced_native_world_rng.py
-      - integrations/mythicsim-rust/world_bridge.rs
-      - integrations/mythicsim-rust/live_world_probe.py
-      - integrations/mythicsim-rust/live_two_world_pulls.py
-      - integrations/mythicsim-rust/port_native_typed_rng.py
+
 permissions:
   contents: read
 jobs:

@@ -1,28 +1,10 @@
 name: Live gsim 2D to pinned native Go world-effect ACK (NOT P7)
 # Migration safety: original pull_request triggers intentionally withheld until public baseline and runner are verified.
+# This pinned native Go world probe contains historical 10,000-fight
+# diagnostics. Run only by explicit dispatch; do not rebuild or repay them
+# whenever an old development branch receives a source push.
 on:
   workflow_dispatch:
-  # One controlled native build on this implementation branch; this workflow
-  # file is the sole path trigger. Other source/doc pushes cannot start it.
-  push:
-    branches:
-      - work/wf28-native-world-health-feedback-20261101
-      - work/first-native-source-long-horizon-20261102
-      - work/first-native-druid-full-duration-20261102
-      - work/first-native-source-target-health-20261102
-      - work/first-native-source-single-target-20261102
-      - work/first-native-terminal-boundary-20261102
-      - work/first-native-world-dps-parity-20261102
-      - work/first-native-source-facing-20261102
-      - work/first-native-feral-shred-facing-20261102
-      - work/first-native-source-p71-stochastic-20261102
-    paths:
-      - .github/workflows/wf-gsim-go-native-range-loop.yml
-      - tools/wf_gsim_go_live_range_probe.py
-      - src/game/runtime/simulator.py
-      - tests/integration/backend/test_wf_gsim_go_world_range_feed.py
-      - integrations/mythicsim-go/world_boundary/core/world_boundary.go
-      - integrations/mythicsim-go/world_boundary/ingress/main.go
 
 permissions:
   contents: read
