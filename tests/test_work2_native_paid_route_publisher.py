@@ -188,3 +188,49 @@ def test_no_prepared_native_paid_actor_still_has_no_talent_lineage():
     path = report(l20, l21)["native_paid_talent_continuity"]
     assert path["status"] == "no_native_prepared_paid_start"
     assert path["levels"] == []
+
+
+def test_paid_isolated_l20_does_not_hide_longer_different_binary_interior():
+    """A new L20 native actor cannot erase already genuine L21+ continuity."""
+    l20 = _engine_observation(20, "0-0-11111111111", "a")
+    l21 = _engine_observation(21, "0-0-11111111111", "b")
+    l22 = _engine_observation(22, "0-0-111111111111", "b")
+    l23 = _engine_observation(23, "0-0-1111111111111", "b")
+    result = report(l20, l21, l22, l23)
+    path = result["native_paid_talent_continuity"]
+    assert path["status"] == "interior_native_paid_talent_frontier"
+    assert path["levels"] == [21, 22, 23]
+    assert path["engine_binary_sha256"] == "b" * 64
+    assert path["requested_start_level"] == 20
+    assert path["observed_start_level"] == 21
+    assert path["missing_preceding_levels"] == [20]
+    assert result["measured_levels"] == [20, 21, 22, 23]
+    assert result["full_10_60_native_replay_executed"] is False
+    assert "No native-prepared link from L20" in render_guide(result)
+
+
+def test_real_gap_does_not_hide_later_longer_same_binary_segment():
+    """Never jump a missing L22, but publish genuinely connected L23-25."""
+    l20 = _engine_observation(20, "0-0-11111111111", "b")
+    l21 = _engine_observation(21, "0-0-11111111111", "b")
+    l23 = _engine_observation(23, "0-0-1111111111111", "b")
+    l24 = _engine_observation(24, "0-0-11111111111111", "b")
+    l25 = _engine_observation(25, "0-0-111111111111111", "b")
+    path = report(l20, l21, l23, l24, l25)["native_paid_talent_continuity"]
+    assert path["status"] == "interior_native_paid_talent_frontier"
+    assert path["levels"] == [23, 24, 25]
+    assert path["observed_start_level"] == 23
+    assert path["missing_preceding_levels"] == [20, 21, 22]
+    assert [step["kind"] for step in path["steps"]] == ["start", "point", "point"]
+
+
+def test_equal_length_paid_segments_prefer_earliest_observed_start():
+    path = report(
+        _engine_observation(20, "0-0-11111111111", "b"),
+        _engine_observation(21, "0-0-11111111111", "b"),
+        _engine_observation(23, "0-0-1111111111111", "a"),
+        _engine_observation(24, "0-0-11111111111111", "a"),
+    )["native_paid_talent_continuity"]
+    assert path["status"] == "connected_native_paid_talent_frontier"
+    assert path["levels"] == [20, 21]
+    assert path["engine_binary_sha256"] == "b" * 64
