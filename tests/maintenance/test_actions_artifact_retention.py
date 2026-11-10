@@ -116,3 +116,18 @@ def test_completed_warlock_one_shot_paid_ci_is_replaced():
         "run: python -m pytest -q tests/test_work2_warlock_route_guide.py "
         "tests/test_work2_warlock_next_level_source.py"
     ) in shared, "shared workflow must execute both real Forever-owned regression suites"
+
+def test_accepted_druid_l30_one_shot_paid_workflows_remain_retired():
+    """L30 P7.1/P7.2 are official M1 PASSes, not repeatable paid experiments.
+
+    Keep unaccepted-gate dispatch available through the generic M1 workflow.
+    Historical native requests, source code and receipts are not deleted.
+    """
+    for name in (
+        "work1-druid-l30-p71-native.yml",
+        "work1-druid-l30-p72-native.yml",
+    ):
+        assert not (ROOT / ".github/workflows" / name).exists(), (
+            f"accepted Druid L30 gate must not remain a paid one-shot: {name}"
+        )
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
