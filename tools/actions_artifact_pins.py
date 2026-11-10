@@ -166,7 +166,13 @@ def unmerged_pr_branch_refs(pull_requests: list[dict], repository: str) -> set[s
             # deleted. Its owner:branch label still identifies the source;
             # dropping it here would let GC erase an unmerged native receipt.
             label = head.get("label")
-            if not isinstance(label, str) or not label.startswith(owner + ":"):
+            if not isinstance(label, str) or ":" not in label:
+                # Unknown owner after GitHub redacts head.repo is NOT proof
+                # that this unmerged PR came from an external fork. Abort
+                # evidence GC rather than risk losing a deleted local branch.
+                raise ValueError("unmerged PR has no trustworthy head origin")
+            if not label.startswith(owner + ":"):
+                # A named different owner is an identifiable external fork.
                 continue
             ref = head.get("ref")
             if not isinstance(ref, str) or not ref or label != f"{owner}:{ref}":
