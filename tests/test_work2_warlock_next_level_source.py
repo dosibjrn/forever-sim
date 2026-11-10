@@ -122,3 +122,61 @@ def test_native_unsupported_actor_level_is_one_causal_refusal(tmp_path, monkeypa
     assert "no selected native level 21" in receipt["native_refusals"][0]["reason"]
     assert not (out / "source_request.json").exists()
     assert json.loads((out / "proposal.json").read_text()) == receipt
+
+def test_banked_l21_point_does_not_stop_source_native_l22_proposal(tmp_path, monkeypatch):
+    """Real L21 continuation kept the new point unspent after Rust refusals.
+
+    The next level must still reach native prepare instead of a Python
+    points-available == spent + 1 veto. No native legality is inferred.
+    """
+    source, binary = source_file(tmp_path)
+    raw = json.loads(source.read_text())
+    raw["encounter"]["targets"][0]["level"] = 21
+    raw["raid"]["parties"][0]["players"][0]["level"] = 21
+    source.write_text(json.dumps(raw))
+    options = native_options()
+    options["level"] = 22
+    options["talents"]["points_available"] = 4  # two banked at L22, not one
+    seen = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(cmd)
+        if cmd[1] == "options":
+            assert cmd[-2:] == ["--level", "22"]
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        assert cmd[1] == "prepare"
+        assert cmd[cmd.index("--actor-level") + 1] == "22"
+        candidate = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        assert candidate["raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-021"
+        assert candidate["encounter"]["targets"][0]["level"] == 22
+        with open(cmd[cmd.index("--outfile") + 1], "w") as f:
+            json.dump({"player": {"level": 22, "class": "ClassWarlock"}}, f)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "native_l22"
+    receipt = next_level.propose(
+        binary=binary, source=source, out=out, from_level=21, to_level=22)
+    assert len(seen) == 2
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["from_level"] == 21 and receipt["to_level"] == 22
+    assert receipt["source_talents"] == "0-0-011"
+    assert receipt["candidate_talents"] == "0-0-021"
+    assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+
+
+def test_native_budget_with_no_available_point_remains_unproposed(tmp_path, monkeypatch):
+    source, binary = source_file(tmp_path)
+    options = native_options()
+    options["talents"]["points_available"] = 2
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        assert cmd[1] == "options"  # never submit a point above native budget
+        return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    with pytest.raises(ValueError, match="native options cannot advance"):
+        next_level.propose(binary=binary, source=source, out=tmp_path / "blocked")
+    assert len(calls) == 1
