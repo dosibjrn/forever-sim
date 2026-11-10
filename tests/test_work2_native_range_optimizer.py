@@ -287,7 +287,9 @@ def _fake_native_comparison(call_log, *, drop_terminal=False, fail=False):
                     "paid": True, "native_clock_accounted": True,
                     "start_clock_ns": int((elapsed - 2) * 1e9),
                     "end_clock_ns": int(elapsed * 1e9),
-                    "health_after": 100.0, "mana_after": 200.0,
+                    # Selected Rust can report buffed caps beyond prepare.
+                    "health_after": 125.0, "mana_after": 250.0,
+                    "max_health": 125.0, "max_mana": 250.0,
                 }
             (out / f"{cid}.native.json").write_text(json.dumps(raw))
         return subprocess.CompletedProcess(cmd, 0,
@@ -316,6 +318,8 @@ def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_rec
     steps = [r["steps"][0] for r in result["ranked_alternatives"]]
     assert [r["terminal_recovery_seconds"] for r in steps] == [2.0, 2.0]
     assert all(r["receipt"]["native_full_recovery_paid"] is True for r in steps)
+    assert all(r["receipt"]["terminal_max_hp"] == 125.0
+               and r["receipt"]["terminal_max_mana"] == 250.0 for r in steps)
     assert all(r["receipt"]["source_request_sha256"] for r in steps)
     assert all((tmp_path / "artifacts").exists() for _ in calls)
 
@@ -552,6 +556,7 @@ def test_scored_adapter_keeps_single_native_successor_for_a_competing_parent(tmp
                 "end_clock_ns": 5_000_000_000,
                 "health_before": 80.0, "mana_before": 120.0,
                 "health_after": 100.0, "mana_after": 200.0,
+                "max_health": 100.0, "max_mana": 200.0,
             },
         }
 
