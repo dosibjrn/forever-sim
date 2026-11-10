@@ -1,0 +1,112 @@
+name: Work1 Druid L30 P7.4 native changed gear (no M1)
+
+on:
+  push:
+    branches:
+      - work/work1-druid-l30-p74-native-actor-level-20261110
+    paths:
+      - .github/workflows/work1-druid-l30-p74-native.yml
+      - tools/wf_gate_p7_4_live.py
+      - tests/gates/test_wf_gate_p7_4_live.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work1-druid-l30-p74-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  selected-native-p74:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONHASHSEED: "0"
+      FOREVER_MYTHICSIM_RUST_BIN: integrations/mythicsim-rust/engine/target/release/forever-engine
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+    steps:
+      - name: Checkout Work1 changed-equipment scorer and exact historical source
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+          fetch-depth: 1
+
+      # The L30 P7.1 source-native 1,000-stochastic reference used this
+      # historical gitlink. Never score a changed gear build against a
+      # different engine than the immutable paid reference.
+      - name: Checkout immutable Druid L30 P7.1 native reference
+        uses: actions/checkout@v4
+        with:
+          ref: 1ccfa37bc0d29e2cbda64d3d56fc5a895ddfee52
+          path: frozen
+          submodules: true
+          lfs: true
+          fetch-depth: 1
+
+      - name: Overlay current P7.4 source transport into isolated frozen checkout
+        run: |
+          set -euo pipefail
+          cp tools/wf_gate_p7_2_live.py frozen/tools/wf_gate_p7_2_live.py
+          cp tools/wf_gate_p7_3_live.py frozen/tools/wf_gate_p7_3_live.py
+          cp tools/wf_gate_p7_4_live.py frozen/tools/wf_gate_p7_4_live.py
+          cp integrations/mythicsim-rust/p74_gear_search.py frozen/integrations/mythicsim-rust/p74_gear_search.py
+          cp tests/gates/test_wf_gate_p7_4_live.py frozen/tests/gates/test_wf_gate_p7_4_live.py
+
+      - name: Refuse incompatible frozen source and Rust reference identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git -C frozen ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "frozen/$engine" rev-parse HEAD)"
+          expected="$(python -c 'import json; print(json.load(open("frozen/docs/evidence/native-references/druid-l30-unrestricted/reference.json"))["selected_engine_revision"])')"
+          [[ -n "$recorded" && "$recorded" == "$actual" && "$recorded" == "$expected" ]] || {
+            echo "FROZEN_L30_NATIVE_ENGINE_IDENTITY_MISMATCH" >&2
+            exit 1
+          }
+          test -s frozen/docs/evidence/native-references/druid-l30-unrestricted/request.json
+          echo "Work1 scorer HEAD: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Frozen Forever HEAD: $(git -C frozen rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Exact frozen native engine: $actual" >> "$GITHUB_STEP_SUMMARY"
+          echo "Existing P7.1 stochastic reference reused; no expensive resampling" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install bounded Forever test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+
+      - name: Verify actual L30 and L60 native scorer invocation forwarding
+        working-directory: frozen
+        run: python -m pytest -q tests/gates/test_wf_gate_p7_4_live.py -k native_axis_pays_changed_gear_without_world_or_holdout
+
+      - name: Build exact frozen native Rust source
+        working-directory: frozen/integrations/mythicsim-rust/engine
+        run: cargo build --locked --release --bin forever-engine
+
+      - name: Pay one native Druid L30 equipment-only P7.4 challenger
+        working-directory: frozen
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/wf_gate.py \
+            --class druid --level 30 --spec unrestricted --gate P7.4 \
+            --out druid-l30-p74-gate.json \
+            | tee druid-l30-p74-gate-stdout.json
+          cat druid-l30-p74-gate.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain native paid candidate and refusal diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work1-druid-l30-p74-no-record
+          path: |
+            frozen/druid-l30-p74-gate.json
+            frozen/druid-l30-p74-gate-stdout.json
+          if-no-files-found: warn
+          retention-days: 14

@@ -357,6 +357,11 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
                 request.write_text(json.dumps(candidate))
                 try:
                     native_options = {"go_rules": True} if spec == "feral" else {}
+                    # Keep the paid candidate on the frozen checkpoint actor.
+                    # Without this override, the native CLI may prepare level 60
+                    # even when the frozen P7.1 reference was paid at L20/L30.
+                    if level != 60:
+                        native_options["actor_level"] = level
                     native = production.native_source_control(
                         binary, request, 3, rng_mode="balanced", **native_options)
                 except Exception as exc:
