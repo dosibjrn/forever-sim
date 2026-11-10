@@ -121,6 +121,24 @@ def solve_decision_result(
     if not routes:
         return {**base, "status": "target_not_in_decision_result", "pair": None}
 
+    # Never compare a shortened path against a full single-spec route. In
+    # particular, intersecting pair levels and summing only that intersection
+    # can turn a missing native-paid level into fictitious dual-spec savings.
+    # The retained frontiers define the real start when present; otherwise
+    # infer the bounded published interval from the available route paths.
+    route_rows = {
+        name: _step_rows(route)
+        for name, route in routes.items()
+        if route.status == "available" and route.path is not None
+    }
+    starts = [min(rows) for rows in route_rows.values() if target in rows]
+    start = int(result.start_level) if result.start_level > 0 else min(starts, default=target)
+    expected_levels = set(range(start, target + 1))
+    complete_rows = {
+        name: rows for name, rows in route_rows.items()
+        if set(rows) == expected_levels
+    }
+
     # Pair canonical named routes only. Generic user constraints are challengers,
     # not spec identities, and unconstrained is the baseline rather than a second spec.
     available: list[tuple[str, RouteResult, dict[int, dict[str, Any]]]] = []
@@ -130,16 +148,15 @@ def solve_decision_result(
         kind = str(route.definition.get("kind") or "")
         if kind == "generic_constraint":
             continue
-        rows = _step_rows(route)
-        if target in rows:
+        rows = complete_rows.get(name)
+        if rows is not None:
             available.append((name, route, rows))
     # The unrestricted no-respec route is a genuine single-spec alternative.
     # Excluding it can invent dual-spec savings when the unrestricted path is
     # faster than every named endpoint constraint.
     single_routes = [(name, route) for name, route, _ in available]
     unrestricted = routes.get("unconstrained")
-    if (unrestricted is not None and unrestricted.status == "available"
-            and unrestricted.path is not None):
+    if (unrestricted is not None and "unconstrained" in complete_rows):
         single_routes.append(("unconstrained", unrestricted))
     best_single_name, best_single_route = min(
         single_routes,
