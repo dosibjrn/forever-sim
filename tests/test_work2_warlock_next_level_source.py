@@ -248,6 +248,7 @@ def paid_predecessor(tmp_path):
             "level": 23,
             "status": "measured_native_chain",
             "source_request_sha256": next_level.sha256(source),
+            "engine_binary_sha256": next_level.sha256(binary),
             "native_world_ack": True,
             "paid_native_recovery": True,
             "targets_requested": 100,
@@ -288,7 +289,8 @@ def test_l24_proposal_uses_exact_paid_l23_predecessor(tmp_path, monkeypatch):
     assert receipt["from_level"] == 23 and receipt["to_level"] == 24
     assert [cmd[1] for cmd in calls] == ["options", "prepare"]
     assert next_level.verified_paid_predecessor(
-        route=route, source=source, from_level=23)["observation_id"] == "paid-l23"
+        route=route, source=source, binary=binary,
+        from_level=23)["observation_id"] == "paid-l23"
 
 
 def test_l24_rejects_unpaid_stale_or_wrong_source_before_native_calls(tmp_path, monkeypatch):
@@ -306,7 +308,7 @@ def test_l24_rejects_unpaid_stale_or_wrong_source_before_native_calls(tmp_path, 
     report["observations"][0]["targets_killed"] = 100
     report["measured_levels"] = [20, 21, 22]
     route.write_text(json.dumps(report))
-    with pytest.raises(ValueError, match="last paid measured level"):
+    with pytest.raises(ValueError, match="does not include the paid source level"):
         next_level.propose(binary=binary, source=source, out=tmp_path / "stale",
                            from_level=23, to_level=24, predecessor_route=route)
 
@@ -346,3 +348,53 @@ def test_native_options_refusal_is_published_without_prepared_candidate(tmp_path
     assert receipt["original_source_sha256"] == next_level.sha256(source)
     assert receipt["native_binary_sha256"] == next_level.sha256(binary)
     assert not (out / "source_request.json").exists()
+
+
+def test_paid_l20_predecessor_inside_l20_l28_report_requires_same_binary(tmp_path, monkeypatch):
+    """Historical later levels cannot veto a real L20 source, nor authorize another binary."""
+    source, binary = source_file(tmp_path)
+    observed = {
+        "id": "paid-l20", "level": 20, "status": "measured_native_chain",
+        "source_request_sha256": next_level.sha256(source),
+        "engine_binary_sha256": next_level.sha256(binary),
+        "targets_requested": 100, "targets_killed": 100,
+        "native_world_ack": True, "paid_native_recovery": True,
+        "native_actor": {"class": "ClassWarlock", "level": 20},
+    }
+    route = tmp_path / "historical.json"
+    route.write_text(json.dumps({
+        "class": "warlock", "measured_levels": list(range(20, 29)),
+        "observations": [observed, {
+            **observed, "id": "old-l21", "level": 21,
+            "engine_binary_sha256": "f" * 64,
+            "native_actor": {"class": "ClassWarlock", "level": 21},
+        }],
+    }))
+    seen = []
+    def native(cmd, **kwargs):
+        seen.append(cmd[1])
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        assert request["encounter"]["targets"][0]["level"] == 21
+        with open(cmd[cmd.index("--outfile") + 1], "w") as output:
+            json.dump({"player": {"class": "ClassWarlock", "level": 21}}, output)
+        return subprocess.CompletedProcess(cmd, 0)
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    receipt = next_level.propose(
+        binary=binary, source=source, out=tmp_path / "accepted",
+        predecessor_route=route)
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert seen == ["options", "prepare"]
+
+    observed["engine_binary_sha256"] = "0" * 64
+    route.write_text(json.dumps({
+        "class": "warlock", "measured_levels": list(range(20, 29)),
+        "observations": [observed],
+    }))
+    seen.clear()
+    with pytest.raises(ValueError, match="matching completed paid native predecessor"):
+        next_level.propose(
+            binary=binary, source=source, out=tmp_path / "refused",
+            predecessor_route=route)
+    assert not seen

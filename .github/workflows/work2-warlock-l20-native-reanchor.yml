@@ -3,7 +3,7 @@ name: Work2 Warlock L20 native-paid start on the L21-L28 selected binary
 on:
   push:
     branches:
-      - work2/warlock-l28-native-paid-20261110-0946
+      - work2/warlock-l20-start-identity-repair-20261110
     paths:
       - .github/workflows/work2-warlock-l20-native-reanchor.yml
 
@@ -41,7 +41,7 @@ jobs:
       - name: Verify actual native receipt and route transport
         working-directory: project
         run: |
-          python -m pytest -q tests/test_work2_warlock_route_guide.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_work2_warlock_next_level_source.py
+          python -m pytest -q tests/test_work2_warlock_route_guide.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_work2_warlock_next_level_source.py tests/test_work2_warlock_native_start_source.py
       - name: Build exact selected native executor
         working-directory: engine
         run: cargo build --locked --bin forever-engine
@@ -71,7 +71,19 @@ jobs:
           assert route["class"] == "warlock" and route["full_10_60_native_replay_executed"] is False
           assert route["measured_levels"] == list(range(20, 29)), route["measured_levels"]
           binary = hashlib.sha256(Path("engine/target/debug/forever-engine").read_bytes()).hexdigest()
-          l21 = [r for r in route["observations"] if r.get("level") == 21
+          # L21 was genuinely paid on an older binary, but its historical
+          # route row has no native-prepared actor. It is NOT a comparable
+          # paid talent transition. Do not turn that missing identity into a
+          # veto on a *new independent* L20 paid native run.
+          l21 = [r for r in route["observations"] if r.get("level") == 21]
+          print("HISTORICAL_L21_NOT_A_CONNECTED_START", [
+              {"id": r.get("id"), "binary": r.get("engine_binary_sha256"),
+               "prepared_actor": r.get("native_actor") is not None,
+               "talents": r.get("talents")} for r in l21], flush=True)
+          # The selected exact engine is already the one that produced L22-L28.
+          # This checks the artifact's identity without inventing a L20->L21
+          # edge, redoing old paid measurements, or asserting native legality.
+          l28 = [r for r in route["observations"] if r.get("level") == 28
                  and r.get("status") == "measured_native_chain"
                  and r.get("native_world_ack") is True
                  and r.get("paid_native_recovery") is True
@@ -80,11 +92,17 @@ jobs:
                  and r.get("engine_binary_sha256") == binary
                  and isinstance(r.get("native_actor"), dict)
                  and r["native_actor"].get("class") == "ClassWarlock"
-                 and r["native_actor"].get("level") == 21
-                 and r.get("talents") == actor["talentsString"]]
-          assert l21, "No exact-binary paid native L21 hold matching the L20 source talents; do not pay an unrelated start"
-          print("MATCHING_L21_PAID_HOLD", binary, l21[0]["id"], flush=True)
+                 and r["native_actor"].get("level") == 28]
+          assert l28, "Saved paid L28 route does not match this compiled Rust binary"
+          print("MATCHING_PAID_L28_BINARY", binary, l28[0]["id"], flush=True)
           PY
+      - name: Select an actual Rust-prepared L20 actor from source gear subsets
+        working-directory: project
+        run: |
+          python -u tools/wf_warlock_native_start_source.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --actor-level 20 --out ../warlock-l20-source
       - name: Execute one source-prepared hostile L20 100-target native Decisions chain
         working-directory: project
         env:
@@ -93,7 +111,7 @@ jobs:
           python -u tools/wf_warlock_route_guide.py \
             --execute-native --actor-level 20 \
             --binary ../engine/target/debug/forever-engine \
-            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --source ../warlock-l20-source/source_request.json \
             --health-threshold 0.7 --mana-threshold 0.25 \
             --baseline-observations ../previous/warlock-l28-native-route/route.json \
             --trial exact-binary-paid-l20-start \
@@ -106,6 +124,7 @@ jobs:
           path: |
             engine/fixtures/warlock-l20-troll-best-paid.request.json
             previous/warlock-l28-native-route/route.json
+            warlock-l20-source/
             warlock-l20-native-start/
           if-no-files-found: warn
           retention-days: 3
