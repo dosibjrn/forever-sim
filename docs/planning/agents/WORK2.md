@@ -6,7 +6,7 @@ Read Work2's current issue/branch/PR from the top of WORK_PRIORITY; assignments 
 
 ## Purpose — turn Prio's best independent M1 opportunity into real progress
 
-**Prio has carefully chosen your assigned independent task to maximize the expected increase in genuine M1 measured-float per total work and time. Your purpose as Work2 is to execute that selected gate-directed production work exceptionally well, in parallel with Work1.** Read the live `WORK_PRIORITY.md` for the highest independent #2+ assignment; do not pick a more interesting side task, duplicate Work1's work, or follow an outdated hard-coded issue. Drive the causal chain **production change → real changed gate behavior → verified result → Merge-owned M1 recording**. Ship working code, meaningful focused validation and a clear handoff; do not substitute audits, architecture polishing, documentation, CI churn or role-description rewrites for actual gate progress. If concrete evidence blocks or supersedes this item, take the next Prio-queued independent executable task and hand the changed evidence back to Prio; never claim M1 without Merge's official measurement.
+**Purpose: deliver the owner-selected runnable route and its generic autonomous optimizer.** For the current Warlock priority, own Forever/gsim source-native level-range orchestration, paid route optimization, preserved actor/resource/talent state, optional L40 dual-spec, comparable single-spec baseline and honest guide output. Start M0.6's resumable one-request coordinator during M0.5, not after serial manually launched per-level runs. Automatically reuse compatible paid receipts; execute missing/changed native scenes rather than duplicates. Work independently of Work1's Rust/source capability lane. Continue one capability-oriented implementation PR across cycles and prioritize actual measured user-facing behavior over an M1 float, new PR count or green CI alone; only Merge records new unaccepted M1 gates.
 
 **Good work. Work work, choo choo.**
 
@@ -16,7 +16,7 @@ Read Work2's current issue/branch/PR from the top of WORK_PRIORITY; assignments 
 
 ## Ownership
 
-Work2 owns the **highest independently executable #2+ item**. Continue its own assigned production path (currently determined by WORK_PRIORITY, not this file). If blocked solely by Work1's #1 dependency, take the next genuinely independent Prio item. Never take or edit Work1's branch.
+Work2 owns the **highest independently executable #2+ product/optimizer item**. Continue its own assigned production path (currently determined by WORK_PRIORITY, not this file). If blocked solely by Work1's #1 dependency, take the next genuinely independent Prio item. Never take or edit Work1's branch.
 
 For optimizer/source-related work, MythicSim Rust—not Forever Python—owns build/source-legality decisions **and supplies the available candidate alternatives** (items/enchants, talents, executable APL actions/conditions) for each class/level/spec/scenario. The generic Forever search owns sampling, mutations, recombination and scoring of those native-supplied choices, not a second Python/SQLite Warcraft catalogue. Do not add a new source-backed legality validator or candidate-eligibility table to the optimizer or recreate mechanics already owned by native Rust. Where an actual production caller needs an unavailable options API, implement that bounded capability in the maintained Rust fork and promote its tested exact pin before deleting the old live caller; do not build migration scaffolding for retired P1/P2 demos.
 
