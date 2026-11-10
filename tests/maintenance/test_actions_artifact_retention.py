@@ -186,6 +186,8 @@ def test_accepted_warlock_l20_p7_axes_keep_fast_source_forwarding_tests():
     """Protect useful Forever transport tests, never reschedule accepted paid P7."""
     ci = (ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml").read_text(
         encoding="utf-8")
+    assert "  pull_request:\n" in ci
+    assert "\n  push:\n" not in ci, "dated feature-branch pushes double-run the PR suite"
     for path in (
         "tools/wf_p7_native_reference.py",
         "tools/wf_gate_p7_1_live.py",
@@ -198,8 +200,8 @@ def test_accepted_warlock_l20_p7_axes_keep_fast_source_forwarding_tests():
         "tests/test_work2_warlock_l20_p72.py",
         "tests/test_work2_warlock_l20_p73.py",
     ):
-        assert ci.count("      - " + path + "\n") == 2, (
-            "PR and push triggers must cover " + path)
+        assert ci.count("      - " + path + "\n") == 1, (
+            "PR trigger must cover " + path)
     for name in ("p71", "p72", "p73"):
         assert "          tests/test_work2_warlock_l20_" + name + ".py\n" in ci
     assert "          submodules: true\n" in ci, (
@@ -223,8 +225,8 @@ def test_accepted_warlock_l20_p3_keeps_fast_native_transport_coverage():
         "tests/test_work2_warlock_l20_native_p3.py",
         "tests/test_work2_warlock_l20_equipped_source.py",
     ):
-        assert ci.count("      - " + path + "\n") == 2, (
-            f"cheap PR and push coverage missing for {path}")
+        assert ci.count("      - " + path + "\n") == 1, (
+            f"cheap PR coverage missing for {path}")
     for path in (
         "tests/test_work2_warlock_l20_native_p3.py",
         "tests/test_work2_warlock_l20_equipped_source.py",
