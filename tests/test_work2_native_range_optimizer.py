@@ -45,7 +45,7 @@ def test_one_invocation_scores_five_levels_and_later_fast_path_beats_first():
                         1.0 if parent["talents"] == "A" else 9.0,
                         parent, recovery=0.5)]
 
-    result = optimize(20, 60, 10, 3, 100, evaluate=evaluator, beam_width=2)
+    result = optimize(20, 60, 10, 3, 100, evaluate=evaluator, beam_width=2, mode="continuing")
     assert result["status"] == "SAMPLED_NATIVE_PATH_RANKED"
     assert result["sampled_levels_requested"] == [20, 30, 40, 50, 60]
     assert result["sampled_levels_completed"] == [20, 30, 40, 50, 60]
@@ -67,11 +67,11 @@ def test_same_optimizer_accepts_dense_resolution_as_only_arguments():
         observed.append((level, mob_count))
         return [receipt(level, mob_count, "A", 1.0, parent)]
 
-    sparse = optimize(20, 60, 10, 3, 100, evaluate=single)
+    sparse = optimize(20, 60, 10, 3, 100, evaluate=single, mode="continuing")
     assert sparse["sampled_levels_completed"] == [20, 30, 40, 50, 60]
     assert observed == [(x, 3) for x in (20, 30, 40, 50, 60)]
     observed.clear()
-    dense = optimize(10, 60, 1, 100, 100, evaluate=single)
+    dense = optimize(10, 60, 1, 100, 100, evaluate=single, mode="continuing")
     assert dense["sampled_levels_completed"] == list(range(10, 61))
     assert observed == [(level, 100) for level in range(10, 61)]
     assert sampled_levels(20, 59, 10) == (20, 30, 40, 50, 59)
@@ -83,7 +83,7 @@ def test_native_paid_full_resource_terminal_time_changes_winner():
         return [receipt(level, mob_count, "A", 30.0, recovery=25.0),
                 receipt(level, mob_count, "B", 14.0, recovery=2.0)]
 
-    result = optimize(20, 20, 1, 3, 2, evaluate=variants)
+    result = optimize(20, 20, 1, 3, 2, evaluate=variants, mode="continuing")
     assert result["ranked_alternatives"][0]["steps"][0]["talents"] == "B"
     assert result["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 14.0
     assert result["ranked_alternatives"][0]["steps"][0]["terminal_recovery_seconds"] == 2.0
@@ -105,7 +105,7 @@ def test_incomplete_or_unpaid_native_receipt_never_scores(mutate):
         mutate(row)
         return [row]
 
-    result = optimize(20, 20, 1, 3, 1, evaluate=scorer)
+    result = optimize(20, 20, 1, 3, 1, evaluate=scorer, mode="continuing")
     assert result["status"] == "NO_COMPARABLE_NATIVE_PATH"
     assert result["sampled_levels_completed"] == []
     assert result["rejected_native_attempts"]
@@ -125,7 +125,7 @@ def test_sparse_path_rejects_unobserved_respec_or_cross_binary(field, value):
             row[field] = value
         return [row]
 
-    result = optimize(20, 30, 10, 3, 2, evaluate=evaluator)
+    result = optimize(20, 30, 10, 3, 2, evaluate=evaluator, mode="continuing")
     assert result["status"] == "SAMPLED_NATIVE_PREFIX_ONLY"
     assert result["sampled_levels_completed"] == [20]
     assert len(result["rejected_native_attempts"]) == 1
@@ -136,7 +136,7 @@ def test_respects_global_native_candidate_budget_without_overrun():
     def evaluator(*, level, parent, mob_count, budget, **kwargs):
         invoked.append((level, budget))
         return [receipt(level, mob_count, "A", 10.0, parent)]
-    result = optimize(20, 60, 10, 3, 2, evaluate=evaluator)
+    result = optimize(20, 60, 10, 3, 2, evaluate=evaluator, mode="continuing")
     assert invoked == [(20, 1), (30, 1)]
     assert result["native_candidates_examined"] == 2
     assert result["sampled_levels_completed"] == [20, 30]
@@ -147,9 +147,9 @@ def test_native_evaluator_cannot_override_budget_or_disable_full_recovery():
         return [receipt(level, mob_count, "A", 10.0),
                 receipt(level, mob_count, "B", 10.0)]
     with pytest.raises(ValueError, match="exceeded candidate budget"):
-        optimize(20, 20, 1, 3, 1, evaluate=too_many)
+        optimize(20, 20, 1, 3, 1, evaluate=too_many, mode="continuing")
     with pytest.raises(ValueError, match="terminal recovery invalid"):
-        optimize(20, 20, 1, 3, 1, evaluate=too_many, recover_to_full=False)
+        optimize(20, 20, 1, 3, 1, evaluate=too_many, recover_to_full=False, mode="continuing")
 
 
 def test_one_cli_process_orchestrates_several_native_evaluator_calls(tmp_path, monkeypatch):
@@ -199,7 +199,7 @@ def test_native_candidate_budget_is_spread_across_all_requested_levels():
         return [receipt(level, mob_count, chr(65 + i), 2.0, parent)
                 for i in range(budget)]
 
-    report = optimize(20, 60, 10, 3, 100, evaluate=eager, beam_width=3)
+    report = optimize(20, 60, 10, 3, 100, evaluate=eager, beam_width=3, mode="continuing")
     assert report["sampled_levels_completed"] == [20, 30, 40, 50, 60]
     assert paid[0] == (20, 20)  # Not 100; 4 more levels must have capacity.
     assert report["native_candidates_examined"] <= 100
@@ -311,7 +311,7 @@ def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_rec
                                 artifact_dir=tmp_path / "artifacts",
                                 run_command=_fake_native_comparison(calls))
 
-    result = optimize(20, 20, 1, 3, 2, evaluate=scorer)
+    result = optimize(20, 20, 1, 3, 2, evaluate=scorer, mode="continuing")
     assert result["status"] == "SAMPLED_NATIVE_PATH_RANKED"
     assert result["native_candidates_examined"] == 2
     assert len(calls) == 1
@@ -389,7 +389,7 @@ def test_scored_adapter_never_converts_missing_native_terminal_to_free_recovery(
                                 artifact_dir=tmp_path / "artifacts",
                                 run_command=_fake_native_comparison(
                                     calls, drop_terminal=True))
-    result = optimize(20, 20, 1, 3, 2, evaluate=evaluator)
+    result = optimize(20, 20, 1, 3, 2, evaluate=evaluator, mode="continuing")
     assert len(calls) == 1
     assert result["status"] == "NO_COMPARABLE_NATIVE_PATH"
     assert len(result["rejected_native_attempts"]) == 2
@@ -512,7 +512,7 @@ def test_range_report_retains_candidate_id_and_native_failure_detail():
                  "status": "NATIVE_TERMINAL_FULL_RECOVERY_NOT_RECORDED",
                  "native_refusal": "native source returned no post-final-kill recovery",
                  "native_prepared": False}]
-    report = optimize(20, 20, 1, 3, 1, evaluate=native_refusal)
+    report = optimize(20, 20, 1, 3, 1, evaluate=native_refusal, mode="continuing")
     assert report["status"] == "NO_COMPARABLE_NATIVE_PATH"
     row = report["rejected_native_attempts"][0]
     assert row["candidate_id"] == "affliction"
