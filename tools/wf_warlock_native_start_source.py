@@ -47,8 +47,12 @@ def select_prepared_source(*, binary: Path, source: Path, out: Path,
         prepared_path = attempts / f"{tag}.prepared.json"
         request_path.write_text(json.dumps(request, indent=2) + "\n")
         process = subprocess.run(
+            # The source actor level is inside the native request; Rust
+            # prepare accepts --request/--outfile, not --actor-level.
+            # Reject a mismatched prepared actor below instead of inventing
+            # a Python source-level override.
             [str(binary.resolve()), "prepare", "--request",
-             str(request_path.resolve()), "--actor-level", str(actor_level),
+             str(request_path.resolve()),
              "--outfile", str(prepared_path.resolve())],
             capture_output=True, text=True, timeout=60, check=False)
         if process.returncode:
