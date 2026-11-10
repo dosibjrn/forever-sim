@@ -244,7 +244,7 @@ jobs:
   # One requested real sparse optimizer run. This stays on the feature PR
   # branch and never launches a historical 100-mob validation replay.
   sparse-optimizer-real:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/generic-sparse-compatible-optimize-20261110' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/generic-optimizer-before-legacy-registry-20261110' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
