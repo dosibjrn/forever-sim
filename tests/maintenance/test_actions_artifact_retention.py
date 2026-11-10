@@ -93,6 +93,13 @@ def test_completed_warlock_one_shot_paid_ci_is_replaced():
         # native 100-target workloads after the route advanced to L44.
         "warlock-l20-100mob-chain.yml",
         "warlock-l20-talent-apl-100mob.yml",
+        # L20 source re-anchor and L40 alternative were already paid;
+        # L41 native selection is superseded by the paid L41-L44 route.
+        # These fixed-source one-shots must not be re-dispatched on
+        # unrelated PRs; reusable range CI and M1 cold gates stay live.
+        "work2-warlock-l20-native-reanchor.yml",
+        "work2-warlock-l40-paid-alternative.yml",
+        "work1-warlock-l41-native-selection.yml",
     ]
     for name in retired:
         obsolete = ROOT / ".github/workflows" / name
