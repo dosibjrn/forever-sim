@@ -56,6 +56,9 @@ def _node(candidate: CandidateResult) -> LevelNode:
         policy=candidate.policy,
         source=str(candidate.metadata.get("source") or "canonical_frontier"),
         details={"candidate_result": candidate, **dict(candidate.metadata)},
+        # Native receipt adapters opt in only after paid prepare/execution.
+        # Legacy analytical candidates remain full-spend-only.
+        native_paid_prepared=candidate.metadata.get("native_paid_prepared") is True,
     )
 
 
