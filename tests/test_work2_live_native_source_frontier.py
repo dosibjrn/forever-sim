@@ -843,3 +843,64 @@ def test_scaled_independent_native_family_refusals_keep_original_root_as_baselin
     assert found["entries"][0]["id"] == "source_003"
     assert found["entries"][0]["parent_source_sha256"] is None
     assert not any("native_continuity_receipt" in row for row in found["entries"])
+
+
+def test_high_level_independent_baseline_not_starved_by_native_apl_budget(tmp_path):
+    """An executable scaled family must not crowd out the original native root.
+
+    The first source-prepared family exposes a registered native APL action,
+    which previously spent slot four before the independent root fallback.
+    Both proposals still require Rust prepare and share the same fixed budget.
+    """
+    seed, binary = _root_source(tmp_path)
+    source = json.loads(seed.read_text())
+    actor = source["raid"]["parties"][0]["players"][0]
+    actor["rotation"] = {
+        "priorityList": [{"action": {"castSpell": {"spellId": {"spellId": 111}}}}]
+    }
+    seed.write_text(json.dumps(source))
+    attempts = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 50,
+                "talents": {"status": "ok", "points_available": 21, "trees": [
+                    {"talents": [{"index": i, "max_rank": 5} for i in range(5)]}
+                    for _ in range(3)
+                ]},
+            }))
+        source_path = Path(cmd[cmd.index("--request") + 1])
+        prepared_path = Path(cmd[cmd.index("--outfile") + 1])
+        player = json.loads(source_path.read_text())["raid"]["parties"][0]["players"][0]
+        assert player["level"] == 50
+        attempts.append((
+            player["talentsString"],
+            player["rotation"]["priorityList"][-1]["action"]["castSpell"]
+            ["spellId"]["spellId"],
+        ))
+        prepared_path.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+            "player": {
+                "class": "ClassWarlock", "level": 50,
+                "spells": [{"flags": ["SpellFlagAPL"],
+                            "action_id": {"spell_id": 222}}],
+            },
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    found = produce_frontier(
+        {**_request(level=50, budget=4), "search_mode": "independent"},
+        binary=binary, seed_source=seed, out=tmp_path / "prepared",
+        runner=native,
+    )
+    assert len(attempts) == 4
+    assert all(
+        sum(int(rank) for part in talents.split("-") for rank in part) == 21
+        for talents, _ in attempts[:3]
+    )
+    assert attempts[3] == ("11-0-0", 111)
+    assert all(apl == 111 for _, apl in attempts)
+    assert len(found["entries"]) == 4
+    assert found["refusals"] == []
+    assert all(entry["parent_source_sha256"] is None for entry in found["entries"])
