@@ -12,6 +12,7 @@ import argparse
 import copy
 import hashlib
 import json
+import math
 import subprocess
 from pathlib import Path
 
@@ -22,7 +23,8 @@ def sha256(path: Path) -> str:
 
 def verified_paid_predecessor(*, route: Path, source: Path, binary: Path,
                               from_level: int,
-                              predecessor_binary_sha256: str | None = None) -> dict:
+                              predecessor_binary_sha256: str | None = None,
+            native_paid_shortlist: bool = False) -> dict:
     """Require a real paid prior-level receipt for automatic route extension.
 
     This matches an executed native actor to the exact persisted request
@@ -113,6 +115,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     out.mkdir(parents=True, exist_ok=True)
     (out / "source_request.json").unlink(missing_ok=True)
     (out / "proposal.json").unlink(missing_ok=True)
+    (out / "native_paid_shortlist.json").unlink(missing_ok=True)
     options_call = subprocess.run(
         [str(binary.resolve()), "options", "--class", "warlock",
          "--level", str(to_level)],
@@ -178,8 +181,22 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                 alternatives.append((current == 0, -sum(map(int, allocations[ti])),
                                      ti, index, entry["field_name"]))
     alternatives.sort()
+    if native_paid_shortlist:
+        # Do not let first-invested ordering monopolize a paid comparison.
+        # Trees and per-rank proposals still come exclusively from Rust options.
+        by_tree = [[entry for entry in alternatives if entry[2] == tree_index]
+                   for tree_index in range(len(trees))]
+        ordered = []
+        for depth in range(max(map(len, by_tree), default=0)):
+            for bucket in by_tree:
+                if depth < len(bucket):
+                    ordered.append(bucket[depth])
+        attempts = ordered[:max_proposals]
+    else:
+        attempts = alternatives[:max_proposals]
+    shortlist = []
     for number, (_new_rank, _investment, ti, index, field) in enumerate(
-            alternatives[:max_proposals], start=1):
+            attempts, start=1):
         mutated = copy.deepcopy(original)
         slots = list(allocations[ti])
         if len(slots) <= index:
@@ -194,12 +211,24 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         request_file = attempts_dir / f"candidate_{number:02d}.json"
         prepared_file = attempts_dir / f"candidate_{number:02d}.prepared.json"
         request_file.write_text(json.dumps(mutated, indent=2) + "\n")
+        # A short native DPS screen is only a routing heuristic. Preserve the
+        # untouched full-world candidate request for later real 100-target runs.
+        screen_request = request_file
+        if native_paid_shortlist:
+            screen = copy.deepcopy(mutated)
+            screen.setdefault("simOptions", {}).update({
+                "iterations": 8, "randomSeed": "4242",
+                "debugFirstIteration": False,
+            })
+            screen["encounter"]["duration"] = 30
+            screen_request = attempts_dir / f"candidate_{number:02d}.screen.json"
+            screen_request.write_text(json.dumps(screen, indent=2) + "\n")
         # A successful exit without a newly written prepared actor is not proof
         # of preparation; remove any artifact from an earlier run first.
         prepared_file.unlink(missing_ok=True)
         result = subprocess.run(
             [str(binary.resolve()), "prepare", "--request",
-             str(request_file.resolve()), "--actor-level", str(to_level),
+             str(screen_request.resolve()), "--actor-level", str(to_level),
              "--outfile", str(prepared_file.resolve())],
             capture_output=True, text=True, timeout=60, check=False)
         if result.returncode:
@@ -252,6 +281,40 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             rejected.append({"field_name": field, "tree_index": ti,
                              "reason": "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH"})
             continue
+        if native_paid_shortlist:
+            paid_file = attempts_dir / f"candidate_{number:02d}.paid.json"
+            paid_file.unlink(missing_ok=True)
+            screen_result = {
+                "tree_index": ti, "field_name": field,
+                "candidate_talents": mutated["raid"]["parties"][0]["players"][0]["talentsString"],
+                "source_request": str(request_file.relative_to(out)),
+                "source_request_sha256": sha256(request_file),
+                "native_prepared_sha256": sha256(prepared_file),
+                "native_screen_request_sha256": sha256(screen_request),
+                "screen_status": "NATIVE_SCREEN_REFUSED",
+                "screen_dps_30s": None,
+            }
+            try:
+                paid = subprocess.run(
+                    [str(binary.resolve()), "sim", "--infile",
+                     str(prepared_file.resolve()), "--rng-mode", "balanced",
+                     "--outfile", str(paid_file.resolve())],
+                    capture_output=True, text=True, timeout=120, check=False)
+                if paid.returncode:
+                    raise RuntimeError((paid.stderr or paid.stdout or
+                                        "native screen refused")[-1200:])
+                actual = json.loads(paid_file.read_text())["result"]
+                dps = actual["raidMetrics"]["parties"][0]["players"][0]["dps"]["avg"]
+                if type(dps) not in (int, float) or not math.isfinite(dps):
+                    raise ValueError("native screen returned nonfinite DPS")
+                screen_result.update(screen_status="NATIVE_SCREEN_PAID",
+                                     screen_dps_30s=float(dps),
+                                     native_paid_receipt_sha256=sha256(paid_file))
+            except (OSError, ValueError, KeyError, RuntimeError,
+                    subprocess.TimeoutExpired) as exc:
+                screen_result["screen_refusal"] = str(exc)[-1200:]
+            shortlist.append(screen_result)
+            continue
         selected = out / "source_request.json"
         selected.write_bytes(request_file.read_bytes())
         receipt = {
@@ -271,6 +334,29 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             "next_step": "execute actual retained-actor hostile 100-kill native/gsim chain",
         }
         (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        return receipt
+    if native_paid_shortlist and shortlist:
+        # No single-spec route winner is selected by short native DPS.
+        # A caller must pay matching 100-target worlds (survival + elapsed)
+        # before replacing the current paid predecessor or claiming optimality.
+        receipt = {
+            "kind": "adjacent_native_warlock_candidate",
+            "status": "NATIVE_SCREENED_NOT_WORLD_PAID",
+            "from_level": from_level, "to_level": to_level,
+            "original_source_sha256": sha256(source),
+            "native_binary_sha256": sha256(binary),
+            "paid_predecessor": predecessor,
+            "native_options_source_revision": options.get("source_revision"),
+            "source_talents": actor["talentsString"],
+            "attempted": len(attempts),
+            "candidates": shortlist,
+            "native_refusals": rejected,
+            "world_winner": None,
+            "next_step": "pay authentic retained-actor hostile 100-target worlds for competing source-native builds",
+        }
+        serialized = json.dumps(receipt, indent=2) + "\n"
+        (out / "native_paid_shortlist.json").write_text(serialized)
+        (out / "proposal.json").write_text(serialized)
         return receipt
     # A full source loadout can become unpreparable on the next level even
     # when its prior actor was native-accepted (e.g. missing rating conversions).
@@ -446,6 +532,9 @@ def main() -> None:
     parser.add_argument("--from-level", type=int, default=20)
     parser.add_argument("--to-level", type=int, default=21)
     parser.add_argument("--max-proposals", type=int, default=30)
+    parser.add_argument("--native-paid-shortlist", action="store_true",
+                        help="Opt-in bounded cross-tree Rust prepare + balanced 30s paid screens; "
+                             "does NOT select a 100-mob winner or change the default route")
     parser.add_argument("--predecessor-route", type=Path,
                         help="Require exact executed paid previous-level source receipt")
     parser.add_argument("--predecessor-binary-sha256",
@@ -454,7 +543,8 @@ def main() -> None:
     args = parser.parse_args()
     result = propose(**vars(args))
     print(json.dumps(result, indent=2))
-    if result["status"] != "NATIVE_PREPARED_NOT_YET_PAID":
+    if result["status"] not in ("NATIVE_PREPARED_NOT_YET_PAID",
+                               "NATIVE_SCREENED_NOT_WORLD_PAID"):
         raise SystemExit(2)
 
 
