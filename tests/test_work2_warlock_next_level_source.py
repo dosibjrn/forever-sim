@@ -376,6 +376,21 @@ def test_recovered_native_gear_allows_new_talent_point_instead_of_banking(tmp_pa
     actor["level"] = 21
     actor["equipment"] = {"items": [{"id": 101}, {"id": 202}]}
     source.write_text(json.dumps(original))
+    # This is the exact paid source identity the generic range driver must
+    # recover from both the in-memory and cached native proposal.
+    predecessor_route = tmp_path / "paid-l21-route.json"
+    predecessor_route.write_text(json.dumps({
+        "class": "warlock", "measured_levels": [21],
+        "observations": [{
+            "id": "paid-l21", "level": 21,
+            "status": "measured_native_chain",
+            "source_request_sha256": next_level.sha256(source),
+            "engine_binary_sha256": next_level.sha256(binary),
+            "native_world_ack": True, "paid_native_recovery": True,
+            "targets_requested": 100, "targets_killed": 100,
+            "native_actor": {"class": "ClassWarlock", "level": 21},
+        }],
+    }))
     options = native_options()
     options["level"] = 22
     options["talents"]["points_available"] = 4
@@ -396,11 +411,16 @@ def test_recovered_native_gear_allows_new_talent_point_instead_of_banking(tmp_pa
     monkeypatch.setattr(next_level.subprocess, "run", fake_run)
     out = tmp_path / "recovered"
     receipt = next_level.propose(binary=binary, source=source, out=out,
-                                 from_level=21, to_level=22, max_proposals=2)
+                                 from_level=21, to_level=22, max_proposals=2,
+                                 predecessor_route=predecessor_route)
     selected = json.loads((out / "source_request.json").read_text())
     chosen = selected["raid"]["parties"][0]["players"][0]
     assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
     assert receipt["selection"] == "native_prepared_talent_after_gear_recovery"
+    paid = next_level.verified_paid_predecessor(
+        route=predecessor_route, source=source, binary=binary, from_level=21)
+    assert receipt["paid_predecessor"] == paid
+    assert json.loads((out / "proposal.json").read_text())["paid_predecessor"] == paid
     assert receipt["talent_points_newly_spent"] == 1
     assert receipt["source_talents"] == "0-0-011"
     assert chosen["talentsString"] == receipt["candidate_talents"] == "0-0-021"
