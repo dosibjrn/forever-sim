@@ -234,3 +234,43 @@ def test_equal_length_paid_segments_prefer_earliest_observed_start():
     assert path["status"] == "connected_native_paid_talent_frontier"
     assert path["levels"] == [20, 21]
     assert path["engine_binary_sha256"] == "b" * 64
+
+def test_same_engine_native_paid_path_minimizes_actual_paid_100_mob_time():
+    """Choose the cheaper *whole observed segment*, not the cheapest last node."""
+    a20 = observation(20, "0-0-11111111111")
+    a21 = observation(21, "0-0-111111111111")
+    b20 = observation(20, "0-0-2111111111")
+    b21 = observation(21, "0-0-21111111111")
+    for name, row, seconds in (
+        ("a20", a20, 30.0), ("a21", a21, 1.0),
+        ("b20", b20, 2.0), ("b21", b21, 8.0),
+    ):
+        row["id"] = name
+        row["seconds_per_mob"] = seconds
+    path = report(a20, a21, b20, b21)["native_paid_talent_continuity"]
+    assert path["status"] == "connected_native_paid_talent_frontier"
+    assert path["levels"] == [20, 21]
+    assert [step["native_observation_id"] for step in path["steps"]] == [
+        "b20", "b21",
+    ]
+    # B's actual comparable two-level 100-target total is 1,000 s;
+    # A's is 3,100 s. This does not infer leveling XP or a 10-60 replay.
+    assert path["cumulative_leveling_seconds"] is None
+
+
+def test_same_levels_faster_paid_binary_wins_over_lexicographic_binary():
+    slow20 = _engine_observation(20, "0-0-11111111111", "a")
+    slow21 = _engine_observation(21, "0-0-11111111111", "a")
+    fast20 = _engine_observation(20, "0-0-11111111111", "b")
+    fast21 = _engine_observation(21, "0-0-11111111111", "b")
+    for row, seconds in (
+        (slow20, 20.0), (slow21, 21.0), (fast20, 9.0), (fast21, 10.0),
+    ):
+        row["seconds_per_mob"] = seconds
+    path = report(slow20, slow21, fast20, fast21)[
+        "native_paid_talent_continuity"]
+    assert path["engine_binary_sha256"] == "b" * 64
+    assert [step["native_observation_id"] for step in path["steps"]] == [
+        "native-b-l20", "native-b-l21",
+    ]
+    assert path["xp_progression_simulated"] is False
