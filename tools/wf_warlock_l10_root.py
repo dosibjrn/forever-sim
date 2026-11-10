@@ -13,7 +13,14 @@ import copy
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
+
+# Workflow invokes this as "python tools/wf_warlock_l10_root.py". Ensure
+# package imports work without PYTHONPATH, as in the adjacent-range driver.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools import wf_warlock_native_start_source as same_level
 from tools import wf_warlock_next_level_source as next_level
@@ -215,15 +222,27 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
             route=route, source=source, binary=binary, from_level=10)
         reused.append(10)
     else:
-        if not source.is_file():
+        proposal_file = proposal_dir / "proposal.json"
+        if proposal_file.is_file():
+            # A previous process may have written the native options/prepare
+            # refusal before its guide. Resume that exact refused attempt
+            # instead of asking Rust to repeat unchanged native work.
+            proposal = json.loads(proposal_file.read_text())
+            if (proposal.get("native_binary_sha256") != engine_sha
+                    or proposal.get("original_template_sha256") != template_sha):
+                raise ValueError("cached L10 proposal has mismatched native identity")
+            if source.is_file():
+                if (proposal.get("status") != "NATIVE_PREPARED_NOT_YET_PAID"
+                        or proposal.get("selected_source_sha256") != next_level.sha256(source)):
+                    raise ValueError("cached L10 prepared source has mismatched native identity")
+            elif proposal.get("status") not in (
+                    "NATIVE_OPTIONS_REFUSED", "NATIVE_PREPARE_REFUSED_ALL_SOURCES"):
+                raise ValueError("cached L10 prepared proposal has no selected source")
+        elif source.is_file():
+            raise ValueError("cached L10 source has no native proposal receipt")
+        else:
             proposal = propose_root(binary=binary, template=template,
                                     out=proposal_dir, max_proposals=max_proposals)
-        else:
-            proposal = json.loads((proposal_dir / "proposal.json").read_text())
-            if (proposal.get("selected_source_sha256") != next_level.sha256(source)
-                    or proposal.get("native_binary_sha256") != engine_sha
-                    or proposal.get("original_template_sha256") != template_sha):
-                raise ValueError("cached L10 prepared source has mismatched native identity")
         if proposal["status"] != "NATIVE_PREPARED_NOT_YET_PAID":
             reason = json.dumps(proposal.get("native_refusals", []))[-3000:]
             _refusal_report(paid_dir, status=proposal["status"], reason=reason,
