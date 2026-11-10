@@ -1,6 +1,7 @@
 """New native L10 root must never inherit an L20 paid predecessor."""
 import json
 import subprocess
+import sys
 
 import pytest
 from pathlib import Path
@@ -234,3 +235,72 @@ def test_paid_driver_failure_without_receipt_keeps_unmeasured_root_and_resumes(
     assert second["stopped"]["status"] == expected_status
     assert second["completed_new_levels"] == []
     assert len(calls) == 1  # Resume never pays an equivalent failed attempt.
+
+
+def test_workflow_root_cli_imports_without_pythonpath():
+    # GitHub Actions invokes this file directly, not `python -m tools...`.
+    # -I excludes the ambient cwd/PYTHONPATH so the entrypoint must bootstrap
+    # its own imports, rather than depending on a developer's environment.
+    repo = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "-I", str(repo / "tools/wf_warlock_l10_root.py"),
+         "--help"], cwd=repo, capture_output=True, text=True, timeout=20,
+        check=False)
+    assert result.returncode == 0, result.stderr
+    assert "--end-level" in result.stdout
+
+
+def test_native_options_refusal_resumes_after_interrupted_guide_without_requery(
+        tmp_path, monkeypatch):
+    binary, template = _inputs(tmp_path)
+    calls = []
+
+    def refused_options(cmd, **kwargs):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 2, stderr="native L10 source refused")
+
+    monkeypatch.setattr(root.subprocess, "run", refused_options)
+    write_refusal = root._refusal_report
+
+    def interrupted(*args, **kwargs):
+        raise OSError("interrupted between proposal and guide publication")
+
+    monkeypatch.setattr(root, "_refusal_report", interrupted)
+    out = tmp_path / "resume"
+    with pytest.raises(OSError, match="interrupted"):
+        root.run(binary=binary, template=template, out=out)
+    assert len(calls) == 1
+    assert list(out.glob("L10/*/proposal/proposal.json"))
+    monkeypatch.setattr(root, "_refusal_report", write_refusal)
+    resumed = root.run(binary=binary, template=template, out=out)
+    assert resumed["stopped"]["status"] == "NATIVE_OPTIONS_REFUSED"
+    assert resumed["completed_new_levels"] == []
+    assert len(calls) == 1  # exact native refusal reused, not retried
+    report = json.loads(Path(resumed["last_paid_route"]).read_text())
+    assert report["measured_levels"] == []
+    assert "native L10 source refused" in report["native_refusals"][0]["error"]
+
+
+def test_prepared_l10_cache_without_selected_native_source_is_not_repaid(
+        tmp_path, monkeypatch):
+    binary, template = _inputs(tmp_path)
+    out = tmp_path / "orphaned"
+    key = root.paid_range._digest({
+        "level": 10, "native_binary": root.next_level.sha256(binary),
+        "template": root.next_level.sha256(template), "max_proposals": 30,
+        "health_threshold": 0.7, "mana_threshold": 0.25,
+        "recovery": "decisions", "target_count": 100, "hostile": True,
+    })
+    receipt = out / "L10" / key / "proposal" / "proposal.json"
+    root._write(receipt, {
+        "status": "NATIVE_PREPARED_NOT_YET_PAID",
+        "native_binary_sha256": root.next_level.sha256(binary),
+        "original_template_sha256": root.next_level.sha256(template),
+        "selected_source_sha256": "a" * 64,
+    })
+    monkeypatch.setattr(root, "propose_root",
+                        lambda **kwargs: pytest.fail("do not repropose orphaned actor"))
+    monkeypatch.setattr(root.guide, "main",
+                        lambda args: pytest.fail("do not pay unverified actor"))
+    with pytest.raises(ValueError, match="no selected source"):
+        root.run(binary=binary, template=template, out=out)
