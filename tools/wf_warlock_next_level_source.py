@@ -299,6 +299,73 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                     })
             final_ok, final_reason, final_request, final_prepared = try_native_gear("final")
             if final_ok:
+                # A bad inherited item must not force us to bank an otherwise
+                # native-preparable talent point. Retry the same Rust-supplied
+                # mutations on the equipment subset Rust just accepted.
+                # Neither candidate order nor item probing decides legality.
+                recovered_refusals = []
+                for retry, (_new_rank, _investment, ti, index, field) in enumerate(
+                        alternatives[:max_proposals], start=1):
+                    candidate = copy.deepcopy(frozen)
+                    candidate_actor = candidate["raid"]["parties"][0]["players"][0]
+                    slots = list(allocations[ti])
+                    if len(slots) <= index:
+                        slots.extend(["0"] * (index + 1 - len(slots)))
+                    slots[index] = str(int(slots[index]) + 1)
+                    pieces = list(allocations)
+                    pieces[ti] = "".join(slots)
+                    candidate_actor["talentsString"] = "-".join(pieces)
+                    request = attempts_dir / f"recovered_talent_{retry:02d}.json"
+                    prepared = attempts_dir / f"recovered_talent_{retry:02d}.prepared.json"
+                    request.write_text(json.dumps(candidate, indent=2) + "\n")
+                    response = subprocess.run(
+                        [str(binary.resolve()), "prepare", "--request",
+                         str(request.resolve()), "--actor-level", str(to_level),
+                         "--outfile", str(prepared.resolve())],
+                        capture_output=True, text=True, timeout=60, check=False)
+                    if response.returncode:
+                        recovered_refusals.append({
+                            "field_name": field, "tree_index": ti,
+                            "reason": (response.stderr or response.stdout)[-1200:]})
+                        continue
+                    try:
+                        prepared_actor = json.loads(prepared.read_text())["player"]
+                    except (ValueError, KeyError, OSError):
+                        recovered_refusals.append({
+                            "field_name": field, "tree_index": ti,
+                            "reason": "NATIVE_PREPARED_ACTOR_MISSING"})
+                        continue
+                    if (prepared_actor.get("level") != to_level
+                            or prepared_actor.get("class") != "ClassWarlock"):
+                        recovered_refusals.append({
+                            "field_name": field, "tree_index": ti,
+                            "reason": "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH"})
+                        continue
+                    selected = out / "source_request.json"
+                    selected.write_bytes(request.read_bytes())
+                    receipt = {
+                        "kind": "adjacent_native_warlock_candidate",
+                        "status": "NATIVE_PREPARED_NOT_YET_PAID",
+                        "from_level": from_level, "to_level": to_level,
+                        "original_source_sha256": sha256(source),
+                        "native_binary_sha256": sha256(binary),
+                        "selected_source_sha256": sha256(selected),
+                        "native_prepared_sha256": sha256(prepared),
+                        "native_options_source_revision": options.get("source_revision"),
+                        "source_talents": actor["talentsString"],
+                        "candidate_talents": candidate_actor["talentsString"],
+                        "selection": "native_prepared_talent_after_gear_recovery",
+                        "talent_points_newly_spent": 1,
+                        "field_name": field, "tree_index": ti,
+                        "native_gear_kept": kept,
+                        "native_gear_refusals": native_gear_refusals,
+                        "attempted": len(rejected) + retry,
+                        "native_refusals_before_selection": rejected,
+                        "native_refusals_after_gear_recovery": recovered_refusals,
+                        "next_step": "execute actual retained-actor hostile 100-kill native/gsim chain",
+                    }
+                    (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
+                    return receipt
                 selected = out / "source_request.json"
                 selected.write_bytes(final_request.read_bytes())
                 receipt = {
