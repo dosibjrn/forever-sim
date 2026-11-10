@@ -8,6 +8,7 @@ on:
       - src/v2/path_dp.py
       - src/v2/native_range_optimizer.py
       - tools/wf_warlock_native_range_optimize.py
+      - tools/wf_warlock_native_range_scored_adapter.py
       - tests/test_work2_native_range_optimizer.py
       - src/v2/native_paid_route.py
       - tools/wf_warlock_next_level_source.py
