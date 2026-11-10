@@ -84,71 +84,60 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         if _is_paid_native_level_node(node, level):
             candidates[level].append(node)
 
-    # Legacy L20 paid receipts may lack a prepared-actor identity while
-    # later levels independently have real native-prepared paid observations.
-    # Expose that interior segment, never a fabricated L20 -> L21 link.
-    observed_start = first_level
-    if not candidates.get(observed_start):
-        eligible_later = sorted(l for l in candidates if l > first_level)
-        if eligible_later:
-            observed_start = eligible_later[0]
-    levels = []
-    level = observed_start
-    while candidates.get(level):
-        levels.append(level)
-        level += 1
-    if not levels:
+    # Independent native-paid receipts can have several source binaries, gaps,
+    # and disconnected talent allocations. Choosing only the first eligible
+    # level hides a longer *real* interior segment if the initial actor is
+    # isolated (e.g. a new L20 actor on a different binary from L21-L28).
+    # Select the longest reachable contiguous single-binary segment; ties
+    # favor the earliest observed start, then deterministic binary ordering.
+    # This is not a continuous XP journey or a cross-binary talent transition.
+    if not candidates:
         return {
             "status": "no_native_prepared_paid_start",
             "levels": [], "steps": [],
-            "note": "No matching paid native-prepared actor receipts at the starting level.",
+            "note": "No matching paid native-prepared actor receipts at any observed level.",
         }
-
-    # A mixed historical manifest may contain several independently paid
-    # native binaries. Choose the longest *connected* single-binary prefix,
-    # not the lexicographically first SHA (which can lose paid observations).
-    # This is only receipt lineage: zero weights prohibit invented XP-time
-    # comparisons across different level/scenario observations.
-    binaries = sorted({
-        node.details["native_receipt"]["engine_binary_sha256"]
-        for node in candidates[observed_start]
-        if isinstance(node.details["native_receipt"].get("engine_binary_sha256"), str)
-    })
-    if not binaries:
-        return {"status": "no_native_engine_identity", "levels": [], "steps": []}
 
     model = NativeTalentStringModel()
     selected_engine = None
+    observed_start = None
     path = None
     last_error = None
-    for engine in binaries:
-        pools = {}
-        for level in levels:
-            nodes = [
-                node for node in candidates[level]
-                if node.details["native_receipt"].get("engine_binary_sha256") == engine
-            ]
-            if not nodes:
-                break
-            pools[level] = nodes
-            try:
-                # A paid level can be native-valid yet unable to follow its
-                # predecessor without a respec. Retain the proven prefix;
-                # never bridge the discontinuity or use another binary.
-                candidate_path = solve_path_dp(
-                    pools, model=model, max_respecs=0,
-                    weights={l: 0.0 for l in pools}, native_paid=True)
-            except (ValueError, TypeError) as exc:
-                last_error = f"{type(exc).__name__}: {exc}"
-                break
-            if path is None or len(candidate_path.steps) > len(path.steps):
-                path = candidate_path
-                selected_engine = engine
+    for start in sorted(candidates):
+        binaries = sorted({
+            node.details["native_receipt"]["engine_binary_sha256"]
+            for node in candidates[start]
+        })
+        for engine in binaries:
+            pools = {}
+            level = start
+            while candidates.get(level):
+                nodes = [
+                    node for node in candidates[level]
+                    if node.details["native_receipt"].get("engine_binary_sha256") == engine
+                ]
+                if not nodes:
+                    break
+                pools[level] = nodes
+                try:
+                    # A paid actor is a valid observation, but a successor
+                    # requiring an unexecuted respec cannot be appended.
+                    candidate_path = solve_path_dp(
+                        pools, model=model, max_respecs=0,
+                        weights={l: 0.0 for l in pools}, native_paid=True)
+                except (ValueError, TypeError) as exc:
+                    last_error = f"{type(exc).__name__}: {exc}"
+                    break
+                if path is None or len(candidate_path.steps) > len(path.steps):
+                    path = candidate_path
+                    selected_engine = engine
+                    observed_start = start
+                level += 1
     if path is None:
         return {
             "status": "not_connected_native_paid",
             "levels": sorted(candidates), "steps": [],
-            "reason": last_error or "No valid native-paid starting level",
+            "reason": last_error or "No valid native-paid observed level",
         }
     steps = [{
         "level": step.node.level,
