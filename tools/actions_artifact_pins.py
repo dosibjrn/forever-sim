@@ -17,9 +17,12 @@ _ARTIFACT_ID_FIELD = re.compile(
     r"""["']artifact_id["']\s*:\s*["']?([1-9]\d*)["']?\s*(?=[,}])""")
 # Human prose in retained evidence and issue/PR discussion often records only
 # "artifact #123" or "artifact ID: 123", without a URL or JSON field.
-# Those are explicit artifact references and must pin the original evidence.
+# Receipts also render IDs as Markdown, e.g. artifact ID **`13075957889`**.
+# Preserve those explicit artifact references even without a run URL. Never
+# accept a numeric prefix of a malformed alphanumeric identifier.
+# A retained Python regression can wrap a comment: "artifact\n# #1324..."; the first hash is the next line's comment marker.
 _ARTIFACT_PROSE_ID = re.compile(
-    r"\bartifact\s+(?:#\s*|id\s*[:=#]?\s*)([1-9]\d*)\b",
+    r"\bartifact\s+(?:#\s*)?(?:#\s*|id\s*[:=#]?\s*)(?:\*\*)?`?([1-9]\d*)`?(?:\*\*)?(?!\w)",
     flags=re.IGNORECASE,
 )
 # Machine-readable receipts can reference a workflow run only by numeric ID.
@@ -287,6 +290,11 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
         for path in (root / ".github/workflows").rglob(pattern):
             record_references(path.read_text(encoding="utf-8"),
                               runs, artifacts)
+    # Native Rust regression cases can be the sole retained provenance for a
+    # stage-5 failure. Inspect their real source comments before GC: unlike
+    # synthetic tests, these in-repo reproductions cite paid native artifacts.
+    for path in (root / "integrations/mythicsim-rust/tests").rglob("*.py"):
+        record_references(path.read_text(encoding="utf-8"), runs, artifacts)
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
                  "docs/planning/M1_PASSES.tsv"):
         record_references((root / name).read_text(encoding="utf-8"),
