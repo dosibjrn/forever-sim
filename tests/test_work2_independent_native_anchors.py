@@ -180,3 +180,58 @@ def test_one_cli_invocation_defaults_to_independent_anchor_scoring(tmp_path, mon
     assert len(calls) == 5
     assert all(row["parent"] is None for row in calls)
     assert report["ranked_alternatives"] == []
+
+
+def test_failed_native_anchor_producer_preserves_refusal_and_visits_later_levels(
+    tmp_path, monkeypatch,
+):
+    """An L30 native producer failure must not erase L20 or starve L40-L60."""
+    from tools import wf_warlock_native_range_optimize as cli
+    from tools import wf_warlock_native_range_scored_adapter as scored
+
+    levels_requested = []
+    scored_levels = []
+
+    def source_producer(command, *, input, capture_output, text, timeout, check):
+        request = json.loads(input)
+        level = request["level"]
+        levels_requested.append(level)
+        assert request["parent"] is None
+        assert request["mob_count"] == 3
+        assert request["recover_to_full"] is True
+        if level == 30:
+            return subprocess.CompletedProcess(
+                command, 7, stderr="native options refused level 30",
+            )
+        return subprocess.CompletedProcess(
+            command, 0, stdout=json.dumps({"entries": [], "refusals": []}),
+        )
+
+    def paid_scorer(request, **kwargs):
+        scored_levels.append(request["level"])
+        return [
+            receipt(request["level"], 3, "slower", 12.0),
+            receipt(request["level"], 3, "faster", 9.0),
+        ]
+
+    monkeypatch.setattr(scored, "evaluate_request", paid_scorer)
+    evaluator = cli.live_native_frontier_evaluator(
+        ["native-frontier"], binary=tmp_path / "native-binary",
+        target_hp=400.0, scorer_command=["native-scorer"],
+        artifact_dir=tmp_path, run_command=source_producer,
+    )
+    outcome = optimize(20, 60, 10, 3, 20, evaluate=evaluator)
+    assert levels_requested == [20, 30, 40, 50, 60]
+    assert scored_levels == [20, 40, 50, 60]  # No fabricated L30 payment.
+    assert outcome["status"] == "INDEPENDENT_NATIVE_ANCHORS_PARTIAL"
+    assert outcome["sampled_levels_completed"] == [20, 40, 50, 60]
+    assert outcome["native_attempts_by_level"]["30"] == 1
+    assert outcome["independent_level_rankings"]["30"] == []
+    assert outcome["native_candidates_examined"] == 9
+    refusal = next(row for row in outcome["rejected_native_attempts"]
+                   if row["level"] == 30)
+    assert refusal["native_status"] == "NATIVE_FRONTIER_PRODUCER_EXECUTION_ERROR"
+    assert "exit 7: native options refused level 30" in refusal["native_refusal"]
+    stored = list(tmp_path.glob("source-frontier-*/native-frontier-failure.json"))
+    assert len(stored) == 1
+    assert json.loads(stored[0].read_text())["native_refusal"] == refusal["native_refusal"]
