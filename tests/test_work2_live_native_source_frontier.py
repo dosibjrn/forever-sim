@@ -684,10 +684,10 @@ def test_independent_l30_uses_native_level_points_and_preserves_scaled_apl_root(
         return subprocess.CompletedProcess(cmd, 0)
 
     result = produce_frontier(
-        {**_request(level=30, budget=5), "search_mode": "independent"},
+        {**_request(level=30, budget=7), "search_mode": "independent"},
         binary=binary, seed_source=seed, out=tmp_path / "native", runner=native,
     )
-    assert len(result["entries"]) == 5
+    assert len(result["entries"]) == 7
     assert result["refusals"] == []
     assert proposed == [
         ("55551-0-0", 101),
@@ -695,7 +695,11 @@ def test_independent_l30_uses_native_level_points_and_preserves_scaled_apl_root(
         ("00-0-55551", 101),
         ("55551-0-0", 102),
         ("55551-0-0", 103),
+        ("45551-1-0", 101),
+        ("45551-0-1", 101),
     ]
+    # Both the first three families and later native-sourced rank transfers
+    # must spend the L30 option budget; only Rust prepare judges legality.
     assert all(sum(int(c) for tree in talents.split("-") for c in tree) == 21
                for talents, _ in proposed)
     assert all(entry["parent_source_sha256"] is None for entry in result["entries"])
