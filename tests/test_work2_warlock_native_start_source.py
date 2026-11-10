@@ -27,7 +27,9 @@ def test_preserves_full_source_when_native_accepts(tmp_path, monkeypatch):
         request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
         seen.append(request["raid"]["parties"][0]["players"][0]["equipment"]["items"])
         assert cmd[1] == "prepare" and cmd[-2] == "--outfile"
-        assert cmd[cmd.index("--actor-level") + 1] == "20"
+        # The native prepare CLI reads level from the source request.
+        # Forwarding --actor-level is rejected by the selected Rust engine.
+        assert "--actor-level" not in cmd
         with open(cmd[-1], "w") as f:
             json.dump({"player": {"class": "ClassWarlock",
                                   "race": "RaceTroll", "level": 20}}, f)
