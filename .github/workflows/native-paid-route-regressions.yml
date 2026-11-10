@@ -229,3 +229,54 @@ jobs:
             cross-tree/
           if-no-files-found: warn
           retention-days: 14
+
+  # One requested real sparse optimizer run. This stays on the feature PR
+  # branch and never launches a historical 100-mob validation replay.
+  sparse-optimizer-real:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/generic-sparse-compatible-optimize-20261110' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact generic optimizer PR
+        uses: actions/checkout@v4
+        with:
+          path: project
+      - name: Checkout exact recovery-capable source Rust
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 18832d58ac763253102243fc7b6fbe13e2119cc4
+          path: engine
+      - name: Confirm exact Rust revision
+        run: test "$(git -C engine rev-parse HEAD)" = "18832d58ac763253102243fc7b6fbe13e2119cc4"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install native-world Python dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build recovery-capable Rust binary
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Run actual sparse 20/40/60 compatible optimizer, two balanced native mobs
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python -m src.v2.runner optimize \
+            --class warlock --tree unconstrained \
+            --start-level 20 --end-level 60 --level-stride 20 \
+            --n-mobs 2 --recover-at-end true --rng balanced \
+            --backend rust --budget 24 \
+            --native-binary ../engine/target/debug/forever-engine \
+            --source fixtures/warlock-l20-native-paid-30s.request.json \
+            --out runs/sparse-l20-l40-l60.json
+      - name: Preserve real source/prepare/ACK/terminal receipts and optimizer result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: requested-sparse-optimize-${{ github.run_id }}
+          path: project/runs/
+          if-no-files-found: warn
+          retention-days: 14
