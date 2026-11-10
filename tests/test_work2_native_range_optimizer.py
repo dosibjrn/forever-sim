@@ -512,3 +512,101 @@ def test_range_report_retains_candidate_id_and_native_failure_detail():
     assert row["candidate_id"] == "affliction"
     assert row["native_status"] == "NATIVE_TERMINAL_FULL_RECOVERY_NOT_RECORDED"
     assert row["native_refusal"] == "native source returned no post-final-kill recovery"
+
+
+
+def test_scored_adapter_keeps_single_native_successor_for_a_competing_parent(tmp_path):
+    """Single child per parent must not kill the surviving two-path beam."""
+    import json
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"exact-native-binary")
+    parent_sha = "a" * 64
+    manifest = _prepared_manifest(
+        tmp_path, level=30, labels=("only",), parent_sha=parent_sha,
+        native_continuity=True)
+    observed = []
+
+    def native_runner(binary_arg, prepared_arg, **kwargs):
+        observed.append((binary_arg, prepared_arg, kwargs))
+        prepared = json.loads(prepared_arg.read_text())
+        return {
+            "source_sha256": prepared["request_sha256"],
+            "world_target_hp": 400.0,
+            "world_targets_killed": 3,
+            "continuous_native_actor": True,
+            "actual_2d_ack": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "paid_recovery": True,
+            "native_windows": [
+                {"index": i, "native_kill_ns": (i + 1) * 1_000_000_000,
+                 "actor_health": 80.0} for i in range(3)
+            ],
+            "native_actor_mana_after_world_kills": [120.0] * 3,
+            "world_elapsed_seconds": 3.0,
+            "native_terminal_recovery": {
+                "paid": True, "native_clock_accounted": True,
+                "start_clock_ns": 3_000_000_000,
+                "end_clock_ns": 5_000_000_000,
+                "health_before": 80.0, "mana_before": 120.0,
+                "health_after": 100.0, "mana_after": 200.0,
+            },
+        }
+
+    def no_batch_scorer(*args, **kwargs):
+        raise AssertionError("single continuation must not invoke two-candidate CLI")
+
+    rows = evaluate_request(
+        {"level": 30, "parent": {"level": 20,
+                                 "source_request_sha256": parent_sha},
+         "mob_count": 3, "budget": 1, "rng_mode": "balanced",
+         "iterations": 1, "recover_to_full": True},
+        manifest=manifest, binary=binary, target_hp=400.0,
+        scorer_command=["work1-native-scorer"], artifact_dir=tmp_path / "raw",
+        run_command=no_batch_scorer, run_native_single=native_runner)
+    assert len(observed) == 1
+    assert observed[0][2] == {
+        "target_count": 3, "mob_health": 400.0, "rng_mode": "balanced",
+        "recovery_policy": "decisions", "health_threshold": 1.0,
+        "mana_threshold": 1.0,
+    }
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["native_prepared"] is True
+    assert row["native_full_recovery_paid"] is True
+    assert row["elapsed_seconds"] == 5.0
+    assert row["terminal_recovery_seconds"] == 2.0
+    assert row["native_parent_source_sha256"] == parent_sha
+    assert row["native_continuity_ack"] is True
+    assert json.loads(
+        (tmp_path / "raw").glob("level-30-native-*").__next__().joinpath(
+            "only.native.json").read_text())["world_targets_killed"] == 3
+
+
+def test_single_native_successor_never_gets_free_terminal_recovery(tmp_path):
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"exact-native-binary")
+    parent_sha = "a" * 64
+    manifest = _prepared_manifest(
+        tmp_path, level=30, labels=("only",), parent_sha=parent_sha,
+        native_continuity=True)
+    # An ACK alone is not a valid paid terminal full-resource receipt.
+    def incomplete_native(*args, **kwargs):
+        return {"source_sha256": "x" * 64, "world_targets_killed": 3,
+                "actual_2d_ack": True}
+
+    rows = evaluate_request(
+        {"level": 30, "parent": {"level": 20,
+                                 "source_request_sha256": parent_sha},
+         "mob_count": 3, "budget": 1, "rng_mode": "balanced",
+         "iterations": 1, "recover_to_full": True},
+        manifest=manifest, binary=binary, target_hp=400.0,
+        scorer_command=["work1-native-scorer"], artifact_dir=tmp_path / "raw",
+        run_native_single=incomplete_native)
+    assert len(rows) == 1
+    assert rows[0]["native_prepared"] is False
+    assert "INCOMPLETE_NATIVE_WORLD" in rows[0]["status"]
