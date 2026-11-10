@@ -151,3 +151,40 @@ def test_incomplete_first_level_candidate_cannot_hide_other_paid_engine():
     assert path["levels"] == [20, 21]
     assert all(step["native_observation_id"].startswith("native-b-")
                for step in path["steps"])
+
+
+def test_missing_prepared_l20_exposes_l21_l22_paid_interior_without_fake_start():
+    """Source-paid interior is useful, but does not establish an L20 edge."""
+    l20 = observation(20, "0-0-11111111111", actor=False)
+    l21 = observation(21, "0-0-11111111111")
+    l22 = observation(22, "0-0-111111111111")
+    result = report(l20, l21, l22)
+    path = result["native_paid_talent_continuity"]
+    assert path["status"] == "interior_native_paid_talent_frontier"
+    assert path["requested_start_level"] == 20
+    assert path["observed_start_level"] == 21
+    assert path["missing_preceding_levels"] == [20]
+    assert path["levels"] == [21, 22]
+    assert [step["kind"] for step in path["steps"]] == ["start", "point"]
+    assert result["measured_levels"] == [20, 21, 22]
+    assert result["full_10_60_native_replay_executed"] is False
+    assert "No native-prepared link from L20" in render_guide(result)
+
+
+def test_paid_interior_never_stitches_different_engine_binaries():
+    l20 = observation(20, "0-0-11111111111", actor=False)
+    l21 = _engine_observation(21, "0-0-11111111111", "a")
+    l22 = _engine_observation(22, "0-0-111111111111", "b")
+    path = report(l20, l21, l22)["native_paid_talent_continuity"]
+    assert path["status"] == "single_interior_native_paid_level"
+    assert path["levels"] == [21]
+    assert path["engine_binary_sha256"] == "a" * 64
+    assert path["missing_preceding_levels"] == [20]
+
+
+def test_no_prepared_native_paid_actor_still_has_no_talent_lineage():
+    l20 = observation(20, "0-0-11111111111", actor=False)
+    l21 = observation(21, "0-0-11111111111", actor=False)
+    path = report(l20, l21)["native_paid_talent_continuity"]
+    assert path["status"] == "no_native_prepared_paid_start"
+    assert path["levels"] == []
