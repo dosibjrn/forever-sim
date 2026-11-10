@@ -742,3 +742,49 @@ def test_unreadable_workflow_evidence_fails_closed(tmp_path):
 
     with pytest.raises(UnicodeDecodeError):
         collect_local_references(tmp_path)
+
+
+@pytest.mark.parametrize(("reference", "expected_run"), [
+    ("Reproduce with `gh run view 42774486402 --repo dosibjrn/forever-sim`.",
+     42774486402),
+    ("Native artifact via gh run download 42777347218 -D /tmp/native.",
+     42777347218),
+    ("Full transcript: GH RUN VIEW 42573539316.", 42573539316),
+])
+def test_gh_cli_run_references_pin_origin_artifacts(reference, expected_run):
+    """An explicit gh CLI run ID is evidence even without an Actions URL."""
+    runs, artifacts = set(), set()
+    record_references(reference, runs, artifacts)
+    assert runs == {expected_run}
+    assert artifacts == set()
+
+
+def test_gh_cli_run_pin_requires_an_explicit_valid_command_and_id():
+    runs, artifacts = set(), set()
+    record_references(
+        "gh run list 987654; gh run view 123abc; gh run download 0; "
+        "gh run view --repo dosibjrn/forever-sim 456; "
+        "notgh run view 789; gh run view not-a-number",
+        runs, artifacts,
+    )
+    assert runs == set()
+    assert artifacts == set()
+
+
+def test_local_native_log_gh_cli_command_protects_its_run(tmp_path):
+    """GC's existing local evidence scan must use the new CLI-run parser."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    receipt = tmp_path / "evidence/warlock/paid-native.log"
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(
+        "Native replay command: gh run download 42777347218 "
+        "--repo dosibjrn/forever-sim\\n",
+        encoding="utf-8",
+    )
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42777347218}
+    assert artifacts == set()
