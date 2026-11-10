@@ -375,3 +375,127 @@ def test_native_prepared_apl_fallbacks_compete_after_tree_families(tmp_path):
     assert "native APL refused" in result["refusals"][0]["native_refusal"]
     assert all(action != 999 and action != 104 for _, action in attempts)
     assert Path(result["entries"][-1]["source_request"]).is_file()
+
+
+def _scored_parent(tmp_path: Path):
+    """Exact paid-source evidence supplied to Work2, not Warcraft gameplay."""
+    seed, binary = _root_source(tmp_path)
+    sha = hashlib.sha256(seed.read_bytes()).hexdigest()
+    prepared = tmp_path / "L20.prepared.json"
+    prepared.write_text(json.dumps({
+        "request_sha256": sha,
+        "player": {"class": "ClassWarlock", "level": 20},
+    }))
+    raw = tmp_path / "L20.native.json"
+    raw.write_text(json.dumps({
+        "source_sha256": sha, "actual_2d_ack": True,
+        "world_targets_killed": 3,
+        "native_terminal_recovery": {
+            "paid": True, "native_clock_accounted": True,
+            "max_health": 100, "max_mana": 200,
+            "health_after": 100, "mana_after": 200,
+        },
+    }))
+    return seed, binary, {
+        "level": 20, "mob_count": 3, "source_request_sha256": sha,
+        "engine_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+        "source_request_file": str(seed),
+        "prepared_file": str(prepared),
+        "native_raw_receipt_file": str(raw),
+    }
+
+
+def test_paid_parent_advances_through_every_native_prepared_sparse_level(tmp_path):
+    seed, binary, parent = _scored_parent(tmp_path)
+    prepared_levels = []
+    proposed_talents = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            assert cmd[-1] == "30"
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 30, "talents": {"status": "ok", "trees": [
+                    {"talents": [{"index": 0, "max_rank": 5},
+                                 {"index": 1, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                ]},
+            }))
+        source = Path(cmd[cmd.index("--request") + 1])
+        prepared = Path(cmd[cmd.index("--outfile") + 1])
+        request = json.loads(source.read_text())
+        actor = request["raid"]["parties"][0]["players"][0]
+        level = actor["level"]
+        assert request["encounter"]["targets"][0]["level"] == level
+        prepared_levels.append(level)
+        if level == 30:
+            proposed_talents.append(actor["talentsString"])
+            if actor["talentsString"] == "21-0-0":
+                return subprocess.CompletedProcess(
+                    cmd, 2, stderr="source native refused new rank")
+        else:
+            assert actor["talentsString"] == "11-0-0"  # No skipped-level respec
+        prepared.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": level},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        _request(level=30, parent=parent, budget=3), binary=binary,
+        seed_source=seed, out=tmp_path / "native", runner=native)
+    assert prepared_levels[:9] == list(range(21, 30))
+    assert prepared_levels[9:] == [30, 30, 30]
+    assert proposed_talents == ["11-0-0", "21-0-0", "12-0-0"]
+    assert result["native_intermediate_prepares"] == 9
+    assert len(result["entries"]) == 2
+    assert len(result["refusals"]) == 1
+    assert "source native refused new rank" in result["refusals"][0]["native_refusal"]
+    for entry in result["entries"]:
+        assert entry["parent_source_sha256"] == parent["source_request_sha256"]
+        lineage = json.loads(Path(entry["native_continuity_receipt"]).read_text())
+        assert lineage["native_continuity_from_level"] == 20
+        assert lineage["native_intermediate_levels_verified"] is True
+        assert lineage["native_parent_raw_receipt_sha256"] == hashlib.sha256(
+            Path(parent["native_raw_receipt_file"]).read_bytes()).hexdigest()
+        assert [step["level"] for step in lineage["infill"]] == list(range(21, 30))
+        assert all(Path(step["prepared"]).exists() for step in lineage["infill"])
+
+
+def test_sparse_native_prepare_refusal_stops_at_actual_failed_level(tmp_path):
+    seed, binary, parent = _scored_parent(tmp_path)
+    visited = []
+
+    def native(cmd, **kwargs):
+        assert cmd[1] == "prepare"  # Never ask for target options after broken infill
+        source = Path(cmd[cmd.index("--request") + 1])
+        level = json.loads(source.read_text())["raid"]["parties"][0]["players"][0]["level"]
+        visited.append(level)
+        if level == 23:
+            return subprocess.CompletedProcess(cmd, 2, stderr="Rust refused L23 actor")
+        prepared = Path(cmd[cmd.index("--outfile") + 1])
+        prepared.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": level},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        _request(level=30, parent=parent), binary=binary,
+        seed_source=seed, out=tmp_path / "native", runner=native)
+    assert visited == [21, 22, 23]
+    assert result["entries"] == []
+    assert result["refusals"][0]["status"] == "NATIVE_CONTINUITY_NOT_ATTESTED"
+    assert "Rust refused L23 actor" in result["refusals"][0]["native_refusal"]
+
+
+def test_source_parent_mismatch_never_asks_native_for_an_edge(tmp_path):
+    seed, binary, parent = _scored_parent(tmp_path)
+    parent["engine_binary_sha256"] = "f" * 64
+    result = produce_frontier(
+        _request(level=30, parent=parent), binary=binary,
+        seed_source=seed, out=tmp_path / "native",
+        runner=lambda *args, **kwargs: 1 / 0)
+    assert result["entries"] == []
+    assert "engine" in result["refusals"][0]["native_refusal"]
+    assert result["refusals"][0]["native_prepared"] is False
