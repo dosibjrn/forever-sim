@@ -397,7 +397,6 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     import argparse
     import json
     import sys
-    import tempfile
     from pathlib import Path
 
     ap = argparse.ArgumentParser(prog="optimize",
@@ -434,31 +433,30 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         if not args.native_binary.is_file() or not args.source.is_file():
             ap.error("native engine and initial source request must exist")
         from tools.wf_warlock_native_range_optimize import live_native_frontier_evaluator
-        with tempfile.TemporaryDirectory(prefix="optimize-native-") as folder:
-            base = Path(folder)
-            producer = [
-                sys.executable, "tools/wf_warlock_native_source_frontier.py",
-                "--binary", str(args.native_binary.resolve()),
-                "--seed-source", str(args.source.resolve()),
-                "--out", str((base / "source").resolve()),
-            ]
-            evaluator = live_native_frontier_evaluator(
-                producer, binary=args.native_binary,
-                target_hp=args.target_hp,
-                scorer_command=[sys.executable,
-                                "tools/wf_warlock_native_candidate_scoring.py"],
-                artifact_dir=base,
-            )
-            # Keep paid receipts: temporary folders must never silently
-            # dispose of actual native measurements.
-            ap.error("pass --out to retain native-paid receipts") if args.out is None else None
-            result = optimize(
-                args.start_level, args.end_level, args.level_stride,
-                args.n_mobs, args.budget, evaluate=evaluator,
-                beam_width=args.beam_width, rng_mode=args.rng,
-                iterations=args.iterations, mode="compatible",
-                class_name=cls, talent_tree=args.tree, backend=args.backend,
-            )
+        if args.out is None:
+            ap.error("--out is required for native runs to retain paid receipts")
+        base = args.out.parent / (args.out.stem + ".native-receipts")
+        base.mkdir(parents=True, exist_ok=True)
+        producer = [
+            sys.executable, "tools/wf_warlock_native_source_frontier.py",
+            "--binary", str(args.native_binary.resolve()),
+            "--seed-source", str(args.source.resolve()),
+            "--out", str((base / "source").resolve()),
+        ]
+        evaluator = live_native_frontier_evaluator(
+            producer, binary=args.native_binary,
+            target_hp=args.target_hp,
+            scorer_command=[sys.executable,
+                            "tools/wf_warlock_native_candidate_scoring.py"],
+            artifact_dir=base,
+        )
+        result = optimize(
+            args.start_level, args.end_level, args.level_stride,
+            args.n_mobs, args.budget, evaluate=evaluator,
+            beam_width=args.beam_width, rng_mode=args.rng,
+            iterations=args.iterations, mode="compatible",
+            class_name=cls, talent_tree=args.tree, backend=args.backend,
+        )
     else:
         result = optimize(
             args.start_level, args.end_level, args.level_stride,
