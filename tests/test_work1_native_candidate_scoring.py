@@ -245,3 +245,73 @@ def test_duplicate_proposal_does_not_hide_a_later_faster_native_build(tmp_path):
     assert output["winner_candidate_id"] == "later"
     assert output["winner_elapsed_seconds"] == 19
     assert output["candidates"][1]["status"] == "DUPLICATE_NATIVE_PREPARED_SOURCE"
+
+
+
+def test_single_native_successor_is_paid_but_not_mislabeled_optimized(tmp_path):
+    path = tmp_path / "only.json"
+    path.write_text(json.dumps(_prepared("a" * 64)))
+    calls = []
+
+    def runner(binary, prepared, **kwargs):
+        calls.append((prepared.stem, kwargs["target_count"]))
+        return _receipt("a" * 64, kill_seconds=12, recovery_seconds=7)
+
+    output = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths={"only": path}, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=runner)
+    assert calls == [("only", 3)]
+    assert output["comparable_candidates"] == 1
+    assert output["candidates"][0]["elapsed_seconds"] == 19
+    assert output["winner_candidate_id"] is None
+    assert output["status"] == "PROVISIONAL_NO_COMPETITIVE_FULL_RECOVERY"
+
+
+def test_same_source_sha_with_different_prepared_bytes_is_a_refusal(tmp_path):
+    paths = {}
+    for candidate_id, source, max_hp in (
+        ("first", "a" * 64, 1000.),
+        ("conflict", "a" * 64, 1300.),
+        ("genuine", "b" * 64, 1000.),
+    ):
+        path = tmp_path / f"{candidate_id}.json"
+        prepared = _prepared(source)
+        prepared["player"]["stats"]["Health"] = max_hp
+        path.write_text(json.dumps(prepared))
+        paths[candidate_id] = path
+    calls = []
+
+    def runner(binary, prepared, **kwargs):
+        calls.append(prepared.stem)
+        if prepared.stem == "first":
+            return _receipt("a" * 64, kill_seconds=16, recovery_seconds=9)
+        return _receipt("b" * 64, kill_seconds=17, recovery_seconds=2)
+
+    output = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths=paths, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=runner)
+    assert calls == ["first", "genuine"]
+    assert output["comparable_candidates"] == 2
+    assert output["winner_candidate_id"] == "genuine"
+    assert output["candidates"][1]["status"] == "CONFLICTING_NATIVE_PREPARED_SOURCE"
+    assert output["candidates"][1]["duplicate_of"] == "first"
+    assert output["candidates"][1]["elapsed_seconds"] is None
+
+
+def test_invalid_prepared_source_sha_does_not_consume_paid_mobs(tmp_path):
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text(json.dumps(_prepared("bad-native-source")))
+    calls = []
+
+    def runner(*args, **kwargs):
+        calls.append(True)
+        raise AssertionError("invalid native source identity must be refused")
+
+    output = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths={"invalid": invalid},
+        actor_level=30, mob_count=3, target_hp=1200.,
+        run_native=runner)
+    assert calls == []
+    assert output["comparable_candidates"] == 0
+    assert output["winner_candidate_id"] is None
+    assert output["candidates"][0]["status"] == "INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY"
