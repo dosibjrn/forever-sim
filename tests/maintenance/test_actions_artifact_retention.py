@@ -248,3 +248,26 @@ def test_native_ack_ci_does_not_rerun_completed_warlock_l20_cold_search():
     assert "          tests/test_work2_warlock_native_cold.py" in fast
     assert "          tests/test_work2_warlock_native_cold_cli.py" in fast
     assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+def test_accepted_priest_l20_cold_once_remains_retired():
+    """Retain native Priest P4/P5 tests without the accepted paid cold launcher."""
+    assert not (ROOT / ".github/workflows/work1-priest-l20-cold-once.yml").exists()
+    ci = (ROOT / ".github/workflows/generic-source-search-regressions.yml"
+          ).read_text(encoding="utf-8")
+    for source in (
+        "tools/wf_native_priest_l20_cold.py",
+        "tools/wf_native_priest_l20_paid.py",
+        "src/v2/source_bounded_joint_frontier.py",
+    ):
+        assert "      - '" + source + "'\n" in ci, (
+            f"native source change must trigger cheap CI: {source}")
+    for test in (
+        "tests/test_wf_native_priest_l20_cold.py",
+        "tests/test_wf_native_priest_l20_paid.py",
+        "tests/test_work1_p4_p5_single_cold_snapshot.py",
+    ):
+        assert "      - '" + test + "'\n" in ci, (
+            f"test change must trigger cheap CI: {test}")
+        assert "          " + test + "\n" in ci, (
+            f"Priest native transport regression not executed in shared CI: {test}")
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
