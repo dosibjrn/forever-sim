@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+# Dispatch the source-native optimizer before the historical engine registry is
+# imported: that legacy module eagerly parses --class against its old class
+# registry and rejects Warlock before the generic optimizer can see the CLI.
+import sys
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "optimize":
+    from .native_range_optimizer import main as _native_optimize_main
+
+    raise SystemExit(_native_optimize_main(sys.argv[2:]))
+
 import argparse
 import json
 import multiprocessing as mp
 import os
-import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
