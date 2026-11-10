@@ -129,8 +129,15 @@ def evaluate_request(
                "--target-hp", str(target_hp), "--out", str(call_dir)]
     for cid, (path, _, _, _) in candidates.items():
         command.extend(["--prepared", f"{cid}={path}"])
-    completed = run_command(command, capture_output=True, text=True,
-                            timeout=1800, check=False)
+    try:
+        completed = run_command(command, capture_output=True, text=True,
+                                timeout=1800, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return refused + [
+            _refusal({"id": cid}, "NATIVE_SCORER_TRANSPORT_ERROR:"
+                     + str(exc)[-200:], src)
+            for cid, (_, _, src, _) in candidates.items()
+        ]
     if completed.returncode:
         return refused + [
             _refusal({"id": cid}, "NATIVE_SCORER_EXIT_"
@@ -201,8 +208,11 @@ def evaluate_request(
                 "prepared_file": str(path),
             })
         except (KeyError, ValueError, TypeError, OSError) as exc:
-            rows.append(_refusal({"id": cid}, "NATIVE_SCORER_RECEIPT_REFUSAL:"
-                                 + str(exc)[-180:], src))
+            refusal = _refusal({"id": cid}, "NATIVE_SCORER_RECEIPT_REFUSAL:"
+                               + str(exc)[-180:], src)
+            if comparison.get("refusal") is not None:
+                refusal["native_refusal"] = str(comparison["refusal"])[-1500:]
+            rows.append(refusal)
     return rows
 
 
