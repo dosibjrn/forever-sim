@@ -460,3 +460,62 @@ def test_non_source_native_level_refusal_does_not_veto_other_talents(tmp_path, m
     assert len(attempts) == 2
     assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
     assert receipt["native_refusals_before_selection"][0]["native_refusal_code"] == "level"
+
+
+def test_l41_cross_engine_requires_explicit_paid_l40_binary_provenance(tmp_path, monkeypatch):
+    """A source-native upgrade must not silently relabel old L40 combat as new-engine evidence."""
+    source, old_binary, route, report = paid_predecessor(tmp_path)
+    new_binary = tmp_path / "upgraded-native-engine"
+    new_binary.write_bytes(b"distinct selected Rust executable for L41")
+    old_sha = next_level.sha256(old_binary)
+    new_sha = next_level.sha256(new_binary)
+    assert old_sha != new_sha
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd[1])
+        if cmd[1] == "options":
+            options = native_options()
+            options["level"] = 24
+            options["talents"]["points_available"] = 15
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        with open(cmd[cmd.index("--outfile") + 1], "w") as result:
+            json.dump({"player": {"level": 24, "class": "ClassWarlock"}}, result)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    with pytest.raises(ValueError, match="matching completed paid native predecessor"):
+        next_level.propose(
+            binary=new_binary, source=source, predecessor_route=route,
+            out=tmp_path / "same-only", from_level=23, to_level=24)
+    with pytest.raises(ValueError, match="exact paid route"):
+        next_level.propose(
+            binary=new_binary, source=source, out=tmp_path / "missing-route",
+            from_level=23, to_level=24, predecessor_binary_sha256=old_sha)
+    with pytest.raises(ValueError, match="64 lowercase hex"):
+        next_level.propose(
+            binary=new_binary, source=source, predecessor_route=route,
+            out=tmp_path / "bad-digest", from_level=23, to_level=24,
+            predecessor_binary_sha256="not-a-sha")
+    assert calls == []
+
+    receipt = next_level.propose(
+        binary=new_binary, source=source, predecessor_route=route,
+        out=tmp_path / "cross-engine", from_level=23, to_level=24,
+        predecessor_binary_sha256=old_sha)
+    assert calls == ["options", "prepare"]
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["paid_predecessor"]["observation_id"] == "paid-l23"
+    assert receipt["paid_predecessor"]["engine_binary_sha256"] == old_sha
+    assert receipt["paid_predecessor"]["successor_engine_binary_sha256"] == new_sha
+    assert receipt["paid_predecessor"]["cross_engine_source_transition"] is True
+    assert receipt["native_binary_sha256"] == new_sha
+
+    report["observations"][0]["targets_killed"] = 99
+    route.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match="matching completed paid native predecessor"):
+        next_level.propose(
+            binary=new_binary, source=source, predecessor_route=route,
+            out=tmp_path / "unpaid", from_level=23, to_level=24,
+            predecessor_binary_sha256=old_sha)
+    assert calls == ["options", "prepare"]
