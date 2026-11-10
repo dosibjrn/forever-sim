@@ -105,6 +105,7 @@ def _fake_native(monkeypatch, predecessor, *, times=(900, 750, None),
             "killed": 100 if success else 41,
             "original_source_sha256": world.native_source.sha256(source),
             "source_request_sha256": digest,
+            "hostile_player_tank_requested": True,
             "native_binary_sha256": world.native_source.sha256(binary),
             "native_actor_continuity_receipt_complete": success,
             "native_2d_paid_objective_eligible": success,
@@ -229,3 +230,25 @@ def test_rejects_tampered_shortlist_before_any_native_payment(
     with pytest.raises(ValueError, match="candidate bytes"):
         world.run(**args, max_new_trials=2)
     assert paid == []
+
+
+@pytest.mark.parametrize("field, altered", [
+    ("original_source_sha256", "f" * 64),
+    ("native_binary_sha256", "f" * 64),
+    ("actor_level", 40),
+    ("hostile_player_tank_requested", False),
+    ("recovery_request", {"recovery_policy": "decisions",
+                          "health_threshold": 0.9, "mana_threshold": 0.25}),
+])
+def test_cached_attempt_must_match_exact_paid_candidate_even_on_refusal(
+        tmp_path, monkeypatch, field, altered):
+    args, predecessor = _setup(tmp_path, trees=(0, 1))
+    paid = _fake_native(monkeypatch, predecessor, times=(900, None))
+    world.run(**args, max_new_trials=2)
+    summary = next(args["out"].glob("candidate_02_*/native_l21/summary.json"))
+    payload = json.loads(summary.read_text())
+    payload["results"][0][field] = altered
+    summary.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="cached native attempt differs"):
+        world.run(**args, max_new_trials=0)
+    assert paid == [1, 2]  # genuine refused native trials are never replayed
