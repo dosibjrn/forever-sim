@@ -87,8 +87,32 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
          "--level", str(to_level)],
         capture_output=True, text=True, timeout=60, check=False)
     if options_call.returncode:
-        raise RuntimeError("NATIVE_OPTIONS_REFUSAL: " +
-                           (options_call.stderr or options_call.stdout)[-2000:])
+        # Preserve the real native error as an unmeasured route result. The
+        # caller's refusal-publication step needs this file even when no actor
+        # proposal could be prepared.
+        reason = (options_call.stderr or options_call.stdout or
+                  "native options returned no diagnostics")[-2000:]
+        try:
+            native_refusal = json.loads(reason).get("refusal")
+        except (ValueError, AttributeError):
+            native_refusal = None
+        receipt = {
+            "kind": "adjacent_native_warlock_candidate",
+            "status": "NATIVE_OPTIONS_REFUSED",
+            "from_level": from_level, "to_level": to_level,
+            "original_source_sha256": sha256(source),
+            "native_binary_sha256": sha256(binary),
+            "attempted": 0,
+            "native_refusals": [{
+                "stage": "options", "reason": reason,
+                "native_refusal_code": (
+                    native_refusal.get("code") if isinstance(native_refusal, dict)
+                    else None),
+            }],
+        }
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        raise RuntimeError("NATIVE_OPTIONS_REFUSAL: " + reason)
     options = json.loads(options_call.stdout)
     talents = options.get("talents", {})
     trees = talents.get("trees")
