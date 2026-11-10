@@ -27,9 +27,9 @@ def test_preserves_full_source_when_native_accepts(tmp_path, monkeypatch):
         request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
         seen.append(request["raid"]["parties"][0]["players"][0]["equipment"]["items"])
         assert cmd[1] == "prepare" and cmd[-2] == "--outfile"
-        # The native prepare CLI reads level from the source request.
-        # Forwarding --actor-level is rejected by the selected Rust engine.
-        assert "--actor-level" not in cmd
+        # The repaired Rust prepare CLI accepts explicit source-backed
+        # level and checks it against the same embedded request level.
+        assert cmd[cmd.index("--actor-level") + 1] == "20"
         with open(cmd[-1], "w") as f:
             json.dump({"player": {"class": "ClassWarlock",
                                   "race": "RaceTroll", "level": 20}}, f)
@@ -113,7 +113,7 @@ def test_native_prepared_actor_level_mismatch_rejected(tmp_path, monkeypatch):
 def _accept_native_prepare(cmd, **kwargs):
     # Native is the only judge of request legality and prepared actor identity.
     request_path = cmd[cmd.index("--request") + 1]
-    assert "--actor-level" not in cmd
+    assert cmd[cmd.index("--actor-level") + 1] == "20"
     import hashlib
     with open(cmd[-1], "w") as output:
         json.dump({"request_sha256": hashlib.sha256(
