@@ -382,16 +382,29 @@ def produce_frontier(
     root_proposal: dict | None = None
 
     def proposals():
+        seen_talents: set[str] = set()
         for _ in range(3):
             variant = next(talent_variants, None)
             if variant is None:
                 break
+            seen_talents.add(variant)
             yield variant, None
+        # A bounded independent higher-level search must try the original
+        # same-level source baseline before optional APL alternatives. The
+        # first successfully prepared scaled family may advertise many native
+        # APL actions; otherwise they can consume the entire remaining budget
+        # and the original baseline never reaches Rust prepare.
+        if (parent is None and request.get("search_mode") == "independent"
+                and actor["talentsString"] not in seen_talents):
+            seen_talents.add(actor["talentsString"])
+            yield actor["talentsString"], None
         if root_prepared is not None and root_proposal is not None:
             for native_apl in _native_apl_variants(root_proposal, root_prepared):
                 yield None, native_apl
         for variant in talent_variants:
-            yield variant, None
+            if variant not in seen_talents:
+                seen_talents.add(variant)
+                yield variant, None
 
     # Accepted proposals and native prepare refusals share the supplied
     # candidate budget. No extra unpaid attempts are hidden from the caller.
