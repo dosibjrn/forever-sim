@@ -12,9 +12,13 @@ import argparse
 import json
 import shlex
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
+# Allow both python -m tools... and python tools/... from repository root.
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 from src.v2.native_range_optimizer import optimize
 
 
