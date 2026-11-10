@@ -39,6 +39,46 @@ def restore_resume_cache(archive_dir: Path, from_level: int, out: Path) -> dict:
     return {"restored": True, "original": str(matches[0])}
 
 
+
+def restore_l10_root_cache(archive_dir: Path, out: Path) -> dict:
+    """Stage a prior L10 root without granting any native-paid credit.
+
+    A missing/multiple L10 receipt is not permission to repay a previous run.
+    The L10 runner still verifies exact native binary and source/100-mob ACK
+    before it reuses a completed root or advances to L11.
+    """
+    if not archive_dir.is_dir():
+        raise ValueError("extracted L10 root artifact does not exist")
+    matches = []
+    for marker in archive_dir.rglob("range_progress.json"):
+        if marker.parent.name != "warlock-paid-range":
+            continue
+        progress = json.loads(marker.read_text())
+        if (isinstance(progress, dict)
+                and progress.get("kind") == "warlock_native_l10_root_range_v1"
+                and progress.get("from_level") == 10):
+            matches.append(marker.parent)
+    if len(matches) != 1:
+        raise ValueError(
+            f"expected exactly one L10 root resume cache; found {len(matches)}"
+        )
+    original = matches[0]
+    receipts = list(original.glob("L10/*/paid/route.json"))
+    if len(receipts) != 1:
+        raise ValueError(
+            "L10 root resume requires one original paid/refusal route; "
+            "missing or ambiguous receipts must not trigger another payment"
+        )
+    if out.exists():
+        raise ValueError(f"resume output already exists: {out}")
+    shutil.copytree(original, out)
+    return {
+        "restored": True,
+        "original": str(original),
+        "l10_route_sha256": hashlib.sha256(receipts[0].read_bytes()).hexdigest(),
+    }
+
+
 def stage(archive_dir: Path, from_level: int, out: Path,
           resume_cache_out: Path | None = None) -> dict:
     if not 10 <= from_level < 60:
