@@ -1,4 +1,4 @@
-"""One-request native Warlock level-range performance search.
+"""One-request source-native class/level-range performance optimizer.
 
 Forever owns the search frontier and objective aggregation, not Warcraft rules.
 The supplied evaluator must call the pinned Rust source/native execution path and
@@ -85,12 +85,118 @@ def _receipt_error(
     return None
 
 
+
+def _talent_ranks(serialized: Any) -> tuple[tuple[int, ...], ...] | None:
+    """Read a native-request talent allocation; do not judge Warcraft legality."""
+    if not isinstance(serialized, str):
+        return None
+    parts = serialized.split("-")
+    if len(parts) != 3 or not all(p.isascii() and p.isdigit() for p in parts):
+        return None
+    return tuple(tuple(int(x) for x in p) for p in parts)
+
+
+def _no_respec_successor(before: Any, after: Any) -> bool:
+    """A sampled allocation can retain or add ranks without deleting old ranks.
+
+    This is the requested no-respec route constraint, NOT a claim of legal
+    intermediate talent spends or a substitute for source-native prepare.
+    """
+    old, new = _talent_ranks(before), _talent_ranks(after)
+    if old is None or new is None:
+        return False
+    return all(
+        all((a[i] if i < len(a) else 0) <= (b[i] if i < len(b) else 0)
+            for i in range(max(len(a), len(b))))
+        for a, b in zip(old, new)
+    )
+
+
+def _optimize_compatible_samples(
+    start_level: int, end_level: int, level_stride: int, mob_count: int,
+    budget: int, *, evaluate: Callable[..., Sequence[Mapping[str, Any]]],
+    beam_width: int, rng_mode: str, iterations: int,
+    class_name: str, talent_tree: str, backend: str,
+) -> dict[str, Any]:
+    """Select one coherent no-respec allocation from native-paid sparse anchors.
+
+    Only sampled levels execute combat. The candidate builds must be source-
+    prepared at their sampled levels; no infill simulations, historical route
+    JSON, free respec, or unsupported intermediate-world claim is introduced.
+    """
+    measured = optimize(
+        start_level, end_level, level_stride, mob_count, budget,
+        evaluate=evaluate, beam_width=beam_width, rng_mode=rng_mode,
+        iterations=iterations, recover_to_full=True, mode="independent",
+    )
+    levels = measured["sampled_levels_requested"]
+    # One best predecessor per exact current source is sufficient: future
+    # no-respec compatibility depends on that allocation, not on path history.
+    frontier: list[tuple[float, list[dict[str, Any]]]] = [(0.0, [])]
+    matched_levels: list[int] = []
+    for level in levels:
+        candidates = measured["independent_level_rankings"].get(str(level), [])
+        next_frontier: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+        for row in candidates:
+            if _talent_ranks(row.get("talents")) is None:
+                continue
+            for cost, steps in frontier:
+                if steps and not _no_respec_successor(
+                        steps[-1]["talents"], row["talents"]):
+                    continue
+                step = {
+                    "level": level, "talents": row["talents"],
+                    "apl": row.get("apl"), "gear": row.get("gear"),
+                    "pet": row.get("pet"),
+                    "native_elapsed_seconds": row["native_elapsed_seconds"],
+                    "terminal_recovery_seconds": row["terminal_recovery_seconds"],
+                    "source_request_sha256": row["source_request_sha256"],
+                    "engine_binary_sha256": row["engine_binary_sha256"],
+                    "receipt": row["receipt"],
+                }
+                total = cost + float(row["native_elapsed_seconds"])
+                identity = row["source_request_sha256"]
+                old = next_frontier.get(identity)
+                if old is None or total < old[0]:
+                    next_frontier[identity] = (total, [*steps, step])
+        if not next_frontier:
+            break
+        frontier = sorted(next_frontier.values(), key=lambda pair: (
+            pair[0], pair[1][-1]["source_request_sha256"]))
+        matched_levels.append(level)
+    complete = matched_levels == levels
+    ranked = [
+        {"sampled_cumulative_seconds": score, "steps": steps,
+         "terminal_source_request_sha256": steps[-1]["source_request_sha256"]}
+        for score, steps in frontier[:beam_width]
+    ] if complete else []
+    measured.update({
+        "status": ("SAMPLED_COMPATIBLE_PATH_RANKED" if len(ranked) >= 2
+                   else "SAMPLED_COMPATIBLE_PATH_PROVISIONAL" if ranked
+                   else "NO_COMPLETE_COMPATIBLE_SAMPLED_PATH"),
+        "search_mode": "compatible",
+        "class": class_name, "tree": talent_tree, "backend": backend,
+        "sampled_levels_compatible": matched_levels,
+        "ranked_alternatives": ranked,
+        "no_respec_within_sampled_path": complete and bool(ranked),
+        "intermediate_level_simulations_run": False,
+        "intermediate_talent_legality_proven": False,
+        "full_10_60_continuous_leveling_route_proven": False,
+        "independent_sample_sum_is_route_time": False,
+        "scope": "source-native sampled builds with nondecreasing talent ranks; "
+                 "not XP/travel/training or proof of intermediate gameplay",
+    })
+    return measured
+
+
 def optimize(
     start_level: int, end_level: int, level_stride: int, mob_count: int,
     budget: int, *,
     evaluate: Callable[..., Sequence[Mapping[str, Any]]],
     beam_width: int = 3, rng_mode: str = "balanced", iterations: int = 1,
     recover_to_full: bool = True, mode: str = "independent",
+    class_name: str = "warlock", talent_tree: str = "unconstrained",
+    backend: str = "native",
 ) -> dict[str, Any]:
     """Rank real native candidates in a continuing path or independent samples.
 
@@ -107,6 +213,18 @@ def optimize(
 
     No Python talent, item, spell or resource mechanics are implemented here.
     """
+    if mode == "compatible":
+        if (recover_to_full is not True or type(beam_width) is not int
+                or beam_width < 1 or type(budget) is not int or budget < 1
+                or type(mob_count) is not int or not 1 <= mob_count <= 100
+                or type(iterations) is not int or iterations < 1):
+            raise ValueError("invalid compatible sampled optimizer configuration")
+        return _optimize_compatible_samples(
+            start_level, end_level, level_stride, mob_count, budget,
+            evaluate=evaluate, beam_width=beam_width, rng_mode=rng_mode,
+            iterations=iterations, class_name=class_name,
+            talent_tree=talent_tree, backend=backend,
+        )
     levels = sampled_levels(start_level, end_level, level_stride)
     if (type(mob_count) is not int or mob_count < 1
             or type(budget) is not int or budget < 1
@@ -268,3 +386,113 @@ def optimize(
         "full_10_60_continuous_leveling_route_proven": False,
         "scope": "sampled native combat+movement+charged terminal recovery only; not XP/travel/training/acquisition",
     }
+
+
+def main(argv: list[str] | None = None, *, evaluate=None) -> int:
+    """Generic optimizer CLI. Class and search density are runtime settings.
+
+    Native Warlock is the first available adapter, not a different optimizer.
+    Its source fixture is only an initial request, never a hardcoded route.
+    """
+    import argparse
+    import json
+    import sys
+    from pathlib import Path
+
+    ap = argparse.ArgumentParser(prog="optimize",
+        description="Source-native sampled compatible build optimization")
+    ap.add_argument("--class", dest="class_name", required=True)
+    ap.add_argument("--tree", "--talent-tree", default="unconstrained")
+    ap.add_argument("--start-level", type=int, required=True)
+    ap.add_argument("--end-level", type=int, required=True)
+    ap.add_argument("--level-stride", type=int, default=1)
+    ap.add_argument("--n-mobs", "--mob-count", type=int, default=2)
+    ap.add_argument("--rng", "--rng-backend", default="balanced")
+    ap.add_argument("--backend", default="rust")
+    ap.add_argument("--recover-at-end", "--recover-to-full",
+                    choices=("true",), default="true")
+    ap.add_argument("--iterations", type=int, default=1)
+    ap.add_argument("--budget", type=int, default=100)
+    ap.add_argument("--beam-width", type=int, default=3)
+    ap.add_argument("--native-binary", type=Path,
+                    default=Path("integrations/mythicsim-rust/target/release/forever-engine"))
+    ap.add_argument("--source", type=Path,
+                    default=Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+                    help="Initial native source request (not a route or fixed winner)")
+    ap.add_argument("--target-hp", type=float,
+                    help="Optional fixed enemy HP override; default uses the "
+                         "ordinary-mob scenario HP at each sampled level")
+    ap.add_argument("--out", type=Path, help="Optional machine-readable result path")
+    args = ap.parse_args(argv)
+    cls = args.class_name.lower()
+    if cls != "warlock":
+        ap.error(f"no source-native adapter registered yet for class {cls!r}")
+    if args.tree != "unconstrained":
+        ap.error("the current native adapter supports --tree unconstrained only")
+    if args.backend != "rust" or args.rng != "balanced" or args.iterations != 1:
+        ap.error("the current native adapter supports rust/balanced/one iteration")
+    output = args.out or Path("runs") / (
+        f"optimize_{cls}_L{args.start_level}-{args.end_level}"
+        f"_stride{args.level_stride}_mobs{args.n_mobs}.json"
+    )
+    if evaluate is None:
+        if not args.native_binary.is_file() or not args.source.is_file():
+            ap.error("native engine and initial source request must exist")
+        from tools.wf_warlock_native_range_optimize import live_native_frontier_evaluator
+        from src.scenarios.leveling_targets import representative_hp
+        base = output.parent / (output.stem + ".native-receipts")
+        base.mkdir(parents=True, exist_ok=True)
+        producer = [
+            sys.executable, "tools/wf_warlock_native_source_frontier.py",
+            "--binary", str(args.native_binary.resolve()),
+            "--seed-source", str(args.source.resolve()),
+            "--out", str((base / "source").resolve()),
+        ]
+        def evaluator(**request):
+            # Score every independently sampled level against its own scenario,
+            # not a fixed L20/L60 enemy HP. Explicit --target-hp still gives an
+            # exact fixed-target replay. The existing Rust scorer remains the
+            # sole combat/recovery authority; this chooses only scenario input.
+            hp = (float(representative_hp(request["level"]))
+                  if args.target_hp is None else args.target_hp)
+            return live_native_frontier_evaluator(
+                producer, binary=args.native_binary, target_hp=hp,
+                scorer_command=[sys.executable,
+                                "tools/wf_warlock_native_candidate_scoring.py"],
+                artifact_dir=base,
+            )(**request)
+        result = optimize(
+            args.start_level, args.end_level, args.level_stride,
+            args.n_mobs, args.budget, evaluate=evaluator,
+            beam_width=args.beam_width, rng_mode=args.rng,
+            iterations=args.iterations, mode="compatible",
+            class_name=cls, talent_tree=args.tree, backend=args.backend,
+        )
+    else:
+        result = optimize(
+            args.start_level, args.end_level, args.level_stride,
+            args.n_mobs, args.budget, evaluate=evaluate,
+            beam_width=args.beam_width, rng_mode=args.rng,
+            iterations=args.iterations, mode="compatible",
+            class_name=cls, talent_tree=args.tree, backend=args.backend,
+        )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    if result["ranked_alternatives"]:
+        best = result["ranked_alternatives"][0]
+        print(f"{cls}: sampled compatible build path, "
+              f"{best['sampled_cumulative_seconds']:.3f}s recovered sample score")
+        for step in best["steps"]:
+            print(f"L{step['level']} talents={step['talents']} "
+                  f"gear={json.dumps(step['gear'], sort_keys=True)} "
+                  f"apl={json.dumps(step['apl'], sort_keys=True)} "
+                  f"pet={step['pet']} "
+                  f"recovered_seconds={step['native_elapsed_seconds']:.3f}")
+        print("Sparse sample only; skipped levels have no simulated fights.")
+    else:
+        print(f"No fully compatible measured sampled path: {result['status']}")
+    return 0 if result["ranked_alternatives"] else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

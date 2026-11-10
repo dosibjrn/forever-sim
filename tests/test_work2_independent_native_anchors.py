@@ -280,3 +280,169 @@ def test_one_cli_request_uses_level_specific_scenario_hp_unless_overridden(
     target_hps.clear()
     assert cli.main(arguments + ["--native-target-hp", "400"]) == 0
     assert target_hps == [(20, 400.0), (60, 400.0)]
+
+def test_one_sparse_compatible_optimizer_call_returns_one_three_level_build_path():
+    """Sparse rank compatibility is not a demand to simulate intervening levels."""
+    calls = []
+    talents = {
+        20: [("5-0-0", 3.0), ("0-5-0", 5.0)],
+        40: [("0-55-0", 1.0), ("55-0-0", 7.0)],
+        60: [("0-555-0", 1.0), ("555-0-0", 6.0)],
+    }
+
+    def native(**request):
+        calls.append(request)
+        level = request["level"]
+        rows = []
+        for name, seconds in talents[level]:
+            row = receipt(level, request["mob_count"], name, seconds)
+            row["talents"] = name
+            row["apl"] = {"priorityList": [name]}
+            row["gear"] = {"items": [level]}
+            rows.append(row)
+        return rows
+
+    result = optimize(
+        20, 60, 20, 2, 12, evaluate=native, mode="compatible",
+        class_name="warlock", talent_tree="unconstrained", backend="native",
+        rng_mode="balanced", iterations=1, recover_to_full=True,
+    )
+    assert [r["level"] for r in calls] == [20, 40, 60]
+    assert all(r["parent"] is None and r["mob_count"] == 2
+               and r["recover_to_full"] is True
+               and r["rng_mode"] == "balanced" and r["iterations"] == 1
+               for r in calls)
+    assert result["status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
+    assert result["intermediate_level_simulations_run"] is False
+    assert result["full_10_60_continuous_leveling_route_proven"] is False
+    best = result["ranked_alternatives"][0]
+    assert [step["level"] for step in best["steps"]] == [20, 40, 60]
+    # Independent fastest L20 (5-0-0) is incompatible with the faster
+    # L40/L60 alternative (0-25-0 / 0-45-0).
+    assert [step["talents"] for step in best["steps"]] == [
+        "0-5-0", "0-55-0", "0-555-0",
+    ]
+    assert best["sampled_cumulative_seconds"] == 7.0
+    assert [step["gear"]["items"] for step in best["steps"]] == [
+        [20], [40], [60],
+    ]
+    assert all(step["apl"] for step in best["steps"])
+
+
+def test_sparse_compatible_rejects_respec_and_does_not_fabricate_route():
+    def native(**request):
+        level = request["level"]
+        name = {20: "5-0-0", 40: "0-25-0", 60: "0-45-0"}[level]
+        row = receipt(level, request["mob_count"], name, 9.0)
+        row["talents"] = name
+        return [row]
+
+    report = optimize(20, 60, 20, 2, 6, evaluate=native, mode="compatible")
+    assert report["status"] == "NO_COMPLETE_COMPATIBLE_SAMPLED_PATH"
+    assert report["sampled_levels_compatible"] == [20]
+    assert report["ranked_alternatives"] == []
+    assert report["no_respec_within_sampled_path"] is False
+
+
+def test_generic_optimize_cli_accepts_class_tree_stride_two_mobs_and_balanced(
+    tmp_path, capsys,
+):
+    """No Warlock-specific command or separate JSON contract is needed."""
+    from src.v2.native_range_optimizer import main as optimize_main
+    calls = []
+    by_level = {
+        20: ["5-0-0", "0-5-0"],
+        40: ["55-0-0", "0-55-0"],
+        60: ["555-0-0", "0-555-0"],
+    }
+
+    def native(**request):
+        calls.append(request)
+        result = []
+        for name in by_level[request["level"]]:
+            row = receipt(request["level"], request["mob_count"], name, 4.0)
+            row.update(talents=name, apl={"actions": ["native"]},
+                       gear={"items": [{"id": 101}]})
+            result.append(row)
+        return result
+
+    output = tmp_path / "optimizer-result.json"
+    exit_code = optimize_main([
+        "--class", "warlock", "--tree", "unconstrained",
+        "--start-level", "20", "--end-level", "60",
+        "--level-stride", "20", "--n-mobs", "2",
+        "--rng", "balanced", "--backend", "rust",
+        "--recover-at-end", "true", "--budget", "12",
+        "--out", str(output),
+    ], evaluate=native)
+    report = json.loads(output.read_text())
+    assert exit_code == 0
+    assert [row["level"] for row in calls] == [20, 40, 60]
+    assert all(row["mob_count"] == 2 and row["parent"] is None
+               for row in calls)
+    assert report["class"] == "warlock"
+    assert report["tree"] == "unconstrained"
+    assert report["search_mode"] == "compatible"
+    assert [step["level"] for step in
+            report["ranked_alternatives"][0]["steps"]] == [20, 40, 60]
+    printed = capsys.readouterr().out
+    assert "L20 talents=" in printed
+    assert "L40 talents=" in printed
+    assert "L60 talents=" in printed
+    assert "gear=" in printed and "apl=" in printed
+
+
+def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch):
+    """Generic CLI must forward per-level scenario HP to native, or a fixed override.
+
+    No Warcraft mechanics are evaluated here; this verifies only Forever's
+    request forwarding through the same one-call compatible optimizer.
+    """
+    from src.scenarios.leveling_targets import representative_hp
+    from src.v2.native_range_optimizer import main as generic_main
+    from tools import wf_warlock_native_range_optimize as native_cli
+
+    binary = tmp_path / "native-engine"
+    binary.write_bytes(b"pinned-engine-placeholder")
+    source = tmp_path / "initial-source.json"
+    source.write_text("{}")
+    seen = []
+
+    def fake_native_factory(command, *, binary, target_hp, scorer_command,
+                            artifact_dir):
+        def score(**request):
+            seen.append((request["level"], target_hp, request["mob_count"]))
+            level = request["level"]
+            digits = "1" * (level // 20)
+            rows = []
+            for i, talents in enumerate((f"{digits}-0-0", f"0-{digits}-0")):
+                row = receipt(level, request["mob_count"], f"{level}-{i}", 7.0 + i)
+                row["talents"] = talents
+                rows.append(row)
+            return rows
+        return score
+
+    monkeypatch.setattr(native_cli, "live_native_frontier_evaluator",
+                        fake_native_factory)
+    base_args = [
+        "--class", "warlock", "--tree", "unconstrained",
+        "--start-level", "20", "--end-level", "60", "--level-stride", "20",
+        "--n-mobs", "2", "--budget", "6", "--rng", "balanced",
+        "--backend", "rust", "--recover-at-end", "true",
+        "--native-binary", str(binary), "--source", str(source),
+        "--out", str(tmp_path / "generic.json"),
+    ]
+
+    assert generic_main(base_args) == 0
+    assert seen == [
+        (level, float(representative_hp(level)), 2)
+        for level in (20, 40, 60)
+    ]
+    assert seen[0][1] == 484.0
+    assert seen[-1][1] == 3052.0
+    assert json.loads((tmp_path / "generic.json").read_text())[
+        "status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
+
+    seen.clear()
+    assert generic_main(base_args + ["--target-hp", "400"]) == 0
+    assert seen == [(level, 400.0, 2) for level in (20, 40, 60)]
