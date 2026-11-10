@@ -275,8 +275,8 @@ def _source_prepared_infill(source: dict, *, from_level: int, to_level: int,
         request_path.write_text(json.dumps(source, sort_keys=True) + "\n")
         prepared_path.unlink(missing_ok=True)
         result = runner([str(binary.resolve()), "prepare", "--request",
-                         str(request_path.resolve()), "--outfile",
-                         str(prepared_path.resolve())],
+                         str(request_path.resolve()), "--actor-level", str(next_level),
+                         "--outfile", str(prepared_path.resolve())],
                         capture_output=True, text=True, timeout=60, check=False)
         if result.returncode:
             raise ValueError(f"native L{next_level} prepare refused: "
@@ -426,7 +426,8 @@ def produce_frontier(
         try:
             result = runner([
                 str(binary.resolve()), "prepare", "--request", str(source_path.resolve()),
-                "--outfile", str(prepared_path.resolve()),
+                "--actor-level", str(level), "--outfile",
+                str(prepared_path.resolve()),
             ], capture_output=True, text=True, timeout=60, check=False)
             if result.returncode:
                 raise ValueError((result.stderr or result.stdout)[-1500:])
