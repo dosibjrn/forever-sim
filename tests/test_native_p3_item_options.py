@@ -253,6 +253,31 @@ def test_native_p3_projects_unit_preserving_fields_and_marks_unmapped_ratings():
     assert unmapped == {25: ("SpellHitRating",)}
 
 
+def test_native_p3_unmapped_rating_is_reported_not_a_python_veto():
+    item = ItemRecord(
+        item_id=25, name="Sourced chest", slot="chest", item_level=3,
+        required_level=1, stamina=2.0, identity_origin="mythicsim_native",
+        source_type="mythicsim_native")
+    metadata = {
+        "status": "ok", "unverified_candidate_count": 0,
+        "source": "mythicsim:data/items.jsonl",
+    }
+    with patch(
+        "src.game.native_p3_item_options.native_p3_item_records",
+        return_value=((item,), {25: ("SpellHitRating",)}, metadata),
+    ):
+        report = fast_p3_smoke(
+            class_key="priest", level=20, weights={"stamina": 1.0},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+    assert report["slots"]["chest"]["items"][0]["unmapped_native_stat_axes"] == [
+        "SpellHitRating"]
+    assert not any("NATIVE_UNMAPPED_STAT_AXIS" in reason
+                   for reason in report["blockers"])
+    assert report["verified_stat_assertions"] == 1
+
+
 def test_native_p3_never_rechecks_native_item_level_legality():
     items = [{"item_id": 700, "item_level": 8, "required_level": 60,
               "slot": "chest", "stats": {}},
@@ -263,7 +288,7 @@ def test_native_p3_never_rechecks_native_item_level_legality():
     assert result["items"] == items
 
 
-def test_native_p3_partial_unknown_is_measured_but_not_certified():
+def test_native_p3_partial_unknown_does_not_veto_usable_native_candidates():
     item = ItemRecord(
         item_id=25, name="Sourced chest", slot="chest", item_level=3,
         required_level=1, stamina=2.0, identity_origin="mythicsim_native",
@@ -287,8 +312,11 @@ def test_native_p3_partial_unknown_is_measured_but_not_certified():
     assert report["native_item_options_source"] == metadata["source"]
     assert report["tested_item_count"] == 1
     assert report["verified_stat_assertions"] == 1
-    assert "NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:2267" in report["blockers"]
-    assert report["p3_pass"] is False
+    # A native coverage warning must not reject the actually returned item.
+    # This smoke score is not an official paid native P3 gate verdict.
+    assert not any("PARTIAL_LEVEL_UNKNOWN" in reason for reason in report["blockers"])
+    assert report["blockers"] == []
+    assert report["p3_pass"] is True
 
 
 
@@ -370,11 +398,9 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
     assert report["native_unverified_candidate_count"] == unverified_count
     assert report["native_item_options_source"] == metadata["source"]
     assert "NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES" in report["blockers"]
-    if status == "partial_level_unknown":
-        assert (
-            f"NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:{unverified_count}"
-            in report["blockers"]
-        )
+    # An empty response still fails closed even if the native source warns
+    # about additional unverified items.
+    assert not any("PARTIAL_LEVEL_UNKNOWN" in reason for reason in report["blockers"])
     assert report["p3_pass"] is False
 
 
