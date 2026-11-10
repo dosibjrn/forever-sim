@@ -251,7 +251,10 @@ def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatc
     selected = json.loads((out / "source_request.json").read_text())
     assert selected["raid"]["parties"][0]["players"][0]["equipment"]["items"] == [
         {"id": 101}, {"id": 0}]
-    assert requests[-1] == selected
+    # The accepted carry-forward request remains the selected fallback even
+    # after the new, unsuccessful recovered-gear talent probes.
+    assert selected in requests
+    assert requests[-1]["raid"]["parties"][0]["players"][0]["talentsString"] != "0-0-011"
     assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
 
 
