@@ -346,3 +346,59 @@ def test_generic_optimize_cli_accepts_class_tree_stride_two_mobs_and_balanced(
     assert "L40 talents=" in printed
     assert "L60 talents=" in printed
     assert "gear=" in printed and "apl=" in printed
+
+
+def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch):
+    """Generic CLI must forward per-level scenario HP to native, or a fixed override.
+
+    No Warcraft mechanics are evaluated here; this verifies only Forever's
+    request forwarding through the same one-call compatible optimizer.
+    """
+    from src.scenarios.leveling_targets import representative_hp
+    from src.v2.native_range_optimizer import main as generic_main
+    from tools import wf_warlock_native_range_optimize as native_cli
+
+    binary = tmp_path / "native-engine"
+    binary.write_bytes(b"pinned-engine-placeholder")
+    source = tmp_path / "initial-source.json"
+    source.write_text("{}")
+    seen = []
+
+    def fake_native_factory(command, *, binary, target_hp, scorer_command,
+                            artifact_dir):
+        def score(**request):
+            seen.append((request["level"], target_hp, request["mob_count"]))
+            level = request["level"]
+            digits = "1" * (level // 20)
+            rows = []
+            for i, talents in enumerate((f"{digits}-0-0", f"0-{digits}-0")):
+                row = receipt(level, request["mob_count"], f"{level}-{i}", 7.0 + i)
+                row["talents"] = talents
+                rows.append(row)
+            return rows
+        return score
+
+    monkeypatch.setattr(native_cli, "live_native_frontier_evaluator",
+                        fake_native_factory)
+    base_args = [
+        "--class", "warlock", "--tree", "unconstrained",
+        "--start-level", "20", "--end-level", "60", "--level-stride", "20",
+        "--n-mobs", "2", "--budget", "6", "--rng", "balanced",
+        "--backend", "rust", "--recover-at-end", "true",
+        "--native-binary", str(binary), "--source", str(source),
+        "--out", str(tmp_path / "generic.json"),
+    ]
+
+    assert generic_main(base_args) == 0
+    assert seen == [
+        (level, float(representative_hp(level)), 2)
+        for level in (20, 40, 60)
+    ]
+    assert seen[0][1] == 484.0
+    assert seen[-1][1] == 3052.0
+    assert json.loads((tmp_path / "generic.json").read_text())[
+        "status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
+
+    seen.clear()
+    assert generic_main(base_args + ["--target-hp", "400"]) == 0
+    assert seen == [(level, 400.0, 2) for level in (20, 40, 60)]
