@@ -1,0 +1,111 @@
+name: Work2 Warlock L20 native-paid start on the L21-L28 selected binary
+
+on:
+  push:
+    branches:
+      - work2/warlock-l28-native-paid-20261110-0946
+    paths:
+      - .github/workflows/work2-warlock-l20-native-reanchor.yml
+
+permissions:
+  contents: read
+
+jobs:
+  paid-native-l20-start:
+    # One new native-prepared L20 attempt. Do not replay the L21-L28 chains.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact Work2 route publisher
+        uses: actions/checkout@v4
+        with:
+          path: project
+          ref: ${{ github.sha }}
+      - name: Checkout selected source-native Warlock binary source
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          path: engine
+          ref: 35d2c65c21263fe185facc1b5d2743b450fcad47
+      - name: Verify pinned source and starting actor fixture
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "35d2c65c21263fe185facc1b5d2743b450fcad47"
+          test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
+          git -C project rev-parse HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Forever adapter dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Verify actual native receipt and route transport
+        working-directory: project
+        run: |
+          python -m pytest -q tests/test_work2_warlock_route_guide.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_work2_warlock_next_level_source.py
+      - name: Build exact selected native executor
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Retrieve completed L28 route, not rerun old levels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous
+          curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13744787375/zip" \
+            -o previous.zip
+          unzip -q previous.zip -d previous
+          test -s previous/warlock-l28-native-route/route.json
+      - name: Verify exact L21 source-native route identity before new L20 payment
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          source = json.loads(Path("engine/fixtures/warlock-l20-troll-best-paid.request.json").read_text())
+          actor = source["raid"]["parties"][0]["players"][0]
+          assert actor["class"] == "ClassWarlock" and actor["race"] == "RaceTroll"
+          assert source["encounter"]["targets"][0]["level"] == 20
+          route = json.loads(Path("previous/warlock-l28-native-route/route.json").read_text())
+          assert route["class"] == "warlock" and route["full_10_60_native_replay_executed"] is False
+          assert route["measured_levels"] == list(range(20, 29)), route["measured_levels"]
+          binary = hashlib.sha256(Path("engine/target/debug/forever-engine").read_bytes()).hexdigest()
+          l21 = [r for r in route["observations"] if r.get("level") == 21
+                 and r.get("status") == "measured_native_chain"
+                 and r.get("native_world_ack") is True
+                 and r.get("paid_native_recovery") is True
+                 and r.get("targets_requested") == 100
+                 and r.get("targets_killed") == 100
+                 and r.get("engine_binary_sha256") == binary
+                 and isinstance(r.get("native_actor"), dict)
+                 and r["native_actor"].get("class") == "ClassWarlock"
+                 and r["native_actor"].get("level") == 21
+                 and r.get("talents") == actor["talentsString"]]
+          assert l21, "No exact-binary paid native L21 hold matching the L20 source talents; do not pay an unrelated start"
+          print("MATCHING_L21_PAID_HOLD", binary, l21[0]["id"], flush=True)
+          PY
+      - name: Execute one source-prepared hostile L20 100-target native Decisions chain
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python -u tools/wf_warlock_route_guide.py \
+            --execute-native --actor-level 20 \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --health-threshold 0.7 --mana-threshold 0.25 \
+            --baseline-observations ../previous/warlock-l28-native-route/route.json \
+            --trial exact-binary-paid-l20-start \
+            --out ../warlock-l20-native-start
+      - name: Preserve exact source, actual refusals, receipts and bounded guide
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l20-start-${{ github.run_id }}
+          path: |
+            engine/fixtures/warlock-l20-troll-best-paid.request.json
+            previous/warlock-l28-native-route/route.json
+            warlock-l20-native-start/
+          if-no-files-found: warn
+          retention-days: 3
