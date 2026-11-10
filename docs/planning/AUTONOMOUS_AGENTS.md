@@ -14,11 +14,11 @@ Every cycle, start from latest `main` and read, in order:
 
 | Agent | Read this role file | Stable responsibility |
 | --- | --- | --- |
-| **Prio** | [`agents/PRIO.md`](agents/PRIO.md) | Own dependency order and work allocation; maximize genuine measured M1 progress. |
-| **Work1** | [`agents/WORK1.md`](agents/WORK1.md) | Execute the current #1 critical-path implementation. |
-| **Work2** | [`agents/WORK2.md`](agents/WORK2.md) | Execute the highest independent #2+ implementation. |
-| **Merge** | [`agents/MERGE.md`](agents/MERGE.md) | Integrate PRs, verify affected gates and own the sole M1 ledger writer role. |
-| **Clean** | [`agents/CLEAN.md`](agents/CLEAN.md) | First detect and eliminate counterproductive gate work and invented requirements; also own repository architecture and safe code retirement. |
+| **Prio** | [`agents/PRIO.md`](agents/PRIO.md) | Own dependency order and work allocation; prioritize the owner-selected runnable product outcome, then unaccepted M1 work. |
+| **Work1** | [`agents/WORK1.md`](agents/WORK1.md) | Fix the current #1 source-native/Rust capability gap on the product critical path; otherwise the assigned active gate. |
+| **Work2** | [`agents/WORK2.md`](agents/WORK2.md) | Build the autonomous generic gsim→Rust route/optimizer and next independently runnable product slice. |
+| **Merge** | [`agents/MERGE.md`](agents/MERGE.md) | Integrate tested PRs promptly, run only unaccepted affected gates and keep the already accepted M1 ledger immutable. |
+| **Clean** | [`agents/CLEAN.md`](agents/CLEAN.md) | Remove false work, duplicate per-level orchestration and dead code; safeguard CI and accepted evidence. |
 
 ## Source of truth and authority
 
@@ -29,5 +29,7 @@ Canonical repository: `dosibjrn/forever-sim`, branch `main`. GitHub is shared me
 - [OVERALL_PLAN.md](../../OVERALL_PLAN.md) defines project scope.
 - [PROCESS.md](../../PROCESS.md) and [gate contracts](../gates/README.md) define acceptance.
 - These role files and task prompts organize execution; they cannot override approved scope or gates.
+
+An official accepted M1 PASS is permanent until 148/148: no agent may reopen, rerun, downgrade or invalidate it, including after an engine or code change. Prefer one capability-oriented implementation and reusable automation to one PR/workflow per level. The target is the next runnable user-facing capability, not an activity count.
 
 The five tasks run in separate conversations, with intended hourly offsets in Europe/Helsinki: Prio XX:00, Work1 XX:10, Work2 XX:20, Merge XX:40, Clean XX:50. The task schedules/prompts are stored separately from this repository contract; changing this file does not itself update those automations.
