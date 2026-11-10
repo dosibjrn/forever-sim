@@ -1,0 +1,169 @@
+name: Work2 Warlock L33-L40 sequential native-paid Warlock route from verified L32
+
+on:
+  push:
+    branches:
+      - work2/warlock-l32-native-paid-20261110-1132
+    paths:
+      - .github/workflows/work2-warlock-l33-l40-native-batch.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paid-native-l33-l40:
+    # Reuse the actual L20-L32 route and pay only for adjacent L33-L40 successors.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact Work2 implementation
+        uses: actions/checkout@v4
+        with:
+          path: project
+          ref: ${{ github.sha }}
+      - name: Checkout identical native source
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          path: engine
+          ref: 35d2c65c21263fe185facc1b5d2743b450fcad47
+      - name: Verify selected Rust source revision
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "35d2c65c21263fe185facc1b5d2743b450fcad47"
+          git -C project rev-parse HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Forever adapter and test dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Regression-test native predecessor, successor and publisher
+        working-directory: project
+        run: |
+          python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_warlock_route_guide.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py
+      - name: Build selected native executor
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Retrieve exact L32 paid source and connected route
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous
+          curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13752810484/zip" \
+            -o previous.zip
+          unzip -q previous.zip -d previous
+          test -s previous/warlock-l32-native-route/native_l32/best_apl/source_request.json
+          test -s previous/warlock-l32-native-route/route.json
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path("previous/warlock-l32-native-route")
+          source = root / "native_l32/best_apl/source_request.json"
+          r = json.loads((root / "route.json").read_text())
+          sha = hashlib.sha256(source.read_bytes()).hexdigest()
+          assert sha == "545221d7140e7feb4a0392fb59ccaf8c3f2793033c116fa0a9d861853b486bf4"
+          assert r["measured_levels"] == list(range(20, 33))
+          assert r["native_paid_talent_continuity"]["levels"] == list(range(20, 33))
+          assert any(x.get("level") == 32 and x.get("source_request_sha256") == sha
+                     and x.get("status") == "measured_native_chain"
+                     and x.get("targets_requested") == x.get("targets_killed") == 100
+                     and x.get("native_world_ack") is True
+                     and x.get("paid_native_recovery") is True for x in r["observations"])
+          assert r["full_10_60_native_replay_executed"] is False
+          assert r["elapsed_10_60_seconds"] is None
+          assert len(r["unmeasured_levels"]) == 38
+          print("VERIFIED_PAID_L32_PREDECESSOR", sha, flush=True)
+          PY
+      - name: Bounded native prepare and actually paid L33 through L40
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          set -euo pipefail
+          prev=32
+          completed=32
+          outcome=COMPLETED_TO_L40
+          source="../previous/warlock-l32-native-route/native_l32/best_apl/source_request.json"
+          route="../previous/warlock-l32-native-route/route.json"
+          for level in $(seq 33 40); do
+            echo "::group::Native paid L$level from exact L$prev predecessor"
+            proposal="../warlock-l$level-source"
+            new_route="../warlock-l$level-native-route"
+            if ! python -u tools/wf_warlock_next_level_source.py \
+              --binary ../engine/target/debug/forever-engine \
+              --source "$source" --predecessor-route "$route" \
+              --from-level "$prev" --to-level "$level" --out "$proposal"; then
+              # Only a real preserved native refusal can end the batch without FAIL.
+              test -s "$proposal/proposal.json"
+              outcome=NATIVE_PROPOSAL_REFUSED
+              set +e
+              python -u tools/wf_warlock_route_guide.py \
+                --native-proposal "$proposal/proposal.json" \
+                --baseline-observations "$route" --out "$new_route"
+              result=$?
+              set -e
+              test "$result" -eq 0 -o "$result" -eq 2
+              test -s "$new_route/route.json"
+              echo "::endgroup::"
+              break
+            fi
+            python -u tools/wf_warlock_route_guide.py \
+              --execute-native --actor-level "$level" \
+              --binary ../engine/target/debug/forever-engine \
+              --source "$proposal/source_request.json" \
+              --health-threshold 0.7 --mana-threshold 0.25 \
+              --baseline-observations "$route" \
+              --trial "paid-source-native-l$level" --out "$new_route"
+            LEVEL="$level" NEW_ROUTE="$new_route" PROPOSAL="$proposal" python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          level = int(os.environ["LEVEL"])
+          root = Path(os.environ["NEW_ROUTE"])
+          source = Path(os.environ["PROPOSAL"]) / "source_request.json"
+          digest = hashlib.sha256(source.read_bytes()).hexdigest()
+          r = json.loads((root / "route.json").read_text())
+          assert r["measured_levels"] == list(range(20, level + 1))
+          assert r["native_paid_talent_continuity"]["levels"] == list(range(20, level + 1))
+          rows = [o for o in r["observations"] if o.get("level") == level
+                  and o.get("source_request_sha256") == digest
+                  and o.get("status") == "measured_native_chain"]
+          assert len(rows) == 1, "Missing exact paid successor receipt"
+          o = rows[0]
+          assert o["targets_requested"] == o["targets_killed"] == 100
+          assert o["native_world_ack"] is True
+          assert o["paid_native_recovery"] is True
+          assert o["engine_binary_sha256"] == "5cdd73cb5e85db882d2ef59351aad4b7722369a94dbd7f33740f1a4dfa7e5375"
+          assert r["full_10_60_native_replay_executed"] is False
+          assert r["elapsed_10_60_seconds"] is None
+          assert len(r["unmeasured_levels"]) == 70 - level
+          assert (root / f"native_l{level}/best_apl/source_request.json").is_file()
+          print(f"VERIFIED_NATIVE_PAID_L{level} {o['targets_killed']}/100 "
+                f"elapsed={o['elapsed_seconds_for_observed_chain']}s "
+                f"paid_recovery={o['native_recovery_seconds']}s", flush=True)
+          PY
+            completed="$level"
+            prev="$level"
+            source="$new_route/native_l$level/best_apl/source_request.json"
+            route="$new_route/route.json"
+            echo "::endgroup::"
+          done
+          printf '{"status":"%s","last_native_paid_level":%s,"requested_end_level":40}\n' \
+            "$outcome" "$completed" > ../warlock-batch-progress.json
+          cat ../warlock-batch-progress.json
+      - name: Preserve every newly paid source/route, first refusal and progress
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l33-l40-paid-${{ github.run_id }}
+          path: |
+            previous/warlock-l32-native-route/native_l32/best_apl/source_request.json
+            previous/warlock-l32-native-route/route.json
+            warlock-l*-source/
+            warlock-l*-native-route/
+            warlock-batch-progress.json
+          if-no-files-found: warn
+          retention-days: 3
