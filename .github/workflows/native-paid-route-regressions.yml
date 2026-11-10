@@ -7,6 +7,8 @@ on:
     paths:
       - src/v2/path_dp.py
       - src/v2/native_paid_route.py
+      - tools/wf_warlock_next_level_source.py
+      - tests/test_work2_warlock_next_level_source.py
       - tools/wf_warlock_paid_range.py
       - tests/test_work2_warlock_paid_range.py
       - tests/test_work2_native_paid_banked_path_dp.py
@@ -31,4 +33,4 @@ jobs:
       - name: Install focused test runner
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
       - name: Test native paid receipt continuity and no-respec safety
-        run: python -m pytest -q tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py
+        run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py
