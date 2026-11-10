@@ -121,7 +121,7 @@ def compare_prepared_candidates(*, binary: Path,
     """
     if (type(actor_level) is not int or not 10 <= actor_level <= 60
             or type(mob_count) is not int or not 2 <= mob_count <= 100
-            or not _positive(target_hp) or len(prepared_paths) < 2):
+            or not _positive(target_hp) or not prepared_paths):
         raise ValueError("INVALID_NATIVE_CANDIDATE_COMPARISON")
     if run_native is None:
         import sys
@@ -129,6 +129,9 @@ def compare_prepared_candidates(*, binary: Path,
                                "integrations/mythicsim-rust"))
         from live_two_world_pulls import run as run_native
     rows = []
+    # Two labels for the same source-prepared request are one alternative,
+    # not independent search breadth. Deduplicate BEFORE paying native mobs.
+    seen_source_requests: dict[str, tuple[str, str]] = {}
     if artifact_dir is not None:
         artifact_dir.mkdir(parents=True, exist_ok=True)
     for candidate_id, path in prepared_paths.items():
@@ -141,10 +144,31 @@ def compare_prepared_candidates(*, binary: Path,
         if (player.get("class") != "ClassWarlock"
                 or player.get("level") != actor_level):
             raise ValueError("NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH")
+        source_sha = prepared.get("request_sha256")
+        prepared_sha = _sha256(path)
         row = {"candidate_id": candidate_id,
-               "prepared_sha256": _sha256(path),
-               "source_sha256": prepared.get("request_sha256"),
+               "prepared_sha256": prepared_sha,
+               "source_sha256": source_sha,
                "mob_count": mob_count, "rng_mode": "balanced", "iterations": 1}
+        # The source request ID alone does not prove prepared-actor equivalence.
+        # A source hash with different prepared bytes must not silently suppress
+        # an alternative nor pay an unauthenticated source/actor conflict.
+        if not isinstance(source_sha, str) or len(source_sha) != 64:
+            row.update(status="INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY",
+                       elapsed_seconds=None)
+            rows.append(row)
+            continue
+        prior = seen_source_requests.get(source_sha)
+        if prior is not None:
+            earlier_id, earlier_prepared_sha = prior
+            row.update(
+                status=("DUPLICATE_NATIVE_PREPARED_SOURCE"
+                        if earlier_prepared_sha == prepared_sha
+                        else "CONFLICTING_NATIVE_PREPARED_SOURCE"),
+                elapsed_seconds=None, duplicate_of=earlier_id)
+            rows.append(row)
+            continue
+        seen_source_requests[source_sha] = (candidate_id, prepared_sha)
         try:
             receipt = run_native(binary, path, target_count=mob_count,
                                  mob_health=target_hp, rng_mode="balanced",
@@ -165,6 +189,7 @@ def compare_prepared_candidates(*, binary: Path,
     measured = sorted((r for r in rows if r["elapsed_seconds"] is not None),
                       key=lambda r: (r["elapsed_seconds"], r["candidate_id"]))
     # One fully-scored candidate is still a baseline, not competitive search.
+    # Allow it as a native-paid successor in Work2\'s competing parent beams.
     return {"kind": "native_warlock_comparable_candidate_screen_v1",
             "actor_level": actor_level, "mob_count": mob_count,
             "rng_mode": "balanced", "iterations": 1,
@@ -182,7 +207,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--binary", type=Path, required=True)
     ap.add_argument("--prepared", action="append", required=True,
-                    help="Repeat CANDIDATE_ID=RUST_PREPARED_JSON for 2+ candidates")
+                    help="Repeat CANDIDATE_ID=RUST_PREPARED_JSON (one or more)")
     ap.add_argument("--level", type=int, required=True)
     ap.add_argument("--mob-count", type=int, default=3)
     ap.add_argument("--target-hp", type=float, required=True)
