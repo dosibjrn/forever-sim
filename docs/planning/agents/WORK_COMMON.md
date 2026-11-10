@@ -4,6 +4,12 @@ This file applies to **Work1 and Work2 only**. Read it with [COMMON](COMMON.md) 
 
 **One-probe stop/reprioritize:** Implement the smallest production change with a credible reusable active-gate outcome; run the smallest genuine changed-behavior test. If the comparable M1 gate does not improve, stop that probe lane unless the run reveals a new reproducible causal defect. Tell Prio what changed and let it reassess, rather than repeatedly paying to force a stat witness, proof, or green test. An unfinished genuinely reusable capability may continue when its observed intermediate behavior justifies the remaining work.
 
+## Deliver one reusable product capability, not a chain of activity
+
+When the live owner priority is a playable Warlock route, **the route is the outcome**: use the same generic gsim/Rust coordinator for successive levels, preserve the native-paid actor/talent lineage and compare real elapsed outcomes. Once adjacent-level execution works, improve the parameterized/resumable range driver and native-result reuse rather than issuing a fresh one-level workflow/PR by default. Continue an existing feature branch/PR across cycles; a distinct PR is justified by a separately reviewable production capability, not by an hour, level or Actions run.
+
+Before scheduling a paid scenario, look for an exactly compatible completed or in-flight receipt. Reuse it where allowed, including for a source-linked successor and route guide. Only pay missing/changed work or explicitly independent official unaccepted-gate evaluations. Neither an accepted PASS nor a completed equivalent paid run becomes stale merely because a later engine or adapter exists. Do not turn cache resolution into a new acceptance veto.
+
 ## Start every cycle with the real handoff
 
 1. Read current `main`, [WORK_PRIORITY](../WORK_PRIORITY.md), your owned issue and all your open/draft implementation PRs.
@@ -13,11 +19,11 @@ This file applies to **Work1 and Work2 only**. Read it with [COMMON](COMMON.md) 
 
 ## Required delivery every cycle — code, not activity
 
-Every Work1/Work2 cycle must attempt and, whenever a safe executable slice exists, commit and push a meaningful production source/config/behavior change on its owned branch and open or update the implementation PR. A test-only green run, issue comment, review, diagnosis, plan, status report, extra diagnostic or duplicate Actions run is not a cycle deliverable.
+Every Work1/Work2 cycle must attempt and, whenever a safe executable slice exists, commit and push a meaningful production source/config/behavior change on its owned branch and open or update the **same capability-oriented** implementation PR. A test-only green run, issue comment, review, diagnosis, plan, status report, extra diagnostic or duplicate Actions run is not a cycle deliverable.
 
 - Continue the highest-impact concrete source-level change in your owned lane. Make the smallest correct change and add/update a focused regression of Forever-owned behavior when appropriate.
 - If blocked, record the exact reproducible blocker on the owned issue/PR and immediately try the next independent, genuinely executable item in your lane. Do not spend the whole cycle rewriting plans, re-running unchanged CI or investigating hypothetical permission issues.
-- A full gate PASS is **not** required to open/update a safe incremental PR. Hand off a tested production improvement promptly even if the gate remains FAIL/BLOCKED; do not create extra gates or a gate-only engine.
+- A full gate PASS is **not** required to open/update a safe incremental PR, and accepted prior PASSes are never re-tested. Hand off a tested production improvement promptly even if the gate remains FAIL/BLOCKED; do not create extra gates or a gate-only engine.
 - Never manufacture a diff, mask failures, weaken behavior, remove still-live code before its tested replacement, or claim an unpushed/unmerged change as delivered.
 - If no safe executable change remains after checking independent candidates, say **NO CODE DELIVERED**, identify the exact external dependency and leave Prio an actionable unblock/reassignment handoff.
 
