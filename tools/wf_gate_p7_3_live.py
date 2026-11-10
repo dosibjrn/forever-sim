@@ -51,7 +51,7 @@ def _native_source_talent_candidates(root: Path, binary: Path, base: dict,
                                      class_key: str, level: int) -> list[dict]:
     """Propose changed rank strings using positions returned by Rust options.
 
-    The frozen Warlock reference has zero spent talents. String-budget
+    Frozen lower-level references may have zero spent talents. String-budget
     mutation cannot move or lower ranks from 0-0-0, so offer one rank in
     native-disclosed positions. This is NOT an eligibility check: even a
     proposal at a listed position may be refused by native PREPARE/SIM.
@@ -146,9 +146,11 @@ def run_live(root: Path, class_key: str, level: int, *,
         root / "integrations/mythicsim-rust/live_world_probe.py",
         "p73_selected_native_scorer")
     original = base["raid"]["parties"][0]["players"][0]["talentsString"]
-    warlock_l20 = (class_key, level, spec) == (
-        "warlock", 20, "unrestricted")
-    if warlock_l20:
+    native_zero_reference = (class_key, level, spec) in (
+        ("warlock", 20, "unrestricted"),
+        ("druid", 30, "unrestricted"),
+    )
+    if native_zero_reference:
         try:
             native_candidates = _native_source_talent_candidates(
                 root, binary, base, class_key, level)
@@ -176,12 +178,12 @@ def run_live(root: Path, class_key: str, level: int, *,
     best = None
     start = time.monotonic()
     # P7.3 is a changed-talent axis smoke, never a 300s joint search.
-    attempt_limit = (min(len(native_candidates), 24) if warlock_l20
+    attempt_limit = (min(len(native_candidates), 24) if native_zero_reference
                      else len(minimal) + len(transfers) + 8)
     while proposals < attempt_limit:
         proposals += 1
         try:
-            if warlock_l20:
+            if native_zero_reference:
                 candidate = native_candidates[proposals - 1]
             elif proposals <= len(minimal):
                 candidate = copy.deepcopy(base)
