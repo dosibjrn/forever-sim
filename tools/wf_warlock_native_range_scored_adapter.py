@@ -153,13 +153,15 @@ def evaluate_request(
     for cid, (path, prepared, src, lineage) in candidates.items():
         comparison = measured.get(cid, {})
         try:
+            if comparison.get("status") != "MEASURED_NATIVE_FULLY_RECOVERED":
+                raise ValueError("NATIVE_SCORER_STATUS:"
+                                 + str(comparison.get("status", "NOT_RECORDED")))
             if (comparison.get("prepared_sha256") != _sha(path)
                     or comparison.get("source_sha256") != src
                     or comparison.get("mob_count") != mobs
                     or comparison.get("rng_mode") != "balanced"
-                    or comparison.get("iterations") != 1
-                    or comparison.get("status") != "MEASURED_NATIVE_FULLY_RECOVERED"):
-                raise ValueError("NATIVE_SCORER_RESULT_NOT_COMPARABLE")
+                    or comparison.get("iterations") != 1):
+                raise ValueError("NATIVE_SCORER_SOURCE_OR_SCENARIO_MISMATCH")
             raw = json.loads((call_dir / f"{cid}.native.json").read_text())
             terminal = raw["native_terminal_recovery"]
             stats = prepared["player"]["stats"]
