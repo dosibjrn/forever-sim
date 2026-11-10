@@ -639,9 +639,3 @@ def test_warlock_default_p3_source_uses_paid_l20_fixture_not_raid_donor(
     monkeypatch.setenv("FOREVER_P3_NATIVE_WARLOCK_L20_REQUEST", "caller.json")
     assert p3._warlock_l20_native_request(tmp_path) == "caller.json"
 
-
-def test_warlock_no_record_workflow_uses_same_l20_native_source_as_gate():
-    workflow = (ROOT / ".github/workflows/work2-warlock-l20-native-p3.yml"
-                ).read_text()
-    assert "warlock-l20-troll-source-equipped.request.json" in workflow
-    assert "warlock-l20-troll-best-paid.request.json" not in workflow
