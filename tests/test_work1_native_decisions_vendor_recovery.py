@@ -92,3 +92,45 @@ def test_no_native_recovery_clock_cannot_be_paid_just_by_vendor_label():
         windows, kills, decisions=True)["paid_recovery"] is False
     with pytest.raises(AssertionError, match="FOOD_WATER_CLOCK_INVALID"):
         bridge._native_food_water_receipts(windows, required=True)
+
+def test_decisions_native_paid_travel_without_refill_matches_rust_receipt():
+    """Regression: real L21 100-target run hit paid_recovery parity veto.
+
+    Rust native_world_recovery_paid considers a charged travel-only gap
+    paid if Decisions explicitly reports that no refill was needed. We
+    must classify the same source windows without requiring a fictitious
+    mana tick or consumable. Neither an omitted decision nor zero clock
+    advances may qualify.
+    """
+    bridge = _bridge()
+    windows, kills = _receipts(ns=100_000_000, ticks=0, food=0, water=0)
+    windows[1]["decisions_full_recovery"] = False
+    assert bridge._native_food_water_receipts(windows, required=True)[
+        "native_food_water_observed"] is True
+    assert bridge._native_paid_recovery_receipts(
+        windows, kills, decisions=True)["paid_recovery"] is True
+    assert bridge._native_paid_recovery_receipts(
+        windows, kills, decisions=False)["paid_recovery"] is False
+
+
+@pytest.mark.parametrize("ns,decision,expected", [
+    (0, False, False),
+    (100_000_000, True, False),
+    (100_000_000, None, False),
+    (100_000_000, False, True),
+])
+def test_no_refill_decision_cannot_forge_unpaid_or_requested_rest(
+    ns, decision, expected
+):
+    bridge = _bridge()
+    windows, kills = _receipts(ns=ns, ticks=0, food=0, water=0)
+    if decision is None:
+        del windows[1]["decisions_full_recovery"]
+    else:
+        windows[1]["decisions_full_recovery"] = decision
+    result = bridge._native_paid_recovery_receipts(
+        windows, kills, decisions=True)
+    assert result["paid_recovery"] is expected
+    if decision is None:
+        with pytest.raises(AssertionError, match="FOOD_WATER_RECEIPT_INCOMPLETE"):
+            bridge._native_food_water_receipts(windows, required=True)
