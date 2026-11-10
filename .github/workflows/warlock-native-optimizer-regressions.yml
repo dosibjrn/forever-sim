@@ -28,35 +28,6 @@ on:
       - tests/test_work2_warlock_l20_p72.py
       - tests/test_work2_warlock_l20_p73.py
       - .github/workflows/warlock-native-optimizer-regressions.yml
-  push:
-    branches:
-      - work/warlock-l55-survival-search-20261110
-    paths:
-      - tools/wf_warlock_native_optimizer.py
-      - tests/test_work1_warlock_world_finalists.py
-      - tools/wf_warlock_l20_native_cold.py
-      - tools/wf_warlock_l20_gate_bridge.py
-      - tests/test_work2_warlock_native_cold.py
-      - tests/test_work2_warlock_native_cold_cli.py
-      - tests/test_work2_warlock_gate_bridge.py
-      - tools/wf_p7_native_reference.py
-      - tools/wf_gate_p7_1_live.py
-      - tools/wf_gate_p7_2_live.py
-      - tools/wf_gate_p7_3_live.py
-      - tools/wf_gate_p3_live.py
-      - tools/wf_native_warlock_l20_equipped.py
-      - integrations/mythicsim-rust/native_p3_equipped.py
-      - integrations/mythicsim-rust/native_executor.py
-      - tests/test_work2_warlock_l20_native_p3.py
-      - tests/test_work2_warlock_l20_equipped_source.py
-      - src/engine_client/native_talent_proposals.py
-      - fixtures/warlock-l20-p71.request.json
-      - docs/evidence/native-references/warlock-l20-unrestricted/**
-      - tests/test_work2_warlock_l20_p71.py
-      - tests/test_work2_warlock_l20_p72.py
-      - tests/test_work2_warlock_l20_p73.py
-      - .github/workflows/warlock-native-optimizer-regressions.yml
-
 permissions:
   contents: read
 
