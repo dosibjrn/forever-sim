@@ -1,6 +1,8 @@
 """Guide handoff from already paid native receipts; no native or M1 replay."""
 import copy
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -238,3 +240,61 @@ def test_checked_in_l47_native_paid_guide_has_original_receipt_attribution():
     assert result["continuous_level_route_measured"] is False
     assert result["full_route_optimum_measured"] is False
     assert result["m1_recording_performed"] is False
+
+
+def test_durable_checked_in_l47_markdown_matches_preserved_paid_guide(tmp_path):
+    """The publicly readable section must remain a direct rendering of paid JSON."""
+    root = Path(__file__).resolve().parents[1]
+    guide_input = root / "data/warlock/native_l47_paid_family_guide.json"
+    checked_in = root / "data/warlock/native_l47_paid_family_guide.md"
+    output = tmp_path / "recovered" / "l47.md"
+    source_before = guide_input.read_bytes()
+
+    result = guide.publish_saved(guide_input=guide_input, markdown_out=output)
+    assert result["source_run_url"] == RUN
+    assert result["original_artifact_id"] == ARTIFACT
+    assert output.read_text() == checked_in.read_text()
+    assert guide_input.read_bytes() == source_before
+    assert "**Fastest in this scenario: Destruction**" in output.read_text()
+    assert "full L10–60 optimal route" in output.read_text()
+
+
+def test_saved_paid_guide_cli_emits_markdown_without_original_comparison(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    saved = root / "data/warlock/native_l47_paid_family_guide.json"
+    rendered = tmp_path / "portable.md"
+    completed = subprocess.run(
+        [sys.executable, str(root / "tools/wf_warlock_paid_family_guide.py"),
+         "--guide-input", str(saved), "--markdown-out", str(rendered)],
+        cwd=root, text=True, capture_output=True, check=True)
+    assert '"kind": "warlock_paid_family_guide_input_v1"' in completed.stdout
+    assert rendered.read_text() == (
+        root / "data/warlock/native_l47_paid_family_guide.md").read_text()
+
+
+def test_saved_paid_guide_refuses_false_measured_claim_before_writing(tmp_path):
+    saved = _build(_comparison())
+    saved["continuous_level_route_measured"] = True
+    source = tmp_path / "unsafe.json"
+    source.write_text(json.dumps(saved))
+    rendered = tmp_path / "unsafe.md"
+    with pytest.raises(ValueError, match="unmeasured route claim"):
+        guide.publish_saved(guide_input=source, markdown_out=rendered)
+    assert not rendered.exists()
+
+
+def test_original_native_comparison_cli_is_still_supported(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    comparison = tmp_path / "comparison.json"
+    comparison.write_text(json.dumps(_comparison()))
+    output = tmp_path / "structured.json"
+    markdown = tmp_path / "comparison.md"
+    completed = subprocess.run(
+        [sys.executable, str(root / "tools/wf_warlock_paid_family_guide.py"),
+         "--comparison", str(comparison), "--source-run-url", RUN,
+         "--artifact-id", str(ARTIFACT), "--out", str(output),
+         "--markdown-out", str(markdown)],
+        cwd=root, text=True, capture_output=True, check=True)
+    assert json.loads(output.read_text())["bounded_fastest_family"] == "Destruction"
+    assert "**Fastest in this scenario: Destruction**" in markdown.read_text()
+    assert '"kind": "warlock_paid_family_guide_input_v1"' in completed.stdout

@@ -314,15 +314,47 @@ def publish(*, comparison: Path, source_run_url: str, artifact_id: int,
     return result
 
 
+def publish_saved(*, guide_input: Path, markdown_out: Path) -> dict:
+    """Render the archived source-linked guide JSON without its expiring artifact.
+
+    The saved guide preserves original run/observation attribution. Rendering
+    still checks the bounded measured/tie/provisional claims, and it never
+    re-executes native worlds or edits the saved measurements.
+    """
+    result = json.loads(guide_input.read_text())
+    section = render_markdown(result)
+    markdown_out.parent.mkdir(parents=True, exist_ok=True)
+    markdown_out.write_text(section)
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--comparison", required=True, type=Path)
-    parser.add_argument("--source-run-url", required=True)
-    parser.add_argument("--artifact-id", required=True, type=int)
-    parser.add_argument("--out", required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--comparison", type=Path,
+                        help="Original native comparison.json, with source receipt identity")
+    source.add_argument("--guide-input", type=Path,
+                        help="Preserved native-paid guide JSON for replay-free Markdown")
+    parser.add_argument("--source-run-url")
+    parser.add_argument("--artifact-id", type=int)
+    parser.add_argument("--out", type=Path)
     parser.add_argument("--markdown-out", type=Path,
-                        help="Optional player-readable bounded family comparison section")
-    result = publish(**vars(parser.parse_args()))
+                        help="Player-readable bounded family comparison section")
+    args = parser.parse_args()
+    if args.guide_input is not None:
+        if (args.markdown_out is None or args.source_run_url is not None
+                or args.artifact_id is not None or args.out is not None):
+            parser.error("--guide-input requires --markdown-out and no original-comparison flags")
+        result = publish_saved(guide_input=args.guide_input,
+                               markdown_out=args.markdown_out)
+    else:
+        if (args.source_run_url is None or args.artifact_id is None
+                or args.out is None):
+            parser.error("--comparison requires --source-run-url, --artifact-id and --out")
+        result = publish(comparison=args.comparison,
+                         source_run_url=args.source_run_url,
+                         artifact_id=args.artifact_id, out=args.out,
+                         markdown_out=args.markdown_out)
     print(json.dumps(result, indent=2))
 
 
