@@ -129,6 +129,9 @@ def compare_prepared_candidates(*, binary: Path,
                                "integrations/mythicsim-rust"))
         from live_two_world_pulls import run as run_native
     rows = []
+    # Two labels for the same source-prepared request are one alternative,
+    # not independent search breadth. Deduplicate BEFORE paying native mobs.
+    seen_source_requests: dict[str, str] = {}
     if artifact_dir is not None:
         artifact_dir.mkdir(parents=True, exist_ok=True)
     for candidate_id, path in prepared_paths.items():
@@ -141,10 +144,19 @@ def compare_prepared_candidates(*, binary: Path,
         if (player.get("class") != "ClassWarlock"
                 or player.get("level") != actor_level):
             raise ValueError("NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH")
+        source_sha = prepared.get("request_sha256")
         row = {"candidate_id": candidate_id,
                "prepared_sha256": _sha256(path),
-               "source_sha256": prepared.get("request_sha256"),
+               "source_sha256": source_sha,
                "mob_count": mob_count, "rng_mode": "balanced", "iterations": 1}
+        if isinstance(source_sha, str) and len(source_sha) == 64:
+            prior = seen_source_requests.get(source_sha)
+            if prior is not None:
+                row.update(status="DUPLICATE_NATIVE_PREPARED_SOURCE",
+                           elapsed_seconds=None, duplicate_of=prior)
+                rows.append(row)
+                continue
+            seen_source_requests[source_sha] = candidate_id
         try:
             receipt = run_native(binary, path, target_count=mob_count,
                                  mob_health=target_hp, rng_mode="balanced",
