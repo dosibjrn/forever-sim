@@ -55,9 +55,15 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     talents = options.get("talents", {})
     trees = talents.get("trees")
     source_points = sum(int(ch) for token in allocations for ch in token)
+    native_budget = talents.get("points_available")
+    # A Rust-prepared prior level may deliberately bank a point when no new
+    # talent candidate was legal with its source gear. Requiring exactly one
+    # unspent point would strand all later levels after that real L21 outcome.
+    # Query native options and submit a one-rank proposal; ONLY Rust prepare
+    # decides whether the resulting allocation and actor are executable.
     if (options.get("level") != to_level or
             talents.get("status") != "ok" or
-            talents.get("points_available") != source_points + 1 or
+            type(native_budget) is not int or native_budget <= source_points or
             not isinstance(trees, list) or len(trees) != 3):
         raise ValueError("native options cannot advance this exact source allocation one point")
 
