@@ -98,6 +98,14 @@ def _variants(seed: str, trees: list[dict], *, points_available: int | None = No
     # Rust prepare, never Forever, judges whether each is executable.
     if first != seed:
         fields = first.split("-")
+        # High-level full-tree proposals can all fail Rust preparation (for
+        # example on native prerequisites).  Do not let their later mutations
+        # exhaust the paid candidate budget without trying the original
+        # source root as an independently prepared, explicitly underallocated
+        # baseline.  It is never promoted to an optimized high-level build.
+        if seed not in seen:
+            seen.add(seed)
+            yield seed
 
     def transfer(source_tree: int, src: int, dest_tree: int, dst: int,
                  cap: int):
