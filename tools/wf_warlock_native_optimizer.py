@@ -296,6 +296,61 @@ def native_level_equipment(binary, source, options, out, *, level):
     return working, audit
 
 
+def select_world_finalists(scored, source_build, max_finalists):
+    """Spend actual 100-mob trials on distinct *paid* native candidates.
+
+    A high 30s DPS is not proof of 100-mob survival. Preserve the already-paid
+    predecessor, then greedily cover talent-tree, APL filler and Life Tap
+    alternatives. Never invent a candidate or score; ties favor paid DPS.
+    """
+    if max_finalists <= 0:
+        return []
+
+    def key(row):
+        return (row["talents"], row["apl_label"])
+
+    def features(row):
+        label = row["apl_label"].casefold()
+        talent = row["talent_label"].casefold()
+        result = {"tap:" + str("_tap" in label)}
+        for tree in ("affliction", "demonology", "destruction"):
+            if tree in talent:
+                result.add("tree:" + tree)
+        for filler in ("drain_life", "shoot", "searing_pain", "shadow_bolt"):
+            if "__" + filler in label or "filler_" + filler in label:
+                result.add("filler:" + filler)
+                break
+        return result
+
+    baseline = next((row for row in scored
+                     if row["talents"] == source_build
+                     and row["apl_label"] == "saved_multi_spell"), None)
+    selected = [baseline] if baseline is not None else []
+    seen = {key(row) for row in selected}
+    covered = set().union(*(features(row) for row in selected))
+    used_talents = {row["talents"] for row in selected}
+    used_apls = {row["apl_label"] for row in selected}
+
+    while len(selected) < max_finalists:
+        remaining = [row for row in scored if key(row) not in seen]
+        if not remaining:
+            break
+        # Maximize new source-native alternatives before another high-DPS
+        # copy of an already sampled filler/talent family.
+        row = max(remaining, key=lambda candidate: (
+            len(features(candidate) - covered),
+            candidate["talents"] not in used_talents,
+            candidate["apl_label"] not in used_apls,
+            candidate["dps_screen"],
+        ))
+        selected.append(row)
+        seen.add(key(row))
+        covered.update(features(row))
+        used_talents.add(row["talents"])
+        used_apls.add(row["apl_label"])
+    return selected
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, required=True)
@@ -404,52 +459,7 @@ def main():
         "top5":[{k:v for k,v in r.items() if k not in ("apl", "talent_ranks")}
                 for r in scored[:5]]}),flush=True)
 
-    # P4 DPS is only a screening heuristic. Native 100-mob survival is the
-    # objective: reserve finalist diversity across filler/sustain, spec trees
-    # and tap choices before filling the remainder from paid DPS ranking.
-    selected = []
-    selected_keys = set()
-    talent_counts = Counter()
-    apl_counts = Counter()
-
-    def include(row):
-        if len(selected) >= args.max_finalists:
-            return False
-        key = (row["talents"], row["apl_label"])
-        if key in selected_keys:
-            return False
-        selected.append(row)
-        selected_keys.add(key)
-        talent_counts[row["talents"]] += 1
-        apl_counts[row["apl_label"]] += 1
-        return True
-
-    for desired in ("__drain_life", "__shoot", "__searing_pain",
-                    "__shadow_bolt", "saved_multi_spell"):
-        for wanted_trees in (("Affliction",), ("Demonology",), ("Destruction",)):
-            if len(selected) >= args.max_finalists:
-                break
-            matching = (row for row in scored
-                        if (desired in row["apl_label"] or
-                            row["apl_label"] == desired)
-                        and any(tree in row["talent_label"] for tree in wanted_trees)
-                        and talent_counts[row["talents"]] < 2)
-            next_row = next(matching, None)
-            if next_row is not None:
-                include(next_row)
-    for row in scored:
-        if len(selected) >= args.max_finalists:
-            break
-        if talent_counts[row["talents"]] < 2 and apl_counts[row["apl_label"]] < 3:
-            include(row)
-
-    baseline = next((r for r in scored if r["talents"] == source_build
-                     and r["apl_label"] == "saved_multi_spell"), None)
-    if baseline and (baseline["talents"], baseline["apl_label"]) not in selected_keys:
-        if len(selected) < args.max_finalists:
-            include(baseline)
-        elif selected:
-            selected[-1] = baseline
+    selected = select_world_finalists(scored, source_build, args.max_finalists)
 
     chain_results = []
     for index,row in enumerate(selected):
