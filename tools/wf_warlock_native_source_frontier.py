@@ -91,6 +91,14 @@ def _variants(seed: str, trees: list[dict], *, points_available: int | None = No
             seen.add(proposal)
             yield proposal
 
+    # Tree-family probes use native points_available, but all subsequent
+    # mutations must retain that same level-sized source budget. Otherwise
+    # after three families a large paid search silently falls back to tiny
+    # mutations of the L20 seed at L30/L40/L50/L60. These remain proposals;
+    # Rust prepare, never Forever, judges whether each is executable.
+    if first != seed:
+        fields = first.split("-")
+
     def transfer(source_tree: int, src: int, dest_tree: int, dst: int,
                  cap: int):
         if (type(src) is not int or src < 0 or type(dst) is not int
