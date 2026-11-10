@@ -239,7 +239,7 @@ def test_live_frontier_is_called_in_same_range_optimizer_request(tmp_path, monke
     def receipt(level, mobs, label, seconds):
         source = (f"{level:02x}{ord(label):02x}" + "a" * 60)
         return {
-            "status": "measured_native_world", "level": level,
+            "status": "MEASURED_NATIVE_FULLY_RECOVERED", "level": level,
             "mob_count": mobs, "targets_killed": mobs,
             "rng_mode": "balanced", "iterations": 1,
             "native_prepared": True, "native_world_ack": True,

@@ -12,7 +12,7 @@ ENGINE = "b" * 64
 def receipt(level, mob_count, label, seconds, parent=None, recovery=1.0):
     source = (f"{level:02x}{ord(label):02x}" + "a" * 60)
     return {
-        "status": "measured_native_world", "level": level, "mob_count": mob_count,
+        "status": "MEASURED_NATIVE_FULLY_RECOVERED", "level": level, "mob_count": mob_count,
         "targets_killed": mob_count, "rng_mode": "balanced", "iterations": 1,
         "native_prepared": True, "native_world_ack": True,
         "native_full_recovery_paid": True, "recover_to_full": True,

@@ -40,6 +40,11 @@ def _receipt_error(
     mob_count: int, rng_mode: str, iterations: int,
 ) -> str | None:
     """Validate Forever transport/objective completeness, never Rust legality."""
+    # The native scorer explicitly classifies fully paid success. A refusal or
+    # missing status must not become a ranked performance result merely because
+    # another transport layer happened to retain positive ACK/resource fields.
+    if row.get("status") != "MEASURED_NATIVE_FULLY_RECOVERED":
+        return "native measured full-recovery status missing"
     if row.get("native_prepared") is not True or row.get("native_world_ack") is not True:
         return "native prepare/world ACK missing"
     if (row.get("level") != level or row.get("mob_count") != mob_count
