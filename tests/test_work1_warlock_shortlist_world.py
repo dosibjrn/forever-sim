@@ -378,3 +378,63 @@ def test_genuinely_different_dominant_build_families_keep_cross_tree_status(
     assert result["measured_dominant_talent_tree_indexes"] == [0, 1, 2]
     assert result["status"] == "MEASURED_CROSS_TREE_100"
     assert result["world_winner"]["candidate_index"] == 2
+
+
+def test_full_build_family_diversity_wins_bounded_paid_slots_over_rank_label(
+        tmp_path, monkeypatch):
+    """Three first same-family rows must not crowd out later native families."""
+    args, predecessor = _setup(tmp_path, trees=(0, 0, 0, 0, 0))
+    proposal = json.loads(args["shortlist"].read_text())
+    talents = ("333-0-000", "444-0-000", "555-0-000",
+               "0-333-000", "0-0-333")
+    for row, allocation in zip(proposal["candidates"], talents):
+        candidate_path = args["shortlist"].parent / row["source_request"]
+        candidate = json.loads(candidate_path.read_text())
+        candidate["raid"]["parties"][0]["players"][0]["talentsString"] = allocation
+        candidate_path.write_text(json.dumps(candidate))
+        row["candidate_talents"] = allocation
+        row["source_request_sha256"] = world.native_source.sha256(candidate_path)
+    args["shortlist"].write_text(json.dumps(proposal))
+
+    selected = world._candidate_sources(
+        proposal, args["shortlist"].parent, json.loads(args["source"].read_text()), 3)
+    assert [row["source_request"] for row, _ in selected] == [
+        "candidate_attempts/candidate_01.json",
+        "candidate_attempts/candidate_04.json",
+        "candidate_attempts/candidate_05.json",
+    ]
+    paid = _fake_native(monkeypatch, predecessor, times=(900, 750, 1000))
+    result = world.run(**args, max_candidates=3, max_new_trials=3)
+    assert paid == [1, 2, 3]
+    assert [row["tree_index"] for row in result["candidates"]] == [0, 0, 0]
+    assert [row["dominant_talent_tree_index"]
+            for row in result["candidates"]] == [0, 1, 2]
+    assert result["status"] == "MEASURED_CROSS_TREE_100"
+    assert result["world_winner"]["candidate_index"] == 2
+    assert result["distinct_build_families_compared"] is True
+    assert result["contains_counterfactual_respec"] is True
+    assert result["talent_respec_cost_measured"] is False
+
+
+def test_respec_reporting_is_rank_decrease_not_source_tree_label(
+        tmp_path, monkeypatch):
+    args, predecessor = _setup(tmp_path)
+    proposal = json.loads(args["shortlist"].read_text())
+    # This compares different full allocations, not a measured respec
+    # transition or a claim about in-game respec cost.
+    for row, allocation in zip(proposal["candidates"],
+                               ("333-0-000", "0-333-000", "0-0-333")):
+        source_file = args["shortlist"].parent / row["source_request"]
+        candidate = json.loads(source_file.read_text())
+        candidate["raid"]["parties"][0]["players"][0]["talentsString"] = allocation
+        source_file.write_text(json.dumps(candidate))
+        row["candidate_talents"] = allocation
+        row["source_request_sha256"] = world.native_source.sha256(source_file)
+    args["shortlist"].write_text(json.dumps(proposal))
+    _fake_native(monkeypatch, predecessor, times=(900, 750, 1000))
+    result = world.run(**args, max_new_trials=3)
+    assert [row["requires_talent_respec_from_paid_source"]
+            for row in result["candidates"]] == [True, True, False]
+    assert result["contains_counterfactual_respec"] is True
+    assert result["talent_respec_cost_measured"] is False
+    assert result["world_winner_is_full_level_route"] is False
