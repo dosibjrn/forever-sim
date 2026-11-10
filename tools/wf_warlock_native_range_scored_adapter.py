@@ -204,15 +204,25 @@ def evaluate_request(
                 raise ValueError("NATIVE_SCORER_SOURCE_OR_SCENARIO_MISMATCH")
             raw = json.loads((call_dir / f"{cid}.native.json").read_text())
             terminal = raw["native_terminal_recovery"]
-            stats = prepared["player"]["stats"]
             start_ns, end_ns = terminal["start_clock_ns"], terminal["end_clock_ns"]
             elapsed = comparison["elapsed_seconds"]
+            # Never relabel prepared base stats as full live resources: source
+            # buffs and effects can change the actual Rust actor capacities.
+            max_hp, max_mana = terminal.get("max_health"), terminal.get("max_mana")
             if (type(start_ns) is not int or type(end_ns) is not int
                     or end_ns < start_ns or not isinstance(elapsed, (int, float))
                     or not math.isfinite(elapsed)
                     or not math.isclose(elapsed, end_ns / 1e9, abs_tol=1e-6)
                     or raw.get("source_sha256") != src):
                 raise ValueError("NATIVE_RECOVERY_SOURCE_OR_CLOCK_MISMATCH")
+            if (any(type(n) not in (int, float) or not math.isfinite(n)
+                    or n <= 0 for n in (max_hp, max_mana))
+                    or not all(type(terminal.get(key)) in (int, float)
+                               and math.isfinite(terminal[key]) for key in
+                               ("health_after", "mana_after"))
+                    or not math.isclose(terminal["health_after"], max_hp, abs_tol=1e-6)
+                    or not math.isclose(terminal["mana_after"], max_mana, abs_tol=1e-6)):
+                raise ValueError("NATIVE_TERMINAL_CAPACITY_NOT_FULL")
             rows.append({
                 "status": comparison["status"], "candidate_id": cid,
                 "level": level, "mob_count": mobs,
@@ -225,9 +235,9 @@ def evaluate_request(
                     and terminal.get("native_clock_accounted") is True,
                 "recover_to_full": True,
                 "terminal_hp": terminal.get("health_after"),
-                "terminal_max_hp": stats.get("Health"),
+                "terminal_max_hp": max_hp,
                 "terminal_mana": terminal.get("mana_after"),
-                "terminal_max_mana": stats.get("Mana"),
+                "terminal_max_mana": max_mana,
                 "elapsed_seconds": elapsed,
                 "terminal_recovery_seconds": (end_ns - start_ns) / 1e9,
                 "native_parent_source_sha256":
