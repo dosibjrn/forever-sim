@@ -85,7 +85,7 @@ def optimize(
     budget: int, *,
     evaluate: Callable[..., Sequence[Mapping[str, Any]]],
     beam_width: int = 3, rng_mode: str = "balanced", iterations: int = 1,
-    recover_to_full: bool = True, mode: str = "continuing",
+    recover_to_full: bool = True, mode: str = "independent",
 ) -> dict[str, Any]:
     """Rank real native candidates in a continuing path or independent samples.
 
