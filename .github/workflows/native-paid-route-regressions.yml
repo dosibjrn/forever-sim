@@ -2,7 +2,7 @@ name: Native-paid route continuity regressions
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     branches: [main]
     paths:
       - src/v2/path_dp.py
@@ -19,12 +19,46 @@ on:
       - tests/test_warlock_paid_artifact.py
       - .github/workflows/work2-warlock-l41-l50-native-batch.yml
       - .github/workflows/native-paid-route-regressions.yml
+  workflow_dispatch:
+    inputs:
+      predecessor_artifact_id:
+        description: "Existing paid native source/route artifact ID"
+        required: true
+        type: string
+        default: "13767012142"
+      from_level:
+        description: "Source-paid predecessor level (successor is from_level + 1)"
+        required: true
+        type: number
+        default: 46
+      selected_rust_sha:
+        description: "Exact selected Rust source revision"
+        required: true
+        type: string
+        default: "7b811d37969bd1886cf123835fc87b699d1f5fbd"
+      predecessor_binary_sha256:
+        description: "Exact binary SHA256 of predecessor's genuine 100-mob receipt"
+        required: true
+        type: string
+        default: "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458"
+      max_proposals:
+        description: "Maximum native prepared+30s source proposals"
+        required: true
+        type: number
+        default: 12
+      max_finalists:
+        description: "Maximum distinct paid 100-mob finalists"
+        required: true
+        type: number
+        default: 3
 
 permissions:
   contents: read
+  actions: read  # Authenticate the actual paid predecessor artifact; no replay.
 
 jobs:
   native-paid-route:
+    if: github.event_name == 'pull_request' && github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -36,3 +70,148 @@ jobs:
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
       - name: Test native paid receipt continuity and no-respec safety
         run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work1_warlock_shortlist_world.py
+
+  # The real native 100/100 comparison is deliberately opt-in, never an
+  # automatic response to every source push or a rerun of paid L20–L60 routes.
+  # On a same-repo PR, apply the 'work1-native-world' label once to launch the
+  # exact L46→L47 experiment. On main, workflow_dispatch accepts other genuine
+  # paid predecessors. Every native rejection is retained in the artifact.
+  cross-tree-native-world:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action == 'labeled' &&
+       github.event.label.name == 'work1-native-world' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      FROM_LEVEL: ${{ inputs.from_level || 46 }}
+      PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id || '13767012142' }}
+      PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 || '133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458' }}
+      SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha || '7b811d37969bd1886cf123835fc87b699d1f5fbd' }}
+      MAX_PROPOSALS: ${{ inputs.max_proposals || 12 }}
+      MAX_FINALISTS: ${{ inputs.max_finalists || 3 }}
+    steps:
+      - name: Checkout exact comparison source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: project
+      - name: Checkout exact native authority
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: ${{ env.SELECTED_RUST_SHA }}
+          path: engine
+      - name: Verify selected revision and bounded request
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "$SELECTED_RUST_SHA"
+          [[ "$PREDECESSOR_ARTIFACT_ID" =~ ^[0-9]+$ ]]
+          [[ "$PREDECESSOR_BINARY_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$FROM_LEVEL" =~ ^[0-9]+$ ]]
+          [[ "$MAX_PROPOSALS" =~ ^[0-9]+$ ]]
+          [[ "$MAX_FINALISTS" =~ ^[0-9]+$ ]]
+          test "$FROM_LEVEL" -ge 10 && test "$FROM_LEVEL" -lt 60
+          test "$MAX_PROPOSALS" -ge 1 && test "$MAX_PROPOSALS" -le 30
+          test "$MAX_FINALISTS" -ge 1 && test "$MAX_FINALISTS" -le 6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install focused Forever integration requirements
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Test only changed Forever candidate/receipt forwarding
+        working-directory: project
+        run: python -m pytest -q tests/test_work1_warlock_shortlist_world.py tests/test_work2_warlock_next_level_source.py tests/test_warlock_paid_artifact.py
+      - name: Build exact Rust executor (no source-rules audit)
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Download existing paid predecessor receipt, never repay it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p predecessor-archive
+          curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/$PREDECESSOR_ARTIFACT_ID/zip" \
+            -o predecessor.zip
+          unzip -q predecessor.zip -d predecessor-archive
+      - name: Stage only actual paid source and native route for predecessor
+        working-directory: project
+        run: |
+          set -euo pipefail
+          python tools/wf_warlock_paid_artifact.py \
+            --archive-dir ../predecessor-archive --from-level "$FROM_LEVEL" \
+            --out ../predecessor-staged
+      - name: Confirm original 100/100 ACK and executable binary lineage
+        working-directory: project
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from tools.wf_warlock_next_level_source import verified_paid_predecessor
+          receipt = verified_paid_predecessor(
+              route=Path("../predecessor-staged/route.json"),
+              source=Path("../predecessor-staged/source_request.json"),
+              binary=Path("../engine/target/debug/forever-engine"),
+              from_level=int(os.environ["FROM_LEVEL"]),
+              predecessor_binary_sha256=os.environ["PREDECESSOR_BINARY_SHA256"])
+          print("VERIFIED_PAID_NATIVE_PREDECESSOR", receipt, flush=True)
+          PY
+      - name: Obtain source-native prepared cross-tree L+1 shortlist and paid 30s screens
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          python -u tools/wf_warlock_next_level_source.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../predecessor-staged/source_request.json \
+            --predecessor-route ../predecessor-staged/route.json \
+            --predecessor-binary-sha256 "$PREDECESSOR_BINARY_SHA256" \
+            --from-level "$FROM_LEVEL" --to-level "$((FROM_LEVEL + 1))" \
+            --native-paid-shortlist --max-proposals "$MAX_PROPOSALS" \
+            --out ../cross-tree/shortlist
+      - name: Pay actual bounded distinct native/gsim hostile 100/100 worlds
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          python -u tools/wf_warlock_shortlist_world.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../predecessor-staged/source_request.json \
+            --predecessor-route ../predecessor-staged/route.json \
+            --shortlist ../cross-tree/shortlist/native_paid_shortlist.json \
+            --out ../cross-tree/world \
+            --max-new-trials "$MAX_FINALISTS" --max-candidates "$MAX_FINALISTS"
+      - name: Publish genuine winner or exact provisional/refusal state
+        working-directory: project
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("../cross-tree/world/comparison.json")
+          result = json.loads(p.read_text())
+          assert result["kind"] == "warlock_native_world_finalist_comparison_v1"
+          assert result["m1_recording_performed"] is False
+          assert result["stat_weights_measured"] is False
+          assert result["new_native_100_trials"] <= 6
+          print("NATIVE_PAID_CROSS_TREE_RESULT", json.dumps({
+              "status": result["status"], "level": result["level"],
+              "winner": result["world_winner"],
+              "candidates": result["candidates"],
+              "pending": result["pending_candidate_indexes"],
+          }, indent=2), flush=True)
+          PY
+      - name: Preserve original predecessor, source-screened alternatives and all paid worlds
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work1-warlock-cross-tree-${{ github.run_id }}
+          path: |
+            predecessor-staged/
+            cross-tree/
+          if-no-files-found: warn
+          retention-days: 14
