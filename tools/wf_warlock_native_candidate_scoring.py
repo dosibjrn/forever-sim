@@ -54,7 +54,11 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
             or receipt.get("actual_2d_ack") is not True
             or receipt.get("native_recovery_clock_accounted") is not True
             or receipt.get("native_recovery_mode") != "decisions_food_water"
-            or receipt.get("paid_recovery") is not True
+            # Decisions may legitimately request no between-pull refill.
+            # The gsim/native bridge has separately checked each native gap
+            # and whether its clock is accounted for. A False *needed-rest*
+            # flag is not an instant free resource refill.
+            or type(receipt.get("paid_recovery")) is not bool
             or not isinstance(windows, list) or len(windows) != mob_count
             or not isinstance(mana, list) or len(mana) != mob_count):
         return None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT"
