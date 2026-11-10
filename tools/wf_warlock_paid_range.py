@@ -107,8 +107,10 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             "from_level": from_level, "end_level": end_level,
             "selected_engine_binary_sha256": engine_sha,
             "completed_new_levels": completed, "reused_levels": reused,
-            "next_level": (completed + reused)[-1] + 1 if completed or reused
-                          else from_level + 1,
+            # Completed and reused levels are stored in separate lists, not
+            # chronological order. The continuation frontier is the highest
+            # verified paid level, even when paid/reused levels interleave.
+            "next_level": max(completed + reused, default=from_level) + 1,
             "stopped": stopped,
             "full_10_60_native_replay_executed": False,
             "elapsed_10_60_seconds": None,
