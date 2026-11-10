@@ -67,6 +67,81 @@ def test_live_root_asks_native_options_and_prepares_distinct_proposals(tmp_path)
     assert all(Path(r["prepared"]).exists() for r in found["entries"])
 
 
+
+def test_tight_native_budget_reaches_other_talent_trees_before_seed_tweaks(tmp_path):
+    """Paid proposals must compete across source-listed trees, not just Affliction."""
+    seed, binary = _root_source(tmp_path)
+    options = {"level": 20, "talents": {"status": "ok", "trees": [
+        {"talents": [{"index": 0, "max_rank": 5},
+                     {"index": 1, "max_rank": 5}]},
+        {"talents": [{"index": 0, "max_rank": 5}]},
+        {"talents": [{"index": 0, "max_rank": 5}]},
+    ]}}
+    prepared_talents = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        source = Path(cmd[cmd.index("--request") + 1])
+        destination = Path(cmd[cmd.index("--outfile") + 1])
+        payload = json.loads(source.read_text())
+        prepared_talents.append(
+            payload["raid"]["parties"][0]["players"][0]["talentsString"]
+        )
+        destination.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 20},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        _request(budget=3), binary=binary, seed_source=seed,
+        out=tmp_path / "native", runner=native,
+    )
+    assert len(result["entries"]) == 3
+    assert result["refusals"] == []
+    assert prepared_talents == ["11-0-0", "01-1-0", "01-0-1"]
+    # The source is authoritative even though Forever constructed trial
+    # variants: no candidate is measured unless Rust actually prepares it.
+    assert all(Path(entry["prepared"]).is_file() for entry in result["entries"])
+
+
+def test_cross_tree_native_refusal_is_not_replaced_by_unpaid_candidate(tmp_path):
+    seed, binary = _root_source(tmp_path)
+    prepared_talents = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 20, "talents": {"status": "ok", "trees": [
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                ]},
+            }))
+        source = Path(cmd[cmd.index("--request") + 1])
+        destination = Path(cmd[cmd.index("--outfile") + 1])
+        talents = json.loads(source.read_text())["raid"]["parties"][0]["players"][0]["talentsString"]
+        prepared_talents.append(talents)
+        if talents == "01-1-0":
+            return subprocess.CompletedProcess(cmd, 2, stderr="native source refusal")
+        destination.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 20},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        _request(budget=3), binary=binary, seed_source=seed,
+        out=tmp_path / "native", runner=native,
+    )
+    assert prepared_talents == ["11-0-0", "01-1-0", "01-0-1"]
+    assert len(result["entries"]) == 2
+    assert len(result["refusals"]) == 1
+    assert result["refusals"][0]["status"] == "NATIVE_PREPARE_REFUSED"
+    assert "native source refusal" in result["refusals"][0]["native_refusal"]
+
+
 def test_native_prepare_refusals_preserve_budget_and_original_reason(tmp_path):
     seed, binary = _root_source(tmp_path)
 
