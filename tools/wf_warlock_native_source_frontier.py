@@ -23,7 +23,7 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _variants(seed: str, trees: list[dict]):
+def _variants(seed: str, trees: list[dict], *, points_available: int | None = None):
     """Sample transfers between Rust-listed talent slots; Rust judges proposals.
 
     A small paid budget must reach alternatives in *other* native trees before
@@ -40,8 +40,12 @@ def _variants(seed: str, trees: list[dict]):
         if not isinstance(slots, list):
             raise ValueError("native options lack tree slots")
         slots_by_tree.append(slots)
-    yield seed
-    seen = {seed}
+    seed_points = sum(int(rank) for part in fields for rank in part)
+    # Higher independent roots must be allowed to spend the extra talent
+    # points advertised by native options. This is a proposal budget, NOT a
+    # Python talent-legality decision: every candidate still goes to Rust.
+    proposed_points = (points_available if type(points_available) is int
+                       and points_available > seed_points else seed_points)
 
     # A one-point transfer out of a developed talent tree commonly leaves
     # the original tree dominant.  Source-native prepare must also get a
@@ -49,7 +53,7 @@ def _variants(seed: str, trees: list[dict]):
     # These are *proposals*, not claims of Warcraft legality: slot indices
     # and rank caps are supplied by Rust options; Rust prepare decides.
     def whole_tree_family(target_tree: int):
-        remaining = sum(int(rank) for part in fields for rank in part)
+        remaining = proposed_points
         if remaining == 0:
             return None
         target = ["0"] * len(fields[target_tree])
@@ -73,6 +77,12 @@ def _variants(seed: str, trees: list[dict]):
     dominant = max(range(len(fields)), key=lambda idx: sum(
         int(rank) for rank in fields[idx]
     ))
+    # The level-scaled candidate is tried first instead of paying a sparse
+    # L20 seed at L30/L40/L50/L60 when native offers more points.
+    first = (whole_tree_family(dominant) if proposed_points > seed_points
+             else None) or seed
+    yield first
+    seen = {first}
     for target_tree in range(len(fields)):
         if target_tree == dominant:
             continue
@@ -80,6 +90,14 @@ def _variants(seed: str, trees: list[dict]):
         if proposal is not None and proposal not in seen:
             seen.add(proposal)
             yield proposal
+
+    # Tree-family probes use native points_available, but all subsequent
+    # mutations must retain that same level-sized source budget. Otherwise
+    # after three families a large paid search silently falls back to tiny
+    # mutations of the L20 seed at L30/L40/L50/L60. These remain proposals;
+    # Rust prepare, never Forever, judges whether each is executable.
+    if first != seed:
+        fields = first.split("-")
 
     def transfer(source_tree: int, src: int, dest_tree: int, dst: int,
                  cap: int):
@@ -344,8 +362,14 @@ def produce_frontier(
     # Keep the root and two distinct talent proposals in a tiny budget, then
     # offer native-registered APL fallbacks before spending every remaining
     # attempt on local talent moves. Every proposal still pays a Rust prepare.
-    talent_variants = iter((_continuing_variants if parent is not None else _variants)(
-        actor["talentsString"], trees))
+    if parent is not None:
+        talent_variants = iter(_continuing_variants(actor["talentsString"], trees))
+    else:
+        talent_variants = iter(_variants(
+            actor["talentsString"], trees,
+            points_available=(talents.get("points_available")
+                              if request.get("search_mode") == "independent" else None),
+        ))
     root_prepared: dict | None = None
     root_proposal: dict | None = None
 
@@ -355,7 +379,7 @@ def produce_frontier(
             if variant is None:
                 break
             yield variant, None
-        if root_prepared is not None:
+        if root_prepared is not None and root_proposal is not None:
             for native_apl in _native_apl_variants(root_proposal, root_prepared):
                 yield None, native_apl
         for variant in talent_variants:
@@ -391,8 +415,6 @@ def produce_frontier(
             refusals.append({"candidate_id": cid, "status": "NATIVE_PREPARE_REFUSED",
                              "native_prepared": False, "native_refusal": str(exc)[-1500:]})
             continue
-        # Native may reject the first candidate. Use the earliest actually
-        # prepared source for APL exploration, not a failed original seed.
         if root_prepared is None and talents_string is not None:
             root_prepared = prepared
             root_proposal = proposal

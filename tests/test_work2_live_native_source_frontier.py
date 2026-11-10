@@ -645,6 +645,98 @@ def test_scored_child_rechecks_rust_infill_before_any_native_payment(tmp_path):
                for row in rejected)
 
 
+def test_independent_l30_uses_native_level_points_and_preserves_scaled_apl_root(tmp_path):
+    """L20 seed points must not cap independently sampled higher-level builds.
+
+    This checks native request forwarding/proposal diversity, not talent legality:
+    every proposed full-budget build is judged again by Rust prepare.
+    """
+    seed, binary = _root_source(tmp_path)
+    seed_payload = json.loads(seed.read_text())
+    seed_payload["raid"]["parties"][0]["players"][0]["rotation"] = {
+        "priorityList": [{"action": {"castSpell": {"spellId": {"spellId": 101}}}}]
+    }
+    seed.write_text(json.dumps(seed_payload))
+    proposed = []
+    options = {"level": 30, "talents": {
+        "status": "ok", "points_available": 21,
+        "trees": [{"talents": [{"index": i, "max_rank": 5}
+                               for i in range(5)]} for _ in range(3)],
+    }}
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            assert cmd[-1] == "30"
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        source_path = Path(cmd[cmd.index("--request") + 1])
+        prepared_path = Path(cmd[cmd.index("--outfile") + 1])
+        player = json.loads(source_path.read_text())["raid"]["parties"][0]["players"][0]
+        assert player["level"] == 30
+        spell = player["rotation"]["priorityList"][-1]["action"]["castSpell"]["spellId"]["spellId"]
+        proposed.append((player["talentsString"], spell))
+        prepared_path.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 30, "spells": [
+                {"action_id": {"spell_id": n}, "flags": ["SpellFlagAPL"]}
+                for n in (101, 102, 103)
+            ]},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        {**_request(level=30, budget=7), "search_mode": "independent"},
+        binary=binary, seed_source=seed, out=tmp_path / "native", runner=native,
+    )
+    assert len(result["entries"]) == 7
+    assert result["refusals"] == []
+    assert proposed == [
+        ("55551-0-0", 101),
+        ("00-55551-0", 101),
+        ("00-0-55551", 101),
+        ("55551-0-0", 102),
+        ("55551-0-0", 103),
+        ("45551-1-0", 101),
+        ("45551-0-1", 101),
+    ]
+    # Both the first three families and later native-sourced rank transfers
+    # must spend the L30 option budget; only Rust prepare judges legality.
+    assert all(sum(int(c) for tree in talents.split("-") for c in tree) == 21
+               for talents, _ in proposed)
+    assert all(entry["parent_source_sha256"] is None for entry in result["entries"])
+
+
+def test_unscaled_seed_is_preserved_when_native_points_not_advertised(tmp_path):
+    """Missing source options cannot be replaced with an inferred level formula."""
+    seed, binary = _root_source(tmp_path)
+    proposed = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 30, "talents": {"status": "ok", "trees": [
+                    {"talents": [{"index": 0, "max_rank": 5},
+                                 {"index": 1, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                ]},
+            }))
+        source = Path(cmd[cmd.index("--request") + 1])
+        player = json.loads(source.read_text())["raid"]["parties"][0]["players"][0]
+        proposed.append(player["talentsString"])
+        prepared = Path(cmd[cmd.index("--outfile") + 1])
+        prepared.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 30},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        {**_request(level=30, budget=3), "search_mode": "independent"},
+        binary=binary, seed_source=seed, out=tmp_path / "native", runner=native,
+    )
+    assert len(result["entries"]) == 3
+    assert proposed == ["11-0-0", "00-2-0", "00-0-2"]
+
 def test_native_apl_fallback_uses_first_prepared_family_after_seed_refusal(tmp_path):
     """An invalid initial root must not suppress a valid native APL search."""
     seed, binary = _root_source(tmp_path)
