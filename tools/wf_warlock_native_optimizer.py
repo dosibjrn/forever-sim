@@ -142,7 +142,8 @@ def apl_proposals(options, source, source_module):
     fillers = [(name, spell) for name, spell in filler if spell is not None]
     dot_spells = [("corruption", match("corruption")),
                   ("agony", match("agony")),
-                  ("immolate", match("immolate"))]
+                  ("immolate", match("immolate")),
+                  ("siphon_life", match("siphon life"))]
     dots = [(name, spell) for name, spell in dot_spells if spell is not None]
     tap = match("life tap")
     if not fillers:
@@ -160,7 +161,7 @@ def apl_proposals(options, source, source_module):
                     [(fallback, None)])
                 name = "dots_" + "_".join(n for n, _ in lead) + "__" + fallback_name
                 candidates.append((name, apl))
-                if tap is not None and fallback_name == "shadow_bolt":
+                if tap is not None and fallback_name != "shoot":
                     for threshold in (10, 20):
                         candidates.append((
                             name + "_tap" + str(threshold),
@@ -237,7 +238,11 @@ def native_level_equipment(binary, source, options, out, *, level):
             if not isinstance(dps,(int,float)) or not math.isfinite(dps):
                 raise RuntimeError("Rust returned an invalid score")
             paid_count += 1
-            return float(dps)
+            # Native-prepared defenses only break exact DPS ties; never infer
+            # gear legality or combat damage from a guessed Python model.
+            native_stats = verified["stats"]
+            return (float(dps), float(native_stats["Health"]),
+                    float(native_stats["Armor"]), float(verified["mana"]["max"]))
         except (RuntimeError,ValueError,KeyError,subprocess.TimeoutExpired) as exc:
             if len(refusals) < 25:
                 refusals.append(str(exc)[-480:])
@@ -257,16 +262,19 @@ def native_level_equipment(binary, source, options, out, *, level):
         for native in candidates[:5]:
             candidate = copy.deepcopy(working)
             actor(candidate)["equipment"]["items"][position] = {"id":native["item_id"]}
-            dps = score(candidate)
-            if dps is not None and dps > best + 1e-8:
-                best = dps
+            value = score(candidate)
+            if value is not None and (
+                value[0] > best[0] + 1e-8
+                or (abs(value[0] - best[0]) <= 1e-8 and value[1:] > best[1:])
+            ):
+                best = value
                 best_id = native["item_id"]
         if best_id is not None:
             actor(working)["equipment"]["items"][position] = {"id":best_id}
             baseline = best
         print("NATIVE_GEAR_SLOT",json.dumps({"level":level,"slot":position,
             "equipped":actor(working)["equipment"]["items"][position]["id"],
-            "native_paid_dps":baseline}),flush=True)
+            "native_paid_dps":baseline[0]}),flush=True)
     equipped = []
     for position,item in enumerate(actor(working)["equipment"]["items"]):
         metadata = item_meta.get(item["id"])
@@ -280,7 +288,7 @@ def native_level_equipment(binary, source, options, out, *, level):
              "evaluated_equipment_requests":tried,
              "native_paid_requests":paid_count,
              "native_refusal_samples":refusals,
-             "native_paid_initial_gear_dps":baseline,
+             "native_paid_initial_gear_dps":baseline[0],
              "equipped":equipped}
     (out/"native_gear.json").write_text(json.dumps(audit,indent=2)+"\n")
     (out/"native_gear_request.json").write_text(json.dumps(working,indent=2)+"\n")
@@ -308,6 +316,9 @@ def main():
     source["encounter"]["targets"][0]["name"] = f"Source-native L{level} combat"
     actor(source)["name"] = f"Warlock L{level} Troll native"
     actor(source)["equipment"]["items"] = [{"id":0} for _ in range(17)]
+    # Demon Armor is a native selectable Warlock option. The old L20 request
+    # had no active armor and badly undersampled defensive leveling builds.
+    actor(source)["warlock"]["options"]["classOptions"]["armor"] = "DemonArmor"
     sys.path.insert(0, str(args.engine_tools.resolve()))
     import warlock_l20_native_search as source_search
     option_source = json.loads(call(
@@ -393,29 +404,52 @@ def main():
         "top5":[{k:v for k,v in r.items() if k not in ("apl", "talent_ranks")}
                 for r in scored[:5]]}),flush=True)
 
-    # Choose diverse finalists: top-paid overall, different talent trees,
-    # different APLs and the saved prior winner, not just one DPS ordering.
+    # P4 DPS is only a screening heuristic. Native 100-mob survival is the
+    # objective: reserve finalist diversity across filler/sustain, spec trees
+    # and tap choices before filling the remainder from paid DPS ranking.
     selected = []
     selected_keys = set()
     talent_counts = Counter()
     apl_counts = Counter()
-    for row in scored:
+
+    def include(row):
         if len(selected) >= args.max_finalists:
-            break
-        if (talent_counts[row["talents"]] >= 2 or
-                apl_counts[row["apl_label"]] >= 3):
-            continue
+            return False
         key = (row["talents"], row["apl_label"])
         if key in selected_keys:
-            continue
+            return False
         selected.append(row)
         selected_keys.add(key)
         talent_counts[row["talents"]] += 1
         apl_counts[row["apl_label"]] += 1
+        return True
+
+    for desired in ("__drain_life", "__shoot", "__searing_pain",
+                    "__shadow_bolt", "saved_multi_spell"):
+        for wanted_trees in (("Affliction",), ("Demonology",), ("Destruction",)):
+            if len(selected) >= args.max_finalists:
+                break
+            matching = (row for row in scored
+                        if (desired in row["apl_label"] or
+                            row["apl_label"] == desired)
+                        and any(tree in row["talent_label"] for tree in wanted_trees)
+                        and talent_counts[row["talents"]] < 2)
+            next_row = next(matching, None)
+            if next_row is not None:
+                include(next_row)
+    for row in scored:
+        if len(selected) >= args.max_finalists:
+            break
+        if talent_counts[row["talents"]] < 2 and apl_counts[row["apl_label"]] < 3:
+            include(row)
+
     baseline = next((r for r in scored if r["talents"] == source_build
                      and r["apl_label"] == "saved_multi_spell"), None)
-    if baseline and (baseline["talents"],baseline["apl_label"]) not in selected_keys:
-        selected[-1:] = [baseline]
+    if baseline and (baseline["talents"], baseline["apl_label"]) not in selected_keys:
+        if len(selected) < args.max_finalists:
+            include(baseline)
+        elif selected:
+            selected[-1] = baseline
 
     chain_results = []
     for index,row in enumerate(selected):
@@ -441,7 +475,9 @@ def main():
                 raise RuntimeError("wrong prepared Rust actor")
             world = native_world_chain(
                 binary, prepared_file, classic_mob_level=level,
-                target_count=100, rng_mode="balanced")
+                target_count=100, rng_mode="balanced",
+                recovery_policy="decisions", health_threshold=0.7,
+                mana_threshold=0.25)
             (folder / "native_world.json").write_text(
                 json.dumps(world, indent=2, allow_nan=False)+"\n")
             result.update(status="COMPLETED", kills=world["world_targets_killed"],
@@ -480,6 +516,8 @@ def main():
     result = {
         "source":"Rust get_options + native paid balanced screening + real gsim retained 100 mob",
         "gear_held_fixed_after_native_selection":True, "native_level_gear":gear_audit,
+        "warlock_armor":"DemonArmor",
+        "recovery_policy":"native Decisions; 70% HP / 25% mana",
         "mob_level":level, "mob_hp_classic_proxy":representative_hp(level),
         "test_mob_min_base_damage":20,
         "talents_considered":len(talents), "apl_considered":len(apls),
