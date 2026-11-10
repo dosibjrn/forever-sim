@@ -431,3 +431,52 @@ def test_root_publishes_continuation_refusal_guide_not_stale_paid_l10(
         assert result["latest_guide"] is None
         assert not (out / "GUIDE.md").exists()
 
+
+def test_l10_budget_explores_rust_talents_before_spells_exhaust_it(
+        tmp_path, monkeypatch):
+    """Even three prepares reach another native-supplied talent allocation."""
+    binary, template = _inputs(tmp_path)
+    attempts = []
+
+    def options(cmd, **kwargs):
+        assert cmd[1:] == ["options", "--class", "warlock", "--level", "10"]
+        return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+            "class": "warlock", "level": 10, "source_revision": "pinned-rust",
+            "spells": [
+                {"name": "Shadow Bolt", "spell_id": 686},
+                {"name": "Corruption", "spell_id": 172},
+                {"name": "Immolate", "spell_id": 348},
+                {"name": "Bane of Agony", "spell_id": 980},
+            ],
+            "talents": {"trees": [
+                {"talents": [{"index": 0, "max_rank": 5}]},
+                {"talents": []}, {"talents": []},
+            ]},
+        }))
+
+    def prepare(*, binary, source, out, actor_level):
+        candidate = json.loads(source.read_text())
+        actor = candidate["raid"]["parties"][0]["players"][0]
+        spell_id = actor["rotation"]["priorityList"][0]["action"]["castSpell"][
+            "spellId"]["spellId"]
+        attempts.append((actor["talentsString"], spell_id))
+        if (actor["talentsString"], spell_id) == ("1-0-0", 686):
+            out.mkdir(parents=True)
+            (out / "source_request.json").write_bytes(source.read_bytes())
+            return {"status": "NATIVE_PREPARED_NOT_YET_PAID",
+                    "native_refusals": []}
+        return {"status": "NATIVE_PREPARE_REFUSED_ALL_SOURCES",
+                "native_refusals": [{"reason": "native prepare refused"}]}
+
+    monkeypatch.setattr(root.subprocess, "run", options)
+    monkeypatch.setattr(root.same_level, "select_prepared_source", prepare)
+    result = root.propose_root(binary=binary, template=template,
+                               out=tmp_path / "root", max_proposals=3)
+    assert attempts == [
+        ("0-0-0", 686), ("0-0-0", 172), ("1-0-0", 686),
+    ]
+    assert result["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert result["selected_talents"] == "1-0-0"
+    assert result["selected_spell_id"] == 686
+    assert result["attempted"] == 3
+    assert len(result["native_refusals_before_selection"]) == 2
