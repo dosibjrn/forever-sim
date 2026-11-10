@@ -10,7 +10,9 @@ on:
       - tools/wf_warlock_next_level_source.py
       - tests/test_work2_warlock_next_level_source.py
       - tools/wf_warlock_paid_range.py
-      - tests/test_work2_warlock_paid_range.py
+      - tools/wf_warlock_shortlist_world.py
+      - tests/test_work1_warlock_shortlist_world.py
+      - tests/test_work2_warlock_paid_range.py tests/test_work1_warlock_shortlist_world.py
       - tests/test_work2_native_paid_banked_path_dp.py
       - tests/test_work2_native_paid_route_publisher.py
       - tools/wf_warlock_paid_artifact.py
