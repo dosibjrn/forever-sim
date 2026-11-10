@@ -75,13 +75,11 @@ def _variants(seed: str, trees: list[dict]):
         and fields[tree_idx][row["index"]] != "0"
     ]
     for slot_position in range(max((len(slots) for slots in slots_by_tree), default=0)):
-        for dest_tree, slots in enumerate(slots_by_tree):
-            if slot_position >= len(slots):
-                continue
-            dst_row = slots[slot_position]
-            for source_tree, src in sources:
-                if source_tree == dest_tree:
+        for source_tree, src in sources:
+            for dest_tree, slots in enumerate(slots_by_tree):
+                if source_tree == dest_tree or slot_position >= len(slots):
                     continue
+                dst_row = slots[slot_position]
                 candidate = transfer(
                     source_tree, src, dest_tree,
                     dst_row.get("index"), dst_row.get("max_rank"),
