@@ -148,7 +148,15 @@ jobs:
           FROM_LEVEL: ${{ inputs.from_level }}
           END_LEVEL: ${{ inputs.end_level }}
           MAX_NEW_LEVELS: ${{ inputs.max_new_levels }}
+          RANGE_STEP_OUTCOME: ${{ steps.range.outcome }}
         run: |
+          # A restored cache may contain a previous run's progress marker.
+          # Never publish that marker as proof if this invocation errored before
+          # it could verify and republish the actual native-paid frontier.
+          if [ "$RANGE_STEP_OUTCOME" != "success" ]; then
+            echo "Native-paid range failed; cached progress cannot certify this invocation" >&2
+            exit 1
+          fi
           test -s warlock-paid-range/range_progress.json
           python - <<'PY'
           import json
