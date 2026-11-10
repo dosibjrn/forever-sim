@@ -184,10 +184,14 @@ jobs:
     # source search automatically on every subsequent PR push.
     # One explicit label authorizes one changed-HEAD paid run. The source
     # branch uses L30; the follow-on frozen-build branch checks L40.
+    # A retained label is not permission to repay a 300s search on each push.
+    # Only the explicit label-add event launches this no-record diagnostic.
     if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'p6-paid-no-record' &&
       (startsWith(github.head_ref, 'work/work2-p6-shared-cold-') ||
-       startsWith(github.head_ref, 'work/work2-p6-l40-followon-')) &&
-      contains(github.event.pull_request.labels.*.name, 'p6-paid-no-record')
+       startsWith(github.head_ref, 'work/work2-p6-l40-followon-'))
     needs: source-search
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -214,7 +218,15 @@ jobs:
   selected-native-p72:
     # One selected-engine read-only changed-axis probe (Feral P7.2/P7.3/P7.4 or
     # unrestricted P7.3); never the Merge-owned M1 recorder.
-    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || startsWith(github.head_ref, 'work/work2-p72-feral-') || startsWith(github.head_ref, 'work/work2-p73-feral-') || startsWith(github.head_ref, 'work/work2-p74-feral-')
+    # Do not build Rust and pay a new probe just because a legacy PR syncs.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'p7-native-paid-no-record' &&
+      (startsWith(github.head_ref, 'work/work2-p72-native-axis-') ||
+       startsWith(github.head_ref, 'work/work2-p72-feral-') ||
+       startsWith(github.head_ref, 'work/work2-p73-feral-') ||
+       startsWith(github.head_ref, 'work/work2-p74-feral-'))
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -265,7 +277,11 @@ jobs:
   selected-native-p71:
     # One selected-engine P7.1 native 1000-fight stochastic no-record probe.
     # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
-    if: startsWith(github.head_ref, 'work/work2-p71-native-stochastic-')
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'p7-native-paid-no-record' &&
+      startsWith(github.head_ref, 'work/work2-p71-native-stochastic-')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -306,7 +322,12 @@ jobs:
     # One changed-HEAD unrestricted/Feral P7.5 300s cold search and
     # 1000-fight stochastic holdout, only after a bounded paid-native probe.
     # Never the Merge-owned M1 recorder.
-    if: startsWith(github.head_ref, 'work/work2-p75-unrestricted-native-') || startsWith(github.head_ref, 'work/work2-feral-p75-native-')
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'p7-native-paid-no-record' &&
+      (startsWith(github.head_ref, 'work/work2-p75-unrestricted-native-') ||
+       startsWith(github.head_ref, 'work/work2-feral-p75-native-'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
