@@ -30,6 +30,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Enforce production submodule pin equals executed Rust source
+        run: |
+          set -euo pipefail
+          selected="$(git -C forever rev-parse HEAD:integrations/mythicsim-rust/engine)"
+          executed="$(git -C engine rev-parse HEAD)"
+          test "$selected" = "$executed"
+          echo "PRODUCTION_SELECTED_RUST=$executed"
       - name: Fetch exact paid L40 source (not an invented level-41 actor)
         env:
           GH_TOKEN: ${{ github.token }}
