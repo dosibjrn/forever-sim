@@ -54,14 +54,42 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--beam-width", type=int, default=3)
     parser.add_argument("--rng-mode", default="balanced")
     parser.add_argument("--iterations", type=int, default=1)
-    parser.add_argument("--evaluator-command", required=True,
-                        help="Exact source-native scorer command; JSON stdin/list stdout")
+    evaluator = parser.add_mutually_exclusive_group(required=True)
+    evaluator.add_argument("--evaluator-command",
+                           help="Exact source-native evaluator command; JSON stdin/list stdout")
+    evaluator.add_argument("--native-prepared-manifest", type=Path,
+                           help="Native-produced prepared frontier files for Work1 scorer")
+    parser.add_argument("--native-binary", type=Path,
+                        help="Exact pinned native executable for manifest scoring")
+    parser.add_argument("--native-target-hp", type=float,
+                        help="Exact native 2D world target HP for manifest scoring")
+    parser.add_argument("--native-scorer-command",
+                        default=sys.executable + " tools/wf_warlock_native_candidate_scoring.py",
+                        help="Work1 native prepared-candidate scorer CLI")
+    parser.add_argument("--native-receipts-dir", type=Path,
+                        help="Directory retaining original native scorer raw receipts")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
+    if args.native_prepared_manifest is not None:
+        if (args.native_binary is None or args.native_target_hp is None
+                or args.native_receipts_dir is None):
+            parser.error("native manifest requires --native-binary, --native-target-hp "
+                         "and --native-receipts-dir")
+        from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+        def native_evaluator(**request: Any):
+            return evaluate_request(
+                request, manifest=args.native_prepared_manifest,
+                binary=args.native_binary, target_hp=args.native_target_hp,
+                scorer_command=shlex.split(args.native_scorer_command),
+                artifact_dir=args.native_receipts_dir,
+            )
+    else:
+        native_evaluator = native_command_evaluator(
+            shlex.split(args.evaluator_command))
     result = optimize(
         args.start_level, args.end_level, args.level_stride,
         args.mob_count, args.budget,
-        evaluate=native_command_evaluator(shlex.split(args.evaluator_command)),
+        evaluate=native_evaluator,
         beam_width=args.beam_width, rng_mode=args.rng_mode,
         iterations=args.iterations, recover_to_full=True,
     )
