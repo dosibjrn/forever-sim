@@ -118,9 +118,12 @@ jobs:
           [[ "$FROM_LEVEL" =~ ^[0-9]+$ ]]
           [[ "$MAX_PROPOSALS" =~ ^[0-9]+$ ]]
           [[ "$MAX_FINALISTS" =~ ^[0-9]+$ ]]
-          test "$FROM_LEVEL" -ge 10 && test "$FROM_LEVEL" -lt 60
-          test "$MAX_PROPOSALS" -ge 1 && test "$MAX_PROPOSALS" -le 1000
-          test "$MAX_FINALISTS" -ge 1 && test "$MAX_FINALISTS" -le 6
+          test "$FROM_LEVEL" -ge 10
+          test "$FROM_LEVEL" -lt 60
+          test "$MAX_PROPOSALS" -ge 1
+          test "$MAX_PROPOSALS" -le 1000
+          test "$MAX_FINALISTS" -ge 1
+          test "$MAX_FINALISTS" -le 6
       - name: Checkout exact comparison source
         uses: actions/checkout@v4
         with:
