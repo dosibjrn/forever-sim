@@ -99,7 +99,10 @@ jobs:
               --from-level "$prev" --to-level "$level" --out "$proposal"; then
               # Only a real preserved native refusal can end the batch without FAIL.
               test -s "$proposal/proposal.json"
-              outcome=NATIVE_PROPOSAL_REFUSED
+              # Preserve the native-classified refusal in the batch summary,
+              # not a generic success-looking completion of the requested range.
+              outcome="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "$proposal/proposal.json")"
+              echo "Native L$level refusal: $outcome; preserved in $proposal/proposal.json"
               set +e
               python -u tools/wf_warlock_route_guide.py \
                 --native-proposal "$proposal/proposal.json" \
