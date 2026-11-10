@@ -150,7 +150,7 @@ def _code(value: object) -> str:
     # A variable-length code fence prevents receipt-controlled backticks from
     # escaping their literal span.
     import re
-    delimiter = "\`" * (max((len(run) for run in re.findall(r"\`+", text)), default=0) + 1)
+    delimiter = "`" * (max((len(run) for run in re.findall(r"`+", text)), default=0) + 1)
     return f"{delimiter}{text}{delimiter}"
 
 
