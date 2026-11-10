@@ -6,6 +6,72 @@ import pytest
 from tools import wf_gate_p7_4_live as gate
 
 
+def test_l30_p74_uses_exact_frozen_reference_without_resampling(monkeypatch, tmp_path):
+    """P7.4 must inherit the paid L30 P7.1 request, not the L60 donor."""
+    import hashlib
+    import json
+    from tools import wf_p7_native_reference as frozen
+
+    directory = frozen._reference_directory(tmp_path, "druid", 30, "unrestricted")
+    directory.mkdir(parents=True)
+    request = {
+        "raid": {"parties": [{"players": [{
+            "class": "ClassDruid", "talentsString": "0-0-0",
+            "equipment": {"items": [{"id": 12345}]},
+            "rotation": {"priorityList": [{"action": {"castSpell": {
+                "spellId": {"spellId": 5176}}}}]},
+        }]}]},
+        "encounter": {"targets": [{"level": 30}]},
+        "simOptions": {"iterations": 1000},
+    }
+    raw = json.dumps(request, sort_keys=True).encode()
+    (directory / "request.json").write_bytes(raw)
+    source_sha = hashlib.sha256(raw).hexdigest()
+    binary = tmp_path / "pinned/forever-engine"
+    checks = []
+
+    def check_reference(*args):
+        checks.append(args)
+        return {"status": "PASS", "saved_reference_dps": 8.357414975823593,
+                "source_request_raw_sha256": source_sha}
+
+    monkeypatch.setattr(frozen, "run_generated_p71", check_reference)
+    monkeypatch.setattr(frozen, "_binary_and_pin",
+                        lambda _root: (binary, "41444ee-frozen"))
+    selected, meta, scorer = gate._pinned_source_runtime(
+        tmp_path, "druid", 30, "unrestricted", "P7.4", require_world=False)
+    assert selected == request
+    assert scorer == binary
+    assert meta["source_request_raw_sha256"] == source_sha
+    assert meta["selected_engine_revision"] == "41444ee-frozen"
+    assert meta["native_actor_level_context"] == 30
+    assert meta["reference_dps"] == 8.357414975823593
+    assert checks == [(tmp_path, "druid", 30, "unrestricted")]
+
+
+def test_l30_p74_preserves_native_reference_refusal(monkeypatch, tmp_path):
+    """An incompatible frozen pin must not be scored as a gear challenger."""
+    from tools import wf_p7_native_reference as frozen
+
+    monkeypatch.setattr(frozen, "run_generated_p71", lambda *_args: {
+        "status": "BLOCKED",
+        "reasons": ["P7_1_GENERATED_REFERENCE_ENGINE_CHANGED"]})
+    monkeypatch.setattr(
+        frozen, "_binary_and_pin",
+        lambda *_args: (_ for _ in ()).throw(AssertionError(
+            "native scoring cannot run on an incompatible reference")))
+    assert gate._pinned_source_runtime(
+        tmp_path, "druid", 30, "unrestricted", "P7.4",
+        require_world=False) == {
+            "status": "BLOCKED",
+            "reasons": [
+                "P7_4_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED",
+                "P7_1_GENERATED_REFERENCE_ENGINE_CHANGED",
+            ],
+            "native_reference_status": "BLOCKED",
+        }
+
+
 def test_cold_gear_requires_nonreference_legal_native_candidate():
     base = {"raid": {"parties": [{"players": [{
         "equipment": {"items": [{"id": 10}, {"id": 20}]},
