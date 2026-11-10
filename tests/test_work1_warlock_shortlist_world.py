@@ -305,3 +305,21 @@ def test_native_cross_tree_workflow_opt_in_and_evidence_preservation():
     assert "wf_warlock_shortlist_world.py" in workflow
     assert "wf_warlock_paid_artifact.py" in workflow
     assert "actions/upload-artifact@v4" in workflow
+
+
+@pytest.mark.parametrize("times, ties", [
+    ((777.7, 777.7, 777.7), [1, 2, 3]),
+    ((800.0, 800.0, 950.0), [1, 2]),
+])
+def test_equal_paid_native_world_elapsed_has_no_invented_talent_winner(
+        tmp_path, monkeypatch, times, ties):
+    args, predecessor = _setup(tmp_path)
+    paid = _fake_native(monkeypatch, predecessor, times=times)
+    result = world.run(**args, max_new_trials=3, max_candidates=3)
+    assert paid == [1, 2, 3]
+    assert result["status"] == "MEASURED_CROSS_TREE_TIE_100"
+    assert result["tied_best_candidate_indexes"] == ties
+    assert result["world_winner"] is None
+    assert result["pending_candidate_indexes"] == []
+    assert all(row["status"] == "MEASURED_NATIVE_100"
+               for row in result["candidates"])
