@@ -90,39 +90,51 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
             "note": "No matching paid native-prepared actor receipts at the starting level.",
         }
 
-    # Different engine binaries are not one homogeneous native route source.
-    # Candidate choices remain per-level native-paid observations, not source
-    # legality reconstruction or a fabricated cross-engine comparison.
-    binaries = {node.details["native_receipt"]["engine_binary_sha256"]
-                for node in candidates[first_level]
-                if isinstance(node.details["native_receipt"].get("engine_binary_sha256"), str)}
+    # A mixed historical manifest may contain several independently paid
+    # native binaries. Choose the longest *connected* single-binary prefix,
+    # not the lexicographically first SHA (which can lose paid observations).
+    # This is only receipt lineage: zero weights prohibit invented XP-time
+    # comparisons across different level/scenario observations.
+    binaries = sorted({
+        node.details["native_receipt"]["engine_binary_sha256"]
+        for node in candidates[first_level]
+        if isinstance(node.details["native_receipt"].get("engine_binary_sha256"), str)
+    })
     if not binaries:
         return {"status": "no_native_engine_identity", "levels": [], "steps": []}
-    selected_engine = sorted(binaries)[0]
-    pools = {}
-    for l in levels:
-        nodes = [
-            node for node in candidates[l]
-            if node.details["native_receipt"].get("engine_binary_sha256") == selected_engine
-        ]
-        if not nodes:
-            break
-        pools[l] = nodes
-    if not pools:
-        return {"status": "no_matching_native_engine", "levels": [], "steps": []}
 
     model = NativeTalentStringModel()
-    try:
-        # Zero weights intentionally suppress route time selection: the real
-        # paid 100-mob elapsed observations are NOT XP-weighted leveling costs.
-        path = solve_path_dp(
-            pools, model=model, max_respecs=0,
-            weights={l: 0.0 for l in pools}, native_paid=True)
-    except (ValueError, TypeError) as exc:
+    selected_engine = None
+    path = None
+    last_error = None
+    for engine in binaries:
+        pools = {}
+        for level in levels:
+            nodes = [
+                node for node in candidates[level]
+                if node.details["native_receipt"].get("engine_binary_sha256") == engine
+            ]
+            if not nodes:
+                break
+            pools[level] = nodes
+            try:
+                # A paid level can be native-valid yet unable to follow its
+                # predecessor without a respec. Retain the proven prefix;
+                # never bridge the discontinuity or use another binary.
+                candidate_path = solve_path_dp(
+                    pools, model=model, max_respecs=0,
+                    weights={l: 0.0 for l in pools}, native_paid=True)
+            except (ValueError, TypeError) as exc:
+                last_error = f"{type(exc).__name__}: {exc}"
+                break
+            if path is None or len(candidate_path.steps) > len(path.steps):
+                path = candidate_path
+                selected_engine = engine
+    if path is None:
         return {
             "status": "not_connected_native_paid",
-            "levels": sorted(pools), "steps": [],
-            "reason": f"{type(exc).__name__}: {exc}",
+            "levels": sorted(candidates), "steps": [],
+            "reason": last_error or "No valid native-paid starting level",
         }
     steps = [{
         "level": step.node.level,
