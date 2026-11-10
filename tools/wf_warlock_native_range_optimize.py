@@ -13,6 +13,7 @@ import json
 import shlex
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +45,48 @@ def native_command_evaluator(command: list[str], *, timeout_s: float = 300):
     return evaluate
 
 
+def live_native_frontier_evaluator(
+    command: list[str], *, binary: Path, target_hp: float,
+    scorer_command: list[str], artifact_dir: Path,
+    run_command=None,
+):
+    """Ask a live native source producer for the next competing frontier.
+
+    The producer must return native-prepared source paths and original native
+    refusal records, NOT Python-asserted gameplay legality or mock measurements.
+    The existing Work1 scorer and strict ACK/full-recovery adapter then decide
+    which alternatives are actually comparable.
+    """
+    if not command:
+        raise ValueError("native frontier producer command required")
+    if run_command is None:
+        run_command = subprocess.run
+
+    def evaluate(**request: Any):
+        folder = Path(tempfile.mkdtemp(prefix="source-frontier-", dir=artifact_dir))
+        completed = run_command(
+            command, input=json.dumps(request), capture_output=True,
+            text=True, timeout=1800, check=False,
+        )
+        if completed.returncode:
+            raise RuntimeError(
+                f"native frontier producer exit {completed.returncode}: "
+                + completed.stderr[-1500:]
+            )
+        payload = json.loads(completed.stdout)
+        if not isinstance(payload, dict) or not isinstance(payload.get("entries"), list):
+            raise ValueError("native frontier producer must return JSON entries")
+        manifest = folder / "native-prepared-manifest.json"
+        manifest.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
+        from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+        return evaluate_request(
+            request, manifest=manifest, binary=binary, target_hp=target_hp,
+            scorer_command=scorer_command, artifact_dir=folder,
+        )
+
+    return evaluate
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--start-level", type=int, default=20)
@@ -59,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
                            help="Exact source-native evaluator command; JSON stdin/list stdout")
     evaluator.add_argument("--native-prepared-manifest", type=Path,
                            help="Native-produced prepared frontier files for Work1 scorer")
+    evaluator.add_argument("--native-frontier-command",
+                           help="Live native source producer; JSON request stdin, "
+                                "prepared entries/refusals JSON stdout")
     parser.add_argument("--native-binary", type=Path,
                         help="Exact pinned native executable for manifest scoring")
     parser.add_argument("--native-target-hp", type=float,
@@ -70,19 +116,29 @@ def main(argv: list[str] | None = None) -> int:
                         help="Directory retaining original native scorer raw receipts")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
-    if args.native_prepared_manifest is not None:
+    if (args.native_prepared_manifest is not None
+            or args.native_frontier_command is not None):
         if (args.native_binary is None or args.native_target_hp is None
                 or args.native_receipts_dir is None):
             parser.error("native manifest requires --native-binary, --native-target-hp "
                          "and --native-receipts-dir")
-        from tools.wf_warlock_native_range_scored_adapter import evaluate_request
-        def native_evaluator(**request: Any):
-            return evaluate_request(
-                request, manifest=args.native_prepared_manifest,
+        args.native_receipts_dir.mkdir(parents=True, exist_ok=True)
+        if args.native_frontier_command is not None:
+            native_evaluator = live_native_frontier_evaluator(
+                shlex.split(args.native_frontier_command),
                 binary=args.native_binary, target_hp=args.native_target_hp,
                 scorer_command=shlex.split(args.native_scorer_command),
                 artifact_dir=args.native_receipts_dir,
             )
+        else:
+            from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+            def native_evaluator(**request: Any):
+                return evaluate_request(
+                    request, manifest=args.native_prepared_manifest,
+                    binary=args.native_binary, target_hp=args.native_target_hp,
+                    scorer_command=shlex.split(args.native_scorer_command),
+                    artifact_dir=args.native_receipts_dir,
+                )
     else:
         native_evaluator = native_command_evaluator(
             shlex.split(args.evaluator_command))

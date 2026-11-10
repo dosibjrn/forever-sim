@@ -71,11 +71,27 @@ def evaluate_request(
     parent_level = parent["level"] if parent else None
     if parent is not None and not _valid_sha(parent_sha):
         raise ValueError("INVALID_NATIVE_PARENT_SOURCE")
+    native_refusals = source.get("refusals", [])
+    if not isinstance(native_refusals, list) or any(
+            not isinstance(row, dict) for row in native_refusals):
+        raise ValueError("NATIVE_PREPARED_MANIFEST_REFUSALS_INVALID")
+    if len(native_refusals) > budget:
+        raise ValueError("NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET")
     selected = [entry for entry in source["entries"]
                 if isinstance(entry, dict) and entry.get("level") == level
-                and entry.get("parent_source_sha256") == parent_sha][:budget]
+                and entry.get("parent_source_sha256") == parent_sha
+                ][:budget - len(native_refusals)]
 
-    refused: list[dict] = []
+    # A native producer can fail to prepare a proposal before the paid scorer
+    # sees it. Preserve that exact refusal as a budgeted attempt; never drop it
+    # or upgrade it into a paid candidate.
+    refused: list[dict] = [
+        {"status": row.get("status", "NATIVE_FRONTIER_REFUSED"),
+         "candidate_id": row.get("candidate_id"), "native_prepared": False,
+         "native_refusal": row.get("native_refusal"),
+         "source_request_sha256": row.get("source_request_sha256")}
+        for row in native_refusals
+    ]
     candidates: dict[str, tuple[Path, dict, str, dict]] = {}
     for entry in selected:
         candidate_id = entry.get("id")
@@ -249,6 +265,10 @@ def evaluate_request(
                     lineage.get("native_intermediate_levels_verified"),
                 "native_raw_receipt_file": str(call_dir / f"{cid}.native.json"),
                 "prepared_file": str(path),
+                "source_request_file": str(
+                    (manifest.parent / next(
+                        entry["source_request"] for entry in selected
+                        if entry["id"] == cid)).resolve()),
             })
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refusal = _refusal({"id": cid}, "NATIVE_SCORER_RECEIPT_REFUSAL:"
