@@ -684,8 +684,8 @@ def test_native_apl_fallback_uses_first_prepared_family_after_seed_refusal(tmp_p
         out=tmp_path / "prepared", runner=native,
     )
     assert observed == [
-        ("11-0-0", 101), ("00-11-0", 101), ("00-0-11", 101),
-        ("00-11-0", 102),
+        ("11-0-0", 101), ("00-2-0", 101), ("00-0-2", 101),
+        ("00-2-0", 102),
     ]
     assert len(report["refusals"]) == 1
     assert report["refusals"][0]["status"] == "NATIVE_PREPARE_REFUSED"
