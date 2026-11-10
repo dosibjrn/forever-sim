@@ -130,6 +130,92 @@ def test_paid_guide_rejects_wrong_winner_and_unsigned_run_identity():
                     artifact_id=ARTIFACT)
 
 
+def test_paid_l47_guide_writes_player_readable_markdown_from_same_paid_json(tmp_path):
+    original = tmp_path / "comparison.json"
+    original.write_text(json.dumps(_comparison()))
+    structured = tmp_path / "output" / "families.json"
+    section = tmp_path / "output" / "families.md"
+    payload = guide.publish(comparison=original, source_run_url=RUN,
+                            artifact_id=ARTIFACT, out=structured,
+                            markdown_out=section)
+    assert json.loads(structured.read_text()) == payload
+    markdown = section.read_text()
+    assert "## L47 Warlock" in markdown
+    assert "**Fastest in this scenario: Destruction** (7.777 s/mob)" in markdown
+    assert "Affliction" in markdown and "8.854 s/mob" in markdown
+    assert "Demonology" in markdown and "9.517 s/mob" in markdown
+    assert "777.700 s / 100 hostile kills" in markdown
+    assert RUN in markdown and f"{RUN}/artifacts/{ARTIFACT}" in markdown
+    assert "real-native-3" in markdown
+    assert "candidate_03/native_l47/summary.json" in markdown
+    assert "paid-real-L46" in markdown and "a" * 64 in markdown
+    assert "continuous L46→L47 ancestry" in markdown
+    assert "cost unmeasured" in markdown
+    assert "M1 gate certification" in markdown
+    assert "full L10–60 optimal route" in markdown
+
+
+def test_paid_markdown_reports_tie_without_choosing_a_family():
+    comparison = _comparison()
+    comparison["candidates"][0]["elapsed_seconds"] = 777.7
+    comparison["status"] = "MEASURED_CROSS_TREE_TIE_100"
+    comparison["world_winner"] = None
+    result = _build(comparison)
+    markdown = guide.render_markdown(result)
+    assert "**Measured tie for fastest:** Affliction, Destruction" in markdown
+    assert "no unique winner" in markdown
+    assert "Fastest in this scenario:" not in markdown
+
+
+def test_provisional_paid_markdown_refuses_to_rank_unpaid_family():
+    comparison = _comparison()
+    comparison["status"] = "PARTIAL_WORLD_PAID"
+    comparison["candidates"][1]["status"] = "PENDING_UNPAID"
+    comparison["pending_candidate_indexes"] = [2]
+    comparison["world_winner"] = None
+    result = _build(comparison)
+    markdown = guide.render_markdown(result)
+    assert "No comparable paid family winner is measured" in markdown
+    assert "Unpaid or refused candidate indexes: 2." in markdown
+    assert "Fastest in this scenario:" not in markdown
+    assert "8.854 s/mob" not in markdown
+
+
+@pytest.mark.parametrize("corrupt", [
+    lambda result: result.update(kind="untrusted_report"),
+    lambda result: result.update(status="UNKNOWN"),
+    lambda result: result.update(original_artifact_url="https://example.invalid/receipt"),
+    lambda result: result.update(talent_respec_cost_measured=True),
+    lambda result: result.update(continuous_level_route_measured=True),
+    lambda result: result.update(bounded_fastest_family="Affliction"),
+    lambda result: result["measurements"][0].update(native_summary=""),
+    lambda result: result["measurements"][0].update(seconds_per_mob=0.01),
+    lambda result: result["measurements"][0].update(executed_source_sha256="not-a-sha"),
+])
+def test_paid_markdown_fails_closed_on_malformed_or_overclaimed_receipt(corrupt):
+    result = _build(_comparison())
+    corrupt(result)
+    with pytest.raises(ValueError):
+        guide.render_markdown(result)
+
+
+def test_provisional_paid_markdown_rejects_injected_winner():
+    comparison = _comparison()
+    comparison["status"] = "INCOMPARABLE_NATIVE_SCENARIOS"
+    comparison["world_winner"] = None
+    payload = _build(comparison)
+    payload["bounded_fastest_family"] = "Destruction"
+    with pytest.raises(ValueError, match="provisional comparison"):
+        guide.render_markdown(payload)
+
+
+def test_receipt_controlled_backticks_remain_literal_markdown_code():
+    comparison = _comparison()
+    comparison["candidates"][2]["talents"] = "123`456"
+    result = _build(comparison)
+    markdown = guide.render_markdown(result)
+    assert "``123`456``" in markdown
+
 def test_checked_in_l47_native_paid_guide_has_original_receipt_attribution():
     """Player guide can consume the actual original paid data, not a fabricated score."""
     path = (Path(__file__).resolve().parents[1] / "data" / "warlock"
