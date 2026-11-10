@@ -6,6 +6,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from tools.wf_warlock_native_source_frontier import produce_frontier
 
 
@@ -375,3 +377,54 @@ def test_native_prepared_apl_fallbacks_compete_after_tree_families(tmp_path):
     assert "native APL refused" in result["refusals"][0]["native_refusal"]
     assert all(action != 999 and action != 104 for _, action in attempts)
     assert Path(result["entries"][-1]["source_request"]).is_file()
+
+
+def test_prepared_frontier_cannot_hide_overspent_native_attempts(tmp_path):
+    """Already-prepared attempts and native refusals both consume the budget."""
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    manifest = tmp_path / "manifest.json"
+    for prepared_count, refused_count in ((3, 0), (2, 1)):
+        manifest.write_text(json.dumps({
+            "entries": [
+                {"id": f"candidate_{index}", "level": 20,
+                 "parent_source_sha256": None}
+                for index in range(prepared_count)
+            ],
+            "refusals": [
+                {"status": "NATIVE_PREPARE_REFUSED", "candidate_id": "rejected"}
+                for _ in range(refused_count)
+            ],
+        }))
+        with pytest.raises(ValueError, match="NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET"):
+            evaluate_request(
+                _request(budget=2), manifest=manifest,
+                binary=tmp_path / "unneeded-native", target_hp=400,
+                scorer_command=["work1-scorer"], artifact_dir=tmp_path / "receipts",
+            )
+
+
+def test_reusable_manifest_budget_counts_only_matching_level_and_parent(tmp_path):
+    """An unrelated already-prepared level is not a paid attempt in this call."""
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "entries": [
+            {"id": "future", "level": 30, "parent_source_sha256": None},
+            {"id": "root_a", "level": 20, "parent_source_sha256": None},
+            {"id": "root_b", "level": 20, "parent_source_sha256": None},
+        ],
+        "refusals": [],
+    }))
+    # Both requested entries lack native source files; preserve their
+    # refusals without paying or rejecting the valid per-request budget.
+    rows = evaluate_request(
+        _request(budget=2), manifest=manifest,
+        binary=tmp_path / "unneeded-native", target_hp=400,
+        scorer_command=["work1-scorer"], artifact_dir=tmp_path / "receipts",
+    )
+    assert len(rows) == 2
+    assert {row["candidate_id"] for row in rows} == {"root_a", "root_b"}
+    assert all(row["status"].startswith("NATIVE_PREPARED_OR_CONTINUITY_REFUSAL")
+               for row in rows)
