@@ -6,6 +6,8 @@ on:
     paths:
       - .github/workflows/work1-warlock-l41-native-selection.yml
       - integrations/mythicsim-rust/engine
+      - tools/wf_warlock_next_level_source.py
+      - tests/test_work2_warlock_next_level_source.py
   workflow_dispatch:
 permissions:
   contents: read
@@ -73,6 +75,11 @@ jobs:
           cargo test --locked --lib troll_warlock_l41_to_l59_uses_exact_source_rows
           cargo build --locked --bin forever-engine
           target/debug/forever-engine options --class warlock --level 41 > ../native-l41-options.json
+      - name: Test Forever-owned adjacent-level forwarding and source identity
+        run: |
+          python3 -m pip install --disable-pip-version-check 'pytest==8.3.5'
+          cd forever
+          python3 -m pytest -q tests/test_work2_warlock_next_level_source.py
       - name: Submit authentic L40-to-L41 talent and gear proposals to native prepare
         run: |
           set -euo pipefail
