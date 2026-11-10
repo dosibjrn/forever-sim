@@ -10,7 +10,7 @@ from collections import defaultdict
 from typing import Any, Mapping, Sequence
 
 from .class_model import ClassModel
-from .path_dp import LevelNode, solve_path_dp
+from .path_dp import LevelNode, solve_path_dp, _is_paid_native_level_node
 
 
 class NativeTalentStringModel(ClassModel):
@@ -71,12 +71,18 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
                            for t in talents.split("-"))
                 or row.get("status") != "measured_native_chain"):
             continue
-        candidates[level].append(LevelNode(
+        node = LevelNode(
             level=level, talents=talents,
             score_s_per_100=float(row["seconds_per_mob"]) * 100.0,
             source="native_paid",
             details={"native_receipt": row},
-        ))
+        )
+        # A historical manifest may contain an incomplete paid observation
+        # alongside a fully attributable one at the same level. Filter at the
+        # publisher boundary using the DP's own strict receipt predicate:
+        # rejecting one unqualified node must not erase genuine paid lineage.
+        if _is_paid_native_level_node(node, level):
+            candidates[level].append(node)
 
     levels = []
     level = first_level
