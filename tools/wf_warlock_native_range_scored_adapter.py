@@ -38,6 +38,31 @@ def _refusal(entry: dict, reason: str, source: str | None = None) -> dict:
     }
 
 
+def _requested_source_build(source_path: Path) -> dict:
+    """Forward original native-request choices, never infer game legality.
+
+    Source SHA and prepared actor identity are checked by the caller before
+    these requested (not independently verified as executed) fields are used.
+    Historical minimal source fixtures may not include a full raid/player.
+    """
+    source = json.loads(source_path.read_text())
+    try:
+        actor = source["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError):
+        return {}
+    if not isinstance(actor, dict):
+        return {}
+    warlock = actor.get("warlock")
+    options = warlock.get("options") if isinstance(warlock, dict) else None
+    class_options = options.get("classOptions") if isinstance(options, dict) else None
+    return {
+        "talents": actor.get("talentsString"),
+        "pet": class_options.get("summon") if isinstance(class_options, dict) else None,
+        "gear": actor.get("equipment"),
+        "apl": actor.get("rotation"),
+    }
+
+
 def evaluate_request(
     request: dict, *, manifest: Path, binary: Path, target_hp: float,
     scorer_command: list[str], artifact_dir: Path,
@@ -96,6 +121,7 @@ def evaluate_request(
         for row in native_refusals
     ]
     candidates: dict[str, tuple[Path, dict, str, dict]] = {}
+    requested_builds: dict[str, dict] = {}
     for entry in selected:
         candidate_id = entry.get("id")
         if (not isinstance(candidate_id, str) or not candidate_id
@@ -158,6 +184,7 @@ def evaluate_request(
                                 or source_step["encounter"]["targets"][0].get("level")
                                 != step["level"]):
                             raise ValueError("NATIVE_SOURCE_CHAIN_PREPARE_IDENTITY_MISMATCH")
+            requested_builds[candidate_id] = _requested_source_build(source_path)
             candidates[candidate_id] = (prepared_path, prepared, native_source_sha, lineage)
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refused.append(_refusal(entry, "NATIVE_PREPARED_OR_CONTINUITY_REFUSAL:"
@@ -275,6 +302,9 @@ def evaluate_request(
                 raise ValueError("NATIVE_TERMINAL_CAPACITY_NOT_FULL")
             rows.append({
                 "status": comparison["status"], "candidate_id": cid,
+                # Exact requested build, preserved from the hash-matched native
+                # source rather than silently published as unknown/null.
+                **requested_builds[cid],
                 "level": level, "mob_count": mobs,
                 "targets_killed": raw.get("world_targets_killed"),
                 "rng_mode": "balanced", "iterations": 1,
