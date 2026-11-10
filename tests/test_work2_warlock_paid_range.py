@@ -232,3 +232,42 @@ def test_cached_refusal_requires_unmeasured_same_level(tmp_path):
         "native_refusals": [{"level": 43, "status": None}],
     }))
     assert not paid_range._cached_paid_refusal(report, 43)
+
+
+def test_newly_paid_level_links_exact_workflow_without_relabeling_cached_receipt(
+        tmp_path, monkeypatch):
+    binary, source, route = _inputs(tmp_path)
+    calls = _mock_native(monkeypatch)
+    observed_args = []
+    original_publish = paid_range.guide.main
+
+    def record_publish(args):
+        observed_args.append(list(args))
+        return original_publish(args)
+
+    monkeypatch.setattr(paid_range.guide, "main", record_publish)
+    kwargs = dict(binary=binary, source=source, predecessor_route=route,
+                  out=tmp_path / "range", from_level=42, end_level=43)
+    url = "https://github.com/dosibjrn/forever-sim/actions/runs/42822112684"
+    first = paid_range.run(**kwargs, run_url=url)
+    assert first["completed_new_levels"] == [43]
+    assert calls["paid"] == [43]
+    assert len(observed_args) == 1
+    assert observed_args[0][observed_args[0].index("--run-url") + 1] == url
+    assert paid_range.run(**kwargs, run_url=url)["reused_levels"] == [43]
+    assert len(observed_args) == 1  # original paid provenance is immutable
+
+    # Malformed provenance cannot be attached to a native paid receipt.
+    import pytest
+    with pytest.raises(ValueError, match="actual GitHub Actions run"):
+        paid_range.run(**kwargs, run_url="https://example.com/pretend-run")
+    assert calls["paid"] == [43]
+
+
+def test_paid_range_workflow_forwards_its_own_real_actions_run_url():
+    workflow = (
+        Path(__file__).resolve().parents[1]
+        / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+    ).read_text()
+    assert ('--run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/'
+            'actions/runs/$GITHUB_RUN_ID"') in workflow
