@@ -298,3 +298,51 @@ def test_sparse_compatible_rejects_respec_and_does_not_fabricate_route():
     assert report["sampled_levels_compatible"] == [20]
     assert report["ranked_alternatives"] == []
     assert report["no_respec_within_sampled_path"] is False
+
+
+def test_generic_optimize_cli_accepts_class_tree_stride_two_mobs_and_balanced(
+    tmp_path, capsys,
+):
+    """No Warlock-specific command or separate JSON contract is needed."""
+    from src.v2.native_range_optimizer import main as optimize_main
+    calls = []
+    by_level = {
+        20: ["5-0-0", "0-5-0"],
+        40: ["20-0-0", "0-25-0"],
+        60: ["40-0-0", "0-45-0"],
+    }
+
+    def native(**request):
+        calls.append(request)
+        result = []
+        for name in by_level[request["level"]]:
+            row = receipt(request["level"], request["mob_count"], name, 4.0)
+            row.update(talents=name, apl={"actions": ["native"]},
+                       gear={"items": [{"id": 101}]})
+            result.append(row)
+        return result
+
+    output = tmp_path / "optimizer-result.json"
+    exit_code = optimize_main([
+        "--class", "warlock", "--tree", "unconstrained",
+        "--start-level", "20", "--end-level", "60",
+        "--level-stride", "20", "--n-mobs", "2",
+        "--rng", "balanced", "--backend", "rust",
+        "--recover-at-end", "true", "--budget", "12",
+        "--out", str(output),
+    ], evaluate=native)
+    report = json.loads(output.read_text())
+    assert exit_code == 0
+    assert [row["level"] for row in calls] == [20, 40, 60]
+    assert all(row["mob_count"] == 2 and row["parent"] is None
+               for row in calls)
+    assert report["class"] == "warlock"
+    assert report["tree"] == "unconstrained"
+    assert report["search_mode"] == "compatible"
+    assert [step["level"] for step in
+            report["ranked_alternatives"][0]["steps"]] == [20, 40, 60]
+    printed = capsys.readouterr().out
+    assert "L20 talents=" in printed
+    assert "L40 talents=" in printed
+    assert "L60 talents=" in printed
+    assert "gear=" in printed and "apl=" in printed
