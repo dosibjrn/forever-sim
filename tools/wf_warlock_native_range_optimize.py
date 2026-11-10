@@ -69,10 +69,29 @@ def live_native_frontier_evaluator(
             text=True, timeout=1800, check=False,
         )
         if completed.returncode:
-            raise RuntimeError(
-                f"native frontier producer exit {completed.returncode}: "
-                + completed.stderr[-1500:]
+            # One independent native anchor can refuse or fail before making a
+            # prepared manifest. Preserve the actual producer exit rather than
+            # aborting the other requested levels or fabricating a scored build.
+            # optimize() counts this one failed native attempt against its
+            # level's allocated budget and still visits later independent roots.
+            refusal = {
+                "status": "NATIVE_FRONTIER_PRODUCER_EXECUTION_ERROR",
+                "candidate_id": None,
+                "native_prepared": False,
+                "level": request["level"],
+                "parent_source_sha256": (
+                    request["parent"].get("source_request_sha256")
+                    if isinstance(request.get("parent"), dict) else None
+                ),
+                "native_refusal": (
+                    f"native frontier producer exit {completed.returncode}: "
+                    + (completed.stderr or completed.stdout or "")[-1500:]
+                ),
+            }
+            (folder / "native-frontier-failure.json").write_text(
+                json.dumps(refusal, indent=2, sort_keys=True) + "\n"
             )
+            return [refusal]
         payload = json.loads(completed.stdout)
         if not isinstance(payload, dict) or not isinstance(payload.get("entries"), list):
             raise ValueError("native frontier producer must return JSON entries")
