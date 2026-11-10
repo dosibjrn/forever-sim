@@ -382,6 +382,75 @@ def test_independent_paid_rankings_keep_exact_requested_build_fields(tmp_path):
         assert hashlib.sha256(source.read_bytes()).hexdigest() == ranked["source_request_sha256"]
 
 
+def test_single_prepared_independent_anchor_scores_paid_three_mobs_but_not_as_winner(tmp_path):
+    """Native refusal of another proposal must not erase a measured anchor."""
+    import json
+
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"pinned-native")
+    manifest = _prepared_manifest(tmp_path, labels=("only",))
+    source = json.loads(manifest.read_text())
+    source["refusals"] = [{
+        "candidate_id": "alternative", "status": "NATIVE_PREPARE_REFUSED",
+        "native_refusal": "Rust declined alternate build",
+    }]
+    manifest.write_text(json.dumps(source))
+    paid = []
+
+    def native_run(binary_arg, prepared_path, **params):
+        prepared = json.loads(prepared_path.read_text())
+        paid.append(params)
+        return {
+            "source_sha256": prepared["request_sha256"],
+            "world_target_hp": 400.0, "world_targets_killed": 3,
+            "continuous_native_actor": True, "actual_2d_ack": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "paid_recovery": True,
+            "native_health_damage": {
+                "observed": True, "damage_taken": 30.0, "damage_events": 3},
+            "native_windows": [
+                {"index": i, "native_kill_ns": (i + 1) * 1_000_000_000,
+                 "actor_health": 80.0} for i in range(3)
+            ],
+            "native_actor_mana_after_world_kills": [120.0] * 3,
+            "world_elapsed_seconds": 3.0,
+            "native_terminal_recovery": {
+                "paid": True, "native_clock_accounted": True,
+                "start_clock_ns": 3_000_000_000,
+                "end_clock_ns": 5_000_000_000,
+                "health_before": 80.0, "mana_before": 120.0,
+                "health_after": 100.0, "mana_after": 200.0,
+                "max_health": 100.0, "max_mana": 200.0,
+            },
+        }
+
+    def evaluator(**request):
+        return evaluate_request(
+            request, manifest=manifest, binary=binary, target_hp=400.0,
+            scorer_command=["work1-native-scorer"],
+            artifact_dir=tmp_path / "raw", run_native_single=native_run,
+        )
+
+    report = optimize(20, 20, 1, 3, 2, evaluate=evaluator, mode="independent")
+    assert len(paid) == 1
+    assert paid[0]["target_count"] == 3
+    assert paid[0]["recovery_policy"] == "decisions"
+    assert paid[0]["health_threshold"] == paid[0]["mana_threshold"] == 1.0
+    assert report["status"] == "INDEPENDENT_NATIVE_ANCHORS_PARTIAL"
+    assert report["sampled_levels_completed"] == [20]
+    assert report["native_candidates_examined"] == 2
+    assert report["ranked_alternatives"] == []
+    ranks = report["independent_level_rankings"]["20"]
+    assert len(ranks) == 1
+    assert ranks[0]["native_elapsed_seconds"] == 5.0
+    assert ranks[0]["terminal_recovery_seconds"] == 2.0
+    assert ranks[0]["continuity_unverified"] is True
+    assert report["rejected_native_attempts"][0]["native_status"] == "NATIVE_PREPARE_REFUSED"
+
+
 def test_scored_adapter_does_not_pay_single_source_or_unproved_sparse_ancestry(tmp_path):
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
     binary = tmp_path / "rust-engine"
