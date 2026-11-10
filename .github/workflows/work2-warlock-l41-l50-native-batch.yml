@@ -1,177 +1,119 @@
-name: Work2 Warlock L41 paid native continuation across pinned engine upgrade
+name: Work2 Warlock source-native paid range L43-L44 (resumable)
 
+# One actual bounded batch, not a new workflow for each Warlock level.
+# Existing L20-L42 paid measurements remain accepted and are NOT repaid.
 on:
   push:
     branches:
-      - work2/warlock-l41-native-paid-20261110
+      - work2/warlock-l42-paid-20261110
     paths:
       - .github/workflows/work2-warlock-l41-l50-native-batch.yml
-      - tools/wf_warlock_next_level_source.py
-      - tests/test_work2_warlock_next_level_source.py
+      - tools/wf_warlock_paid_range.py
+      - tests/test_work2_warlock_paid_range.py
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  paid-native-l41:
-    # The L40 receipt is real, but it was executed with a different Rust binary.
-    # Prepare and pay ONLY L41 on exact L41-native Rust. Never silently join
-    # cross-binary paid chains or claim a complete L10-L60 simulation.
+  paid-native-range:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 65
     steps:
-      - name: Checkout exact Work2 implementation
+      - name: Checkout exact Work2 source
         uses: actions/checkout@v4
         with:
-          path: project
           ref: ${{ github.sha }}
-      - name: Checkout tested L41 native source
+          path: project
+      - name: Checkout selected source-native executor
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          path: engine
           ref: 7b811d37969bd1886cf123835fc87b699d1f5fbd
-      - name: Verify selected Rust source and Forever commit
-        run: |
-          set -euo pipefail
-          test "$(git -C engine rev-parse HEAD)" = "7b811d37969bd1886cf123835fc87b699d1f5fbd"
-          git -C project rev-parse HEAD
+          path: engine
+      - name: Verify exact Rust source
+        run: test "$(git -C engine rev-parse HEAD)" = "7b811d37969bd1886cf123835fc87b699d1f5fbd"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install native-caller regression dependencies
+      - name: Install Forever-only regression requirements
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
-      - name: Regress cross-engine predecessor, native proposals and route publisher
+      - name: Regression — range cache, refusals, and paid route publication
         working-directory: project
         run: |
-          python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_warlock_route_guide.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_paid_route_publisher.py
-      - name: Build exact selected native Rust executor
+          python -m pytest -q tests/test_work2_warlock_paid_range.py \
+            tests/test_work2_warlock_next_level_source.py \
+            tests/test_work2_warlock_route_guide.py \
+            tests/test_work2_native_paid_banked_path_dp.py \
+            tests/test_work2_native_paid_route_publisher.py
+      - name: Build exact native executor
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Retrieve saved paid L40 route without repeating any L20-L40 run
+      - name: Reuse archived actual L42 100/100 route (do not replay L20-L42)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          mkdir -p previous
+          mkdir -p predecessor
           curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13753162293/zip" \
-            -o previous.zip
-          unzip -q previous.zip -d previous
-          test -s previous/warlock-l40-native-route/native_l40/best_apl/source_request.json
-          test -s previous/warlock-l40-native-route/route.json
-      - name: Verify exact historic paid L40 actor and old engine provenance
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/13757204616/zip" \
+            -o predecessor.zip
+          unzip -q predecessor.zip -d predecessor
+          test -s predecessor/warlock-l42-source/source_request.json
+          test -s predecessor/warlock-l42-native-route/route.json
+      - name: Confirm old L42 paid 100/100 and exact submitted source
+        working-directory: project
         run: |
-          python3 - <<'PY'
-          import hashlib, json
+          python - <<'PY'
           from pathlib import Path
-          root = Path("previous/warlock-l40-native-route")
-          source = root / "native_l40/best_apl/source_request.json"
-          route = json.loads((root / "route.json").read_text())
-          request = json.loads(source.read_text())
-          actor = request["raid"]["parties"][0]["players"][0]
-          source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
-          old_binary_sha = "5cdd73cb5e85db882d2ef59351aad4b7722369a94dbd7f33740f1a4dfa7e5375"
-          assert source_sha == "b07611f4c2928d464567eef87d87b6f2029414c3e3f843f01ca143a5bcf261c8"
-          assert actor["class"] == "ClassWarlock" and actor["level"] == 40
-          assert request["encounter"]["targets"][0]["level"] == 40
-          assert route["measured_levels"] == list(range(20, 41))
-          matches = [row for row in route["observations"]
-                     if row.get("level") == 40
-                     and row.get("status") == "measured_native_chain"
-                     and row.get("source_request_sha256") == source_sha
-                     and row.get("engine_binary_sha256") == old_binary_sha
-                     and row.get("native_world_ack") is True
-                     and row.get("paid_native_recovery") is True
-                     and row.get("targets_requested") == row.get("targets_killed") == 100
-                     and isinstance(row.get("native_actor"), dict)
-                     and row["native_actor"].get("class") == "ClassWarlock"
-                     and row["native_actor"].get("level") == 40]
-          assert len(matches) == 1, "No exact genuine paid L40 predecessor"
-          assert route["full_10_60_native_replay_executed"] is False
-          print("AUTHENTIC_PAID_L40", matches[0]["id"], source_sha, old_binary_sha, flush=True)
+          from tools.wf_warlock_next_level_source import verified_paid_predecessor
+          before = verified_paid_predecessor(
+              route=Path("../predecessor/warlock-l42-native-route/route.json"),
+              source=Path("../predecessor/warlock-l42-source/source_request.json"),
+              binary=Path("../engine/target/debug/forever-engine"),
+              from_level=42,
+              predecessor_binary_sha256="133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458")
+          print("REUSED_ACTUAL_PAID_L42", before, flush=True)
           PY
-      - name: Propose native L41 from authenticated paid L40 across source upgrade
-        id: propose
+      - name: Generate and pay only new L43-L44 100-target levels, resumably
+        id: range
         continue-on-error: true
-        working-directory: project
-        run: |
-          python -u tools/wf_warlock_next_level_source.py \
-            --binary ../engine/target/debug/forever-engine \
-            --source ../previous/warlock-l40-native-route/native_l40/best_apl/source_request.json \
-            --predecessor-route ../previous/warlock-l40-native-route/route.json \
-            --predecessor-binary-sha256 5cdd73cb5e85db882d2ef59351aad4b7722369a94dbd7f33740f1a4dfa7e5375 \
-            --from-level 40 --to-level 41 --max-proposals 30 \
-            --out ../warlock-l41-source
-      - name: Publish actual native refusal without a fabricated L41 measurement
-        if: steps.propose.outcome == 'failure'
-        working-directory: project
-        run: |
-          test -s ../warlock-l41-source/proposal.json
-          set +e
-          python -u tools/wf_warlock_route_guide.py \
-            --native-proposal ../warlock-l41-source/proposal.json \
-            --baseline-observations ../previous/warlock-l40-native-route/route.json \
-            --out ../warlock-l41-native-route
-          result=$?
-          set -e
-          test "$result" -eq 0 -o "$result" -eq 2
-          test -s ../warlock-l41-native-route/route.json
-      - name: Pay one real hostile L41 100-target native gsim Decisions chain
-        if: steps.propose.outcome == 'success'
         working-directory: project
         env:
           PYTHONUNBUFFERED: '1'
         run: |
-          python -u tools/wf_warlock_route_guide.py \
-            --execute-native --actor-level 41 \
+          python -u tools/wf_warlock_paid_range.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../warlock-l41-source/source_request.json \
-            --health-threshold 0.7 --mana-threshold 0.25 \
-            --baseline-observations ../previous/warlock-l40-native-route/route.json \
-            --trial paid-source-native-l41-upgraded-engine \
-            --out ../warlock-l41-native-route
-      - name: Verify paid L41 independently, never assert same-engine continuity
-        if: steps.propose.outcome == 'success'
+            --source ../predecessor/warlock-l42-source/source_request.json \
+            --predecessor-route ../predecessor/warlock-l42-native-route/route.json \
+            --predecessor-binary-sha256 133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458 \
+            --from-level 42 --end-level 44 --max-new-levels 2 \
+            --out ../warlock-paid-range
+      - name: Check real paid or refused result, never claim a full route
+        if: always() && steps.range.outcome != 'skipped'
         run: |
-          python3 - <<'PY'
-          import hashlib, json
+          test -s warlock-paid-range/range_progress.json
+          python - <<'PY'
+          import json
           from pathlib import Path
-          root = Path("warlock-l41-native-route")
-          source = Path("warlock-l41-source/source_request.json")
-          proposal = json.loads(Path("warlock-l41-source/proposal.json").read_text())
-          guide = json.loads((root / "route.json").read_text())
-          binary_sha = hashlib.sha256(Path("engine/target/debug/forever-engine").read_bytes()).hexdigest()
-          assert proposal["paid_predecessor"]["cross_engine_source_transition"] is True
-          assert proposal["paid_predecessor"]["engine_binary_sha256"] != binary_sha
-          assert proposal["paid_predecessor"]["successor_engine_binary_sha256"] == binary_sha
-          digest = hashlib.sha256(source.read_bytes()).hexdigest()
-          assert 41 in guide["measured_levels"]
-          matches = [row for row in guide["observations"]
-                     if row.get("level") == 41
-                     and row.get("status") == "measured_native_chain"
-                     and row.get("source_request_sha256") == digest
-                     and row.get("engine_binary_sha256") == binary_sha]
-          assert len(matches) == 1, "New native L41 100/100 not independently paid"
-          row = matches[0]
-          assert row["targets_requested"] == row["targets_killed"] == 100
-          assert row["native_world_ack"] is True and row["paid_native_recovery"] is True
-          assert guide["full_10_60_native_replay_executed"] is False
-          assert guide["elapsed_10_60_seconds"] is None
-          print("NEW_REAL_NATIVE_PAID_L41", row["targets_killed"],
-                row["elapsed_seconds_for_observed_chain"], binary_sha, flush=True)
+          result = json.loads(Path("warlock-paid-range/range_progress.json").read_text())
+          print(json.dumps(result, indent=2), flush=True)
+          assert result["full_10_60_native_replay_executed"] is False
+          assert result["elapsed_10_60_seconds"] is None
+          assert result["selected_engine_binary_sha256"]
+          assert result["completed_new_levels"] == [43, 44], (
+              "Native paid L43-L44 not both completed; see exact proposal/refusal receipts")
+          assert result["stopped"] is None
           PY
-      - name: Preserve exact source, native refusals, receipts and bounded route guide
+      - name: Preserve selected source, native 100-mob receipts, refusal and route output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: work2-warlock-l41-cross-engine-paid-${{ github.run_id }}
+          name: work2-warlock-paid-range-${{ github.run_id }}
           path: |
-            previous/warlock-l40-native-route/native_l40/best_apl/source_request.json
-            previous/warlock-l40-native-route/route.json
-            warlock-l41-source/
-            warlock-l41-native-route/
+            predecessor/warlock-l42-source/source_request.json
+            predecessor/warlock-l42-native-route/route.json
+            warlock-paid-range/
           if-no-files-found: warn
           retention-days: 3
