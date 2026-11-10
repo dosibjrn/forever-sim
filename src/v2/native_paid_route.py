@@ -97,7 +97,7 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
     if not candidates:
         return {
             "status": "no_native_prepared_paid_start",
-            "levels": [], "steps": [],
+            "levels": [], "steps": [], "observed_100_mob_total_seconds": None,
             "note": "No matching paid native-prepared actor receipts at any observed level.",
         }
 
@@ -147,6 +147,7 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         return {
             "status": "not_connected_native_paid",
             "levels": sorted(candidates), "steps": [],
+            "observed_100_mob_total_seconds": None,
             "reason": last_error or "No valid native-paid observed level",
         }
     steps = [{
@@ -154,6 +155,7 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         "kind": step.kind,
         "talent_added": step.talent_added,
         "native_observation_id": step.node.details["native_receipt"]["id"],
+        "observed_100_mob_seconds": step.node.score_s_per_100,
         "talents": step.node.talents,
     } for step in path.steps]
     return {
@@ -167,11 +169,15 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
         "engine_binary_sha256": selected_engine,
         "levels": [step["level"] for step in steps],
         "steps": steps,
+        # Arithmetic sum of separately executed 100-target chains, NOT an
+        # observed 10-60 XP/travel/gear journey or a full-route replay.
+        "observed_100_mob_total_seconds": path.cumulative_s,
         "next_unmeasured_or_unconnected_level": steps[-1]["level"] + 1,
         "xp_progression_simulated": False,
         "cumulative_leveling_seconds": None,
         "note": ("Source-native paid 100-target candidate chains with contiguous "
-                 "talent identities only; no XP/travel/training, no full replay."
+                 "talent identities only. The observed 100-mob total sums independently "
+                 "paid level-specific chains, not XP/travel/training or a full replay."
                  + (f" No native-prepared paid transition from requested L{first_level} "
                     f"to observed L{observed_start} is established."
                     if observed_start > first_level else "")),

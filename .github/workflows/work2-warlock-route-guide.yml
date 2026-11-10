@@ -1,6 +1,7 @@
 name: Work2 Warlock native route guide
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
@@ -33,11 +34,11 @@ jobs:
           python -m json.tool /tmp/warlock-route/route.json > /dev/null
           test -s /tmp/warlock-route/GUIDE.md
 
-  # One real changed-integration exercise when the PR is first opened.
-  # Do not pay again on every follow-up push/CI rerun; focused guide tests
-  # above continue to cover edits. Preserves failures as native artifacts.
+  # A paid native L20 replay is optional and must be explicitly dispatched.
+  # Guide/selector-only PRs change publication, not the previously measured
+  # native gameplay; never automatically replay the same frozen paid chain.
   paid-native-l20-route:
-    if: github.event.action == 'opened'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:

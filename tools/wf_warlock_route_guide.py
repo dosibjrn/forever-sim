@@ -467,6 +467,12 @@ def render_guide(report: dict) -> str:
         "Native talent continuity: " +
         str(report["native_paid_talent_continuity"]["status"]) +
         " at " + _ranges(report["native_paid_talent_continuity"]["levels"]) + ".",
+        *([f"Observed paid 100-mob chains across those selected levels: "
+           f"{report['native_paid_talent_continuity']['observed_100_mob_total_seconds']:.4f} s "
+           "(sum of independent level-specific measurements; NOT XP/travel "
+           "time or a continuous full-route replay)."]
+          if report["native_paid_talent_continuity"].get("observed_100_mob_total_seconds") is not None
+          else []),
         *(
             ["**No native-prepared link from L" +
              str(report["native_paid_talent_continuity"]["requested_start_level"]) +
