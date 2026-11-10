@@ -3,7 +3,7 @@ name: Work2 Warlock L41-L50 sequential native-paid Warlock route from verified L
 on:
   push:
     branches:
-      - work2/warlock-l40-native-paid-20261110-1132
+      - work2/warlock-l33-l50-paid-batch-20261110-1146
     paths:
       - .github/workflows/work2-warlock-l41-l50-native-batch.yml
   workflow_dispatch:
@@ -78,7 +78,7 @@ jobs:
           assert len(r["unmeasured_levels"]) == 30
           print("VERIFIED_PAID_L40_PREDECESSOR", sha, flush=True)
           PY
-      - name: Bounded native prepare and actually paid L33 through L40
+      - name: Bounded native prepare and actually pay L41 through L50
         working-directory: project
         env:
           PYTHONUNBUFFERED: '1'
