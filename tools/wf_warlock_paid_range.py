@@ -82,6 +82,26 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
     progress_path = out / "range_progress.json"
 
     def save() -> dict:
+        # Every genuine native guide run writes a route.json and a GUIDE.md
+        # together. Publish the latest human-facing guide beside range_progress
+        # so artifact consumers need not know the content-addressed cache key.
+        # A terminal native refusal has its own guide with the actual refusal;
+        # never replace it with a falsely successful predecessor guide.
+        published_route = current_route
+        if stopped and stopped.get("route"):
+            refusal_route = Path(stopped["route"])
+            if refusal_route.is_file():
+                published_route = refusal_route
+        native_guide = published_route.with_name("GUIDE.md")
+        latest_guide = out / "GUIDE.md"
+        if native_guide.is_file():
+            tmp_guide = latest_guide.with_suffix(".tmp")
+            tmp_guide.write_bytes(native_guide.read_bytes())
+            tmp_guide.replace(latest_guide)
+        else:
+            # If a new invocation has no native guide, do not leave a
+            # previous invocation's guide masquerading as this range result.
+            latest_guide.unlink(missing_ok=True)
         result = {
             "kind": "warlock_native_paid_range_v1",
             "from_level": from_level, "end_level": end_level,
@@ -94,6 +114,7 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             "elapsed_10_60_seconds": None,
             "last_paid_route": str(current_route),
             "last_paid_source": str(current_source),
+            "latest_guide": str(latest_guide) if native_guide.is_file() else None,
         }
         tmp = progress_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
