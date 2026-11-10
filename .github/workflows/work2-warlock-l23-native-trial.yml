@@ -20,7 +20,9 @@ permissions:
 jobs:
   paid-native-l23:
     # This is one independent new L23 chain, not an L22 or cold-search rerun.
-    if: github.head_ref == 'work2/warlock-native-paid-banked-path-20261110-0831'
+    # The exact L23 paid result already completed at this head; do not
+    # repeat a paid 100-target run on each later L24 source/guide edit.
+    if: github.head_ref == 'work2/warlock-native-paid-banked-path-20261110-0831' && github.event.pull_request.head.sha == 'c93c79f882fe6b109787bcfc9ef74bc82a581206'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
