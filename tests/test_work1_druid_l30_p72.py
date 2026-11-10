@@ -75,7 +75,9 @@ def test_l30_p72_refuses_unverified_reference_before_native_score(
         require_world=False)
     assert got == {
         "status": "BLOCKED",
-        "reasons": ["P7_2_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED"],
+        "reasons": ["P7_2_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED",
+                    "P7_1_NATIVE_PREPARE_REFUSED"],
+        "native_reference_status": "BLOCKED",
     }
 
 

@@ -76,6 +76,7 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     """One exact-source native preflight shared by P7 discovery gates."""
     if (class_key, level, spec, gate) in (
             ("druid", 30, "unrestricted", "P7.2"),
+            ("druid", 30, "unrestricted", "P7.3"),
             ("warlock", 20, "unrestricted", "P7.2"),
             ("warlock", 20, "unrestricted", "P7.3")):
         # The checkpoint reference is a distinct frozen native request, not
@@ -86,10 +87,23 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
         )
         checked = run_generated_p71(root, class_key, level, spec)
         if checked.get("status") != "PASS":
-            return _blocked("P7_2_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED")
+            # Preserve the underlying native-reference refusal. In particular,
+            # a changed gitlink must remain distinguishable from a failed
+            # source prepare or a missing frozen reference; none is a paid
+            # changed-axis result. Do not silently select a different engine.
+            reason = gate.replace(".", "_") + "_NATIVE_GENERATED_REFERENCE_NOT_VERIFIED"
+            native_reasons = checked.get("reasons")
+            return {
+                "status": "BLOCKED",
+                "reasons": [reason, *(
+                    item for item in native_reasons
+                    if isinstance(item, str)
+                )] if isinstance(native_reasons, list) else [reason],
+                "native_reference_status": checked.get("status"),
+            }
         selected = _binary_and_pin(root)
         if selected is None:
-            return _blocked("P7_2_PINNED_RUST_BINARY_OR_GITLINK_MISSING")
+            return _blocked(gate.replace(".", "_") + "_PINNED_RUST_BINARY_OR_GITLINK_MISSING")
         binary, revision = selected
         request_path = (_reference_directory(root, class_key, level, spec)
                         / "request.json")
