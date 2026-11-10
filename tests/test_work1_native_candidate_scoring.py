@@ -397,3 +397,95 @@ def test_observed_no_player_damage_may_win_native_paid_comparison(tmp_path):
     assert output["winner_elapsed_seconds"] == 16
     assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
                for row in output["candidates"])
+
+
+def test_exact_paid_receipt_reuse_requires_same_engine_source_and_scenario(
+        tmp_path, monkeypatch):
+    """A genuine fully recovered receipt is not paid again at identical inputs."""
+    import tools.wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"exact-engine")
+    prepared = tmp_path / "candidate.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    artifacts = tmp_path / "receipts"
+    calls = []
+
+    def identity(binary, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 1, "forever_commit": "f" * 40,
+            "native_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+
+    def native(binary, prepared, **kwargs):
+        calls.append((binary.read_bytes(), kwargs["target_count"]))
+        return _receipt("a" * 64)
+
+    def evaluate():
+        return compare_prepared_candidates(
+            binary=binary, prepared_paths={"candidate": prepared},
+            actor_level=30, mob_count=3, target_hp=1200.,
+            run_native=native, artifact_dir=artifacts)
+
+    initial = evaluate()
+    assert len(calls) == 1
+    assert initial["candidates"][0]["reused_exact_native_paid_receipt"] is False
+    repeat = evaluate()
+    assert len(calls) == 1
+    assert repeat["candidates"][0]["reused_exact_native_paid_receipt"] is True
+    assert repeat["candidates"][0]["elapsed_seconds"] == 20.0
+    # A resumed frontier may re-label the exact same prepared source. It must
+    # reference the original paid ACK, not spend three more native kills or
+    # create a second, unauthenticated paid file for the new label.
+    renamed = tmp_path / "renamed.json"
+    renamed.write_bytes(prepared.read_bytes())
+    alias = compare_prepared_candidates(
+        binary=binary, prepared_paths={"new_frontier_label": renamed},
+        actor_level=30, mob_count=3, target_hp=1200.,
+        run_native=native, artifact_dir=artifacts)
+    assert len(calls) == 1
+    assert alias["candidates"][0]["reused_exact_native_paid_receipt"] is True
+    assert alias["candidates"][0]["elapsed_seconds"] == 20.0
+    assert alias["candidates"][0]["native_raw_receipt_file"] == str(
+        artifacts / "candidate.native.json")
+    assert not (artifacts / "new_frontier_label.native.json").exists()
+    # A modified receipt is no longer original paid evidence.
+    raw = artifacts / "candidate.native.json"
+    raw.write_text(raw.read_text().replace(
+        '"world_target_hp": 1200.0', '"world_target_hp": 999.0'))
+    altered = evaluate()
+    assert len(calls) == 2
+    assert altered["candidates"][0]["reused_exact_native_paid_receipt"] is False
+    # A different compiled native engine cannot inherit the previous score.
+    binary.write_bytes(b"new-engine")
+    changed = evaluate()
+    assert len(calls) == 3
+    assert changed["candidates"][0]["reused_exact_native_paid_receipt"] is False
+
+
+def test_native_timeout_refuses_only_one_candidate(tmp_path):
+    import subprocess
+    paths = {}
+    for label in ("timed_out", "paid"):
+        path = tmp_path / (label + ".json")
+        path.write_text(json.dumps(_prepared(label[0] * 64)))
+        paths[label] = path
+
+    def native(binary, prepared, **kwargs):
+        if prepared.stem == "timed_out":
+            raise subprocess.TimeoutExpired(cmd="native-world-pulls", timeout=30)
+        return _receipt("p" * 64)
+
+    result = compare_prepared_candidates(
+        binary=Path("native"), prepared_paths=paths,
+        actor_level=30, mob_count=3, target_hp=1200., run_native=native)
+    assert result["comparable_candidates"] == 1
+    assert result["candidates"][0]["status"] == "NATIVE_REFUSAL"
+    assert result["candidates"][1]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert result["candidates"][1]["elapsed_seconds"] == 20.0
