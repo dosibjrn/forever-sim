@@ -14,6 +14,7 @@ on:
       - 'tests/gates/test_wf_gate_p7_2_live.py'
       - 'tests/test_work2_p72_native_axis.py'
       - 'tests/test_work1_druid_l30_p72.py'
+      - 'tests/test_work1_druid_l30_p73.py'
       - 'tools/wf_gate_p7_2_live.py'
       - 'tests/gates/test_wf_gate_p7_3_live.py'
       - 'tests/gates/test_wf_gate_p7_4_live.py'
@@ -143,6 +144,7 @@ jobs:
           tests/gates/test_wf_gate_p7_2_live.py
           tests/test_work2_p72_native_axis.py
           tests/test_work1_druid_l30_p72.py
+          tests/test_work1_druid_l30_p73.py
           tests/gates/test_wf_gate_p7_3_live.py
           tests/gates/test_p7_independent_cold_rediscovery.py
           tests/gates/test_wf_gate_p7_4_live.py
