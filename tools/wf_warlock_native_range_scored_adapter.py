@@ -303,7 +303,22 @@ def evaluate_request(
                     or comparison.get("rng_mode") != "balanced"
                     or comparison.get("iterations") != 1):
                 raise ValueError("NATIVE_SCORER_SOURCE_OR_SCENARIO_MISMATCH")
-            raw = json.loads((call_dir / f"{cid}.native.json").read_text())
+            # Work1 may reuse an exact paid receipt under its original label
+            # rather than write a duplicate file in this invocation's call_dir.
+            # Honor that original only when its scorer-supplied digest matches
+            # the actual immutable paid bytes; otherwise refuse to rank it.
+            original_file = comparison.get("native_raw_receipt_file")
+            if original_file is not None:
+                if not isinstance(original_file, str) or not original_file:
+                    raise ValueError("NATIVE_SCORER_ORIGINAL_RECEIPT_PATH_INVALID")
+                raw_path = Path(original_file)
+                digest = comparison.get("native_raw_receipt_sha256")
+                if not _valid_sha(digest) or digest != _sha(raw_path):
+                    raise ValueError("NATIVE_SCORER_ORIGINAL_RECEIPT_DIGEST_MISMATCH")
+            else:
+                # Historical scorers only returned a same-invocation file.
+                raw_path = call_dir / f"{cid}.native.json"
+            raw = json.loads(raw_path.read_text())
             terminal = raw["native_terminal_recovery"]
             start_ns, end_ns = terminal["start_clock_ns"], terminal["end_clock_ns"]
             elapsed = comparison["elapsed_seconds"]
@@ -351,7 +366,10 @@ def evaluate_request(
                     lineage.get("native_continuity_from_level"),
                 "native_intermediate_levels_verified":
                     lineage.get("native_intermediate_levels_verified"),
-                "native_raw_receipt_file": str(call_dir / f"{cid}.native.json"),
+                "native_raw_receipt_file": str(raw_path),
+                "native_raw_receipt_sha256": _sha(raw_path),
+                "reused_exact_native_paid_receipt":
+                    comparison.get("reused_exact_native_paid_receipt") is True,
                 "prepared_file": str(path),
                 "source_request_file": str(
                     (manifest.parent / next(
