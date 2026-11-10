@@ -54,7 +54,7 @@ def _paid_measurement(row: dict) -> dict:
         "family_tree_index": family,
         "talents": row["talents"],
         "elapsed_seconds_for_100_mobs": elapsed,
-        "seconds_per_mob": elapsed / 100,
+        "seconds_per_mob": round(elapsed / 100, 6),
         "native_observation_id": row["native_observation_id"],
         "source_request_sha256": source_sha,
         "executed_source_sha256": executed_sha,
