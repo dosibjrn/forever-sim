@@ -1,7 +1,7 @@
 """Forever transport and route-scoring tests; no MythicSim rules revalidated."""
 from __future__ import annotations
 
- import pytest
+import pytest
 
 from src.v2.native_range_optimizer import optimize, sampled_levels
 
