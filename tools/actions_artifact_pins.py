@@ -242,12 +242,13 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
     """Read evidence in working tree; unreadable files fail closed."""
     runs: set[int] = set()
     artifacts: set[int] = set()
-    # Machine-readable receipts also contain the only link/ID to some paid
-    # native runs. Read them before deciding that an artifact is disposable.
+    # Machine-readable and raw plaintext receipts can hold the sole pin to
+    # a paid native run. A file extension is not evidence of disposability.
+    # Read them before deciding that an artifact is disposable.
     for folder in ("docs", "evidence", "gate_evidence", "gate_sources"):
         # Raw retained gate/paid run logs can be the sole evidence link.
         # Treat a damaged log like a damaged JSON receipt: abort deletion.
-        for pattern in ("*.md", "*.json", "*.tsv", "*.log"):
+        for pattern in ("*.md", "*.json", "*.jsonl", "*.yaml", "*.yml", "*.tsv", "*.log", "*.txt"):
             for path in (root / folder).rglob(pattern):
                 record_references(path.read_text(encoding="utf-8"),
                                   runs, artifacts)
