@@ -13,6 +13,8 @@
 
 [Read the L47 Affliction / Demonology / Destruction comparison](data/warlock/native_l47_paid_family_guide.md), sourced from the original [hostile native 100/100 run](https://github.com/dosibjrn/forever-sim/actions/runs/42836075370). Destruction has the lowest observed time **in that one bounded scenario**; respec costs, stat weights, a globally optimal build, and continuous L10–60 leveling are not measured by this comparison.
 
+The archived executed source requests show **identical equipment and identical three-action APL** across all three talent families; no explicit pet or pull-policy selection was recorded. The guide now includes those source-hash-verified equipment IDs, ordered cast priorities and the native-paid recovery settings, rather than suggesting independent gear/pet/APL optimization.
+
 The reproducible Markdown is retained alongside the [source-linked paid JSON](data/warlock/native_l47_paid_family_guide.json), independently of the short-lived original Actions artifact. Regenerate it without paying or downloading a world run:
 
 ```bash

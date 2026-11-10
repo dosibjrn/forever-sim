@@ -8,10 +8,12 @@ producer has already validated its raw native attempt and route receipts.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
 from urllib.parse import urlparse
+from zipfile import ZipFile
 
 FAMILIES = ("Affliction", "Demonology", "Destruction")
 PAID_STATES = {"MEASURED_CROSS_TREE_100", "MEASURED_CROSS_TREE_TIE_100"}
@@ -65,7 +67,178 @@ def _paid_measurement(row: dict) -> dict:
     }
 
 
-def build(comparison: dict, *, source_run_url: str, artifact_id: int) -> dict:
+
+def _archived_executed_build(archive: ZipFile, row: dict, *, level: int,
+                             native_binary_sha256: str) -> dict:
+    """Project only source-hash-matched original paid candidate fields.
+
+    This is an immutable artifact reader, NOT a native legality/behavior
+    validator. Unknown source fields are preserved literally or disclosed as
+    not recorded; an index/hash mismatch fails rather than borrowing gear or
+    APL from a different candidate.
+    """
+    index = row["candidate_index"]
+    source_sha = row["source_request_sha256"]
+    if source_sha != row["executed_source_sha256"]:
+        raise ValueError("candidate executed source differs from original source request")
+    prefix = f"cross-tree/world/candidate_{index:02d}_{source_sha[:12]}/native_l{level}"
+    request_path = prefix + "/best_apl/source_request.json"
+    try:
+        raw = archive.read(request_path)
+        summary = json.loads(archive.read(prefix + "/summary.json"))
+    except KeyError as exc:
+        raise ValueError(f"missing original candidate source/summary: {request_path}") from exc
+    if hashlib.sha256(raw).hexdigest() != source_sha:
+        raise ValueError(f"candidate #{index} source-request SHA256 mismatch")
+    request = json.loads(raw)
+    try:
+        players = request["raid"]["parties"][0]["players"]
+        player = players[0]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("archived native source request has no player") from exc
+    if (len(players) != 1 or player.get("class") != "ClassWarlock"
+            or player.get("level") != level
+            or player.get("talentsString") != row["talents"]):
+        raise ValueError("candidate/source request actor or talents mismatch")
+    if (summary.get("original_source_sha256") != source_sha
+            or summary.get("native_binary_sha256") != native_binary_sha256
+            or summary.get("actor_level") != level):
+        raise ValueError("candidate/native paid world summary provenance mismatch")
+    receipts = [entry for entry in summary.get("results", [])
+                if entry.get("variant") == "best_apl"]
+    if (len(receipts) != 1 or receipts[0].get("status")
+            != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+            or receipts[0].get("killed") != 100
+            or receipts[0].get("elapsed_s") != row["elapsed_seconds_for_100_mobs"]):
+        raise ValueError("candidate/native paid 100-mob receipt mismatch")
+
+    items = player.get("equipment", {}).get("items")
+    if items is not None:
+        if (not isinstance(items, list)
+                or any(not isinstance(item, dict) or
+                       type(item.get("id")) is not int or item["id"] < 0
+                       for item in items)):
+            raise ValueError("malformed selected native equipment")
+        item_ids = [item["id"] for item in items]  # 0 means empty slot.
+    else:
+        item_ids = None
+
+    options = player.get("warlock", {}).get("options", {}).get("classOptions", {})
+    selected_pet = options.get("summon") if isinstance(options, dict) else None
+    rotation = player.get("rotation")
+    priority = rotation.get("priorityList") if isinstance(rotation, dict) else None
+    if priority is not None and not isinstance(priority, list):
+        raise ValueError("malformed native APL priority")
+    actions = None
+    if priority is not None:
+        actions = []
+        for entry in priority:
+            # Preserve unsupported native action shapes without inventing a
+            # human-readable cast/condition interpretation.
+            if not isinstance(entry, dict) or not isinstance(entry.get("action"), dict):
+                raise ValueError("malformed native APL action")
+            action = entry["action"]
+            cast = action.get("castSpell")
+            spell = cast.get("spellId") if isinstance(cast, dict) else None
+            spell_id = spell.get("spellId") if isinstance(spell, dict) else None
+            cond = action.get("condition")
+            if cond is None and type(spell_id) is int:
+                actions.append({"cast_spell_id": spell_id})
+                continue
+            dot = (cond.get("not", {}).get("val", {}).get("dotIsActive")
+                   if isinstance(cond, dict) and isinstance(cond.get("not"), dict)
+                   and isinstance(cond["not"].get("val"), dict) else None)
+            dot_ref = dot.get("spellId") if isinstance(dot, dict) else None
+            dot_id = dot_ref.get("spellId") if isinstance(dot_ref, dict) else None
+            if type(spell_id) is int and type(dot_id) is int:
+                actions.append({"cast_spell_id": spell_id,
+                                "if_dot_absent_spell_id": dot_id})
+            else:
+                actions.append({"raw_action": entry})
+
+    receipt = receipts[0]
+    return {
+        "source_request_archive_path": request_path,
+        "selected_pet": selected_pet,
+        "equipped_item_ids": item_ids,
+        "apl_priority": actions,
+        "recovery_policy": summary.get("native_recovery_requested"),
+        "recovery_mode": receipt.get("native_recovery_mode"),
+        "recovery_seconds": receipt.get("native_recovery_seconds"),
+        "pull_policy": request.get("pullPolicy"),
+    }
+
+
+def _executed_build_lines(row: dict, *, level: int) -> list[str]:
+    details = row.get("executed_build")
+    if details is None:
+        return ["  - Selected pet, equipment, ordered APL, recovery and pull policy: "
+                "**not recorded in this guide**."]
+    if not isinstance(details, dict):
+        raise ValueError("malformed archived executed build")
+    expected = (f"cross-tree/world/candidate_{row['candidate_index']:02d}_"
+                f"{row['source_request_sha256'][:12]}/native_l{level}"
+                "/best_apl/source_request.json")
+    if details.get("source_request_archive_path") != expected:
+        raise ValueError("executed build candidate/source identity mismatch")
+    pet = details.get("selected_pet")
+    pet_text = "**not recorded**" if pet is None else _code(json.dumps(pet, sort_keys=True))
+    gear = details.get("equipped_item_ids")
+    if gear is not None and (not isinstance(gear, list)
+                             or any(type(i) is not int or i < 0 for i in gear)):
+        raise ValueError("malformed archived equipment ids")
+    gear_text = ("**not recorded**" if gear is None else
+                 ", ".join(str(i) for i in gear) + " (0 = empty)")
+    apl = details.get("apl_priority")
+    if apl is not None and not isinstance(apl, list):
+        raise ValueError("malformed archived APL")
+    if apl is None:
+        apl_text = "**not recorded**"
+    else:
+        formatted = []
+        for action in apl:
+            if not isinstance(action, dict):
+                raise ValueError("malformed archived APL action")
+            if "raw_action" in action:
+                formatted.append(_code(json.dumps(action["raw_action"], sort_keys=True)))
+            elif type(action.get("cast_spell_id")) is int:
+                spell = str(action["cast_spell_id"])
+                dot_id = action.get("if_dot_absent_spell_id")
+                if dot_id is not None and type(dot_id) is not int:
+                    raise ValueError("malformed archived APL DoT condition")
+                formatted.append(f"cast spell {spell}" +
+                                 (f" if DoT {dot_id} absent" if dot_id is not None else ""))
+            else:
+                raise ValueError("malformed archived APL cast")
+        apl_text = "; ".join(formatted) if formatted else "empty priority list"
+    rec = details.get("recovery_policy")
+    if rec is None:
+        rec_text = "**not recorded**"
+    elif isinstance(rec, dict):
+        rec_text = _code(json.dumps(rec, sort_keys=True))
+    else:
+        raise ValueError("malformed archived recovery policy")
+    mode = details.get("recovery_mode")
+    seconds = details.get("recovery_seconds")
+    if seconds is not None and (type(seconds) not in (int, float)
+                                or not math.isfinite(seconds) or seconds < 0):
+        raise ValueError("malformed archived native recovery duration")
+    mode_text = "**not recorded**" if mode is None else _code(str(mode))
+    time_text = "**not recorded**" if seconds is None else f"{seconds:.1f} s"
+    pull = details.get("pull_policy")
+    pull_text = ("**not recorded**" if pull is None
+                 else _code(json.dumps(pull, sort_keys=True)))
+    return [
+        f"  - Executed source request in original artifact: {_code(expected)}.",
+        f"  - Selected pet: {pet_text}; equipped item IDs in slot order: {gear_text}.",
+        f"  - Ordered native APL: {apl_text}.",
+        f"  - Native-paid recovery: {rec_text}; mode {mode_text}; "
+        f"reported recovery time {time_text}; pull policy: {pull_text}.",
+    ]
+
+
+def build(comparison: dict, *, source_run_url: str, artifact_id: int,
+          source_artifact_zip: Path | None = None) -> dict:
     """Turn a native-paid comparison into portable, honestly scoped guide data.
 
     The run/artifact URL is operator-supplied attribution, not a new receipt
@@ -124,7 +297,7 @@ def build(comparison: dict, *, source_run_url: str, artifact_id: int) -> dict:
               or winner.get("elapsed_seconds") != fastest):
             raise ValueError("winner claim differs from paid native measurements")
 
-    return {
+    result = {
         "kind": "warlock_paid_family_guide_input_v1",
         "status": ("MEASURED_BOUNDED_FAMILY_COMPARISON" if complete
                    else "PROVISIONAL_NO_COMPARABLE_FAMILY_GUIDE"),
@@ -150,6 +323,13 @@ def build(comparison: dict, *, source_run_url: str, artifact_id: int) -> dict:
         "stat_weights_measured": False,
         "m1_recording_performed": False,
     }
+    if source_artifact_zip is not None:
+        with ZipFile(source_artifact_zip) as archive:
+            for row in result["measurements"]:
+                row["executed_build"] = _archived_executed_build(
+                    archive, row, level=level,
+                    native_binary_sha256=binary_sha)
+    return result
 
 
 def _code(value: object) -> str:
@@ -290,6 +470,7 @@ def render_markdown(payload: dict) -> str:
                 f"**{'yes' if row['requires_respec_from_paid_predecessor'] else 'no'}** "
                 "(cost unmeasured).",
             ]
+            lines.extend(_executed_build_lines(row, level=level))
     else:
         if rows or fastest is not None or tied:
             raise ValueError("provisional comparison cannot publish a measured winner")
@@ -314,9 +495,11 @@ def render_markdown(payload: dict) -> str:
 
 
 def publish(*, comparison: Path, source_run_url: str, artifact_id: int,
-            out: Path, markdown_out: Path | None = None) -> dict:
+            out: Path, markdown_out: Path | None = None,
+            source_artifact_zip: Path | None = None) -> dict:
     result = build(json.loads(comparison.read_text()),
-                   source_run_url=source_run_url, artifact_id=artifact_id)
+                   source_run_url=source_run_url, artifact_id=artifact_id,
+                   source_artifact_zip=source_artifact_zip)
     section = render_markdown(result) if markdown_out is not None else None
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
@@ -349,13 +532,16 @@ def main() -> None:
                         help="Preserved native-paid guide JSON for replay-free Markdown")
     parser.add_argument("--source-run-url")
     parser.add_argument("--artifact-id", type=int)
+    parser.add_argument("--source-artifact-zip", type=Path,
+                        help="Original native paid ZIP; verify source hashes and preserve executed build fields")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--markdown-out", type=Path,
                         help="Player-readable bounded family comparison section")
     args = parser.parse_args()
     if args.guide_input is not None:
         if (args.markdown_out is None or args.source_run_url is not None
-                or args.artifact_id is not None or args.out is not None):
+                or args.artifact_id is not None or args.out is not None
+                or args.source_artifact_zip is not None):
             parser.error("--guide-input requires --markdown-out and no original-comparison flags")
         result = publish_saved(guide_input=args.guide_input,
                                markdown_out=args.markdown_out)
@@ -366,7 +552,8 @@ def main() -> None:
         result = publish(comparison=args.comparison,
                          source_run_url=args.source_run_url,
                          artifact_id=args.artifact_id, out=args.out,
-                         markdown_out=args.markdown_out)
+                         markdown_out=args.markdown_out,
+                         source_artifact_zip=args.source_artifact_zip)
     print(json.dumps(result, indent=2))
 
 

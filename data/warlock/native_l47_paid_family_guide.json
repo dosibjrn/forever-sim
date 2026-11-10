@@ -10,6 +10,50 @@
     {
       "candidate_index": 3,
       "elapsed_seconds_for_100_mobs": 777.7,
+      "executed_build": {
+        "apl_priority": [
+          {
+            "cast_spell_id": 6222,
+            "if_dot_absent_spell_id": 6222
+          },
+          {
+            "cast_spell_id": 1014,
+            "if_dot_absent_spell_id": 1014
+          },
+          {
+            "cast_spell_id": 1088
+          }
+        ],
+        "equipped_item_ids": [
+          260212,
+          22657,
+          22968,
+          19121,
+          0,
+          0,
+          20716,
+          22062,
+          22700,
+          22064,
+          275738,
+          275738,
+          0,
+          0,
+          22379,
+          19989,
+          275837
+        ],
+        "pull_policy": null,
+        "recovery_mode": "decisions_food_water",
+        "recovery_policy": {
+          "health_threshold": 0.7,
+          "mana_threshold": 0.25,
+          "recovery_policy": "decisions"
+        },
+        "recovery_seconds": 336.6,
+        "selected_pet": null,
+        "source_request_archive_path": "cross-tree/world/candidate_03_0f8d375d43b1/native_l47/best_apl/source_request.json"
+      },
       "executed_source_sha256": "0f8d375d43b13deb75d4199a659edf08af11216d21afc5e0e1d16b46ccc8dc65",
       "family": "Destruction",
       "family_tree_index": 2,
@@ -25,6 +69,50 @@
     {
       "candidate_index": 1,
       "elapsed_seconds_for_100_mobs": 885.4,
+      "executed_build": {
+        "apl_priority": [
+          {
+            "cast_spell_id": 6222,
+            "if_dot_absent_spell_id": 6222
+          },
+          {
+            "cast_spell_id": 1014,
+            "if_dot_absent_spell_id": 1014
+          },
+          {
+            "cast_spell_id": 1088
+          }
+        ],
+        "equipped_item_ids": [
+          260212,
+          22657,
+          22968,
+          19121,
+          0,
+          0,
+          20716,
+          22062,
+          22700,
+          22064,
+          275738,
+          275738,
+          0,
+          0,
+          22379,
+          19989,
+          275837
+        ],
+        "pull_policy": null,
+        "recovery_mode": "decisions_food_water",
+        "recovery_policy": {
+          "health_threshold": 0.7,
+          "mana_threshold": 0.25,
+          "recovery_policy": "decisions"
+        },
+        "recovery_seconds": 319.9,
+        "selected_pet": null,
+        "source_request_archive_path": "cross-tree/world/candidate_01_dd4481c16a06/native_l47/best_apl/source_request.json"
+      },
       "executed_source_sha256": "dd4481c16a066bc8a76dfd2b3008b5393467c24be348c410be5c0b3d73add2e3",
       "family": "Affliction",
       "family_tree_index": 0,
@@ -40,6 +128,50 @@
     {
       "candidate_index": 2,
       "elapsed_seconds_for_100_mobs": 951.7,
+      "executed_build": {
+        "apl_priority": [
+          {
+            "cast_spell_id": 6222,
+            "if_dot_absent_spell_id": 6222
+          },
+          {
+            "cast_spell_id": 1014,
+            "if_dot_absent_spell_id": 1014
+          },
+          {
+            "cast_spell_id": 1088
+          }
+        ],
+        "equipped_item_ids": [
+          260212,
+          22657,
+          22968,
+          19121,
+          0,
+          0,
+          20716,
+          22062,
+          22700,
+          22064,
+          275738,
+          275738,
+          0,
+          0,
+          22379,
+          19989,
+          275837
+        ],
+        "pull_policy": null,
+        "recovery_mode": "decisions_food_water",
+        "recovery_policy": {
+          "health_threshold": 0.7,
+          "mana_threshold": 0.25,
+          "recovery_policy": "decisions"
+        },
+        "recovery_seconds": 323.7,
+        "selected_pet": null,
+        "source_request_archive_path": "cross-tree/world/candidate_02_b2dac9d9d2eb/native_l47/best_apl/source_request.json"
+      },
       "executed_source_sha256": "b2dac9d9d2ebad76b651f630beb390a6c5f66d4248e92403f54f89ddab2c7124",
       "family": "Demonology",
       "family_tree_index": 1,

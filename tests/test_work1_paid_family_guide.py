@@ -1,6 +1,8 @@
 """Guide handoff from already paid native receipts; no native or M1 replay."""
 import copy
+import hashlib
 import json
+from zipfile import ZipFile
 import subprocess
 import sys
 from pathlib import Path
@@ -328,3 +330,121 @@ def test_original_native_comparison_cli_is_still_supported(tmp_path):
     assert json.loads(output.read_text())["bounded_fastest_family"] == "Destruction"
     assert "**Fastest in this scenario: Destruction**" in markdown.read_text()
     assert '"kind": "warlock_paid_family_guide_input_v1"' in completed.stdout
+
+
+def _original_source_archive(tmp_path, comparison, *, omit_apl=False):
+    """Tiny immutable candidate ZIP with the same identities as paid exports."""
+    archive = tmp_path / "original-paid.zip"
+    with ZipFile(archive, "w") as zipped:
+        for row in comparison["candidates"]:
+            player = {
+                "class": "ClassWarlock", "level": 47,
+                "talentsString": row["talents"],
+                "equipment": {"items": [{"id": 260212}, {"id": 0}]},
+                "warlock": {"options": {"classOptions": {}}},
+            }
+            if not omit_apl:
+                player["rotation"] = {"type": "TypeAPL", "priorityList": [
+                    {"action": {"castSpell": {"spellId": {"spellId": 6222}},
+                                "condition": {"not": {"val": {"dotIsActive": {
+                                    "spellId": {"spellId": 6222}}}}}}},
+                    {"action": {"castSpell": {"spellId": {"spellId": 1088}}}},
+                ]}
+            raw = (json.dumps({"raid": {"parties": [{"players": [player]}]}},
+                              separators=(",", ":")) + "\n").encode()
+            sha = hashlib.sha256(raw).hexdigest()
+            row["original_source_sha256"] = sha
+            row["executed_source_sha256"] = sha
+            root = f"cross-tree/world/candidate_{row['index']:02d}_{sha[:12]}/native_l47"
+            zipped.writestr(root + "/best_apl/source_request.json", raw)
+            zipped.writestr(root + "/summary.json", json.dumps({
+                "original_source_sha256": sha,
+                "native_binary_sha256": comparison["native_binary_sha256"],
+                "actor_level": 47,
+                "native_recovery_requested": {"recovery_policy": "decisions",
+                                             "health_threshold": 0.7,
+                                             "mana_threshold": 0.25},
+                "results": [{
+                    "variant": "best_apl",
+                    "status": "COMPLETED_100_REAL_NATIVE_GSIM_KILLS",
+                    "killed": 100,
+                    "elapsed_s": row["elapsed_seconds"],
+                    "native_recovery_mode": "decisions_food_water",
+                    "native_recovery_seconds": 30.5,
+                }],
+            }))
+    return archive
+
+
+def test_original_paid_zip_enriches_only_exact_candidate_source_request(tmp_path):
+    comparison = _comparison()
+    archive = _original_source_archive(tmp_path, comparison)
+    result = guide.build(comparison, source_run_url=RUN, artifact_id=ARTIFACT,
+                         source_artifact_zip=archive)
+    assert result["bounded_fastest_family"] == "Destruction"
+    for row in result["measurements"]:
+        details = row["executed_build"]
+        assert details["source_request_archive_path"].endswith("/best_apl/source_request.json")
+        assert details["selected_pet"] is None  # Unspecified != no pet.
+        assert details["equipped_item_ids"] == [260212, 0]
+        assert details["apl_priority"] == [
+            {"cast_spell_id": 6222, "if_dot_absent_spell_id": 6222},
+            {"cast_spell_id": 1088},
+        ]
+        assert details["recovery_mode"] == "decisions_food_water"
+        assert details["pull_policy"] is None
+    markdown = guide.render_markdown(result)
+    assert "Selected pet: **not recorded**" in markdown
+    assert "cast spell 6222 if DoT 6222 absent" in markdown
+    assert "260212, 0 (0 = empty)" in markdown
+    assert "pull policy: **not recorded**" in markdown
+
+
+def test_original_zip_source_hash_mismatch_fails_closed(tmp_path):
+    comparison = _comparison()
+    archive = _original_source_archive(tmp_path, comparison)
+    comparison["candidates"][0]["executed_source_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="executed source differs"):
+        guide.build(comparison, source_run_url=RUN, artifact_id=ARTIFACT,
+                    source_artifact_zip=archive)
+
+
+def test_original_zip_rejects_wrong_paid_summary_or_candidate_index(tmp_path):
+    comparison = _comparison()
+    archive = _original_source_archive(tmp_path, comparison)
+    comparison["candidates"][0]["index"] = 9
+    with pytest.raises(ValueError, match="missing original candidate source"):
+        guide.build(comparison, source_run_url=RUN, artifact_id=ARTIFACT,
+                    source_artifact_zip=archive)
+
+
+def test_missing_native_apl_is_disclosed_without_invention(tmp_path):
+    comparison = _comparison()
+    archive = _original_source_archive(tmp_path, comparison, omit_apl=True)
+    result = guide.build(comparison, source_run_url=RUN, artifact_id=ARTIFACT,
+                         source_artifact_zip=archive)
+    assert result["measurements"][0]["executed_build"]["apl_priority"] is None
+    assert "Ordered native APL: **not recorded**" in guide.render_markdown(result)
+
+
+def test_saved_l47_data_retains_original_selected_fields_and_no_claimed_pet():
+    path = (Path(__file__).resolve().parents[1] / "data" / "warlock"
+            / "native_l47_paid_family_guide.json")
+    result = json.loads(path.read_text())
+    assert len(result["measurements"]) == 3
+    for row in result["measurements"]:
+        details = row["executed_build"]
+        assert details["selected_pet"] is None
+        assert details["pull_policy"] is None
+        assert len(details["equipped_item_ids"]) == 17
+        assert details["apl_priority"] == [
+            {"cast_spell_id": 6222, "if_dot_absent_spell_id": 6222},
+            {"cast_spell_id": 1014, "if_dot_absent_spell_id": 1014},
+            {"cast_spell_id": 1088},
+        ]
+        assert details["source_request_archive_path"].startswith(
+            f"cross-tree/world/candidate_{row['candidate_index']:02d}_"
+            f"{row['source_request_sha256'][:12]}/native_l47")
+    markdown = guide.render_markdown(result)
+    assert "Selected pet: **not recorded**" in markdown
+    assert "Ordered native APL: cast spell 6222" in markdown
