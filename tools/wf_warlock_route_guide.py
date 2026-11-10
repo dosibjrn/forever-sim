@@ -488,6 +488,7 @@ def refusal_from_native_proposal(proposal: dict) -> dict:
             proposal.get("kind") != "adjacent_native_warlock_candidate" or
             proposal.get("status") not in (
                 "NATIVE_ACTOR_LEVEL_UNSUPPORTED",
+                "NATIVE_OPTIONS_REFUSED",
                 "NATIVE_PREPARE_REFUSED_ALL_PROPOSALS")):
         raise ValueError("expected refused adjacent native Warlock proposal")
     level = proposal.get("to_level")

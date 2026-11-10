@@ -491,3 +491,32 @@ def test_native_actor_source_refusal_publishes_prior_l20_and_never_l21(tmp_path)
     proposal.write_text(json.dumps(native))
     with pytest.raises(ValueError, match="expected refused"):
         main(["--native-proposal", str(proposal), "--out", str(tmp_path / "bad")])
+
+
+def test_native_options_refusal_keeps_prior_route_and_unmeasured_next_level(tmp_path):
+    native = {
+        "kind": "adjacent_native_warlock_candidate",
+        "status": "NATIVE_OPTIONS_REFUSED",
+        "from_level": 24, "to_level": 25, "attempted": 0,
+        "original_source_sha256": "c" * 64,
+        "native_binary_sha256": "e" * 64,
+        "native_refusals": [{
+            "stage": "options", "native_refusal_code": "source_level_unavailable",
+            "reason": "Rust source level 25 options refusal",
+        }],
+    }
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps(native))
+    baseline = tmp_path / "prior.json"
+    baseline.write_text(json.dumps(payload(paid("actual-l24", "prior-receipt"))))
+    out = tmp_path / "refused"
+    assert main(["--native-proposal", str(proposal),
+                 "--baseline-observations", str(baseline),
+                 "--out", str(out)]) == 2
+    report = json.loads((out / "route.json").read_text())
+    assert len(report["observations"]) == 1
+    assert 25 in report["unmeasured_levels"]
+    assert report["full_10_60_native_replay_executed"] is False
+    assert report["native_refusals"][0]["native_refusal_code"] == "source_level_unavailable"
+    assert report["native_refusals"][0]["attempted"] == 0
+    assert "NATIVE_OPTIONS_REFUSED" in (out / "GUIDE.md").read_text()
