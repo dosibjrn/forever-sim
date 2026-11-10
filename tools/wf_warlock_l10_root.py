@@ -204,7 +204,12 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
 
     if route.is_file():
         if paid_range._cached_paid_refusal(route, 10):
-            stopped = {"level": 10, "status": "NATIVE_PAID_REFUSAL", "route": str(route)}
+            # Keep the original class of refusal on resumed runs rather than
+            # converting a paid-driver exception into a Warcraft failure.
+            refusal = next(row for row in json.loads(route.read_text())["native_refusals"]
+                           if isinstance(row, dict) and row.get("level") == 10
+                           and row.get("status"))
+            stopped = {"level": 10, "status": refusal["status"], "route": str(route)}
             return save(10)
         next_level.verified_paid_predecessor(
             route=route, source=source, binary=binary, from_level=10)
