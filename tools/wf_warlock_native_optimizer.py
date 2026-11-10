@@ -238,11 +238,14 @@ def native_level_equipment(binary, source, options, out, *, level):
             if not isinstance(dps,(int,float)) or not math.isfinite(dps):
                 raise RuntimeError("Rust returned an invalid score")
             paid_count += 1
-            # Native-prepared defenses only break exact DPS ties; never infer
-            # gear legality or combat damage from a guessed Python model.
+            # Read all tie-breakers from Rust's prepared actor stats.
+            # In this source-native response max mana is stats.Mana, not a
+            # separate player.mana.max object; a valid paid build must not be
+            # discarded due to a mismatched Forever transport lookup.
             native_stats = verified["stats"]
             return (float(dps), float(native_stats["Health"]),
-                    float(native_stats["Armor"]), float(verified["mana"]["max"]))
+                    float(native_stats.get("Armor", 0.0)),
+                    float(native_stats["Mana"]))
         except (RuntimeError,ValueError,KeyError,subprocess.TimeoutExpired) as exc:
             if len(refusals) < 25:
                 refusals.append(str(exc)[-480:])
