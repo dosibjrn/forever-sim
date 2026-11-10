@@ -287,20 +287,21 @@ def evaluate_request(
                     or comparison.get("rng_mode") != "balanced"
                     or comparison.get("iterations") != 1):
                 raise ValueError("NATIVE_SCORER_SOURCE_OR_SCENARIO_MISMATCH")
-            reported_path = comparison.get("native_raw_receipt_file")
-            raw_path = (Path(reported_path) if isinstance(reported_path, str)
-                        and reported_path else call_dir / f"{cid}.native.json")
-            # The scorer can reuse a previously paid immutable ACK from the
-            # shared cache rather than write a duplicate into this call_dir.
-            # Check its original digest, not just the stdout row's claims.
-            original_digest = comparison.get("native_raw_receipt_sha256")
-            if (paid_cache_dir is not None
-                    and (not isinstance(original_digest, str)
-                         or original_digest != _sha(raw_path))):
-                raise ValueError("NATIVE_SCORER_RAW_RECEIPT_DIGEST_MISMATCH")
-            if (original_digest is not None
-                    and original_digest != _sha(raw_path)):
-                raise ValueError("NATIVE_SCORER_RAW_RECEIPT_DIGEST_MISMATCH")
+            # Work1 may reuse an exact paid receipt under its original label
+            # rather than write a duplicate file in this invocation's call_dir.
+            # Honor that original only when its scorer-supplied digest matches
+            # the actual immutable paid bytes; otherwise refuse to rank it.
+            original_file = comparison.get("native_raw_receipt_file")
+            if original_file is not None:
+                if not isinstance(original_file, str) or not original_file:
+                    raise ValueError("NATIVE_SCORER_ORIGINAL_RECEIPT_PATH_INVALID")
+                raw_path = Path(original_file)
+                digest = comparison.get("native_raw_receipt_sha256")
+                if not _valid_sha(digest) or digest != _sha(raw_path):
+                    raise ValueError("NATIVE_SCORER_ORIGINAL_RECEIPT_DIGEST_MISMATCH")
+            else:
+                # Historical scorers only returned a same-invocation file.
+                raw_path = call_dir / f"{cid}.native.json"
             raw = json.loads(raw_path.read_text())
             terminal = raw["native_terminal_recovery"]
             start_ns, end_ns = terminal["start_clock_ns"], terminal["end_clock_ns"]
@@ -351,8 +352,8 @@ def evaluate_request(
                     lineage.get("native_intermediate_levels_verified"),
                 "native_raw_receipt_file": str(raw_path),
                 "native_raw_receipt_sha256": _sha(raw_path),
-                "reused_exact_native_paid_receipt": (
-                    comparison.get("reused_exact_native_paid_receipt") is True),
+                "reused_exact_native_paid_receipt":
+                    comparison.get("reused_exact_native_paid_receipt") is True,
                 "prepared_file": str(path),
                 "source_request_file": str(
                     (manifest.parent / next(

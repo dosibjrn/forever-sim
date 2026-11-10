@@ -251,12 +251,20 @@ jobs:
               print("DRY_RUN: no artifacts deleted")
           else:
               deleted = []
+              already_absent = []
               for a in planned:
                   aid = int(a["id"])
                   status, body = request(f"artifacts/{aid}", "DELETE")
-                  if status not in (204, 404):
-                      raise RuntimeError(f"DELETE id={aid} expected 204/previously gone 404, got {status}: {str(body)[:160]}")
-                  deleted.append(aid)
+                  if status == 204:
+                      deleted.append(aid)
+                  elif status == 404:
+                      # Another worker or retention may have removed it
+                      # since inventory. Verify absence, but do NOT credit
+                      # this GC run with a successful DELETE or its bytes.
+                      already_absent.append(aid)
+                  else:
+                      raise RuntimeError(f"DELETE id={aid} expected 204 or already absent 404, got {status}: {str(body)[:160]}")
+              print(f"DELETE_RESULTS confirmed_204={len(deleted)} already_absent_404={len(already_absent)}")
               # Only a complete, stable post-DELETE inventory can certify
               # absence. Retry stale views AND transient pagination churn;
               # pre-DELETE inventory/pin/provenance checks remain fail-closed.
@@ -267,7 +275,7 @@ jobs:
                   return status
 
               after_artifacts = verify_deleted_artifacts_absent(
-                  deleted, list_artifacts, attempts=12, delay_seconds=5,
+                  deleted + already_absent, list_artifacts, attempts=12, delay_seconds=5,
                   fetch_deleted_status=deleted_artifact_get_status)
               after = sum(int(a["size_in_bytes"]) for a in after_artifacts)
               print(f"AFTER count={len(after_artifacts)} bytes={after} MiB={after/1048576:.2f}")
