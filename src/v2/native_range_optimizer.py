@@ -386,3 +386,105 @@ def optimize(
         "full_10_60_continuous_leveling_route_proven": False,
         "scope": "sampled native combat+movement+charged terminal recovery only; not XP/travel/training/acquisition",
     }
+
+
+def main(argv: list[str] | None = None, *, evaluate=None) -> int:
+    """Generic optimizer CLI. Class and search density are runtime settings.
+
+    Native Warlock is the first available adapter, not a different optimizer.
+    Its source fixture is only an initial request, never a hardcoded route.
+    """
+    import argparse
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+
+    ap = argparse.ArgumentParser(prog="optimize",
+        description="Source-native sampled compatible build optimization")
+    ap.add_argument("--class", dest="class_name", required=True)
+    ap.add_argument("--tree", "--talent-tree", default="unconstrained")
+    ap.add_argument("--start-level", type=int, required=True)
+    ap.add_argument("--end-level", type=int, required=True)
+    ap.add_argument("--level-stride", type=int, default=1)
+    ap.add_argument("--n-mobs", "--mob-count", type=int, default=2)
+    ap.add_argument("--rng", "--rng-backend", default="balanced")
+    ap.add_argument("--backend", default="rust")
+    ap.add_argument("--recover-at-end", "--recover-to-full",
+                    choices=("true",), default="true")
+    ap.add_argument("--iterations", type=int, default=1)
+    ap.add_argument("--budget", type=int, default=100)
+    ap.add_argument("--beam-width", type=int, default=3)
+    ap.add_argument("--native-binary", type=Path,
+                    default=Path("integrations/mythicsim-rust/target/release/forever-engine"))
+    ap.add_argument("--source", type=Path,
+                    default=Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+                    help="Initial native source request (not a route or fixed winner)")
+    ap.add_argument("--target-hp", type=float, default=1200.0)
+    ap.add_argument("--out", type=Path, help="Optional machine-readable result path")
+    args = ap.parse_args(argv)
+    cls = args.class_name.lower()
+    if cls != "warlock":
+        ap.error(f"no source-native adapter registered yet for class {cls!r}")
+    if args.tree != "unconstrained":
+        ap.error("the current native adapter supports --tree unconstrained only")
+    if args.backend != "rust" or args.rng != "balanced" or args.iterations != 1:
+        ap.error("the current native adapter supports rust/balanced/one iteration")
+    if evaluate is None:
+        if not args.native_binary.is_file() or not args.source.is_file():
+            ap.error("native engine and initial source request must exist")
+        from tools.wf_warlock_native_range_optimize import live_native_frontier_evaluator
+        with tempfile.TemporaryDirectory(prefix="optimize-native-") as folder:
+            base = Path(folder)
+            producer = [
+                sys.executable, "tools/wf_warlock_native_source_frontier.py",
+                "--binary", str(args.native_binary.resolve()),
+                "--seed-source", str(args.source.resolve()),
+                "--out", str((base / "source").resolve()),
+            ]
+            evaluator = live_native_frontier_evaluator(
+                producer, binary=args.native_binary,
+                target_hp=args.target_hp,
+                scorer_command=[sys.executable,
+                                "tools/wf_warlock_native_candidate_scoring.py"],
+                artifact_dir=base,
+            )
+            # Keep paid receipts: temporary folders must never silently
+            # dispose of actual native measurements.
+            ap.error("pass --out to retain native-paid receipts") if args.out is None else None
+            result = optimize(
+                args.start_level, args.end_level, args.level_stride,
+                args.n_mobs, args.budget, evaluate=evaluator,
+                beam_width=args.beam_width, rng_mode=args.rng,
+                iterations=args.iterations, mode="compatible",
+                class_name=cls, talent_tree=args.tree, backend=args.backend,
+            )
+    else:
+        result = optimize(
+            args.start_level, args.end_level, args.level_stride,
+            args.n_mobs, args.budget, evaluate=evaluate,
+            beam_width=args.beam_width, rng_mode=args.rng,
+            iterations=args.iterations, mode="compatible",
+            class_name=cls, talent_tree=args.tree, backend=args.backend,
+        )
+    if args.out is not None:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    if result["ranked_alternatives"]:
+        best = result["ranked_alternatives"][0]
+        print(f"{cls}: sampled compatible build path, "
+              f"{best['sampled_cumulative_seconds']:.3f}s recovered sample score")
+        for step in best["steps"]:
+            print(f"L{step['level']} talents={step['talents']} "
+                  f"gear={json.dumps(step['gear'], sort_keys=True)} "
+                  f"apl={json.dumps(step['apl'], sort_keys=True)} "
+                  f"pet={step['pet']} "
+                  f"recovered_seconds={step['native_elapsed_seconds']:.3f}")
+        print("Sparse sample only; skipped levels have no simulated fights.")
+    else:
+        print(f"No fully compatible measured sampled path: {result['status']}")
+    return 0 if result["ranked_alternatives"] else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
