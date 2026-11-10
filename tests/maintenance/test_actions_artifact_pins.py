@@ -122,6 +122,36 @@ def test_machine_readable_receipts_pin_run_urls_and_bare_artifact_ids(tmp_path):
     assert artifacts == {9001, 9002}
 
 
+def test_plain_actions_run_and_artifact_numbers_in_retained_receipt_pin_gc(tmp_path):
+    """The real historical P7.5 receipt uses bare long IDs, not URLs or #s."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    receipt = tmp_path / "docs/evidence/druid/p7.5/historical_winner_axes.json"
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(
+        '{"historical_source": "dosibjrn/mage-level-sim Actions run '
+        '41108670861 artifact 13002676953"}', encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {41108670861}
+    assert artifacts == {13002676953}
+
+
+def test_plain_actions_reference_parser_does_not_pin_counts_or_malformed_ids():
+    runs, artifacts = set(), set()
+    record_references(
+        "Actions run 12 artifact 50; "
+        "Actions run 12345678x artifact 12345678x; "
+        "Actions run 0 artifact 0; random run 41108670861; "
+        "artifacts 13002676953",
+        runs, artifacts)
+    assert runs == set()
+    assert artifacts == set()
+
+
 def test_retained_plaintext_log_pins_artifact_and_run_before_gc(tmp_path):
     """A raw paid receipt may retain the only URL to a native run artifact."""
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
