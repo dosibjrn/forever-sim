@@ -88,6 +88,36 @@ def test_pending_native_world_is_never_published_as_comparable_family():
     assert 2 in result["other_or_unpaid_candidate_indexes"]
 
 
+def test_unranked_paid_candidate_cannot_be_hidden_by_stale_measured_status():
+    """A paid death is no longer pending but has no comparable 100/100 time."""
+    comparison = _comparison()
+    failed = comparison["candidates"][1]
+    failed["status"] = "NATIVE_PLAYER_DIED"
+    failed["targets_killed"] = 73
+    failed["native_world_ack"] = False
+    failed.pop("elapsed_seconds")
+    # The producer's top-level winner/status and empty pending list may still
+    # describe the survivors; the guide must not call all families measured.
+    assert comparison["status"] == "MEASURED_CROSS_TREE_100"
+    assert comparison["pending_candidate_indexes"] == []
+    result = _build(comparison)
+    assert result["status"] == "PROVISIONAL_NO_COMPARABLE_FAMILY_GUIDE"
+    assert result["measurements"] == []
+    assert result["bounded_fastest_family"] is None
+    assert result["other_or_unpaid_candidate_indexes"] == [2]
+    section = guide.render_markdown(result)
+    assert "No comparable paid family winner is measured" in section
+    assert "Fastest in this scenario:" not in section
+
+
+def test_saved_guide_rejects_unranked_candidate_with_measured_winner():
+    """Archived JSON must not reintroduce a false best family during rendering."""
+    payload = _build(_comparison())
+    payload["other_or_unpaid_candidate_indexes"] = [2]
+    with pytest.raises(ValueError, match="unranked candidates"):
+        guide.render_markdown(payload)
+
+
 def test_incomparable_native_world_is_never_published_as_winner():
     comparison = _comparison()
     comparison["status"] = "INCOMPARABLE_NATIVE_SCENARIOS"

@@ -99,7 +99,15 @@ def build(comparison: dict, *, source_run_url: str, artifact_id: int) -> dict:
                 if row.get("status") == "MEASURED_NATIVE_100"]
     measured.sort(key=lambda row: (row["elapsed_seconds_for_100_mobs"],
                                    row["candidate_index"]))
-    complete = (comparison.get("status") in PAID_STATES
+    # The comparison producer can rank its fully paid survivors even if a
+    # different shortlisted family died or has no comparable 100/100 receipt.
+    # That is not a complete *family* comparison for a player guide.
+    # Inspect all source candidates, not only the pending index list: a
+    # failed native attempt is no longer pending, but is still unrankable.
+    all_candidates_paid = all(
+        row.get("status") == "MEASURED_NATIVE_100" for row in rows)
+    complete = (all_candidates_paid
+                and comparison.get("status") in PAID_STATES
                 and comparison.get("distinct_build_families_compared") is True
                 and not pending and len(measured) >= 2
                 and len({row["family_tree_index"] for row in measured}) >= 2)
@@ -194,6 +202,13 @@ def render_markdown(payload: dict) -> str:
     tied = payload.get("tied_fastest_families")
     if not isinstance(tied, list) or any(family not in FAMILIES for family in tied):
         raise ValueError("invalid paid-family tie metadata")
+    other = payload.get("other_or_unpaid_candidate_indexes")
+    if (not isinstance(other, list)
+            or any(type(index) is not int or index <= 0 for index in other)
+            or len(other) != len(set(other))):
+        raise ValueError("invalid unranked candidate provenance")
+    if status == "MEASURED_BOUNDED_FAMILY_COMPARISON" and other:
+        raise ValueError("complete paid-family guide contains unranked candidates")
 
     lines = [
         f"## L{level} Warlock — native-paid talent-family comparison",
@@ -278,10 +293,7 @@ def render_markdown(payload: dict) -> str:
     else:
         if rows or fastest is not None or tied:
             raise ValueError("provisional comparison cannot publish a measured winner")
-        indexes = payload.get("other_or_unpaid_candidate_indexes")
-        if (not isinstance(indexes, list)
-                or any(type(index) is not int or index <= 0 for index in indexes)):
-            raise ValueError("malformed unpaid-candidate provenance")
+        indexes = other
         lines += [
             "**No comparable paid family winner is measured.** "
             "The native comparison is incomplete, incomparable, or lacks enough "
