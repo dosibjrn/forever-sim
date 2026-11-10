@@ -437,6 +437,10 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
         },
         "winner_native_dps": score,
         "cold_winner_request_sha256": winner_sha,
+        # The temporary on-disk request is deleted after native payment.
+        # Preserve the exact complete build that Rust actually accepted so
+        # Merge can replay it without reconstructing gear or fixed axes.
+        "cold_winner_request": winner,
         "cold_winner_gear": [
             {"slot": slot, "item_id": int(item["id"]),
              "enchant_id": item.get("enchant")}

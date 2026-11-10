@@ -1,9 +1,11 @@
 name: Work1 Druid L30 P7.4 native changed gear (no M1)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/work1-druid-l30-p74-native-actor-level-20261110
+      - work/work1-druid-l30-p74-paid-request-20261110
     paths:
       - .github/workflows/work1-druid-l30-p74-native.yml
       - tools/wf_gate_p7_4_live.py

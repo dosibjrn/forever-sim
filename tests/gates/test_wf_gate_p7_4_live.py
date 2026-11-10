@@ -736,6 +736,15 @@ def test_p74_native_axis_pays_changed_gear_without_world_or_holdout(
     assert report["independent_300s_search_completed"] is False
     assert "frozen_stochastic_iterations" not in report
     assert report["runtime_proof"]["executed"] is True
+    # A rejected proposal is not the retained winner; the exact native-paid
+    # candidate survives the temporary request file for a true replay.
+    assert report["cold_winner_request"] == calls[-1]
+    assert report["cold_winner_request"] != calls[0]
+    assert report["cold_winner_request"]["raid"]["parties"][0]["players"][0][
+        "talentsString"] == original["raid"]["parties"][0]["players"][0]["talentsString"]
+    import hashlib
+    assert report["cold_winner_request_sha256"] == hashlib.sha256(
+        json.dumps(calls[-1], sort_keys=True).encode()).hexdigest()
     assert base == original
 
 
