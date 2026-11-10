@@ -42,6 +42,7 @@ def evaluate_request(
     request: dict, *, manifest: Path, binary: Path, target_hp: float,
     scorer_command: list[str], artifact_dir: Path,
     run_command: Callable[..., Any] = subprocess.run,
+    run_native_single: Callable[..., Any] | None = None,
 ) -> list[dict]:
     """Translate Work2's frontier request to Work1's actual prepared-file scorer.
 
@@ -113,7 +114,7 @@ def evaluate_request(
                                     + str(exc)[-180:], None))
     # Work1's comparator requires two distinct prepared alternatives. Paying a
     # single first-preparable candidate would be baseline work, not optimization.
-    if len(candidates) < 2:
+    if not candidates or (len(candidates) == 1 and parent is None):
         return refused + [
             _refusal({"id": cid}, "NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER", src)
             for cid, (_, _, src, _) in candidates.items()
@@ -124,36 +125,68 @@ def evaluate_request(
     # not be mistaken for the scorer's just-executed full-resource ACK.
     import tempfile
     call_dir = Path(tempfile.mkdtemp(prefix=f"level-{level}-native-", dir=artifact_dir))
-    command = [*scorer_command, "--binary", str(binary),
-               "--level", str(level), "--mob-count", str(mobs),
-               "--target-hp", str(target_hp), "--out", str(call_dir)]
-    for cid, (path, _, _, _) in candidates.items():
-        command.extend(["--prepared", f"{cid}={path}"])
-    try:
-        completed = run_command(command, capture_output=True, text=True,
-                                timeout=1800, check=False)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return refused + [
-            _refusal({"id": cid}, "NATIVE_SCORER_TRANSPORT_ERROR:"
-                     + str(exc)[-200:], src)
-            for cid, (_, _, src, _) in candidates.items()
-        ]
-    if completed.returncode:
-        return refused + [
-            _refusal({"id": cid}, "NATIVE_SCORER_EXIT_"
-                     + str(completed.returncode) + ":" + completed.stderr[-200:], src)
-            for cid, (_, _, src, _) in candidates.items()
-        ]
-    try:
-        screen = json.loads(completed.stdout)
-        measured = {row["candidate_id"]: row for row in screen["candidates"]}
-        if len(measured) != len(screen["candidates"]):
-            raise ValueError("duplicate source scorer candidate ID")
-    except (KeyError, ValueError, TypeError) as exc:
-        return refused + [
-            _refusal({"id": cid}, "NATIVE_SCORER_PAYLOAD_INVALID:" + str(exc)[-150:], src)
-            for cid, (_, _, src, _) in candidates.items()
-        ]
+    if len(candidates) == 1:
+        # A legal continuation often has one successor PER parent. Two or
+        # more source-distinct parent frontiers can still compete globally.
+        # Reuse Work1's native runner and exact paid clock scorer rather than
+        # discarding such a path or fabricating a second candidate.
+        from tools.wf_warlock_native_candidate_scoring import score_native_chain
+        if run_native_single is None:
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1] /
+                                   "integrations/mythicsim-rust"))
+            from live_two_world_pulls import run as run_native_single
+        cid, (path, prepared, src, _) = next(iter(candidates.items()))
+        try:
+            raw = run_native_single(
+                binary, path, target_count=mobs, mob_health=target_hp,
+                rng_mode="balanced", recovery_policy="decisions",
+                health_threshold=1.0, mana_threshold=1.0,
+            )
+            (call_dir / f"{cid}.native.json").write_text(
+                json.dumps(raw, indent=2, allow_nan=False) + "\n")
+            elapsed, status = score_native_chain(
+                raw, prepared, mob_count=mobs, expected_target_hp=target_hp)
+            measured = {cid: {
+                "candidate_id": cid, "prepared_sha256": _sha(path),
+                "source_sha256": src, "mob_count": mobs,
+                "rng_mode": "balanced", "iterations": 1,
+                "status": status, "elapsed_seconds": elapsed,
+            }}
+        except (RuntimeError, AssertionError, ValueError, OSError) as exc:
+            measured = {cid: {"status": "NATIVE_REFUSAL",
+                              "refusal": str(exc)[-1500:]}}
+    else:
+        command = [*scorer_command, "--binary", str(binary),
+                   "--level", str(level), "--mob-count", str(mobs),
+                   "--target-hp", str(target_hp), "--out", str(call_dir)]
+        for cid, (path, _, _, _) in candidates.items():
+            command.extend(["--prepared", f"{cid}={path}"])
+        try:
+            completed = run_command(command, capture_output=True, text=True,
+                                    timeout=1800, check=False)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return refused + [
+                _refusal({"id": cid}, "NATIVE_SCORER_TRANSPORT_ERROR:"
+                         + str(exc)[-200:], src)
+                for cid, (_, _, src, _) in candidates.items()
+            ]
+        if completed.returncode:
+            return refused + [
+                _refusal({"id": cid}, "NATIVE_SCORER_EXIT_"
+                         + str(completed.returncode) + ":" + completed.stderr[-200:], src)
+                for cid, (_, _, src, _) in candidates.items()
+            ]
+        try:
+            screen = json.loads(completed.stdout)
+            measured = {row["candidate_id"]: row for row in screen["candidates"]}
+            if len(measured) != len(screen["candidates"]):
+                raise ValueError("duplicate source scorer candidate ID")
+        except (KeyError, ValueError, TypeError) as exc:
+            return refused + [
+                _refusal({"id": cid}, "NATIVE_SCORER_PAYLOAD_INVALID:"
+                         + str(exc)[-150:], src)
+                for cid, (_, _, src, _) in candidates.items()
+            ]
 
     engine_sha = _sha(binary)
     rows: list[dict] = list(refused)
