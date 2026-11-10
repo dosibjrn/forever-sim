@@ -70,7 +70,11 @@ on:
       - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gate_p6_live.py'
       - 'tools/wf_native_priest_l20_cold.py'
+      - 'tools/wf_native_priest_l20_paid.py'
+      - 'src/v2/source_bounded_joint_frontier.py'
       - 'tests/test_wf_native_priest_l20_cold.py'
+      - 'tests/test_wf_native_priest_l20_paid.py'
+      - 'tests/test_work1_p4_p5_single_cold_snapshot.py'
       - 'tools/wf437_direct_budgeted_run.py'
       - 'tools/wf_gate_p6_full_source.py'
       - 'tests/test_work2_p6_shared_source.py'
@@ -114,6 +118,8 @@ jobs:
           tests/generic/search/test_wf437_direct_budgeted_run_source.py
           tests/test_work2_p6_shared_source.py
           tests/test_wf_native_priest_l20_cold.py
+          tests/test_wf_native_priest_l20_paid.py
+          tests/test_work1_p4_p5_single_cold_snapshot.py
           tests/generic/search/test_source_wand_paid_slot_proposals.py
           tests/generic/search/test_source_paid_gear_witness_priority.py
           tests/test_work2_818_mage_paid_policy_breadth.py
