@@ -86,6 +86,15 @@ def _paid_row(*, route: Path, summary: Path, source: Path, binary_sha: str,
     attempt = attempts[0]
     if attempt.get("variant") != "best_apl":
         raise ValueError("unexpected native candidate variant")
+    # The summary header is not sufficient to authenticate a cached paid
+    # finalist: the individual native attempt must belong to this exact
+    # candidate and hostile recovery protocol, including native refusals.
+    if (attempt.get("original_source_sha256") != native_source.sha256(source)
+            or attempt.get("native_binary_sha256") != binary_sha
+            or attempt.get("actor_level") != level
+            or attempt.get("hostile_player_tank_requested") is not True
+            or attempt.get("recovery_request") != recovery):
+        raise ValueError("cached native attempt differs from candidate or hostile recovery")
     result = {"status": attempt.get("status"), "targets_killed": attempt.get("killed"),
               "error": attempt.get("error"), "native_summary": str(summary)}
     if attempt.get("status") != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
