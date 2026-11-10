@@ -932,3 +932,57 @@ def test_p74_full_search_env_cannot_reenable_retired_holdout(monkeypatch, tmp_pa
 
     assert calls == [(tmp_path, "druid", 30, "balance")] * 2
 
+
+
+def test_l30_p74_pays_item_on_actual_naked_frozen_reference(
+        monkeypatch, tmp_path):
+    """Reproduce the real empty P7.1 gear and require a changed native request."""
+    import json
+    from pathlib import Path
+
+    source_file = (Path(__file__).resolve().parents[2]
+                   / "docs/evidence/native-references/"
+                   / "druid-l30-unrestricted/request.json")
+    reference = json.loads(source_file.read_text())
+    assert reference["raid"]["parties"][0]["players"][0]["equipment"]["items"] == []
+    base = copy.deepcopy(reference)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock only")
+    data = binary.parents[2] / "data"
+    data.mkdir()
+    (data / "items.jsonl").write_text("{}\\n")
+    (data / "enchants.jsonl").write_text("{}\\n")
+    monkeypatch.setattr(gate, "_pinned_source_runtime", lambda *args, **kwargs: (
+        base, {"reference_dps": 8.357414975823593,
+               "selected_engine_revision": "41444ee-frozen"}, binary))
+
+    # Propose a new item in an otherwise unoccupied slot index 2.
+    # Native decides whether that item is legal; no Python whitelist is used.
+    source = SimpleNamespace(pinned_rust_candidate_pool=lambda *args: (
+        {0: [], 1: [], 2: [1234]},
+        {0: [None], 1: [None], 2: [None, 456]},
+        {"unique_item_options": 1, "unique_enchant_options": 1}))
+    observed = []
+
+    def native(bin_arg, request_path, iterations, *, rng_mode, actor_level):
+        request = json.loads(request_path.read_text())
+        observed.append(request)
+        assert iterations == 3 and rng_mode == "balanced" and actor_level == 30
+        player = request["raid"]["parties"][0]["players"][0]
+        original = reference["raid"]["parties"][0]["players"][0]
+        assert player["talentsString"] == original["talentsString"]
+        assert player["rotation"] == original["rotation"]
+        assert player["equipment"]["items"] == [
+            {"id": 0}, {"id": 0}, {"id": 1234}]
+        return {"iterations": 3, "native_dps": 8.42}
+
+    monkeypatch.setattr(gate, "_source_module", lambda path, *args: (
+        source if "p74_gear_search" in str(path)
+        else SimpleNamespace(native_source_control=native)))
+    report = gate.run_live(tmp_path, "druid", 30, spec="unrestricted")
+    assert report["status"] == "PASS"
+    assert report["cold_unique_source_requests"] == 1
+    assert report["source_legal_cold_candidates_paid"] == 1
+    assert report["cold_winner_request"] == observed[0]
+    assert base == reference

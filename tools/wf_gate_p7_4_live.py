@@ -301,7 +301,12 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
     # Nothing here judges equipment restrictions: every change goes to Rust.
     moves = []
     per_slot = []
-    for slot, reference in enumerate(reference_items):
+    # The paid L30 P7.1 source request is naked (items=[]). Derive possible
+    # equipment positions from the pinned Rust proposal pool rather than
+    # mistaking the empty reference loadout for zero candidate slots.
+    for slot in range(len(pool)):
+        reference = (reference_items[slot] if slot < len(reference_items)
+                     else {"id": 0})
         item_ids = []
         for value in pool.get(slot, ()):
             if (type(value) is int and value != reference["id"]
@@ -310,7 +315,9 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
             if len(item_ids) >= 8:
                 break
         enchant_ids = []
-        for value in enchant_pools.get(slot, ()):
+        # An empty slot needs a real source item, not an enchant on nothing.
+        for value in (enchant_pools.get(slot, ())
+                      if reference.get("id") else ()):
             if (value is None or type(value) is int) and (
                     value != reference.get("enchant") and value not in enchant_ids):
                 enchant_ids.append(value)
@@ -332,7 +339,14 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
     for kind, slot, value in moves[:96]:
         candidate = copy.deepcopy(base)
         player = candidate["raid"]["parties"][0]["players"][0]
-        equipped = player["equipment"]["items"][slot]
+        equipped_items = player["equipment"]["items"]
+        if slot >= len(equipped_items):
+            # EquipmentSpec.items is positional: empty earlier slots must
+            # remain empty, never silently shift the requested slot index.
+            # Native Rust alone judges the completed equipment request.
+            equipped_items.extend(
+                {"id": 0} for _ in range(slot + 1 - len(equipped_items)))
+        equipped = equipped_items[slot]
         if kind == "item":
             equipped["id"] = value
             # A previous item's enchant need not be compatible with this one;
