@@ -41,6 +41,44 @@ def _variants(seed: str, trees: list[dict]):
     yield seed
     seen = {seed}
 
+    # A one-point transfer out of a developed talent tree commonly leaves
+    # the original tree dominant.  Source-native prepare must also get a
+    # chance to judge genuinely different tree families within a tiny budget.
+    # These are *proposals*, not claims of Warcraft legality: slot indices
+    # and rank caps are supplied by Rust options; Rust prepare decides.
+    def whole_tree_family(target_tree: int):
+        remaining = sum(int(rank) for part in fields for rank in part)
+        if remaining == 0:
+            return None
+        target = ["0"] * len(fields[target_tree])
+        for option in slots_by_tree[target_tree]:
+            index, maximum = option.get("index"), option.get("max_rank")
+            if (type(index) is not int or index < 0
+                    or type(maximum) is not int or maximum < 1):
+                continue
+            target.extend("0" for _ in range(index + 1 - len(target)))
+            amount = min(remaining, maximum)
+            target[index] = str(amount)
+            remaining -= amount
+            if remaining == 0:
+                break
+        if remaining:
+            return None
+        proposal = ["0" * len(part) for part in fields]
+        proposal[target_tree] = "".join(target)
+        return "-".join(proposal)
+
+    dominant = max(range(len(fields)), key=lambda idx: sum(
+        int(rank) for rank in fields[idx]
+    ))
+    for target_tree in range(len(fields)):
+        if target_tree == dominant:
+            continue
+        proposal = whole_tree_family(target_tree)
+        if proposal is not None and proposal not in seen:
+            seen.add(proposal)
+            yield proposal
+
     def transfer(source_tree: int, src: int, dest_tree: int, dst: int,
                  cap: int):
         if (type(src) is not int or src < 0 or type(dst) is not int
