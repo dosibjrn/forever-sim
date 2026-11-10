@@ -99,6 +99,9 @@ concurrency:
 
 jobs:
   source-search:
+    # A label dispatch is for one explicit native-paid diagnostic, not a
+    # duplicate run of the entire generic source regression suite.
+    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -192,7 +195,7 @@ jobs:
       github.event.label.name == 'p6-paid-no-record' &&
       (startsWith(github.head_ref, 'work/work2-p6-shared-cold-') ||
        startsWith(github.head_ref, 'work/work2-p6-l40-followon-'))
-    needs: source-search
+    # Label-authorized paid probe is independent of unrelated regression CI.
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
