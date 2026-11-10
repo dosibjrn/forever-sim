@@ -46,3 +46,30 @@ def test_actions_upload_steps_set_explicit_bounded_retention():
                 "use a deliberate retention of 1–30 days, not the 90-day default"
             )
     assert uploads > 0
+
+
+def test_rust_pin_pr_no_record_p3_uploads_expire_after_seven_days():
+    """Repeatable no-record native P3 PR diagnostics should not occupy a month.
+
+    This does not prune accepted M1 receipts or issue-pinned evidence; it only
+    bounds new artifacts from the selected-Rust-pin verification workflow.
+    """
+    workflow = ROOT / ".github/workflows/rust-submodule-verify.yml"
+    lines = workflow.read_text(encoding="utf-8").splitlines()
+    upload_indices = [index for index, line in enumerate(lines)
+                      if UPLOAD.search(line)]
+    assert len(upload_indices) == 3, "review retention when adding a PR artifact"
+    for index in upload_indices:
+        indent = len(lines[index]) - len(lines[index].lstrip(" "))
+        step_body = []
+        for following in lines[index + 1:]:
+            if following.strip() and not following.lstrip().startswith("#"):
+                following_indent = len(following) - len(following.lstrip(" "))
+                if (following_indent < indent or
+                        (following_indent == indent and
+                         following.lstrip().startswith("- "))):
+                    break
+            step_body.append(following)
+        retention = [int(match.group(1)) for row in step_body
+                     if (match := RETENTION.fullmatch(row))]
+        assert retention == [7], f"{workflow.name}:{index + 1}: expected seven days"
