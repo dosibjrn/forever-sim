@@ -487,3 +487,45 @@ def test_live_gc_consumes_complete_owner_total_and_bounds_deletions():
     assert "owner_scope and len(planned) >= 10" in workflow
     assert workflow.index("collect_local_references(") < workflow.index("planned = []")
     assert workflow.index("completed_run_candidates(") < workflow.index("planned = []")
+
+
+def test_verified_reclaim_separates_selected_deletion_from_concurrent_uploads():
+    before = [
+        {"id": 10, "size_in_bytes": 100},
+        {"id": 20, "size_in_bytes": 50},
+    ]
+    # The intended 100-byte deletion succeeded, but another workflow
+    # uploaded 400 bytes. The repository's net retained bytes *grew* by 300.
+    after_upload = [
+        {"id": 20, "size_in_bytes": 50},
+        {"id": 30, "size_in_bytes": 400},
+    ]
+    assert module.verified_removed_footprint(
+        before, after_upload, [10]) == (100, -300)
+
+    # An independent expiry must not be attributed to this GC's deletion.
+    assert module.verified_removed_footprint(before, [], [10]) == (100, 150)
+
+
+@pytest.mark.parametrize(("deleted", "after"), [
+    ([99], []),  # Not in the original complete inventory.
+    ([10], [{"id": 10, "size_in_bytes": 100}]),  # Not actually absent.
+    ([10, 10], []),  # Duplicate DELETE targets must not double-count bytes.
+])
+def test_verified_reclaim_rejects_unproven_or_duplicate_targets(deleted, after):
+    with pytest.raises(ValueError):
+        module.verified_removed_footprint(
+            [{"id": 10, "size_in_bytes": 100}], after, deleted)
+
+
+def test_live_gc_reports_targeted_removals_and_net_change_separately():
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    assert "verified_removed_footprint(" in workflow
+    assert "VERIFIED_TARGET_REMOVALS" in workflow
+    assert "RETAINED_NET_DELTA" in workflow
+    assert "planning_total - targeted_bytes" in workflow
+    assert 'reclaimed_MiB={(total-after)' not in workflow
+    assert workflow.index("verify_deleted_artifacts_absent(") < workflow.index(
+        "verified_removed_footprint(")
