@@ -70,7 +70,7 @@ jobs:
           assert report["measured_levels"] == list(range(20, 32)), "L20-L31 measured source receipts not retained"
           native = report["native_paid_talent_continuity"]
           assert native["levels"] == list(range(20, 32)), "L31 talent lineage is not connected to L20"
-          l31 = [row for row in report["observations"] if row.get("level") == 30]
+          l31 = [row for row in report["observations"] if row.get("level") == 31]
           assert any(
               row.get("source_request_sha256") == fingerprint
               and row.get("status") == "measured_native_chain"
