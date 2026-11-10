@@ -48,11 +48,12 @@ def test_live_root_asks_native_options_and_prepares_distinct_proposals(tmp_path)
             }))
         source = Path(cmd[cmd.index("--request") + 1])
         prepared = Path(cmd[cmd.index("--outfile") + 1])
-        # The production Rust prepare CLI has no --actor-level flag. The
-        # request's actor level is already present in the native source JSON.
+        # The selected Rust prepare CLI takes an explicit actor level. In
+        # native range mode, forwarding it prevents the default (L60) from
+        # overriding this L20 request before a real source-native comparison.
         assert cmd == [
             str(binary.resolve()), "prepare", "--request", str(source.resolve()),
-            "--outfile", str(prepared.resolve()),
+            "--actor-level", "20", "--outfile", str(prepared.resolve()),
         ]
         original = json.loads(source.read_text())
         assert original["raid"]["parties"][0]["players"][0]["level"] == 20
@@ -481,6 +482,9 @@ def test_paid_parent_advances_through_every_native_prepared_sparse_level(tmp_pat
         actor = request["raid"]["parties"][0]["players"][0]
         level = actor["level"]
         assert request["encounter"]["targets"][0]["level"] == level
+        # Every intermediate L21..L29 and the actual L30 frontier must be
+        # prepared at its own native actor level, not Rust's CLI default.
+        assert cmd[cmd.index("--actor-level") + 1] == str(level)
         prepared_levels.append(level)
         if level == 30:
             proposed_talents.append(actor["talentsString"])
