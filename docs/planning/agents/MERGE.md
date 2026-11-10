@@ -6,6 +6,10 @@ Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md
 
 Merge alone owns Forever PR integration, official affected-gate dispatch and the `docs/planning/M1_PASSES.tsv` ledger. **Preserve every previously officially accepted PASS permanently through 148/148, without exception or revalidation.** A safe, focused, tested production improvement is mergeable even when its gate remains FAIL/BLOCKED; a full gate PASS or guaranteed M1 increase is not a merge prerequisite.
 
+## Route optimizer integration: prevent expensive first-legal regression
+
+Before merging an optimization/guide claim, verify it uses **performance-scored candidate competition**, not first-preparable selection, talent-index greedy fills, 30s DPS-only ranking or 100 mobs of one predetermined build. The owner-approved interface is a **single parameterized multi-level optimizer** (`20..60 stride10, mob_count3` first; `10..60 stride1, mob_count100` same code). Native `balanced` with one repetition is the search default. Comparable candidate cost includes **native full HP and mana recovery after the last mob**, charging legal Life Tap, food/water/passive regeneration rather than resetting for free. Focused tests must prove selection changes for a faster later candidate and paid terminal recovery, not new gate acceptance. Merge valid narrowly scoped baseline/transport changes with honest labels, but do not accept a bogus "optimal" guide or send agents back to serial first-legal 100-mob production. Protect old paid receipts and never reopen accepted M1 gates.
+
 ## Mandatory post-merge PR-to-gate handling
 
 For every newly integrated production-code PR:
