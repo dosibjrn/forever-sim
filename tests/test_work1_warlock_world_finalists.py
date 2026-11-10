@@ -50,3 +50,52 @@ def test_paid_finalist_budget_is_resumable_without_duplicating_candidates():
     assert select_world_finalists(scored, "saved", 1)[0]["talents"] == "saved"
     assert len(select_world_finalists(scored, "saved", 10)) == 3
     assert select_world_finalists(scored, "saved", 0) == []
+
+
+def test_native_paid_gear_uses_prepared_stats_mana_not_missing_mana_object(
+        monkeypatch, tmp_path):
+    """Forward actual native prepared scalars; no Python gameplay model.
+
+    A valid Rust response stores max mana in player.stats.Mana. Gear DPS
+    ties must reach the existing native-health/armor/mana tie-break rather
+    than rejecting both paid requests as missing player.mana.max.
+    """
+    import json
+    from pathlib import Path
+    from tools import wf_warlock_native_optimizer as optimizer
+
+    def native_response(command, *, seconds=45):
+        command = list(map(str, command))
+        outfile = Path(command[command.index("--outfile") + 1])
+        if "prepare" in command:
+            request = json.loads(
+                Path(command[command.index("--request") + 1]).read_text())
+            item_id = optimizer.actor(request)["equipment"]["items"][0]["id"]
+            outfile.write_text(json.dumps({"player": {
+                "class": "ClassWarlock", "level": 55,
+                "stats": {"Health": 700 + (20 if item_id == 901 else 0),
+                          "Mana": 1200, "Armor": 110}}}))
+        elif "sim" in command:
+            outfile.write_text(json.dumps({"result": {
+                "raidMetrics": {"parties": [{"players": [
+                    {"dps": {"avg": 100.0}}]}]}}}))
+        else:
+            raise AssertionError(command)
+        return ""
+
+    monkeypatch.setattr(optimizer, "call", native_response)
+    source = {"raid": {"parties": [{"players": [{"equipment": {"items": []}}]}]}}
+    options = {"items": [{
+        "item_id": 901, "eligibility": "native_eligible",
+        "native": {"item_id": 901, "slot": "head", "item_level": 57,
+                   "name": "Native head slot", "required_level": 55}}]}
+
+    equipped, audit = optimizer.native_level_equipment(
+        Path("native-binary"), source, options, tmp_path, level=55)
+
+    assert optimizer.actor(equipped)["equipment"]["items"][0]["id"] == 901
+    assert audit["native_paid_requests"] == 2
+    assert audit["evaluated_equipment_requests"] == 2
+    assert audit["native_refusal_samples"] == []
+    assert audit["native_paid_initial_gear_dps"] == 100.0
+    assert json.loads((tmp_path / "native_gear.json").read_text())["equipped"][0]["item_id"] == 901
