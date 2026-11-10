@@ -35,6 +35,11 @@ on:
         required: true
         type: string
         default: "7b811d37969bd1886cf123835fc87b699d1f5fbd"
+      resume_root_artifact_id:
+        description: "Prior same-source L10 range artifact ID (optional; prevents repaying L10)"
+        required: false
+        type: string
+        default: ""
       predecessor_binary_sha256:
         description: "SHA256 of paid predecessor binary (ignored for new L10 root)"
         required: false
@@ -125,6 +130,32 @@ jobs:
               from_level=int(os.environ["FROM_LEVEL"]),
               predecessor_binary_sha256=os.environ["PREDECESSOR_BINARY_SHA256"])
           print("REUSED_AUTHENTIC_PAID_PREDECESSOR", result, flush=True)
+          PY
+      - name: Download previous L10 root receipt only when explicitly requested
+        if: ${{ inputs.from_level == 10 && inputs.resume_root_artifact_id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROOT_ARTIFACT_ID: ${{ inputs.resume_root_artifact_id }}
+        run: |
+          set -euo pipefail
+          [[ "$ROOT_ARTIFACT_ID" =~ ^[0-9]+$ ]]
+          mkdir -p root-resume-archive
+          curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/dosibjrn/forever-sim/actions/artifacts/$ROOT_ARTIFACT_ID/zip" \
+            -o root-resume.zip
+          unzip -q root-resume.zip -d root-resume-archive
+      - name: Stage original L10 root cache for authenticated native reuse
+        if: ${{ inputs.from_level == 10 && inputs.resume_root_artifact_id != '' }}
+        working-directory: project
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.wf_warlock_paid_artifact import restore_l10_root_cache
+          restored = restore_l10_root_cache(
+              Path("../root-resume-archive"), Path("../warlock-paid-range"))
+          print(json.dumps(restored, indent=2), flush=True)
           PY
       - name: Bootstrap a genuine L10 Rust actor and pay only still-unpaid L10–L19
         if: ${{ inputs.from_level == 10 }}
