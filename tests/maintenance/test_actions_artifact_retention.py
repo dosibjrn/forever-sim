@@ -368,3 +368,40 @@ def test_completed_disposable_delete_smoke_is_retired_without_disabling_gc():
     assert "collect_local_references" in guard
     assert "verify_deleted_artifacts_absent(" in guard
 
+
+def test_retired_warlock_paid_optimizer_and_manual_only_native_joint_sweep():
+    """Do not re-pay old Warlock levels or the 28-profile diagnostic on PRs.
+
+    Native optimizer implementation remains covered by cheap regressions.
+    The 28-profile sweep remains executable by explicit manual dispatch with
+    its opt-in full-evidence upload; none of this changes M1 acceptance.
+    """
+    workflows = ROOT / ".github/workflows"
+    assert not (workflows / "warlock-native-optimize.yml").exists(), (
+        "stale fixed-Rust Warlock 100-mob optimizer can repeat paid levels"
+    )
+    warlock_ci = (workflows / "warlock-native-optimizer-regressions.yml").read_text(
+        encoding="utf-8")
+    assert "      - tools/wf_warlock_native_optimizer.py\n" in warlock_ci
+    assert "          tests/test_work1_warlock_world_finalists.py\n" in warlock_ci
+
+    sweep = (workflows / "native-joint-28-sweep.yml").read_text(
+        encoding="utf-8")
+    events = sweep.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+    assert "  workflow_dispatch:\n" in events
+    assert "  pull_request:\n" not in events
+    assert "  push:\n" not in events
+    assert "      - name: Run balanced native 5s × 28 profile sweep" in sweep
+    assert "      - name: Upload compact native matrix and provenance" in sweep
+    assert ("github.event_name == 'workflow_dispatch' && "
+            "inputs.retain_full_evidence") in sweep
+
+    fast_ci = (workflows / "work2-native-joint-python-contract.yml").read_text(
+        encoding="utf-8")
+    for path in (
+        "integrations/mythicsim-rust/native_joint_28_sweep.py",
+        "integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py",
+    ):
+        assert "      - " + path + "\n" in fast_ci
+    assert ("python integrations/mythicsim-rust/tests/"
+            "test_native_joint_28_sweep.py -v") in fast_ci
