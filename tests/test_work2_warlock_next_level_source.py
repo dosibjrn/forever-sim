@@ -255,6 +255,53 @@ def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatc
     assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
 
 
+
+def test_recovered_native_gear_allows_new_talent_point_instead_of_banking(tmp_path, monkeypatch):
+    """Native can reject inherited gear yet accept its recovered talent build."""
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["encounter"]["targets"][0]["level"] = 21
+    actor = original["raid"]["parties"][0]["players"][0]
+    actor["level"] = 21
+    actor["equipment"] = {"items": [{"id": 101}, {"id": 202}]}
+    source.write_text(json.dumps(original))
+    options = native_options()
+    options["level"] = 22
+    options["talents"]["points_available"] = 4
+    paid_native_prepares = []
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        candidate = request["raid"]["parties"][0]["players"][0]
+        paid_native_prepares.append(copy.deepcopy(candidate))
+        if any(item.get("id") == 202 for item in candidate["equipment"]["items"]):
+            return subprocess.CompletedProcess(cmd, 1, stderr="native rejects inherited item")
+        with open(cmd[cmd.index("--outfile") + 1], "w") as file:
+            json.dump({"player": {"class": "ClassWarlock", "level": 22}}, file)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "recovered"
+    receipt = next_level.propose(binary=binary, source=source, out=out,
+                                 from_level=21, to_level=22, max_proposals=2)
+    selected = json.loads((out / "source_request.json").read_text())
+    chosen = selected["raid"]["parties"][0]["players"][0]
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["selection"] == "native_prepared_talent_after_gear_recovery"
+    assert receipt["talent_points_newly_spent"] == 1
+    assert receipt["source_talents"] == "0-0-011"
+    assert chosen["talentsString"] == receipt["candidate_talents"] == "0-0-021"
+    assert chosen["equipment"]["items"] == [{"id": 101}, {"id": 0}]
+    assert receipt["native_gear_kept"] == [{"slot": 0, "id": 101}]
+    assert receipt["native_gear_refusals"][0]["id"] == 202
+    assert receipt["native_refusals_before_selection"]
+    assert paid_native_prepares[-1] == chosen
+    assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+    assert json.loads(source.read_text()) == original
+
+
 def paid_predecessor(tmp_path):
     source, binary = source_file(tmp_path)
     original = json.loads(source.read_text())
