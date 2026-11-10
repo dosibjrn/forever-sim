@@ -165,7 +165,7 @@ def produce_frontier(
         try:
             result = runner([
                 str(binary.resolve()), "prepare", "--request", str(source_path.resolve()),
-                "--actor-level", str(level), "--outfile", str(prepared_path.resolve()),
+                "--outfile", str(prepared_path.resolve()),
             ], capture_output=True, text=True, timeout=60, check=False)
             if result.returncode:
                 raise ValueError((result.stderr or result.stdout)[-1500:])
