@@ -419,7 +419,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     ap.add_argument("--source", type=Path,
                     default=Path("fixtures/warlock-l20-native-paid-30s.request.json"),
                     help="Initial native source request (not a route or fixed winner)")
-    ap.add_argument("--target-hp", type=float, default=1200.0)
+    ap.add_argument("--target-hp", type=float,
+                    help="Optional fixed enemy HP override; default uses the "
+                         "ordinary-mob scenario HP at each sampled level")
     ap.add_argument("--out", type=Path, help="Optional machine-readable result path")
     args = ap.parse_args(argv)
     cls = args.class_name.lower()
@@ -437,6 +439,7 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         if not args.native_binary.is_file() or not args.source.is_file():
             ap.error("native engine and initial source request must exist")
         from tools.wf_warlock_native_range_optimize import live_native_frontier_evaluator
+        from src.scenarios.leveling_targets import representative_hp
         base = output.parent / (output.stem + ".native-receipts")
         base.mkdir(parents=True, exist_ok=True)
         producer = [
@@ -445,13 +448,19 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
             "--seed-source", str(args.source.resolve()),
             "--out", str((base / "source").resolve()),
         ]
-        evaluator = live_native_frontier_evaluator(
-            producer, binary=args.native_binary,
-            target_hp=args.target_hp,
-            scorer_command=[sys.executable,
-                            "tools/wf_warlock_native_candidate_scoring.py"],
-            artifact_dir=base,
-        )
+        def evaluator(**request):
+            # Score every independently sampled level against its own scenario,
+            # not a fixed L20/L60 enemy HP. Explicit --target-hp still gives an
+            # exact fixed-target replay. The existing Rust scorer remains the
+            # sole combat/recovery authority; this chooses only scenario input.
+            hp = (float(representative_hp(request["level"]))
+                  if args.target_hp is None else args.target_hp)
+            return live_native_frontier_evaluator(
+                producer, binary=args.native_binary, target_hp=hp,
+                scorer_command=[sys.executable,
+                                "tools/wf_warlock_native_candidate_scoring.py"],
+                artifact_dir=base,
+            )(**request)
         result = optimize(
             args.start_level, args.end_level, args.level_stride,
             args.n_mobs, args.budget, evaluate=evaluator,
