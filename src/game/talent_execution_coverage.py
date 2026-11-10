@@ -7,7 +7,6 @@ machine-readable blockers. It does not interpret any class-specific talent.
 from __future__ import annotations
 
 from src.game.data.forever.source_rank_promotion import promote_atomic_source_talent_effects
-from src.game.talents import apply_talent_selection
 from src.game.source_objective_relevance import solo_threat_exclusion
 
 
@@ -56,27 +55,3 @@ def compile_talent_runtime(ir):
         'full_talent_execution_certified': False,
         'eligible_for_checkpoint_acceptance': False,
     }
-
-
-def compile_talent_candidate(ir, *, selection, level, bonus_talent_points=0):
-    """Fail closed on unexecuted selected ranks, tier/point legality or wrong IR.
-
-    Checkpoints must opt in to the canonical staged source database before this
-    is called; no synthetic rank fill or silent fallback to a different build.
-    """
-    compiled, inventory = compile_talent_runtime(ir)
-    chosen_missing = [r for r in inventory['missing']
-                      if int(selection.get(r['talent_id'], 0)) == int(r['rank'])]
-    if chosen_missing:
-        return None, {'status': 'BLOCKED_SELECTED_TALENT_RANK_UNEXECUTABLE',
-                      'missing': chosen_missing, 'coverage': inventory,
-                      'eligible_for_checkpoint_acceptance': False}
-    # Real engine checks rank, tier, prerequisite and bonus-point constraints.
-    selected, application = apply_talent_selection(compiled, selection,
-        level=level, bonus_talent_points=bonus_talent_points)
-    return selected, {'status': 'EXECUTABLE_CANDIDATE_DIAGNOSTIC',
-        'spent_points': application.spent_points,
-        'available_points': application.available_points,
-        'applied_count': len(application.applied_modifiers),
-        'coverage': inventory,
-        'eligible_for_checkpoint_acceptance': False}
