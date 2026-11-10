@@ -64,8 +64,8 @@ def test_later_native_faster_candidate_beats_first_preparable(tmp_path):
     assert [cid for cid, _ in calls] == ["first", "later", "third"]
     assert all(kw["rng_mode"] == "balanced" and kw["target_count"] == 3
                and kw["health_threshold"] == kw["mana_threshold"] == 1.0
-               and kw["recovery_policy"] == "decisions"
-               and kw["require_native_health_damage"] is True for _, kw in calls)
+               and kw["recovery_policy"] == "decisions" for _, kw in calls)
+    assert all("require_native_health_damage" not in kw for _, kw in calls)
     assert len(list((tmp_path / "receipts").glob("*.native.json"))) == 3
 
 
@@ -320,39 +320,54 @@ def test_invalid_prepared_source_sha_does_not_consume_paid_mobs(tmp_path):
     assert output["candidates"][0]["status"] == "INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY"
 
 
-def test_passive_or_unobserved_enemy_damage_never_ranks_as_hostile():
+
+def test_zero_player_damage_pet_tank_remains_scored():
     prepared = _prepared("a" * 64)
-    for missing in (True, False):
+    for omitted in (True, False):
         result = _receipt("a" * 64)
-        if missing:
+        if omitted:
             del result["native_health_damage"]
         else:
             result["native_health_damage"].update(
                 observed=True, damage_taken=0.0, damage_events=0)
+        # Neither a zero-damage pet-tanked pull nor a legacy missing
+        # diagnostic is evidence that the hostile native world was a dummy.
         assert score_native_chain(result, prepared, mob_count=3,
                                   expected_target_hp=1200.) == (
-            None, "NATIVE_HOSTILE_INCOMING_DAMAGE_NOT_OBSERVED")
+            20.0, "MEASURED_NATIVE_FULLY_RECOVERED")
 
 
-def test_hostile_candidate_refused_if_native_damage_receipt_not_observed(tmp_path):
+def test_native_player_damage_is_recorded_without_affecting_ranking(tmp_path):
     paths = {}
-    for cid in ("safe_dummy", "real_enemy"):
+    for cid in ("pet_tanks", "player_hit"):
         path = tmp_path / f"{cid}.json"
         path.write_text(json.dumps(_prepared(cid[0] * 64)))
         paths[cid] = path
 
     def runner(binary, path, **kwargs):
-        assert kwargs["require_native_health_damage"] is True
-        result = _receipt(path.stem[0] * 64)
-        if path.stem == "safe_dummy":
-            result["native_health_damage"]["damage_taken"] = 0.0
-            result["native_health_damage"]["damage_events"] = 0
+        assert kwargs["target_count"] == 3
+        result = _receipt(path.stem[0] * 64,
+                          kill_seconds=15 if path.stem == "pet_tanks" else 19)
+        if path.stem == "pet_tanks":
+            result["native_health_damage"].update(
+                observed=True, damage_taken=0.0, damage_events=0)
         return result
 
     output = compare_prepared_candidates(
         binary=Path("rust"), prepared_paths=paths, actor_level=30,
         mob_count=3, target_hp=1200., run_native=runner)
-    assert output["comparable_candidates"] == 1
-    assert output["winner_candidate_id"] is None
-    assert output["candidates"][0]["status"] == "NATIVE_HOSTILE_INCOMING_DAMAGE_NOT_OBSERVED"
-    assert output["candidates"][1]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert output["comparable_candidates"] == 2
+    assert output["winner_candidate_id"] == "pet_tanks"
+    assert output["candidates"][0]["native_player_damage_receipt"]["damage_taken"] == 0
+    assert output["candidates"][1]["native_player_damage_receipt"]["damage_taken"] == 125.0
+
+
+def test_malformed_native_player_damage_receipt_is_not_ranked():
+    prepared = _prepared("a" * 64)
+    for damage, events in ((-1.0, 1), (1.0, 0), (float("nan"), 1)):
+        result = _receipt("a" * 64)
+        result["native_health_damage"].update(
+            observed=True, damage_taken=damage, damage_events=events)
+        assert score_native_chain(result, prepared, mob_count=3,
+                                  expected_target_hp=1200.) == (
+            None, "MALFORMED_NATIVE_PLAYER_DAMAGE_RECEIPT")
