@@ -610,3 +610,33 @@ def test_single_native_successor_never_gets_free_terminal_recovery(tmp_path):
     assert len(rows) == 1
     assert rows[0]["native_prepared"] is False
     assert "INCOMPLETE_NATIVE_WORLD" in rows[0]["status"]
+
+
+
+def test_adapter_never_pays_same_native_source_as_two_competing_builds(tmp_path):
+    import json
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"exact-native-binary")
+    manifest = _prepared_manifest(tmp_path, labels=("A", "B"))
+    data = json.loads(manifest.read_text())
+    # Native candidate files may be listed under different labels by upstream
+    # orchestration; the byte-identical source request is still one contender.
+    data["entries"][1]["source_request"] = data["entries"][0]["source_request"]
+    data["entries"][1]["prepared"] = data["entries"][0]["prepared"]
+    manifest.write_text(json.dumps(data))
+    def impossible_payment(*args, **kwargs):
+        raise AssertionError("duplicate native candidate must not be paid twice")
+
+    rows = evaluate_request(
+        {"level": 20, "parent": None, "mob_count": 3, "budget": 2,
+         "rng_mode": "balanced", "iterations": 1, "recover_to_full": True},
+        manifest=manifest, binary=binary, target_hp=400.0,
+        scorer_command=["work1-native-scorer"], artifact_dir=tmp_path / "raw",
+        run_command=impossible_payment, run_native_single=impossible_payment)
+    assert len(rows) == 2
+    assert any(r["status"] == "DUPLICATE_NATIVE_SOURCE_CANDIDATE"
+               for r in rows)
+    assert any(r["status"] == "NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER"
+               for r in rows)
