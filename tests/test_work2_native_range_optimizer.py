@@ -150,3 +150,39 @@ def test_native_evaluator_cannot_override_budget_or_disable_full_recovery():
         optimize(20, 20, 1, 3, 1, evaluate=too_many)
     with pytest.raises(ValueError, match="terminal recovery invalid"):
         optimize(20, 20, 1, 3, 1, evaluate=too_many, recover_to_full=False)
+
+
+def test_one_cli_process_orchestrates_several_native_evaluator_calls(tmp_path, monkeypatch):
+    import json
+    import subprocess
+    from tools import wf_warlock_native_range_optimize as cli
+
+    calls = []
+
+    def fake_run(command, *, input, capture_output, text, timeout, check):
+        request = json.loads(input)
+        calls.append((command, request))
+        level = request["level"]
+        parent = request["parent"]
+        options = ["A", "B"] if parent is None else [parent["talents"]]
+        rows = [receipt(level, request["mob_count"], label, 3.0, parent)
+                for label in options]
+        return subprocess.CompletedProcess(command, 0, stdout=json.dumps(rows))
+
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+    output = tmp_path / "native-range.json"
+    code = cli.main([
+        "--start-level", "20", "--end-level", "30", "--level-stride", "10",
+        "--mob-count", "3", "--budget", "10", "--beam-width", "2",
+        "--evaluator-command", "native-scorer --pinned",
+        "--out", str(output),
+    ])
+    report = json.loads(output.read_text())
+    assert code == 0
+    assert report["sampled_levels_completed"] == [20, 30]
+    assert len(report["ranked_alternatives"]) == 2
+    assert [request["level"] for _, request in calls] == [20, 30, 30]
+    assert all(command == ["native-scorer", "--pinned"] for command, _ in calls)
+    assert all(request["recover_to_full"] is True for _, request in calls)
+    assert all(request["mob_count"] == 3 and request["rng_mode"] == "balanced"
+               and request["iterations"] == 1 for _, request in calls)
