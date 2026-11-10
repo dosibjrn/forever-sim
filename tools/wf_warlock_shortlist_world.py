@@ -329,7 +329,10 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
         "measured_dominant_talent_tree_indexes": sorted(
             family for family in families if family is not None),
         "distinct_build_families_compared": actual_cross_family,
-        "tree_index_meaning": "new_rank_allocated_to_tree_not_build_family",
+        "tree_index_meaning": (
+            "native_prepared_complete_family_target"
+            if proposal.get("allocation_mode") == "full_native_prepared_counterfactual_families"
+            else "new_rank_allocated_to_tree_not_build_family"),
         "contains_counterfactual_respec": any(
             row["requires_talent_respec_from_paid_source"] for row in rows),
         "talent_respec_cost_measured": False,
