@@ -5,6 +5,10 @@
 **Engine ownership and migration:** The approved end state is **one game-rules authority: the exact-SHA-pinned [MythicSim Rust fork](https://github.com/dosibjrn/mythicsim-forever-engine)**. Rust owns Warcraft source facts, build legality, combat mechanics and game-world execution. Forever defines scenarios, proposes and searches candidates, scores native results and verifies the unchanged gate contracts. Python GameIR, source catalogues, Go/gsim bridges and Python world code in the **current** tree are transitional live dependencies, not additional permanent sources of game truth; migrate their real consumers and verify native replacement before deleting them. See [#357](https://github.com/dosibjrn/forever-sim/issues/357), [#359](https://github.com/dosibjrn/forever-sim/issues/359) and the [target architecture](docs/REPOSITORY_STRUCTURE.md).
 
 
+## Warlock: measured L47–L60 successor baseline
+
+[Original source-linked L47–L60 native-paid results, talent progression, executed item IDs and APL](data/warlock/native_l47_l60_paid_continuation.md) preserve all fourteen 100/100 outcome summaries from the expiring original archive, and disclose that each level used **one** prepared Destruction successor with unchanged equipped-item IDs and ordered APL. They establish a measured baseline, **not** an optimized per-level route or complete 10–60 leveling replay. The full raw native receipts still require durable retention before the original Actions artifact expires.
+
 ## Warlock: native-paid talent-family comparison
 
 [Read the L47 Affliction / Demonology / Destruction comparison](data/warlock/native_l47_paid_family_guide.md), sourced from the original [hostile native 100/100 run](https://github.com/dosibjrn/forever-sim/actions/runs/42836075370). Destruction has the lowest observed time **in that one bounded scenario**; respec costs, stat weights, a globally optimal build, and continuous L10–60 leveling are not measured by this comparison.
