@@ -304,3 +304,64 @@ def test_prepared_l10_cache_without_selected_native_source_is_not_repaid(
                         lambda args: pytest.fail("do not pay unverified actor"))
     with pytest.raises(ValueError, match="no selected source"):
         root.run(binary=binary, template=template, out=out)
+
+
+@pytest.mark.parametrize("receipt_text", [
+    json.dumps({"class": "warlock", "measured_levels": [10],
+                "observations": []}),
+    "{incomplete native route",
+])
+def test_unverified_l10_paid_ack_preserves_original_receipt_and_stops_resume(
+        tmp_path, monkeypatch, receipt_text):
+    """A zero-exit paid producer is never proof without source-linked 100/100 ACK."""
+    binary, template = _inputs(tmp_path)
+    paid_calls = []
+
+    def propose(**kwargs):
+        p = kwargs["out"]
+        p.mkdir(parents=True)
+        source = p / "source_request.json"
+        source.write_text('{"native":"L10 prepared"}')
+        receipt = {
+            "status": "NATIVE_PREPARED_NOT_YET_PAID",
+            "native_binary_sha256": root.next_level.sha256(binary),
+            "original_template_sha256": root.next_level.sha256(template),
+            "selected_source_sha256": root.next_level.sha256(source),
+        }
+        root._write(p / "proposal.json", receipt)
+        return receipt
+
+    def paid(args):
+        paid_calls.append(args)
+        p = Path(args[args.index("--out") + 1])
+        p.mkdir(parents=True)
+        (p / "route.json").write_text(receipt_text)
+        (p / "GUIDE.md").write_text("# Falsely claimed paid L10\n")
+        return 0
+
+    monkeypatch.setattr(root, "propose_root", propose)
+    monkeypatch.setattr(root.guide, "main", paid)
+    monkeypatch.setattr(root.paid_range, "run",
+                        lambda **kwargs: pytest.fail("unverified ACK advanced L11"))
+    out = tmp_path / "unverified"
+    arguments = dict(binary=binary, template=template, out=out,
+                     end_level=19, max_new_levels=2)
+    first = root.run(**arguments)
+    assert first["completed_new_levels"] == []
+    assert first["reused_levels"] == []
+    assert first["stopped"]["status"] == "PAID_ACK_UNVERIFIED"
+    assert first["next_level"] == 10
+    assert Path(first["last_paid_route"]).read_text() == receipt_text
+    assert "No source-linked native 100/100" in Path(first["latest_guide"]).read_text()
+    assert "Falsely claimed" not in Path(first["latest_guide"]).read_text()
+    error = next(out.glob("L10/*/paid/ack_verification_error.json"))
+    receipt = json.loads(error.read_text())
+    assert receipt["status"] == "PAID_ACK_UNVERIFIED"
+    assert receipt["selected_source_sha256"] == root.next_level.sha256(
+        Path(first["last_paid_source"]))
+    assert receipt["native_binary_sha256"] == root.next_level.sha256(binary)
+    second = root.run(**arguments)
+    assert second["stopped"]["status"] == "PAID_ACK_UNVERIFIED"
+    assert second["completed_new_levels"] == second["reused_levels"] == []
+    assert len(paid_calls) == 1  # original receipt never silently repaid
+    assert Path(second["last_paid_route"]).read_text() == receipt_text
