@@ -158,7 +158,8 @@ def compare_prepared_candidates(*, binary: Path,
                                 actor_level: int, mob_count: int,
                                 target_hp: float,
                                 run_native: Callable | None = None,
-                                artifact_dir: Path | None = None) -> dict:
+                                artifact_dir: Path | None = None,
+                                paid_cache_dir: Path | None = None) -> dict:
     """Evaluate every source-prepared alternative, using balanced one-iteration.
 
     Work2 supplies the legal frontier and compatible receipt cache. The Rust
@@ -178,8 +179,12 @@ def compare_prepared_candidates(*, binary: Path,
     # Two labels for the same source-prepared request are one alternative,
     # not independent search breadth. Deduplicate BEFORE paying native mobs.
     seen_source_requests: dict[str, tuple[str, str]] = {}
+    if paid_cache_dir is not None and artifact_dir is None:
+        raise ValueError("NATIVE_PAID_CACHE_REQUIRES_ARTIFACT_DIR")
     if artifact_dir is not None:
         artifact_dir.mkdir(parents=True, exist_ok=True)
+    if paid_cache_dir is not None:
+        paid_cache_dir.mkdir(parents=True, exist_ok=True)
     cache_identity = (_exact_paid_cache_identity(
         binary, actor_level=actor_level, mob_count=mob_count,
         target_hp=float(target_hp)) if artifact_dir is not None else None)
@@ -232,14 +237,28 @@ def compare_prepared_candidates(*, binary: Path,
             receipt = None
             reused = False
             paid_receipt_path = native_receipt_path
+            # A separate, stable cache survives Work2's new output directory
+            # on every frontier evaluation. The key excludes proposal labels
+            # but includes the exact engine, source bytes and paid scenario.
+            shared_receipt_path = shared_metadata_path = None
+            if cache_identity is not None and paid_cache_dir is not None:
+                key_parts = dict(cache_identity, prepared_sha256=prepared_sha,
+                                 source_sha256=source_sha)
+                cache_key = hashlib.sha256(json.dumps(
+                    key_parts, sort_keys=True, allow_nan=False).encode()).hexdigest()
+                shared_receipt_path = paid_cache_dir / f"{cache_key}.native.json"
+                shared_metadata_path = paid_cache_dir / f"{cache_key}.native.cache.json"
             # Candidate labels can change between frontier passes. Reuse an
             # original source-native ACK under any label only after checking
             # the full engine/scenario/source identity, original byte digest
             # and unchanged terminal-recovery scoring predicate.
             if (cache_identity is not None and native_receipt_path is not None
                     and metadata_path is not None):
-                for cached_metadata_path in [metadata_path] + [
-                        p for p in existing_cache_files if p != metadata_path]:
+                cache_entries = (
+                    [shared_metadata_path] if shared_metadata_path is not None
+                    else [metadata_path] + [
+                        p for p in existing_cache_files if p != metadata_path])
+                for cached_metadata_path in cache_entries:
                     cached_receipt_path = cached_metadata_path.with_name(
                         cached_metadata_path.name.removesuffix(
                             ".native.cache.json") + ".native.json")
@@ -276,11 +295,25 @@ def compare_prepared_candidates(*, binary: Path,
                                                expected_target_hp=target_hp)
             if (score is not None and not reused and cache_identity is not None
                     and native_receipt_path is not None and metadata_path is not None):
-                metadata_path.write_text(json.dumps(dict(
+                metadata = dict(
                     cache_identity, prepared_sha256=prepared_sha,
                     source_sha256=source_sha,
-                    native_raw_receipt_sha256=_sha256(native_receipt_path)),
-                    indent=2, sort_keys=True) + "\n")
+                    native_raw_receipt_sha256=_sha256(native_receipt_path))
+                metadata_text = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
+                if shared_receipt_path is not None and shared_metadata_path is not None:
+                    # Never overwrite an original paid artifact. A torn or
+                    # tampered shared entry is untrusted: this invocation's
+                    # fresh raw ACK is still scored from its own output.
+                    if (not shared_receipt_path.exists()
+                            and not shared_metadata_path.exists()):
+                        try:
+                            shared_receipt_path.write_bytes(native_receipt_path.read_bytes())
+                            shared_metadata_path.write_text(metadata_text)
+                            paid_receipt_path = shared_receipt_path
+                        except OSError:
+                            pass
+                else:
+                    metadata_path.write_text(metadata_text)
             row.update(status=status, elapsed_seconds=score,
                        acked_world_kills=receipt.get("world_targets_killed"))
             if score is not None:
@@ -332,6 +365,8 @@ def main() -> None:
     ap.add_argument("--mob-count", type=int, default=3)
     ap.add_argument("--target-hp", type=float, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--paid-cache-dir", type=Path,
+                    help="Stable exact-input native paid-receipt cache across frontier calls")
     args = ap.parse_args()
     candidates = {}
     for spec in args.prepared:
@@ -342,7 +377,8 @@ def main() -> None:
     result = compare_prepared_candidates(
         binary=args.binary, prepared_paths=candidates,
         actor_level=args.level, mob_count=args.mob_count,
-        target_hp=args.target_hp, artifact_dir=args.out)
+        target_hp=args.target_hp, artifact_dir=args.out,
+        paid_cache_dir=args.paid_cache_dir)
     (args.out / "comparison.json").write_text(
         json.dumps(result, indent=2, allow_nan=False) + "\n")
     print(json.dumps(result, sort_keys=True, allow_nan=False))
