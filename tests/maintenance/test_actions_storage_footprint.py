@@ -382,7 +382,8 @@ def test_live_gc_invokes_bounded_complete_post_delete_verification():
     workflow = (Path(__file__).resolve().parents[2]
                 / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
                     encoding="utf-8")
-    assert "verify_deleted_artifacts_absent)" in workflow
+    assert "gc_planning_reference, verify_deleted_artifacts_absent," in workflow
+    assert "verified_removed_footprint)" in workflow
     assert "after_artifacts = verify_deleted_artifacts_absent(" in workflow
     assert "deleted, list_artifacts, attempts=12, delay_seconds=5," in workflow
     assert "fetch_deleted_status=deleted_artifact_get_status)" in workflow
