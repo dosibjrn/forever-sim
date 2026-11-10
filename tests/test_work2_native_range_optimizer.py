@@ -137,7 +137,7 @@ def test_respects_global_native_candidate_budget_without_overrun():
         invoked.append((level, budget))
         return [receipt(level, mob_count, "A", 10.0, parent)]
     result = optimize(20, 60, 10, 3, 2, evaluate=evaluator)
-    assert invoked == [(20, 2), (30, 1)]
+    assert invoked == [(20, 1), (30, 1)]
     assert result["native_candidates_examined"] == 2
     assert result["sampled_levels_completed"] == [20, 30]
 
@@ -186,3 +186,21 @@ def test_one_cli_process_orchestrates_several_native_evaluator_calls(tmp_path, m
     assert all(request["recover_to_full"] is True for _, request in calls)
     assert all(request["mob_count"] == 3 and request["rng_mode"] == "balanced"
                and request["iterations"] == 1 for _, request in calls)
+
+
+def test_native_candidate_budget_is_spread_across_all_requested_levels():
+    paid = []
+
+    def eager(*, level, parent, mob_count, budget, **kwargs):
+        paid.append((level, budget))
+        # Greedy single-level native scorers may spend their entire allocation.
+        # Distinct opaque source identities; the optimizer never invents talents.
+        return [receipt(level, mob_count, chr(65 + i), 2.0, parent)
+                for i in range(budget)]
+
+    report = optimize(20, 60, 10, 3, 100, evaluate=eager, beam_width=3)
+    assert report["sampled_levels_completed"] == [20, 30, 40, 50, 60]
+    assert paid[0] == (20, 20)  # Not 100; 4 more levels must have capacity.
+    assert report["native_candidates_examined"] <= 100
+    assert all(report["native_attempts_by_level"][str(level)] >= 1
+               for level in [20, 30, 40, 50, 60])
