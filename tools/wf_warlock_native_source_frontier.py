@@ -173,6 +173,99 @@ def _native_apl_variants(seed: dict, prepared: dict):
             yield proposal
 
 
+
+def _continuing_variants(seed: str, trees: list[dict]):
+    """Add only source-listed ranks, never silently replace a paid talent tree."""
+    parts = seed.split("-")
+    if len(parts) != 3 or not all(p.isascii() and p.isdigit() for p in parts):
+        raise ValueError("invalid source talent serialization")
+    yield seed
+    for number, tree in enumerate(trees):
+        for option in tree.get("talents", []):
+            slot, cap = option.get("index"), option.get("max_rank")
+            if type(slot) is not int or slot < 0 or type(cap) is not int or not 1 <= cap <= 9:
+                continue
+            digits = list(parts[number])
+            digits.extend("0" for _ in range(slot + 1 - len(digits)))
+            rank = int(digits[slot])
+            if rank >= cap:
+                continue
+            digits[slot] = str(rank + 1)
+            candidate = list(parts)
+            candidate[number] = "".join(digits)
+            yield "-".join(candidate)
+
+
+def _paid_parent_source(parent: dict, binary: Path) -> tuple[dict, str]:
+    """Read original parent source plus paid native receipt, not a labeled seed."""
+    source_sha, engine_sha = parent.get("source_request_sha256"), parent.get("engine_binary_sha256")
+    if (not isinstance(source_sha, str) or len(source_sha) != 64
+            or not isinstance(engine_sha, str) or _sha256(binary) != engine_sha):
+        raise ValueError("native parent source/engine identity mismatch")
+    source_path = Path(parent["source_request_file"])
+    prepared_path = Path(parent["prepared_file"])
+    raw_path = Path(parent["native_raw_receipt_file"])
+    if _sha256(source_path) != source_sha:
+        raise ValueError("native parent source bytes mismatch")
+    source = json.loads(source_path.read_text())
+    prepared = json.loads(prepared_path.read_text())
+    raw = json.loads(raw_path.read_text())
+    actor = source["raid"]["parties"][0]["players"][0]
+    terminal = raw["native_terminal_recovery"]
+    if (actor.get("class") != "ClassWarlock" or actor.get("level") != parent["level"]
+            or source["encounter"]["targets"][0].get("level") != parent["level"]
+            or prepared.get("request_sha256") != source_sha
+            or prepared["player"].get("class") != "ClassWarlock"
+            or prepared["player"].get("level") != parent["level"]
+            or raw.get("source_sha256") != source_sha
+            or raw.get("actual_2d_ack") is not True
+            or raw.get("world_targets_killed") != parent.get("mob_count")
+            or terminal.get("paid") is not True
+            or terminal.get("native_clock_accounted") is not True
+            or type(terminal.get("max_health")) not in (int, float)
+            or type(terminal.get("max_mana")) not in (int, float)
+            or terminal["max_health"] <= 0 or terminal["max_mana"] <= 0
+            or terminal.get("health_after") != terminal["max_health"]
+            or terminal.get("mana_after") != terminal["max_mana"]):
+        raise ValueError("native parent paid ACK/prepare mismatch")
+    return source, _sha256(raw_path)
+
+
+def _source_prepared_infill(source: dict, *, from_level: int, to_level: int,
+                            binary: Path, folder: Path, runner):
+    """Preserve the build and obtain actual Rust prepare ACKs at every skipped level.
+
+    This proves source-build preparability, not earned XP/world continuity.
+    """
+    trail = []
+    for next_level in range(from_level + 1, to_level):
+        source = copy.deepcopy(source)
+        source["raid"]["parties"][0]["players"][0]["level"] = next_level
+        source["encounter"]["targets"][0]["level"] = next_level
+        request_path = folder / f"infill_L{next_level}.source.json"
+        prepared_path = folder / f"infill_L{next_level}.prepared.json"
+        request_path.write_text(json.dumps(source, sort_keys=True) + "\n")
+        prepared_path.unlink(missing_ok=True)
+        result = runner([str(binary.resolve()), "prepare", "--request",
+                         str(request_path.resolve()), "--outfile",
+                         str(prepared_path.resolve())],
+                        capture_output=True, text=True, timeout=60, check=False)
+        if result.returncode:
+            raise ValueError(f"native L{next_level} prepare refused: "
+                             + (result.stderr or result.stdout)[-800:])
+        prepared = json.loads(prepared_path.read_text())
+        if (prepared.get("request_sha256") != _sha256(request_path)
+                or prepared["player"].get("class") != "ClassWarlock"
+                or prepared["player"].get("level") != next_level):
+            raise ValueError(f"native L{next_level} prepare/source identity mismatch")
+        trail.append({"level": next_level,
+                      "source_request": str(request_path.resolve()),
+                      "source_request_sha256": _sha256(request_path),
+                      "prepared": str(prepared_path.resolve()),
+                      "prepared_sha256": _sha256(prepared_path)})
+    return source, trail
+
+
 def produce_frontier(
     request: dict[str, Any], *, binary: Path, seed_source: Path, out: Path,
     runner: Callable[..., Any] = subprocess.run,
@@ -187,21 +280,39 @@ def produce_frontier(
             or type(request.get("mob_count")) is not int
             or not 1 <= request["mob_count"] <= 100):
         raise ValueError("INVALID_NATIVE_FRONTIER_REQUEST")
-    if request.get("parent") is not None:
-        # No guess at skipped-level talent/actor ancestry. An actual native
-        # source continuation ACK must precede paying this path.
-        return {"entries": [], "refusals": [{
-            "candidate_id": None, "status": "NATIVE_CONTINUITY_NOT_ATTESTED",
-            "native_refusal": "native source/actor continuation receipt is required",
-            "native_prepared": False, "level": level,
-        }]}
-    if not binary.is_file() or not seed_source.is_file():
-        raise ValueError("PINNED_NATIVE_BINARY_OR_SOURCE_MISSING")
-    seed = json.loads(seed_source.read_text())
+    parent = request.get("parent")
+    infill = []
+    raw_parent_sha = None
+    if parent is not None:
+        try:
+            if (not isinstance(parent, dict) or not binary.is_file()
+                    or type(parent.get("level")) is not int
+                    or not 10 <= parent["level"] < level):
+                raise ValueError("native parent level/binary missing")
+            seed, raw_parent_sha = _paid_parent_source(parent, binary)
+            out = out / parent["source_request_sha256"][:16]
+            out.mkdir(parents=True, exist_ok=True)
+            seed, infill = _source_prepared_infill(
+                seed, from_level=parent["level"], to_level=level,
+                binary=binary, folder=out, runner=runner)
+            seed = copy.deepcopy(seed)
+            seed["raid"]["parties"][0]["players"][0]["level"] = level
+            seed["encounter"]["targets"][0]["level"] = level
+        except (KeyError, TypeError, ValueError, OSError, IndexError,
+                subprocess.TimeoutExpired) as exc:
+            return {"entries": [], "refusals": [{
+                "candidate_id": None, "status": "NATIVE_CONTINUITY_NOT_ATTESTED",
+                "native_refusal": str(exc)[-1500:],
+                "native_prepared": False, "level": level,
+            }]}
+    else:
+        if not binary.is_file() or not seed_source.is_file():
+            raise ValueError("PINNED_NATIVE_BINARY_OR_SOURCE_MISSING")
+        seed = json.loads(seed_source.read_text())
     actor = seed["raid"]["parties"][0]["players"][0]
     if (actor.get("class") != "ClassWarlock" or actor.get("level") != level
             or seed["encounter"]["targets"][0].get("level") != level):
-        raise ValueError("NATIVE_SOURCE_ROOT_ACTOR_OR_TARGET_LEVEL_MISMATCH")
+        raise ValueError("NATIVE_SOURCE_ACTOR_OR_TARGET_LEVEL_MISMATCH")
     options_result = runner([
         str(binary.resolve()), "options", "--class", "warlock", "--level", str(level),
     ], capture_output=True, text=True, timeout=60, check=False)
@@ -224,7 +335,8 @@ def produce_frontier(
     # Keep the root and two distinct talent proposals in a tiny budget, then
     # offer native-registered APL fallbacks before spending every remaining
     # attempt on local talent moves. Every proposal still pays a Rust prepare.
-    talent_variants = iter(_variants(actor["talentsString"], trees))
+    talent_variants = iter((_continuing_variants if parent is not None else _variants)(
+        actor["talentsString"], trees))
     root_prepared: dict | None = None
 
     def proposals():
@@ -271,12 +383,31 @@ def produce_frontier(
             continue
         if index == 0:
             root_prepared = prepared
-        entries.append({"id": cid, "level": level, "parent_source_sha256": None,
-                        "source_request": str(source_path.resolve()),
-                        "prepared": str(prepared_path.resolve())})
+        entry = {"id": cid, "level": level,
+                 "parent_source_sha256": (parent["source_request_sha256"]
+                                          if parent is not None else None),
+                 "source_request": str(source_path.resolve()),
+                 "prepared": str(prepared_path.resolve())}
+        if parent is not None:
+            lineage_path = out / f"{cid}.continuity.json"
+            lineage_path.write_text(json.dumps({
+                "source_request_sha256": _sha256(source_path),
+                "native_parent_source_sha256": parent["source_request_sha256"],
+                "native_parent_raw_receipt_sha256": raw_parent_sha,
+                "native_continuity_from_level": parent["level"],
+                "native_continuity_ack": True,
+                "native_intermediate_levels_verified": True,
+                "native_engine_binary_sha256": _sha256(binary),
+                "scope": "source-native prepared build lineage, not world XP/travel",
+                "infill": infill,
+            }, sort_keys=True) + "\n")
+            entry["native_continuity_receipt"] = str(lineage_path.resolve())
+        entries.append(entry)
     return {"entries": entries, "refusals": refusals,
             "native_binary_sha256": _sha256(binary), "level": level,
-            "source_root_sha256": _sha256(seed_source)}
+            "source_root_sha256": (_sha256(seed_source) if parent is None else
+                                   parent["source_request_sha256"]),
+            "native_intermediate_prepares": len(infill)}
 
 
 def main() -> int:
