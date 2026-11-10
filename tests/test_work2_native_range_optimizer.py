@@ -547,7 +547,9 @@ def test_one_call_cli_directly_runs_work1_native_scorer_manifest_adapter(tmp_pat
     calls = []
 
     def checked_adapter(request, *, manifest, binary, target_hp,
-                        scorer_command, artifact_dir):
+                        scorer_command, artifact_dir, paid_cache_dir):
+        assert paid_cache_dir == tmp_path / "raw-receipts" / "paid-cache"
+        assert paid_cache_dir.is_dir()
         calls.append((request["level"], request["parent"],
                       request["mob_count"], target_hp, scorer_command))
         parent = request["parent"]
@@ -707,7 +709,7 @@ def test_scored_adapter_keeps_single_native_successor_for_a_competing_parent(tmp
     assert observed[0][2] == {
         "target_count": 3, "mob_health": 400.0, "rng_mode": "balanced",
         "recovery_policy": "decisions", "health_threshold": 1.0,
-        "mana_threshold": 1.0,
+        "mana_threshold": 1.0, "require_native_health_damage": False,
     }
     assert len(rows) == 1
     row = rows[0]
