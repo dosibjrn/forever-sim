@@ -385,7 +385,7 @@ def test_live_gc_invokes_bounded_complete_post_delete_verification():
     assert "gc_planning_reference, verify_deleted_artifacts_absent," in workflow
     assert "verified_removed_footprint)" in workflow
     assert "after_artifacts = verify_deleted_artifacts_absent(" in workflow
-    assert "deleted, list_artifacts, attempts=12, delay_seconds=5," in workflow
+    assert "deleted + already_absent, list_artifacts, attempts=12, delay_seconds=5," in workflow
     assert "fetch_deleted_status=deleted_artifact_get_status)" in workflow
     assert 'status, _ = request(f"artifacts/{artifact_id}")' in workflow
     assert workflow.index('request(f"artifacts/{aid}", "DELETE")') < workflow.index(
@@ -530,3 +530,29 @@ def test_live_gc_reports_targeted_removals_and_net_change_separately():
     assert 'reclaimed_MiB={(total-after)' not in workflow
     assert workflow.index("verify_deleted_artifacts_absent(") < workflow.index(
         "verified_removed_footprint(")
+
+
+def test_gc_only_credits_successful_204_deletes_not_concurrently_absent_404():
+    """A vanished artifact cannot be billed as reclaimed by this GC run.
+
+    Both statuses need a verified post-DELETE absence, but targeted bytes must
+    count only IDs for which our own authenticated DELETE returned HTTP 204.
+    This is storage-report accuracy, not an additional M1 gate.
+    """
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    assert workflow.index("if status == 204:") < workflow.index("deleted.append(aid)")
+    assert 'elif status == 404:' in workflow
+    assert 'already_absent.append(aid)' in workflow
+    assert 'deleted + already_absent, list_artifacts' in workflow
+    assert 'all_artifacts, after_artifacts, deleted)' in workflow
+    assert 'if status not in (204, 404):' not in workflow
+    assert workflow.index('deleted + already_absent, list_artifacts') < workflow.index(
+        'all_artifacts, after_artifacts, deleted)')
+
+def test_concurrent_artifact_expiry_not_misattributed_to_gc_deleted_bytes():
+    """Confirmed DELETE IDs and other vanished IDs have distinct accounting."""
+    before = [{"id": 11, "size_in_bytes": 200},
+              {"id": 12, "size_in_bytes": 350}]
+    assert module.verified_removed_footprint(before, [], [11]) == (200, 550)

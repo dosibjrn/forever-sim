@@ -325,6 +325,71 @@ def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_rec
     assert all((tmp_path / "artifacts").exists() for _ in calls)
 
 
+def test_adapter_honors_original_paid_receipt_path_and_rejects_wrong_digest(tmp_path):
+    """Cached native ACKs retain their original filename, not a fresh call label."""
+    import hashlib
+    import json
+    import subprocess
+    from pathlib import Path
+
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"native-binary-test")
+    manifest = _prepared_manifest(tmp_path)
+    original_dir = tmp_path / "immutable-paid"
+    original_dir.mkdir()
+    calls = []
+    wrong_digest = False
+
+    def original_paid_scorer(command, **kwargs):
+        completed = _fake_native_comparison(calls)(command, **kwargs)
+        payload = json.loads(completed.stdout)
+        call_dir = Path(command[command.index("--out") + 1])
+        for candidate in payload["candidates"]:
+            cid = candidate["candidate_id"]
+            just_paid = call_dir / f"{cid}.native.json"
+            original = original_dir / f"saved-{cid}.native.json"
+            just_paid.replace(original)
+            candidate["native_raw_receipt_file"] = str(original)
+            candidate["native_raw_receipt_sha256"] = (
+                "0" * 64 if wrong_digest else hashlib.sha256(original.read_bytes()).hexdigest()
+            )
+            candidate["reused_exact_native_paid_receipt"] = True
+        return subprocess.CompletedProcess(
+            command, 0, stdout=json.dumps(payload), stderr="",
+        )
+
+    request = {
+        "level": 20, "parent": None, "budget": 2, "mob_count": 3,
+        "rng_mode": "balanced", "iterations": 1, "recover_to_full": True,
+        "search_mode": "independent",
+    }
+
+    def evaluate():
+        return evaluate_request(
+            request, manifest=manifest, binary=binary, target_hp=400.0,
+            scorer_command=["native-scorer"], artifact_dir=tmp_path / "attempts",
+            run_command=original_paid_scorer,
+        )
+
+    paid = evaluate()
+    assert len(calls) == 1
+    assert len(paid) == 2
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED" for row in paid)
+    assert all(row["reused_exact_native_paid_receipt"] is True for row in paid)
+    assert all(Path(row["native_raw_receipt_file"]).parent == original_dir for row in paid)
+    assert all(hashlib.sha256(Path(row["native_raw_receipt_file"]).read_bytes()).hexdigest()
+               == row["native_raw_receipt_sha256"] for row in paid)
+
+    wrong_digest = True
+    refused = evaluate()
+    assert len(calls) == 2
+    assert all(row["status"].startswith(
+        "NATIVE_SCORER_RECEIPT_REFUSAL:NATIVE_SCORER_ORIGINAL_RECEIPT_DIGEST_MISMATCH"
+    ) for row in refused)
+
+
 def test_independent_paid_rankings_keep_exact_requested_build_fields(tmp_path):
     """A real ranked result must expose the native source build, not nulls."""
     import hashlib
