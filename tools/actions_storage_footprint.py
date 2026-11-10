@@ -149,6 +149,31 @@ def verify_deleted_artifacts_absent(deleted_ids, list_artifacts, *,
 
 
 
+
+def verified_removed_footprint(before: list[dict], after: list[dict],
+                               deleted_ids: list[int]) -> tuple[int, int]:
+    """Return targeted vanished bytes and the *separate* net retained change.
+
+    GitHub may upload unrelated artifacts or expire older ones while a GC run
+    verifies DELETE responses. Subtracting whole-repository totals cannot
+    measure how many bytes the selected deletions actually removed. Inputs
+    come from the strict, complete inventories on either side of the DELETE.
+    """
+    ids = set(deleted_ids)
+    if len(ids) != len(deleted_ids):
+        raise ValueError("duplicate selected artifact ID")
+    previous = {row["id"]: row["size_in_bytes"] for row in before}
+    current_ids = {row["id"] for row in after}
+    if not ids.issubset(previous):
+        raise ValueError("selected artifact missing from pre-delete inventory")
+    if ids.intersection(current_ids):
+        raise ValueError("selected artifact remains in verified post-delete inventory")
+    targeted_bytes = sum(previous[artifact_id] for artifact_id in ids)
+    net_retained_delta = sum(previous.values()) - sum(
+        row["size_in_bytes"] for row in after)
+    return targeted_bytes, net_retained_delta
+
+
 def gc_planning_reference(local_bytes: int, public_owner_bytes: str | None) -> tuple[int, bool]:
     """Use complete public-owner retained bytes for safe GC planning when known.
 

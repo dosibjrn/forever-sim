@@ -79,7 +79,8 @@ jobs:
           # The deletion path must use the same strict page-count/ID checks
           # as the read-only monitor. API churn is an abort, not deletion input.
           from tools.actions_storage_footprint import (verified_artifacts, requires_evidence_pin_scan,
-                                                       gc_planning_reference, verify_deleted_artifacts_absent)
+                                                       gc_planning_reference, verify_deleted_artifacts_absent,
+                                                       verified_removed_footprint)
 
           def list_artifacts():
               def fetch_page(_repository, page):
@@ -270,7 +271,12 @@ jobs:
                   fetch_deleted_status=deleted_artifact_get_status)
               after = sum(int(a["size_in_bytes"]) for a in after_artifacts)
               print(f"AFTER count={len(after_artifacts)} bytes={after} MiB={after/1048576:.2f}")
-              print(f"VERIFIED_DELETIONS count={len(deleted)} reclaimed_MiB={(total-after)/1048576:.2f}")
-              if planning_total - (total - after) > ceiling:
-                  print("NOTICE: visible retained reference may remain above 384 MiB; protected evidence unchanged; not billed usage")
+              targeted_bytes, net_delta = verified_removed_footprint(
+                  all_artifacts, after_artifacts, deleted)
+              print(f"VERIFIED_TARGET_REMOVALS count={len(deleted)} bytes={targeted_bytes} MiB={targeted_bytes/1048576:.2f}")
+              print(f"RETAINED_NET_DELTA bytes={net_delta} MiB={net_delta/1048576:.2f}; includes concurrent uploads/other expirations")
+              if planning_total - targeted_bytes > ceiling:
+                  print("NOTICE: projected visible retained reference may remain above 384 MiB; protected evidence unchanged; not billed usage")
+              elif owner_scope:
+                  print("NOTICE: projected owner-wide retained bytes are not a fresh post-cleanup occupancy measurement")
           PY
