@@ -49,7 +49,9 @@ def propose_root(*, binary: Path, template: Path, out: Path,
     player = original["raid"]["parties"][0]["players"][0]
     if player.get("class") != "ClassWarlock" or player.get("race") != "RaceTroll":
         raise ValueError("L10 template must contain a Troll Warlock actor")
-    if (player.get("level") is not None and\n            (type(player["level"]) is not int or\n             original["encounter"]["targets"][0].get("level") != player["level"])):
+    if (player.get("level") is not None and
+            (type(player["level"]) is not int or
+             original["encounter"]["targets"][0].get("level") != player["level"])):
         raise ValueError("template actor and encounter must agree on their source level")
     if not isinstance(player.get("equipment", {}).get("items"), list):
         raise ValueError("native template needs an equipment proposal list")
