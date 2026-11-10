@@ -312,3 +312,60 @@ def test_manifest_native_frontier_refusal_is_not_scored(tmp_path):
     assert rows[0]["status"] == "NATIVE_OPTIONS_REFUSED"
     assert rows[0]["native_prepared"] is False
     assert rows[0]["native_refusal"] == "source-native actor unsupported"
+
+
+def test_native_prepared_apl_fallbacks_compete_after_tree_families(tmp_path):
+    """A bounded live request reaches Rust-registered APLs, not options guesses."""
+    seed, binary = _root_source(tmp_path)
+    source = json.loads(seed.read_text())
+    source["raid"]["parties"][0]["players"][0]["rotation"] = {
+        "priorityList": [{"action": {"castSpell": {"spellId": {"spellId": 101}}}}]
+    }
+    seed.write_text(json.dumps(source))
+    attempts = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            # Family alternatives are source-defined; the generic spell-family
+            # list is deliberately NOT used as a learned/executable APL list.
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+                "level": 20, "spells": [{"spell_id": 999}],
+                "talents": {"status": "ok", "trees": [
+                    {"talents": [{"index": 0, "max_rank": 5},
+                                 {"index": 1, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                    {"talents": [{"index": 0, "max_rank": 5}]},
+                ]},
+            }))
+        source_path = Path(cmd[cmd.index("--request") + 1])
+        prepared_path = Path(cmd[cmd.index("--outfile") + 1])
+        player = json.loads(source_path.read_text())["raid"]["parties"][0]["players"][0]
+        fallback_id = player["rotation"]["priorityList"][-1]["action"]["castSpell"]["spellId"]["spellId"]
+        attempts.append((player["talentsString"], fallback_id))
+        if fallback_id == 102:
+            return subprocess.CompletedProcess(cmd, 2, stderr="native APL refused")
+        prepared_path.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 20, "spells": [
+                {"action_id": {"spell_id": 101}, "flags": ["SpellFlagAPL"]},
+                {"action_id": {"spell_id": 102}, "flags": ["SpellFlagAPL"]},
+                {"action_id": {"spell_id": 103}, "flags": ["SpellFlagAPL"]},
+                {"action_id": {"spell_id": 104}, "flags": []},
+            ]},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    result = produce_frontier(
+        _request(budget=5), binary=binary, seed_source=seed,
+        out=tmp_path / "native", runner=native,
+    )
+    assert attempts == [
+        ("11-0-0", 101), ("00-2-0", 101), ("00-0-2", 101),
+        ("11-0-0", 102), ("11-0-0", 103),
+    ]
+    assert len(result["entries"]) == 4
+    assert len(result["refusals"]) == 1
+    assert result["refusals"][0]["candidate_id"] == "source_003"
+    assert "native APL refused" in result["refusals"][0]["native_refusal"]
+    assert all(action != 999 and action != 104 for _, action in attempts)
+    assert Path(result["entries"][-1]["source_request"]).is_file()
