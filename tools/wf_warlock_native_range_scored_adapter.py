@@ -199,9 +199,12 @@ def evaluate_request(
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refused.append(_refusal(entry, "NATIVE_PREPARED_OR_CONTINUITY_REFUSAL:"
                                     + str(exc)[-180:], None))
-    # Work1's comparator requires two distinct prepared alternatives. Paying a
-    # single first-preparable candidate would be baseline work, not optimization.
-    if not candidates or (len(candidates) == 1 and parent is None):
+    # Independent anchors may have only one Rust-preparable build after
+    # alternative native refusals. Score that bounded anchor, but leave it
+    # noncompetitive/provisional instead of silently losing its measurement.
+    # Continuing root bootstrap still requires genuine alternatives.
+    if not candidates or (len(candidates) == 1 and parent is None
+                          and request.get("search_mode") != "independent"):
         return refused + [
             _refusal({"id": cid}, "NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER", src)
             for cid, (_, _, src, _) in candidates.items()
