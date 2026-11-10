@@ -20,26 +20,30 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def verified_paid_predecessor(*, route: Path, source: Path, from_level: int) -> dict:
+def verified_paid_predecessor(*, route: Path, source: Path, binary: Path, from_level: int) -> dict:
     """Require a real paid prior-level receipt for automatic route extension.
 
-    This matches only executed-world identity and the exact persisted request.
-    Rust remains authoritative for the next actor and Warcraft legality.
+    This matches an executed native actor to the exact persisted request
+    and selected executable. A route may also contain later, incompatible
+    historical levels; they must not veto a real paid predecessor or confer
+    a fabricated transition. Rust still owns Warcraft legality.
     """
     previous = json.loads(route.read_text())
     if previous.get("class") != "warlock" or not isinstance(previous.get("observations"), list):
         raise ValueError("predecessor must be a Warlock native route report")
     levels = previous.get("measured_levels")
     if (not isinstance(levels, list) or not levels
-            or any(type(l) is not int for l in levels) or max(levels) != from_level):
-        raise ValueError("predecessor must end at the last paid measured level")
+            or any(type(l) is not int for l in levels) or from_level not in levels):
+        raise ValueError("predecessor does not include the paid source level")
     fingerprint = sha256(source)
+    engine_fingerprint = sha256(binary)
     matches = [
         row for row in previous["observations"]
         if isinstance(row, dict)
         and row.get("level") == from_level
         and row.get("status") == "measured_native_chain"
         and row.get("source_request_sha256") == fingerprint
+        and row.get("engine_binary_sha256") == engine_fingerprint
         and row.get("native_world_ack") is True
         and row.get("paid_native_recovery") is True
         and row.get("targets_requested") == 100
@@ -51,7 +55,8 @@ def verified_paid_predecessor(*, route: Path, source: Path, from_level: int) -> 
     if not matches:
         raise ValueError("source request has no matching completed paid native predecessor")
     return {"level": from_level, "observation_id": matches[0]["id"],
-            "source_request_sha256": fingerprint}
+            "source_request_sha256": fingerprint,
+            "engine_binary_sha256": engine_fingerprint}
 
 
 def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
@@ -64,7 +69,8 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     if not binary.is_file() or not source.is_file():
         raise ValueError("native binary and original source request are required")
     predecessor = (verified_paid_predecessor(
-        route=predecessor_route, source=source, from_level=from_level)
+        route=predecessor_route, source=source, binary=binary,
+        from_level=from_level)
         if predecessor_route is not None else None)
     original = json.loads(source.read_text())
     actor = original["raid"]["parties"][0]["players"][0]
