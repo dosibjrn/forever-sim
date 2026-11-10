@@ -324,6 +324,8 @@ def produce_frontier(
                 "candidate_id": None, "status": "NATIVE_CONTINUITY_NOT_ATTESTED",
                 "native_refusal": str(exc)[-1500:],
                 "native_prepared": False, "level": level,
+            "parent_source_sha256": (parent.get("source_request_sha256")
+                                     if isinstance(parent, dict) else None),
             }]}
     else:
         if not binary.is_file() or not seed_source.is_file():
@@ -348,6 +350,8 @@ def produce_frontier(
             "candidate_id": None, "status": "NATIVE_OPTIONS_REFUSED",
             "native_refusal": (options_result.stderr or options_result.stdout)[-1500:],
             "native_prepared": False, "level": level,
+            "parent_source_sha256": (parent.get("source_request_sha256")
+                                     if isinstance(parent, dict) else None),
         }]}
     options = json.loads(options_result.stdout)
     talents = options.get("talents", {})
@@ -413,7 +417,10 @@ def produce_frontier(
                 raise ValueError("prepared native source/actor identity mismatch")
         except (KeyError, ValueError, TypeError, OSError, subprocess.TimeoutExpired) as exc:
             refusals.append({"candidate_id": cid, "status": "NATIVE_PREPARE_REFUSED",
-                             "native_prepared": False, "native_refusal": str(exc)[-1500:]})
+                             "native_prepared": False, "native_refusal": str(exc)[-1500:],
+                             "level": level,
+                             "parent_source_sha256": (parent["source_request_sha256"]
+                                                      if parent is not None else None)})
             continue
         if root_prepared is None and talents_string is not None:
             root_prepared = prepared
@@ -440,6 +447,8 @@ def produce_frontier(
         entries.append(entry)
     return {"entries": entries, "refusals": refusals,
             "native_binary_sha256": _sha256(binary), "level": level,
+            "parent_source_sha256": (parent["source_request_sha256"]
+                                     if parent is not None else None),
             "source_root_sha256": (_sha256(seed_source) if parent is None else
                                    parent["source_request_sha256"]),
             "native_intermediate_prepares": len(infill)}
