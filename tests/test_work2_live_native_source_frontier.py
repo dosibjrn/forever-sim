@@ -110,7 +110,20 @@ def test_future_level_requires_real_continuation_without_native_calls(tmp_path):
 def test_live_frontier_is_called_in_same_range_optimizer_request(tmp_path, monkeypatch):
     from tools import wf_warlock_native_range_optimize as cli
     from tools import wf_warlock_native_range_scored_adapter as adapter
-    from tests.test_work2_native_range_optimizer import receipt
+    def receipt(level, mobs, label, seconds):
+        source = (f"{level:02x}{ord(label):02x}" + "a" * 60)
+        return {
+            "status": "measured_native_world", "level": level,
+            "mob_count": mobs, "targets_killed": mobs,
+            "rng_mode": "balanced", "iterations": 1,
+            "native_prepared": True, "native_world_ack": True,
+            "native_full_recovery_paid": True, "recover_to_full": True,
+            "terminal_hp": 100.0, "terminal_max_hp": 100.0,
+            "terminal_mana": 200.0, "terminal_max_mana": 200.0,
+            "elapsed_seconds": seconds, "terminal_recovery_seconds": 1.0,
+            "source_request_sha256": source,
+            "engine_binary_sha256": "b" * 64, "talents": label,
+        }
 
     binary = tmp_path / "selected-native"
     binary.write_bytes(b"mock native")
