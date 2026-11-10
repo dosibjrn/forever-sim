@@ -73,3 +73,27 @@ def test_rust_pin_pr_no_record_p3_uploads_expire_after_seven_days():
         retention = [int(match.group(1)) for row in step_body
                      if (match := RETENTION.fullmatch(row))]
         assert retention == [7], f"{workflow.name}:{index + 1}: expected seven days"
+
+
+def test_completed_warlock_l21_l25_one_shot_trial_ci_is_replaced():
+    """Retire completed per-level PR triggers, preserve fast producer coverage.
+
+    Historic native 100-target observations and uploaded evidence are NOT
+    deleted. The shared route CI tests proposal and publication without
+    accidentally repaying already executed Warlock levels.
+    """
+    for level in range(21, 26):
+        obsolete = ROOT / ".github/workflows" / f"work2-warlock-l{level}-native-trial.yml"
+        assert not obsolete.exists(), f"obsolete per-level CI still active: {obsolete.name}"
+
+    shared = (ROOT / ".github/workflows/work2-warlock-route-guide.yml").read_text(
+        encoding="utf-8")
+    for trigger in (
+        "      - tools/wf_warlock_next_level_source.py",
+        "      - tests/test_work2_warlock_next_level_source.py",
+    ):
+        assert trigger in shared, "native proposal changes must trigger fast shared CI"
+    assert (
+        "run: python -m pytest -q tests/test_work2_warlock_route_guide.py "
+        "tests/test_work2_warlock_next_level_source.py"
+    ) in shared, "shared workflow must execute both real Forever-owned regression suites"
