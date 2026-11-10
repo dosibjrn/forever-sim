@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Live Rust-owned Warlock proposals for the one-call native range optimizer.
 
-Root candidates use Rust options/prepare; continuing sampled paths must start
+Independent anchor roots retarget the seed to each requested sample level and
+let Rust options/prepare refuse invalid builds. Continuing paths must start
 from an exact paid native parent and obtain source-prepared actors at *every*
 skipped level before more native-paid comparisons. This is source-build
 continuity, not an earned XP/travel or continuous world-leveling receipt.
@@ -310,6 +311,13 @@ def produce_frontier(
         if not binary.is_file() or not seed_source.is_file():
             raise ValueError("PINNED_NATIVE_BINARY_OR_SOURCE_MISSING")
         seed = json.loads(seed_source.read_text())
+        if request.get("search_mode") == "independent":
+            # A root is a same-level Rust proposal, NOT a continuation from
+            # the seed level. Rust options/prepare decide whether its build
+            # is executable; no skipped-level ancestry or respec is claimed.
+            seed = copy.deepcopy(seed)
+            seed["raid"]["parties"][0]["players"][0]["level"] = level
+            seed["encounter"]["targets"][0]["level"] = level
     actor = seed["raid"]["parties"][0]["players"][0]
     if (actor.get("class") != "ClassWarlock" or actor.get("level") != level
             or seed["encounter"]["targets"][0].get("level") != level):
