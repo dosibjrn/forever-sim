@@ -88,8 +88,11 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
     # and disconnected talent allocations. Choosing only the first eligible
     # level hides a longer *real* interior segment if the initial actor is
     # isolated (e.g. a new L20 actor on a different binary from L21-L28).
-    # Select the longest reachable contiguous single-binary segment; ties
-    # favor the earliest observed start, then deterministic binary ordering.
+    # Select the longest reachable contiguous single-binary segment. For
+    # equally long segments the earliest observed start wins; for the same
+    # observed levels, prefer the least actual paid time for 100 kills at each
+    # level. These equal weights compare paid observations, not XP progression
+    # or a modeled end-to-end leveling duration.
     # This is not a continuous XP journey or a cross-binary talent transition.
     if not candidates:
         return {
@@ -124,11 +127,18 @@ def connected_native_paid_frontier(observations: Sequence[Mapping[str, Any]],
                     # requiring an unexecuted respec cannot be appended.
                     candidate_path = solve_path_dp(
                         pools, model=model, max_respecs=0,
-                        weights={l: 0.0 for l in pools}, native_paid=True)
+                        weights={l: 1.0 for l in pools}, native_paid=True)
                 except (ValueError, TypeError) as exc:
                     last_error = f"{type(exc).__name__}: {exc}"
                     break
-                if path is None or len(candidate_path.steps) > len(path.steps):
+                if (path is None
+                        or len(candidate_path.steps) > len(path.steps)
+                        or (len(candidate_path.steps) == len(path.steps)
+                            and start == observed_start
+                            and candidate_path.cumulative_s < path.cumulative_s - 1e-9)):
+                    # Compare cost only for identical observed level ranges;
+                    # L20-L21 and L23-L24 have different mobs and cannot be
+                    # ranked by their absolute seconds alone.
                     path = candidate_path
                     selected_engine = engine
                     observed_start = start
