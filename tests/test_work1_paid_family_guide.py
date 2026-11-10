@@ -1,6 +1,7 @@
 """Guide handoff from already paid native receipts; no native or M1 replay."""
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -214,3 +215,26 @@ def test_receipt_controlled_backticks_remain_literal_markdown_code():
     result = _build(comparison)
     markdown = guide.render_markdown(result)
     assert "``123`456``" in markdown
+
+def test_checked_in_l47_native_paid_guide_has_original_receipt_attribution():
+    """Player guide can consume the actual original paid data, not a fabricated score."""
+    path = (Path(__file__).resolve().parents[1] / "data" / "warlock"
+            / "native_l47_paid_family_guide.json")
+    result = json.loads(path.read_text())
+    assert result["kind"] == "warlock_paid_family_guide_input_v1"
+    assert result["status"] == "MEASURED_BOUNDED_FAMILY_COMPARISON"
+    assert result["actor_level"] == 47
+    assert result["source_run_url"] == RUN
+    assert result["original_artifact_id"] == ARTIFACT
+    assert result["selected_native_binary_sha256"] == (
+        "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458")
+    assert [(x["family"], x["seconds_per_mob"]) for x in result["measurements"]] == [
+        ("Destruction", 7.777), ("Affliction", 8.854), ("Demonology", 9.517)]
+    assert result["bounded_fastest_family"] == "Destruction"
+    assert all(x["native_observation_id"] and x["native_summary"]
+               and len(x["executed_source_sha256"]) == 64
+               for x in result["measurements"])
+    assert result["talent_respec_cost_measured"] is False
+    assert result["continuous_level_route_measured"] is False
+    assert result["full_route_optimum_measured"] is False
+    assert result["m1_recording_performed"] is False
