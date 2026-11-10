@@ -10,7 +10,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+# Direct CLI invocation (python tools/...) must resolve the project root, too.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools import wf_warlock_next_level_source as next_level
 from tools import wf_warlock_route_guide as guide
