@@ -1544,13 +1544,21 @@ def test_unseeded_native_fixture_can_propose_gear_without_a_saved_winner(monkeyp
     assert combined is not None
     assert reference == frozen
 
-def test_cold_workflow_inputs_are_unoptimized_native_actor_not_saved_winner():
-    """The paid Actions producer must not bootstrap from prior best-paid gear."""
+def test_completed_l20_cold_search_is_not_replayed_by_shared_ack_ci():
+    """Native world regressions must not schedule another paid L20 cold run.
+
+    The frozen experiment was paid already. Keep its cold producer and fast
+    forwarding tests, not the embedded source-build/300s/100-mob job.
+    """
     workflow = (cold.ROOT / ".github/workflows/native-session-ack-regressions.yml"
-                ).read_text()
-    job = workflow.split("  warlock-l20-cold-30-300:", 1)[1]
-    assert "--source ../engine/fixtures/warlock-l20-troll-native.request.json" in job
-    assert "warlock-l20-troll-best-paid.request.json" not in job
+                ).read_text(encoding="utf-8")
+    assert "  clock-ack:" in workflow
+    assert "  source-health-world:" in workflow
+    assert "  warlock-l20-cold-30-300:" not in workflow
+    assert "python -u tools/wf_warlock_l20_native_cold.py" not in workflow
+    fast_ci = (cold.ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml"
+               ).read_text(encoding="utf-8")
+    assert "tests/test_work2_warlock_native_cold.py" in fast_ci
 
 
 def test_native_paid_cold_fallback_uses_only_eligible_frozen_candidates(
