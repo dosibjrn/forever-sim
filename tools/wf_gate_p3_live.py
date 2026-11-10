@@ -655,7 +655,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                     'real_source_search_evaluated': 0}
         if not native_options['items'] and not native_options.get("unverified_item_ids"):
             return {'status': 'BLOCKED',
-                    'reasons': ['NATIVE_ITEM_OPTIONS_NO_SOURCE_CANDIDATES'],
+                    'reasons': [('NATIVE_ITEM_OPTIONS_NO_SOURCE_CANDIDATES'
+                                 if is_warlock_native
+                                 else 'NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
 
