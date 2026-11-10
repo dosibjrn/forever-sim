@@ -331,3 +331,21 @@ def test_obsolete_druid_native_p7_branch_paid_jobs_retired_without_losing_fast_t
         assert f"          {suite}\n" in shared, (
             f"fast native-transport regression lost for {suite}")
     assert (workflows / "m1-on-demand-record.yml").is_file()
+
+
+def test_shared_warlock_guide_never_replays_already_paid_l20_native_world():
+    """Publishing the guide must not compile Rust and re-pay L20 source combat.
+
+    The generic native paid-range entry point handles genuinely unpaid levels;
+    this fast shared guide job consumes retained observations and reports
+    their coverage without making a new acceptance gate.
+    """
+    workflow = (ROOT / ".github/workflows/work2-warlock-route-guide.yml"
+                ).read_text(encoding="utf-8")
+    assert workflow.count("\n  guide:\n") == 1
+    assert "\n  paid-native-l20-route:" not in workflow
+    assert "cargo build --locked --bin forever-engine" not in workflow
+    assert "--execute-native" not in workflow
+    assert "      - name: Publish reproducible partial guide" in workflow
+    assert "run: python -m pytest -q tests/test_work2_warlock_route_guide.py tests/test_work2_warlock_next_level_source.py" in workflow
+    assert (ROOT / ".github/workflows/work2-warlock-l41-l50-native-batch.yml").is_file()
