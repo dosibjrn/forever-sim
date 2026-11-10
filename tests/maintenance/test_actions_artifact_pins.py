@@ -171,6 +171,34 @@ def test_native_stage5_source_comment_pins_split_artifact_reference(tmp_path):
     assert artifacts == {13241065075}
 
 
+def test_regression_source_paid_run_ids_are_evidence_pins(tmp_path):
+    """Native paid-run provenance in actual Forever regression source is retained."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    sources = {
+        "tests/test_wf_native_priest_l20_cold.py":
+            "# Real cold run #41893190218 refused 4095 full-build combinations\n",
+        "tests/generic/search/test_work2_p4_p5_cli_receipts.py":
+            '"""Regression for actual Druid L60 Balance P4 30s '
+            'Actions #41502526876:"""\n',
+    }
+    for name, content in sources.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+    # Do not expand this safety scan into arbitrary generated test fixture JSON.
+    fixture = tmp_path / "tests/fixtures/synthetic.json"
+    fixture.parent.mkdir(parents=True, exist_ok=True)
+    fixture.write_text("Actions #99999999999", encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {41893190218, 41502526876}
+    assert artifacts == set()
+
+
 def test_markdown_artifact_id_without_run_url_remains_pinned(tmp_path):
     """A retained native Go receipt explicitly uses artifact ID **`id`**."""
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
@@ -320,6 +348,7 @@ def test_python_repr_receipts_pin_artifacts_and_origin_runs(tmp_path):
 @pytest.mark.parametrize("damaged_path", [
     "docs/evidence/damaged-receipt.json",
     "evidence/native/damaged-paid.log",
+    "tests/generic/search/damaged-paid_regression.py",
     "PROCESS.md",
 ])
 def test_malformed_utf8_paid_receipt_aborts_artifact_pin_scan(tmp_path, damaged_path):

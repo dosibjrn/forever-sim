@@ -308,12 +308,19 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
         record_references(path.read_text(encoding="utf-8"), runs, artifacts)
     # Executable gate tools and native entrypoints may retain the only paid
     # run/artifact reference in source comments. Protect these small, bounded
-    # production script roots without scanning synthetic tests or game data.
+    # production script roots without scanning generated fixtures or game data.
     # A corrupt executable fails the evidence scan closed before any DELETE.
     for folder in ("tools", "integrations/mythicsim-rust"):
         for path in (root / folder).glob("*.py"):
             record_references(path.read_text(encoding="utf-8"),
                               runs, artifacts)
+    # Forever regression sources can preserve the *only* paid native run ID
+    # (for example the Priest L20 cold refusal and Druid L60 Balance P4
+    # 30s receipts). A future artifact GC must protect those source-linked
+    # runs even if no separate documentation or issue URL still cites them.
+    # Scan Python source, not fixture payloads, so this remains bounded.
+    for path in (root / "tests").rglob("*.py"):
+        record_references(path.read_text(encoding="utf-8"), runs, artifacts)
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
                  "docs/planning/M1_PASSES.tsv"):
         record_references((root / name).read_text(encoding="utf-8"),
