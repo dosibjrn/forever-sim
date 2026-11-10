@@ -36,6 +36,28 @@ def _read(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def _cached_paid_refusal(route: Path, level: int) -> bool:
+    """Recognize a persisted native refusal without mistaking it for paid work.
+
+    A failed native 100-target attempt can still publish route.json with the
+    previous measured levels plus a new-level refusal. The file's existence
+    alone is not a paid ACK. Only the same-level native refusal is resumable;
+    malformed or mismatched paid receipts still go through strict verification.
+    """
+    report = _read(route)
+    if report.get("class") != "warlock" or level in report.get("measured_levels", []):
+        return False
+    refusals = report.get("native_refusals", [])
+    return isinstance(refusals, list) and any(
+        isinstance(row, dict)
+        and row.get("level") == level
+        and isinstance(row.get("status"), str)
+        and bool(row["status"])
+        and row["status"] != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS"
+        for row in refusals
+    )
+
+
 def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
         from_level: int, end_level: int, max_new_levels: int = 2,
         predecessor_binary_sha256: str | None = None,
@@ -60,6 +82,26 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
     progress_path = out / "range_progress.json"
 
     def save() -> dict:
+        # Every genuine native guide run writes a route.json and a GUIDE.md
+        # together. Publish the latest human-facing guide beside range_progress
+        # so artifact consumers need not know the content-addressed cache key.
+        # A terminal native refusal has its own guide with the actual refusal;
+        # never replace it with a falsely successful predecessor guide.
+        published_route = current_route
+        if stopped and stopped.get("route"):
+            refusal_route = Path(stopped["route"])
+            if refusal_route.is_file():
+                published_route = refusal_route
+        native_guide = published_route.with_name("GUIDE.md")
+        latest_guide = out / "GUIDE.md"
+        if native_guide.is_file():
+            tmp_guide = latest_guide.with_suffix(".tmp")
+            tmp_guide.write_bytes(native_guide.read_bytes())
+            tmp_guide.replace(latest_guide)
+        else:
+            # If a new invocation has no native guide, do not leave a
+            # previous invocation's guide masquerading as this range result.
+            latest_guide.unlink(missing_ok=True)
         result = {
             "kind": "warlock_native_paid_range_v1",
             "from_level": from_level, "end_level": end_level,
@@ -72,6 +114,7 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             "elapsed_10_60_seconds": None,
             "last_paid_route": str(current_route),
             "last_paid_source": str(current_source),
+            "latest_guide": str(latest_guide) if native_guide.is_file() else None,
         }
         tmp = progress_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
@@ -146,8 +189,16 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, out: Path,
             raise ValueError(f"prepared L{level} source bytes do not match native proposal")
 
         if paid_route.is_file():
+            # A failed paid attempt also publishes route.json. Preserve its
+            # actual native refusal on resume: neither pretend it was paid
+            # nor re-execute an unchanged failed 100-target scenario.
+            if _cached_paid_refusal(paid_route, level):
+                stopped = {"level": level, "status": "NATIVE_PAID_REFUSAL",
+                           "proposal": str(proposal_file), "route": str(paid_route)}
+                return save()
             # A completed equivalent native run is permanently reusable: no
-            # 'staleness' veto and no repeated 100-mob payment.
+            # 'staleness' veto and no repeated 100-mob payment. Any malformed
+            # or nonmatching measured receipt still fails strict verification.
             next_level.verified_paid_predecessor(
                 route=paid_route, source=selected_source, binary=binary,
                 from_level=level)

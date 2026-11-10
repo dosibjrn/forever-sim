@@ -48,12 +48,14 @@ def _mock_native(monkeypatch):
             out = Path(args[args.index("--out") + 1])
             out.mkdir(parents=True, exist_ok=True)
             (out / "route.json").write_text('{"native_refusals":["refused"]}')
+            (out / "GUIDE.md").write_text("Refused native source\n")
             return 2
         level = int(args[args.index("--actor-level") + 1])
         calls["paid"].append(level)
         out = Path(args[args.index("--out") + 1])
         out.mkdir(parents=True, exist_ok=True)
         (out / "route.json").write_text(json.dumps({"measured_level": level}))
+        (out / "GUIDE.md").write_text(f"Paid native L{level}\n")
         return 0
     monkeypatch.setattr(paid_range.next_level, "verified_paid_predecessor", verify)
     monkeypatch.setattr(paid_range.next_level, "propose", propose)
@@ -71,11 +73,13 @@ def test_pays_adjacent_levels_once_and_reuses_paid_cache(tmp_path, monkeypatch):
     assert result["reused_levels"] == []
     assert calls["paid"] == [43, 44]
     assert result["full_10_60_native_replay_executed"] is False
+    assert Path(result["latest_guide"]).read_text() == "Paid native L44\n"
     again = paid_range.run(**kwargs)
     assert again["completed_new_levels"] == []
     assert again["reused_levels"] == [43, 44]
     assert calls["paid"] == [43, 44]
     assert calls["proposal"] == [43, 44]
+    assert Path(again["latest_guide"]).read_text() == "Paid native L44\n"
 
 
 def test_new_level_budget_preserves_intermediate_paid_checkpoint(tmp_path, monkeypatch):
@@ -86,6 +90,7 @@ def test_new_level_budget_preserves_intermediate_paid_checkpoint(tmp_path, monke
     first = paid_range.run(**kwargs, max_new_levels=1)
     assert first["completed_new_levels"] == [43]
     assert first["stopped"] == {"level": 44, "status": "BOUNDED_NEW_LEVEL_BUDGET"}
+    assert Path(first["latest_guide"]).read_text() == "Paid native L43\n"
     second = paid_range.run(**kwargs, max_new_levels=2)
     assert second["reused_levels"] == [43]
     assert second["completed_new_levels"] == [44, 45]
@@ -118,6 +123,103 @@ def test_native_prepare_refusal_is_published_and_stops(tmp_path, monkeypatch):
     assert result["stopped"]["status"] == "NATIVE_ACTOR_LEVEL_UNSUPPORTED"
     assert calls["paid"] == []
     assert Path(result["stopped"]["route"]).is_file()
+    assert Path(result["latest_guide"]).read_text() == "Refused native source\n"
     repeated = paid_range.run(**kwargs)
     assert repeated["stopped"]["status"] == "NATIVE_ACTOR_LEVEL_UNSUPPORTED"
     assert calls["paid"] == []
+
+
+def test_failed_native_payment_resumes_without_repaying_same_refusal(tmp_path, monkeypatch):
+    binary, source, route = _inputs(tmp_path)
+    calls = _mock_native(monkeypatch)
+
+    def native_refuses_payment(args):
+        level = int(args[args.index("--actor-level") + 1])
+        calls["paid"].append(level)
+        out = Path(args[args.index("--out") + 1])
+        out.mkdir(parents=True, exist_ok=True)
+        # Real guide publication includes the already measured predecessor
+        # but explicitly refuses to score this new-level 100-target attempt.
+        (out / "route.json").write_text(json.dumps({
+            "class": "warlock", "measured_levels": [42],
+            "native_refusals": [{
+                "level": level, "variant": "best_apl",
+                "status": "NATIVE_EXECUTION_REFUSED",
+                "error": "native Rust rejected this hostile candidate",
+            }],
+        }))
+        (out / "GUIDE.md").write_text(f"Refused native L{level}\n")
+        return 2
+
+    monkeypatch.setattr(paid_range.guide, "main", native_refuses_payment)
+    kwargs = dict(binary=binary, source=source, predecessor_route=route,
+                  out=tmp_path / "range", from_level=42, end_level=44)
+    first = paid_range.run(**kwargs)
+    assert first["stopped"]["status"] == "NATIVE_PAID_REFUSAL"
+    assert first["stopped"]["level"] == 43
+    assert first["completed_new_levels"] == []
+    assert calls["paid"] == [43]
+
+    resumed = paid_range.run(**kwargs)
+    assert resumed["stopped"] == first["stopped"]
+    assert resumed["completed_new_levels"] == []
+    assert resumed["reused_levels"] == []
+    assert resumed["last_paid_route"] == str(route)
+    assert calls["paid"] == [43]  # no second paid native attempt
+    assert calls["proposal"] == [43]  # no duplicate native prepare
+    assert Path(resumed["latest_guide"]).read_text() == "Refused native L43\n"
+
+
+
+def test_missing_native_guide_never_leaves_an_old_range_guide(tmp_path, monkeypatch):
+    binary, source, route = _inputs(tmp_path)
+    _mock_native(monkeypatch)
+    output = tmp_path / "range"
+    output.mkdir()
+    (output / "GUIDE.md").write_text("Unrelated previous range guide")
+
+    def refuse_without_guide(args):
+        level = int(args[args.index("--actor-level") + 1])
+        paid = Path(args[args.index("--out") + 1])
+        paid.mkdir(parents=True, exist_ok=True)
+        (paid / "route.json").write_text(json.dumps({
+            "class": "warlock", "measured_levels": [42],
+            "native_refusals": [{"level": level, "status": "NATIVE_EXECUTION_REFUSED"}],
+        }))
+        return 2
+
+    monkeypatch.setattr(paid_range.guide, "main", refuse_without_guide)
+    result = paid_range.run(
+        binary=binary, source=source, predecessor_route=route, out=output,
+        from_level=42, end_level=43,
+    )
+    assert result["stopped"]["status"] == "NATIVE_PAID_REFUSAL"
+    assert result["latest_guide"] is None
+    assert not (output / "GUIDE.md").exists()
+
+
+
+def test_cached_refusal_requires_unmeasured_same_level(tmp_path):
+    report = tmp_path / "route.json"
+    report.write_text(json.dumps({
+        "class": "warlock", "measured_levels": [42],
+        "native_refusals": [
+            {"level": 44, "status": "NATIVE_EXECUTION_REFUSED"},
+        ],
+    }))
+    assert not paid_range._cached_paid_refusal(report, 43)
+    assert paid_range._cached_paid_refusal(report, 44)
+    # A candidate refusal beside a separate measured candidate cannot mask
+    # an invalid or mismatched paid result at the same level.
+    report.write_text(json.dumps({
+        "class": "warlock", "measured_levels": [43],
+        "native_refusals": [
+            {"level": 43, "status": "NATIVE_EXECUTION_REFUSED"},
+        ],
+    }))
+    assert not paid_range._cached_paid_refusal(report, 43)
+    report.write_text(json.dumps({
+        "class": "warlock", "measured_levels": [42],
+        "native_refusals": [{"level": 43, "status": None}],
+    }))
+    assert not paid_range._cached_paid_refusal(report, 43)
