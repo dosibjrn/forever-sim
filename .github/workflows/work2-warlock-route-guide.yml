@@ -2,6 +2,7 @@ name: Work2 Warlock native route guide
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: [main]
     paths:
       - .github/workflows/work2-warlock-route-guide.yml
@@ -31,3 +32,65 @@ jobs:
           python tools/wf_warlock_route_guide.py --out /tmp/warlock-route
           python -m json.tool /tmp/warlock-route/route.json > /dev/null
           test -s /tmp/warlock-route/GUIDE.md
+
+  # One real changed-integration exercise when the PR is first opened.
+  # Do not pay again on every follow-up push/CI rerun; focused guide tests
+  # above continue to cover edits. Preserves failures as native artifacts.
+  paid-native-l20-route:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact Work2 PR
+        uses: actions/checkout@v4
+        with:
+          path: project
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout selected source-native Rust executor
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: febc1d703e022265ed61ede3fec9b05416282536
+          path: engine
+      - name: Verify selected native engine and preserved source actor
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
+          git -C project rev-parse HEAD
+          test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install native world bridge dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Verify Forever-owned guide forwarding and refusals
+        working-directory: project
+        run: python -m pytest -q tests/test_work2_warlock_route_guide.py
+      - name: Compile exact selected Rust executor
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Execute one real L20 hostile paid gsim→Rust route and publish guide
+        working-directory: project
+        env:
+          # This workflow is not an official M1 gate recorder.
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -euo pipefail
+          python -u tools/wf_warlock_route_guide.py \
+            --execute-native \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --health-threshold 0.7 --mana-threshold 0.25 \
+            --trial exact-pinned-hostile-l20-route \
+            --out ../warlock-l20-native-route
+          python -m json.tool ../warlock-l20-native-route/route.json > /dev/null
+          test -s ../warlock-l20-native-route/GUIDE.md
+      - name: Preserve complete native request, paid receipts, refusals and guide
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-paid-route-${{ github.run_id }}
+          path: |
+            warlock-l20-native-route/
+          if-no-files-found: warn
+          retention-days: 7

@@ -166,7 +166,7 @@ def test_native_cold_request_fingerprint_mismatch_is_rejected():
 
 
 
-def native_chain_summary(tmp_path):
+def native_chain_summary(tmp_path, *, level=20):
     """Minimal *producer transport* fixture, not a simulated Warcraft fight."""
     import hashlib
     actor = {
@@ -205,6 +205,11 @@ def native_chain_summary(tmp_path):
         "native_health_damage": {"observed": True, "damage_taken": 308},
         "native_food_seconds": 125,
         "native_water_seconds": 250,
+        "native_food_health_gain": 145.5,
+        "native_water_mana_gain": 300.0,
+        "native_recovery_seconds": 375.0,
+        "walk_paid_s": 257.75,
+        "native_damage_events": 24,
     }
     summary = {
         "kind": "real_100_target_source_native_world_attempts",
@@ -213,6 +218,10 @@ def native_chain_summary(tmp_path):
         "native_recovery_requested": {"recovery_policy": "decisions"},
         "results": [receipt],
     }
+    if level != 20:
+        summary["actor_level"] = level
+        receipt["actor_level"] = level
+        receipt["native_actor"] = {"level": level, "class": "ClassWarlock"}
     path = tmp_path / "summary.json"
     path.write_text(json.dumps(summary))
     return path, summary
@@ -230,6 +239,14 @@ def test_native_chain_adapter_consumes_exact_source_and_real_paid_receipts(tmp_p
     assert rows[0]["pet"] == {"summon": 2}
     assert rows[0]["native_final_hp"] == 370
     assert rows[0]["native_food_seconds"] == 125
+    assert rows[0]["native_water_mana_gain"] == 300
+    assert rows[0]["native_recovery_seconds"] == 375
+    assert rows[0]["native_walk_paid_seconds"] == 257.75
+    guide = render_guide(report)
+    assert "native_final_hp: 370" in guide
+    assert "native_water_seconds: 250" in guide
+    assert "native_walk_paid_seconds: 257.75" in guide
+    assert "source_request_sha256:" in guide
     assert rows[0]["run_url"] is None
     assert "Local receipt:" in render_guide(report)
     assert "not a claimed executed 10" in render_guide(report)
@@ -277,8 +294,10 @@ def test_one_invocation_calls_real_producer_and_publishes_its_saved_summary(tmp_
         commands.append(cmd)
         assert "--targets" in cmd and cmd[cmd.index("--targets") + 1] == "100"
         assert "--hostile-player-tank" in cmd
-        assert "--require-native-health-damage" in cmd
+        assert "--require-native-health-damage" not in cmd
         assert cmd[cmd.index("--recovery-policy") + 1] == "decisions"
+        assert cmd[cmd.index("--health-threshold") + 1] == "0.7"
+        assert cmd[cmd.index("--mana-threshold") + 1] == "0.25"
         native_chain_summary(tmp_path / "guide" / "native_l20")
         return subprocess.CompletedProcess(cmd, 0, stdout="CHAIN_COMPLETED")
 
@@ -302,5 +321,114 @@ def test_no_paid_native_candidate_cannot_publish_a_measured_route(tmp_path):
     assert rows == []
     assert refusals[0]["killed"] == 42
     path.write_text(json.dumps(summary))
-    with pytest.raises(ValueError, match="no complete paid native"):
-        main(["--native-summary", str(path), "--out", str(tmp_path / "guide")])
+    out = tmp_path / "guide"
+    assert main(["--native-summary", str(path), "--out", str(out)]) == 2
+    report = json.loads((out / "route.json").read_text())
+    assert report["status"] == "native_refusal_only_no_measured_chain"
+    assert report["measured_levels"] == []
+    assert len(report["unmeasured_levels"]) == 51
+    assert report["observations"] == []
+    assert report["native_refusals"][0]["killed"] == 42
+    assert "NATIVE_ACTOR_DIED" in (out / "GUIDE.md").read_text()
+    assert "L10-60" in (out / "GUIDE.md").read_text()
+
+
+def test_executed_route_forwards_custom_decisions_thresholds(tmp_path, monkeypatch):
+    from tools import wf_warlock_route_guide as guide
+    import subprocess
+    binary = tmp_path / "engine"
+    source = tmp_path / "request.json"
+    binary.write_bytes(b"native engine test placeholder")
+    source.write_text("{}")
+    def fake_run(cmd, **kwargs):
+        assert cmd[cmd.index("--health-threshold") + 1] == "0.65"
+        assert cmd[cmd.index("--mana-threshold") + 1] == "0.3"
+        native_chain_summary(tmp_path / "route" / "native_l20")
+        return subprocess.CompletedProcess(cmd, 0)
+    monkeypatch.setattr(guide.subprocess, "run", fake_run)
+    out = tmp_path / "route"
+    assert main(["--execute-native", "--binary", str(binary),
+                 "--source", str(source), "--out", str(out),
+                 "--health-threshold", "0.65", "--mana-threshold", "0.3"]) == 0
+    assert json.loads((out / "route.json").read_text())["measured_levels"] == [20]
+
+
+def test_zero_incoming_damage_is_observed_not_extra_route_gate(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    path, summary = native_chain_summary(tmp_path)
+    summary["results"][0]["native_health_damage"] = {
+        "observed": True, "damage_taken": 0, "damage_events": 0}
+    summary["results"][0]["native_damage_events"] = 0
+    rows, refusals = observations_from_native_chain_summary(summary, summary_path=path)
+    assert len(rows) == 1 and not refusals
+    assert rows[0]["native_health_damage"]["damage_taken"] == 0
+    assert "damage_taken" in render_guide(build_route_report(payload(*rows)))
+
+
+def test_adjacent_level_native_receipts_are_distinct_and_keep_l20(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    l20, _ = native_chain_summary(tmp_path / "l20")
+    l21, summary = native_chain_summary(tmp_path / "l21", level=21)
+    rows, refusals = observations_from_native_chain_summary(
+        summary, summary_path=l21, trial="real-l21")
+    assert not refusals
+    assert rows[0]["level"] == 21
+    assert "L21" in rows[0]["scenario"]
+    out = tmp_path / "route"
+    assert main(["--native-summary", str(l20), "--native-summary", str(l21),
+                 "--out", str(out)]) == 0
+    report = json.loads((out / "route.json").read_text())
+    assert report["measured_levels"] == [20, 21]
+    assert len(report["comparisons"]) == 2
+    assert report["full_10_60_native_replay_executed"] is False
+    assert report["elapsed_10_60_seconds"] is None
+    assert "L20-21" in (out / "GUIDE.md").read_text()
+
+
+def test_adjacent_level_cannot_relabel_old_prepared_actor(tmp_path):
+    from tools.wf_warlock_route_guide import observations_from_native_chain_summary
+    path, summary = native_chain_summary(tmp_path / "l21", level=21)
+    summary["results"][0]["native_actor"]["level"] = 20
+    with pytest.raises(ValueError, match="Rust-prepared actor"):
+        observations_from_native_chain_summary(summary, summary_path=path)
+    summary["results"][0]["native_actor"]["level"] = 21
+    summary["results"][0]["actor_level"] = 20
+    with pytest.raises(ValueError, match="actor-level request"):
+        observations_from_native_chain_summary(summary, summary_path=path)
+
+
+def test_adjacent_failure_keeps_prior_measured_level_and_reports_refusal(tmp_path):
+    l20, _ = native_chain_summary(tmp_path / "l20")
+    l21, summary = native_chain_summary(tmp_path / "l21", level=21)
+    summary["results"][0].update(
+        status="INCOMPLETE_OR_NATIVE_REFUSAL", killed=24, error="NATIVE_ACTOR_DIED")
+    l21.write_text(json.dumps(summary))
+    out = tmp_path / "route"
+    assert main(["--native-summary", str(l20), "--native-summary", str(l21),
+                 "--out", str(out)]) == 0
+    report = json.loads((out / "route.json").read_text())
+    assert report["measured_levels"] == [20]
+    assert 21 in report["unmeasured_levels"]
+    assert report["native_refusals"][0]["level"] == 21
+    assert report["native_refusals"][0]["killed"] == 24
+
+
+def test_adjacent_execute_forwards_level_to_real_native_producer(tmp_path, monkeypatch):
+    from tools import wf_warlock_route_guide as guide
+    import subprocess
+    binary = tmp_path / "engine"
+    source = tmp_path / "request.json"
+    binary.write_bytes(b"binary-placeholder")
+    source.write_text("{}")
+    def fake_run(cmd, **kwargs):
+        assert cmd[cmd.index("--actor-level") + 1] == "21"
+        assert cmd[cmd.index("--targets") + 1] == "100"
+        native_chain_summary(tmp_path / "route" / "native_l21", level=21)
+        return subprocess.CompletedProcess(cmd, 0)
+    monkeypatch.setattr(guide.subprocess, "run", fake_run)
+    out = tmp_path / "route"
+    assert main(["--execute-native", "--binary", str(binary), "--source", str(source),
+                 "--actor-level", "21", "--out", str(out)]) == 0
+    report = json.loads((out / "route.json").read_text())
+    assert report["measured_levels"] == [21]
+    assert 20 in report["unmeasured_levels"]
