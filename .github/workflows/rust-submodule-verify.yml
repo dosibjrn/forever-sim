@@ -339,7 +339,7 @@ jobs:
           name: paladin-retribution-l60-native-p3-no-record
           path: ${{ runner.temp }}/paladin-retribution-p3/
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 7
 
       - name: Run Paladin Protection L60 selected-native TPS P3 (no record)
         if: steps.selected_rust_change.outputs.changed == 'true'
@@ -395,7 +395,7 @@ jobs:
           name: paladin-protection-l60-native-p3-no-record
           path: ${{ runner.temp }}/paladin-protection-p3/
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 7
 
       - name: Run no-record Rogue L20 P3 native capability and gate receipt
         if: steps.selected_rust_change.outputs.changed == 'true'
@@ -607,4 +607,4 @@ jobs:
           name: native-p3-no-record-${{ github.sha }}
           path: ${{ runner.temp }}/native-p3-no-record/*.json
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 7
