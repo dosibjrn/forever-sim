@@ -117,6 +117,40 @@ def test_native_refusal_and_incomplete_finalists_never_score(monkeypatch, tmp_pa
         bridge.set_shared_warlock_l20_cold(False)
 
 
+
+def test_p4_independent_of_missing_or_invalid_p5_final_winner():
+    """A completed P4 snapshot must not inherit an unrelated P5 refusal."""
+    report = _cold()
+    report["final_300"] = None
+    report["finalists"].pop("300s")
+
+    p4_verdict = bridge._gate_verdict(report, "P4", run_id="test-p4")
+    assert p4_verdict["status"] == "PASS"
+    assert p4_verdict["runtime_proof"]["executed"] is True
+    for gate in ("P5", "P6"):
+        verdict = bridge._gate_verdict(report, gate, run_id="test-" + gate)
+        assert verdict["status"] == "FAIL"
+        assert "P5_NATIVE_PAID_300S_WINNER_MISSING" in verdict["reasons"]
+
+    # Even an existing but invalid P5 winner must not veto a paid P4 result.
+    invalid = _cold()
+    invalid["final_300"]["paid_completed_elapsed_s"] = 301.0
+    assert bridge._gate_verdict(invalid, "P4", run_id="test-p4")["status"] == "PASS"
+    for gate in ("P5", "P6"):
+        verdict = bridge._gate_verdict(invalid, gate, run_id="test-" + gate)
+        assert "P5_NATIVE_PAID_WINNER_OUTSIDE_BUDGET" in verdict["reasons"]
+
+
+def test_p4_still_requires_real_shared_300_second_search():
+    report = _cold()
+    report["cold_300_reached"] = False
+    report["final_300"] = None
+    verdict = bridge._gate_verdict(report, "P4", run_id="test-p4")
+    assert verdict["status"] == "FAIL"
+    assert "P4_P5_NATIVE_COLD_300S_NOT_REACHED" in verdict["reasons"]
+    assert "P5_NATIVE_PAID_300S_WINNER_MISSING" not in verdict["reasons"]
+
+
 def test_p4_paid_winner_no_longer_needs_unlock_cast_certificate(monkeypatch, tmp_path):
     monkeypatch.setenv(bridge.OPT_IN, "1")
     report = _cold()
