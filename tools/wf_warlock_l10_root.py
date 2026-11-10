@@ -133,6 +133,13 @@ def propose_root(*, binary: Path, template: Path, out: Path,
             actor = request["raid"]["parties"][0]["players"][0]
             actor["level"] = 10
             actor["talentsString"] = talents
+            # L20 provides only the request shape, not L10 gear. Carrying
+            # its equipped IDs into every candidate makes the L10 native
+            # prepare depend on unrelated higher-level source items. Start
+            # with unequipped slots; only Rust may accept or refuse this actor.
+            actor["equipment"]["items"] = [
+                {"id": 0} for _ in actor["equipment"]["items"]
+            ]
             request["encounter"]["targets"][0]["level"] = 10
             # A minimal candidate APL uses a native-offered spell ID.
             # Rust prepare, not Forever, judges whether it is usable.

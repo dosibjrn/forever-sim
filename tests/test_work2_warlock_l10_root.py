@@ -55,7 +55,7 @@ def test_seed_from_l20_shape_asks_exact_l10_native_options_and_prepare(
         assert actor["talentsString"] == "0-0-0"
         assert actor["rotation"]["priorityList"][0]["action"]["castSpell"][
             "spellId"]["spellId"] == 686  # actual Rust offered ID
-        assert actor["equipment"]["items"] == [{"id": 260212}, {"id": 22968}]
+        assert actor["equipment"]["items"] == [{"id": 0}, {"id": 0}]
         out.mkdir(parents=True)
         (out / "source_request.json").write_bytes(source.read_bytes())
         return {"status": "NATIVE_PREPARED_NOT_YET_PAID", "native_refusals": []}
@@ -71,6 +71,49 @@ def test_seed_from_l20_shape_asks_exact_l10_native_options_and_prepare(
     assert receipt["selected_source_sha256"] == root.next_level.sha256(
         out / "source_request.json")
     assert json.loads(template.read_text())["encounter"]["targets"][0]["level"] == 20
+
+
+
+
+def test_l10_native_prepare_receives_unequipped_slots_not_l20_items(
+        tmp_path, monkeypatch):
+    """Retain the native 17-slot shape but never promote L20 items to L10."""
+    binary, template = _inputs(tmp_path)
+    original = json.loads(template.read_text())
+    original_items = [{"id": 100001 + i, "enchant": 123}
+                      for i in range(17)]
+    original["raid"]["parties"][0]["players"][0]["equipment"]["items"] = original_items
+    template.write_text(json.dumps(original))
+
+    def options(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({
+            "class": "warlock", "level": 10,
+            "source_revision": "selected-native-source",
+            "spells": [{"name": "Shadow Bolt", "spell_id": 686}],
+            "talents": {"trees": [{"talents": []}] * 3},
+        }))
+
+    def prepare(*, binary, source, out, actor_level):
+        assert actor_level == 10
+        candidate = json.loads(source.read_text())
+        actor = candidate["raid"]["parties"][0]["players"][0]
+        assert actor["equipment"]["items"] == [{"id": 0}] * 17
+        assert actor["level"] == 10
+        out.mkdir(parents=True)
+        (out / "source_request.json").write_bytes(source.read_bytes())
+        return {"status": "NATIVE_PREPARED_NOT_YET_PAID",
+                "native_refusals": []}
+
+    monkeypatch.setattr(root.subprocess, "run", options)
+    monkeypatch.setattr(root.same_level, "select_prepared_source", prepare)
+    receipt = root.propose_root(binary=binary, template=template,
+                                out=tmp_path / "root", max_proposals=1)
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    prepared = json.loads((tmp_path / "root" / "source_request.json").read_text())
+    assert prepared["raid"]["parties"][0]["players"][0]["equipment"]["items"] == [
+        {"id": 0}] * 17
+    assert json.loads(template.read_text())["raid"]["parties"][0][
+        "players"][0]["equipment"]["items"] == original_items
 
 
 
