@@ -183,10 +183,22 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                     else None)
             rejected.append({"field_name": field, "tree_index": ti,
                              "reason": raw, "native_refusal_code": code})
-            if code == "actor_level_source":
-                # This exact native source refusal is about missing level/race
-                # base stats, not the candidate's talent choice. Do not pay
-                # for another 29 identical native preparations or fake L21.
+            source_level_reason = (
+                native_refusal.get("reason") if isinstance(native_refusal, dict)
+                else None
+            )
+            source_level_unavailable = (
+                code == "level"
+                and isinstance(source_level_reason, str)
+                and source_level_reason.startswith(
+                    f"player level {to_level} is unsupported: "
+                    "no source-backed native preparation"
+                )
+            )
+            if code == "actor_level_source" or source_level_unavailable:
+                # The native engine explicitly refuses this actor level/source,
+                # independent of talents or gear. Preserve its original code
+                # and stop rather than paying for repeated equivalent prepares.
                 receipt = {
                     "kind": "adjacent_native_warlock_candidate",
                     "status": "NATIVE_ACTOR_LEVEL_UNSUPPORTED",
