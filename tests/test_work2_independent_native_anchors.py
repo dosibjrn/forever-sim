@@ -235,3 +235,66 @@ def test_failed_native_anchor_producer_preserves_refusal_and_visits_later_levels
     stored = list(tmp_path.glob("source-frontier-*/native-frontier-failure.json"))
     assert len(stored) == 1
     assert json.loads(stored[0].read_text())["native_refusal"] == refusal["native_refusal"]
+
+
+def test_one_sparse_compatible_optimizer_call_returns_one_three_level_build_path():
+    """Sparse rank compatibility is not a demand to simulate intervening levels."""
+    calls = []
+    talents = {
+        20: [("5-0-0", 3.0), ("0-5-0", 5.0)],
+        40: [("0-25-0", 1.0), ("20-0-0", 7.0)],
+        60: [("0-45-0", 1.0), ("40-0-0", 6.0)],
+    }
+
+    def native(**request):
+        calls.append(request)
+        level = request["level"]
+        rows = []
+        for name, seconds in talents[level]:
+            row = receipt(level, request["mob_count"], name, seconds)
+            row["talents"] = name
+            row["apl"] = {"priorityList": [name]}
+            row["gear"] = {"items": [level]}
+            rows.append(row)
+        return rows
+
+    result = optimize(
+        20, 60, 20, 2, 12, evaluate=native, mode="compatible",
+        class_name="warlock", talent_tree="unconstrained", backend="native",
+        rng_mode="balanced", iterations=1, recover_to_full=True,
+    )
+    assert [r["level"] for r in calls] == [20, 40, 60]
+    assert all(r["parent"] is None and r["mob_count"] == 2
+               and r["recover_to_full"] is True
+               and r["rng_mode"] == "balanced" and r["iterations"] == 1
+               for r in calls)
+    assert result["status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
+    assert result["intermediate_level_simulations_run"] is False
+    assert result["full_10_60_continuous_leveling_route_proven"] is False
+    best = result["ranked_alternatives"][0]
+    assert [step["level"] for step in best["steps"]] == [20, 40, 60]
+    # Independent fastest L20 (5-0-0) is incompatible with the faster
+    # L40/L60 alternative (0-25-0 / 0-45-0).
+    assert [step["talents"] for step in best["steps"]] == [
+        "0-5-0", "0-25-0", "0-45-0",
+    ]
+    assert best["sampled_cumulative_seconds"] == 7.0
+    assert [step["gear"]["items"] for step in best["steps"]] == [
+        [20], [40], [60],
+    ]
+    assert all(step["apl"] for step in best["steps"])
+
+
+def test_sparse_compatible_rejects_respec_and_does_not_fabricate_route():
+    def native(**request):
+        level = request["level"]
+        name = {20: "5-0-0", 40: "0-25-0", 60: "0-45-0"}[level]
+        row = receipt(level, request["mob_count"], name, 9.0)
+        row["talents"] = name
+        return [row]
+
+    report = optimize(20, 60, 20, 2, 6, evaluate=native, mode="compatible")
+    assert report["status"] == "NO_COMPLETE_COMPATIBLE_SAMPLED_PATH"
+    assert report["sampled_levels_compatible"] == [20]
+    assert report["ranked_alternatives"] == []
+    assert report["no_respec_within_sampled_path"] is False
