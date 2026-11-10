@@ -47,7 +47,7 @@ jobs:
       - name: Build exact pinned native executor
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Retrieve the actual successful L21 native source and route evidence
+      - name: Retrieve exact L21 executed-world source and route evidence
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -58,17 +58,17 @@ jobs:
             "https://api.github.com/repos/dosibjrn/mythicsim-forever-engine/actions/artifacts/13717741443/zip" \
             -o previous.zip
           unzip -q previous.zip -d previous
-          test -s previous/warlock-l21-source/source_request.json
+          test -s previous/warlock-l21-native-route/native_l21/best_apl/source_request.json
           test -s previous/warlock-l21-native-route/route.json
           python3 - <<'PY'
           import hashlib, json
           from pathlib import Path
           route=json.loads(Path("previous/warlock-l21-native-route/route.json").read_text())
-          source=Path("previous/warlock-l21-source/source_request.json").read_bytes()
+          source=Path("previous/warlock-l21-native-route/native_l21/best_apl/source_request.json").read_bytes()
           assert route["measured_levels"] == [20,21],route["measured_levels"]
           l21=[r for r in route["observations"] if r["level"]==21]
           assert l21 and any(r["source_request_sha256"]==hashlib.sha256(source).hexdigest()
-                             for r in l21), "L21 paid receipt/source identity mismatch"
+                             for r in l21), "L21 actual paid-world source fingerprint mismatch"
           assert route["full_10_60_native_replay_executed"] is False
           print("VERIFIED_PAID_L21_BASELINE",hashlib.sha256(source).hexdigest(),flush=True)
           PY
@@ -79,7 +79,7 @@ jobs:
         run: |
           python -u tools/wf_warlock_next_level_source.py \
             --binary ../engine/target/debug/forever-engine \
-            --source ../previous/warlock-l21-source/source_request.json \
+            --source ../previous/warlock-l21-native-route/native_l21/best_apl/source_request.json \
             --from-level 21 --to-level 22 \
             --out ../warlock-l22-source
       - name: Publish exact source-native L22 refusal without invented route
@@ -111,7 +111,7 @@ jobs:
         with:
           name: work2-warlock-l22-paid-${{ github.run_id }}
           path: |
-            previous/warlock-l21-source/source_request.json
+            previous/warlock-l21-native-route/native_l21/best_apl/source_request.json
             previous/warlock-l21-native-route/route.json
             warlock-l22-source/
             warlock-l22-native-route/
