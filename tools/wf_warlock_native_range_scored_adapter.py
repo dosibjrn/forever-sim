@@ -67,6 +67,16 @@ def evaluate_request(
     source = json.loads(manifest.read_text())
     if not isinstance(source, dict) or not isinstance(source.get("entries"), list):
         raise ValueError("NATIVE_PREPARED_MANIFEST_INVALID")
+    # Live Rust source/prepare reports its exact executable identity. Do not
+    # spend native world combat with a different binary than the one that
+    # prepared these candidates. Older prebuilt manifests without this field
+    # remain supported; the live producer always supplies it.
+    producer_engine = source.get("native_binary_sha256")
+    if producer_engine is not None and (
+            not _valid_sha(producer_engine)
+            or not binary.is_file()
+            or producer_engine != _sha(binary)):
+        raise ValueError("NATIVE_FRONTIER_SCORER_ENGINE_MISMATCH")
     parent_sha = parent["source_request_sha256"] if parent else None
     parent_level = parent["level"] if parent else None
     if parent is not None and not _valid_sha(parent_sha):
