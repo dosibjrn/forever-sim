@@ -35,3 +35,48 @@ def test_selected_rust_paid_probes_only_run_when_pin_changes():
         assert condition in guard.group(1), headline
         if "actions/upload-artifact@v4" in headline:
             assert "always()" in guard.group(1), headline
+
+
+def test_unaccepted_p3_probes_require_fresh_opt_in_label():
+    """PR pushes keep Rust options smoke, but cannot replay paid P3 diagnostics."""
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert "types: [opened, synchronize, reopened, labeled]" in workflow
+    assert "Build the exact selected engine" in workflow
+    assert "Probe unified get_options JSON on two class/level pairs" in workflow
+
+    def step_guard(name):
+        section = workflow.split(f"      - name: {name}\n", 1)
+        assert len(section) == 2, name
+        body = section[1].split("\n      - name:", 1)[0]
+        guard = re.search(r"^        if: (.+)$", body, flags=re.MULTILINE)
+        assert guard is not None, name
+        return guard.group(1)
+
+    pin = "steps.selected_rust_change.outputs.changed == 'true'"
+    label = ("github.event.action == 'labeled' && "
+             "github.event.label.name == 'p3-native-paid-no-record'")
+    for name in (
+        "Run no-record Rogue L20 P3 native capability and gate receipt",
+        "Run no-record Priest and Mage L20 P3 with native item options",
+        "Run no-record Shaman L20 P3 with native item options",
+        "Run no-record Paladin L20 P3 with native player context and item options",
+        "Run no-record Mage L30 P3 with native item options",
+    ):
+        guard = step_guard(name)
+        assert pin in guard and label in guard, name
+
+    # A selected-engine pin change still compiles and checks native options,
+    # even when no explicit paid diagnostic has been requested.
+    for name in (
+        "Build the exact selected engine",
+        "Probe unified get_options JSON on two class/level pairs",
+    ):
+        guard = step_guard(name)
+        assert pin in guard and label not in guard, name
+
+    upload = workflow.split("      - name: Upload no-record native P3 reports", 1)
+    assert len(upload) == 2
+    guard = re.search(r"^        if: (.+)$", upload[1], flags=re.MULTILINE)
+    assert guard is not None
+    assert "always()" in guard.group(1)
+    assert pin in guard.group(1) and label in guard.group(1)
