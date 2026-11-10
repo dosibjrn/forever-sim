@@ -35,21 +35,46 @@ jobs:
           lfs: true
           fetch-depth: 1
 
+      # The L30 P7.1 reference was actually paid on this immutable Rust SHA.
+      # Never compare its stochastic DPS to a different selected engine.
+      # Keep the current Work1 PR/main gitlink untouched; use a clean,
+      # exact historical Forever checkout only for this no-record experiment.
+      - name: Checkout exact original L30 reference commit
+        uses: actions/checkout@v4
+        with:
+          ref: 1ccfa37bc0d29e2cbda64d3d56fc5a895ddfee52
+          path: frozen
+          submodules: true
+          lfs: true
+          fetch-depth: 1
+
+      - name: Apply exact Work1 production candidate code to frozen experiment
+        run: |
+          set -euo pipefail
+          cp tools/wf_gate_p7_2_live.py frozen/tools/wf_gate_p7_2_live.py
+          cp tools/wf_gate_p7_3_live.py frozen/tools/wf_gate_p7_3_live.py
+          cp src/engine_client/native_talent_proposals.py frozen/src/engine_client/native_talent_proposals.py
+          cp tests/test_work1_druid_l30_p73.py frozen/tests/test_work1_druid_l30_p73.py
+          cp tests/test_work2_warlock_l20_p73.py frozen/tests/test_work2_warlock_l20_p73.py
+          cp tests/gates/test_wf_gate_p7_3_live.py frozen/tests/gates/test_wf_gate_p7_3_live.py
+
       - name: Verify unchanged frozen L30 reference and selected gitlink
         shell: bash
         run: |
           set -euo pipefail
           engine=integrations/mythicsim-rust/engine
-          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
-          actual="$(git -C "$engine" rev-parse HEAD)"
-          [[ -n "$recorded" && "$recorded" == "$actual" ]] || {
-            echo "SELECTED_NATIVE_GITLINK_DIVERGED" >&2
+          recorded="$(git -C frozen ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "frozen/$engine" rev-parse HEAD)"
+          expected="$(python -c 'import json; print(json.load(open("frozen/docs/evidence/native-references/druid-l30-unrestricted/reference.json"))["selected_engine_revision"])')"
+          [[ -n "$recorded" && "$recorded" == "$actual" && "$recorded" == "$expected" ]] || {
+            echo "FROZEN_L30_NATIVE_ENGINE_IDENTITY_MISMATCH" >&2
             exit 1
           }
-          test -s docs/evidence/native-references/druid-l30-unrestricted/request.json
-          test -s docs/evidence/native-references/druid-l30-unrestricted/reference.json
-          echo "Forever HEAD: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Selected Rust SHA: $actual" >> "$GITHUB_STEP_SUMMARY"
+          test -s frozen/docs/evidence/native-references/druid-l30-unrestricted/request.json
+          test -s frozen/docs/evidence/native-references/druid-l30-unrestricted/reference.json
+          echo "Work1 production HEAD: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Frozen reference Forever HEAD: $(git -C frozen rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Frozen native reference Rust SHA: $actual" >> "$GITHUB_STEP_SUMMARY"
           echo "P7.1 native receipt is frozen; no stochastic resampling in this workflow" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-python@v5
@@ -62,6 +87,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
 
       - name: Validate changed L30 native request and refusal transport
+        working-directory: frozen
         run: >-
           python -m pytest -q
           tests/test_work1_druid_l30_p73.py
@@ -69,10 +95,11 @@ jobs:
           tests/gates/test_wf_gate_p7_3_live.py
 
       - name: Build exact pinned Rust executable
-        working-directory: integrations/mythicsim-rust/engine
+        working-directory: frozen/integrations/mythicsim-rust/engine
         run: cargo build --locked --release --bin forever-engine
 
-      - name: Pay real Druid L30 P7.3 changed talents on selected native scorer
+      - name: Pay real Druid L30 P7.3 changed talents on frozen native scorer
+        working-directory: frozen
         shell: bash
         run: |
           set -euo pipefail
@@ -88,7 +115,7 @@ jobs:
         with:
           name: work1-druid-l30-p73-no-record
           path: |
-            druid-l30-p73-gate.json
-            druid-l30-p73-gate-stdout.json
+            frozen/druid-l30-p73-gate.json
+            frozen/druid-l30-p73-gate-stdout.json
           if-no-files-found: warn
           retention-days: 30
