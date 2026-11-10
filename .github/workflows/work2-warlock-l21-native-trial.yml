@@ -1,0 +1,113 @@
+name: Work2 Warlock L21 native candidate and paid adjacent route
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - work2/warlock-l20-paid-route-receipts-20261109-2230
+    paths:
+      - tools/wf_warlock_next_level_source.py
+      - tools/wf_warlock_route_guide.py
+      - tools/wf_warlock_l20_100mob.py
+      - tests/test_work2_warlock_next_level_source.py
+      - tests/test_work2_warlock_route_guide.py
+      - .github/workflows/work2-warlock-l21-native-trial.yml
+
+permissions:
+  contents: read
+
+jobs:
+  python-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
+      - name: Test exact source-level proposal and paid receipt transport
+        run: |
+          python -m pytest -q \
+            tests/test_work2_warlock_next_level_source.py \
+            tests/test_work2_warlock_route_guide.py
+
+  # One changed-behavior paid L21 trial when this stacked PR first opens.
+  # Synchronize repeats only focused Python tests, never the 100-mob run.
+  paid-native-l21:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact adjacent-level PR
+        uses: actions/checkout@v4
+        with:
+          path: project
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout exact source-native MythicSim executor
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: febc1d703e022265ed61ede3fec9b05416282536
+          path: engine
+      - name: Verify pinned source and actor fixture
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "febc1d703e022265ed61ede3fec9b05416282536"
+          test -s engine/fixtures/warlock-l20-troll-best-paid.request.json
+          git -C project rev-parse HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install world-bridge dependencies and focused tests
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Test adjacent native request/receipt transport
+        working-directory: project
+        run: python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_warlock_route_guide.py
+      - name: Compile selected source-native executor
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Propose actual L21 talent candidate from pinned Rust options and prepare
+        id: propose
+        continue-on-error: true
+        working-directory: project
+        run: |
+          python -u tools/wf_warlock_next_level_source.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --from-level 20 --to-level 21 \
+            --out ../warlock-l21-source
+      - name: Publish authoritative L21 native actor refusal without claiming measured kills
+        if: steps.propose.outcome == 'failure'
+        working-directory: project
+        run: |
+          set -euo pipefail
+          test -s ../warlock-l21-source/proposal.json
+          python -u tools/wf_warlock_route_guide.py \
+            --native-proposal ../warlock-l21-source/proposal.json \
+            --baseline-observations data/warlock/native_route_observations.json \
+            --out ../warlock-l21-native-route
+      - name: Execute one hostile L21 retained-actor 100-kill chain and publish L20+L21 coverage
+        if: steps.propose.outcome == 'success'
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python -u tools/wf_warlock_route_guide.py \
+            --execute-native --actor-level 21 \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../warlock-l21-source/source_request.json \
+            --health-threshold 0.7 --mana-threshold 0.25 \
+            --baseline-observations data/warlock/native_route_observations.json \
+            --trial pinned-first-l21-native \
+            --out ../warlock-l21-native-route
+      - name: Preserve source proposal, all native receipts, refusals and guide
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l21-native-${{ github.run_id }}
+          path: |
+            warlock-l21-source/
+            warlock-l21-native-route/
+          if-no-files-found: warn
+          retention-days: 7

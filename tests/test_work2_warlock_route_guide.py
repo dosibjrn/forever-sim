@@ -432,3 +432,62 @@ def test_adjacent_execute_forwards_level_to_real_native_producer(tmp_path, monke
     report = json.loads((out / "route.json").read_text())
     assert report["measured_levels"] == [21]
     assert 20 in report["unmeasured_levels"]
+
+
+def test_baseline_l20_retained_through_l21_native_result_and_refusal(tmp_path):
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(payload(paid("historical-l20", "real-prior-trial"))))
+    l21, summary = native_chain_summary(tmp_path / "l21", level=21)
+    out = tmp_path / "measured"
+    assert main(["--native-summary", str(l21),
+                 "--baseline-observations", str(baseline), "--out", str(out)]) == 0
+    report = json.loads((out / "route.json").read_text())
+    assert report["measured_levels"] == [20, 21]
+    assert len(report["comparisons"]) == 2
+    assert report["full_10_60_native_replay_executed"] is False
+    summary["results"][0].update(
+        status="INCOMPLETE_OR_NATIVE_REFUSAL", killed=7,
+        error="NATIVE_PREPARE_OR_WORLD_REFUSAL")
+    l21.write_text(json.dumps(summary))
+    refused_out = tmp_path / "refused"
+    assert main(["--native-summary", str(l21),
+                 "--baseline-observations", str(baseline), "--out", str(refused_out)]) == 2
+    report = json.loads((refused_out / "route.json").read_text())
+    assert report["measured_levels"] == [20]
+    assert 21 in report["unmeasured_levels"]
+    assert report["native_refusals"][0]["level"] == 21
+
+
+def test_native_actor_source_refusal_publishes_prior_l20_and_never_l21(tmp_path):
+    native = {
+        "kind": "adjacent_native_warlock_candidate",
+        "status": "NATIVE_ACTOR_LEVEL_UNSUPPORTED",
+        "from_level": 20, "to_level": 21, "attempted": 1,
+        "original_source_sha256": "c" * 64,
+        "native_binary_sha256": "e" * 64,
+        "native_refusals": [{
+            "field_name": "ruin", "tree_index": 2,
+            "native_refusal_code": "actor_level_source",
+            "reason": '{"prepared":false,"refusal":{"code":"actor_level_source",'
+                      '"reason":"no selected native level 21 base stats for RaceTroll ClassWarlock"}}',
+        }],
+    }
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps(native))
+    baseline = tmp_path / "prior.json"
+    baseline.write_text(json.dumps(payload(paid("actual-l20", "prior-receipt"))))
+    out = tmp_path / "out"
+    assert main(["--native-proposal", str(proposal),
+                 "--baseline-observations", str(baseline), "--out", str(out)]) == 2
+    report = json.loads((out / "route.json").read_text())
+    assert report["measured_levels"] == [20]
+    assert 21 in report["unmeasured_levels"]
+    assert report["full_10_60_native_replay_executed"] is False
+    assert report["native_refusals"][0]["native_refusal_code"] == "actor_level_source"
+    assert report["native_refusals"][0]["attempted"] == 1
+    assert "NATIVE_ACTOR_LEVEL_UNSUPPORTED" in (out / "GUIDE.md").read_text()
+    assert "L21" in (out / "GUIDE.md").read_text()
+    native["status"] = "NATIVE_PREPARED_NOT_YET_PAID"
+    proposal.write_text(json.dumps(native))
+    with pytest.raises(ValueError, match="expected refused"):
+        main(["--native-proposal", str(proposal), "--out", str(tmp_path / "bad")])
