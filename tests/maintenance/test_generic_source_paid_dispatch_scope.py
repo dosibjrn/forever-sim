@@ -62,9 +62,26 @@ def test_regular_pr_regressions_and_real_native_paid_producers_still_exist():
     source = WORKFLOW.read_text(encoding="utf-8")
     assert "types: [opened, synchronize, reopened, labeled]" in source
     assert "  source-search:\n" in source
-    assert "    needs: source-search\n" in _job("work2-p6-shared-cold-no-record")
+    assert "needs: source-search" not in _job("work2-p6-shared-cold-no-record")
     assert "python tools/wf_gate.py --class druid" in _job("work2-p6-shared-cold-no-record")
     for name in ("selected-native-p71", "selected-native-p72", "selected-native-p75"):
         job = _job(name)
         assert "cargo build --release --locked --bin forever-engine" in job
         assert "python tools/wf_gate.py --class druid" in job
+
+
+
+def test_explicit_paid_label_skips_generic_regression_job_without_blocking_paid_probe():
+    # Labeled event only authorizes the matching opt-in source-native job.
+    # Ordinary PR updates must continue running the generic regression suite.
+    source_job = _job("source-search")
+    assert "if: github.event.action != 'labeled'" in source_job
+    assert "python -m pytest -vv" in source_job
+    for name in (
+        "work2-p6-shared-cold-no-record",
+        "selected-native-p71",
+        "selected-native-p72",
+        "selected-native-p75",
+    ):
+        assert "needs: source-search" not in _job(name)
+        assert "github.event.action == 'labeled'" in _condition(name)
