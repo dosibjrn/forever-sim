@@ -446,3 +446,22 @@ def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch
     seen.clear()
     assert generic_main(base_args + ["--target-hp", "400"]) == 0
     assert seen == [(level, 400.0, 2) for level in (20, 40, 60)]
+
+
+
+def test_generic_optimizer_entrypoint_bypasses_legacy_class_registry():
+    """Actual -m runner must dispatch Warlock before old engine argv parsing."""
+    import subprocess
+    import sys
+
+    proc = subprocess.run(
+        [sys.executable, "-m", "src.v2.runner", "optimize",
+         "--class", "warlock", "--start-level", "20", "--end-level", "60",
+         "--level-stride", "20", "--n-mobs", "2", "--rng", "balanced",
+         "--backend", "rust", "--recover-at-end", "true", "--help"],
+        capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "--n-mobs" in proc.stdout and "--backend" in proc.stdout
+    assert "source-native sampled compatible build optimization" in proc.stdout.lower()
+    assert "invalid choice: 'warlock'" not in proc.stderr
