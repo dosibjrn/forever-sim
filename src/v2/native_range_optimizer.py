@@ -85,9 +85,13 @@ def optimize(
     budget: int, *,
     evaluate: Callable[..., Sequence[Mapping[str, Any]]],
     beam_width: int = 3, rng_mode: str = "balanced", iterations: int = 1,
-    recover_to_full: bool = True,
+    recover_to_full: bool = True, mode: str = "continuing",
 ) -> dict[str, Any]:
-    """Sample/rank a source-native *continuing* path in one high-level call.
+    """Rank real native candidates in a continuing path or independent samples.
+
+    Independent samples use parent=None at *every* level and never claim
+    a continuous route or add unrelated sample costs. Continuing mode retains
+    the native source-linked ancestry requirement.
 
     evaluate(level=, parent=, mob_count=, budget=, rng_mode=, iterations=,
              recover_to_full=) must return at most budget distinct native
@@ -104,7 +108,7 @@ def optimize(
             or type(beam_width) is not int or beam_width < 2
             or type(iterations) is not int or iterations < 1
             or not isinstance(rng_mode, str) or not rng_mode
-            or recover_to_full is not True):
+            or recover_to_full is not True or mode not in ("continuing", "independent")):
         raise ValueError("mob_count/budget/beam_width/RNG/terminal recovery invalid")
 
     # State: cumulative observed time, latest native source, sampled path.
@@ -117,7 +121,12 @@ def optimize(
     competing: dict[str, int] = {}
     last_frontier: list[tuple[float, Mapping[str, Any] | None, list[dict[str, Any]]]] = []
     native_attempts_by_level: dict[str, int] = {}
+    independent_rankings: dict[str, list[dict[str, Any]]] = {}
     for level_index, level in enumerate(levels):
+        if mode == "independent":
+            # Anchor scores are comparable only within their own level.
+            # Never feed a scored L20 root to the L30 anchor as a legal parent.
+            frontier = [(0.0, None, [])]
         # Budget the entire request, not just the first sample. A scorer may
         # spend up to its allotted candidate count but cannot starve every
         # later requested level by using the whole remaining global budget.
@@ -132,10 +141,13 @@ def optimize(
                 break
             parent_count_left = len(frontier) - parent_index
             parent_budget = max(1, remaining // parent_count_left)
-            receipts = evaluate(
+            evaluator_request = dict(
                 level=level, parent=parent, mob_count=mob_count, budget=parent_budget,
                 rng_mode=rng_mode, iterations=iterations, recover_to_full=True,
             )
+            if mode == "independent":
+                evaluator_request["search_mode"] = "independent"
+            receipts = evaluate(**evaluator_request)
             if not isinstance(receipts, Sequence) or isinstance(receipts, (str, bytes)):
                 raise TypeError("native evaluator must return a sequence of receipts")
             if len(receipts) > parent_budget:
@@ -178,27 +190,56 @@ def optimize(
         native_attempts_by_level[str(level)] = level_attempts
         competing[str(level)] = len(next_paths)
         if not next_paths:
+            if mode == "independent":
+                independent_rankings[str(level)] = []
+                continue
             break
         covered.append(level)
         last_frontier = sorted(
             next_paths.values(), key=lambda p: (p[0], p[1]["source_request_sha256"])
         )
-        frontier = last_frontier[:beam_width]
+        if mode == "independent":
+            independent_rankings[str(level)] = [
+                {"source_request_sha256": row["source_request_sha256"],
+                 "engine_binary_sha256": row["engine_binary_sha256"],
+                 "native_elapsed_seconds": cost,
+                 "terminal_recovery_seconds": row["terminal_recovery_seconds"],
+                 "talents": row.get("talents"), "pet": row.get("pet"),
+                 "gear": row.get("gear"), "apl": row.get("apl"),
+                 "receipt": dict(row), "continuity_unverified": True}
+                for cost, row, _ in last_frontier
+            ]
+        else:
+            frontier = last_frontier[:beam_width]
         # A single remaining-budget shortfall cannot be disguised as a result
         # for the unvisited samples. Preserve the completed prefix instead.
         if examined >= budget:
             break
 
-    ranked = [
+    ranked = ([
         {"sampled_cumulative_seconds": cost, "steps": steps,
          "source_request_sha256": source["source_request_sha256"]}
         for cost, source, steps in last_frontier
-    ]
+    ] if mode == "continuing" else [])
     complete = covered == list(levels)
+    independently_competitive = (complete and all(
+        len(independent_rankings.get(str(level), [])) >= 2 for level in levels
+    ))
     return {
-        "status": ("SAMPLED_NATIVE_PATH_RANKED" if complete and len(ranked) >= 2
+        "status": (("INDEPENDENT_NATIVE_ANCHORS_RANKED" if independently_competitive
+                    else "INDEPENDENT_NATIVE_ANCHORS_PARTIAL" if covered
+                    else "NO_COMPARABLE_NATIVE_ANCHORS") if mode == "independent"
+                   else "SAMPLED_NATIVE_PATH_RANKED" if complete and len(ranked) >= 2
                    else "SAMPLED_NATIVE_PREFIX_ONLY" if covered
                    else "NO_COMPARABLE_NATIVE_PATH"),
+        "search_mode": mode,
+        "continuity_unverified": mode == "independent",
+        "independent_level_rankings": independent_rankings,
+        "independent_sample_winner_elapsed_sum_seconds": (
+            sum(independent_rankings[str(level)][0]["native_elapsed_seconds"]
+                for level in levels)
+            if complete and mode == "independent" else None),
+        "independent_sample_sum_is_route_time": False,
         "sampled_levels_requested": list(levels),
         "sampled_levels_completed": covered,
         "mob_count": mob_count, "rng_mode": rng_mode, "iterations": iterations,
