@@ -210,7 +210,7 @@ def test_provisional_paid_markdown_rejects_injected_winner():
 
 def test_receipt_controlled_backticks_remain_literal_markdown_code():
     comparison = _comparison()
-    comparison["candidates"][2]["talents"] = "123" + "\`" + "456"
+    comparison["candidates"][2]["talents"] = "123`456"
     result = _build(comparison)
     markdown = guide.render_markdown(result)
-    assert "\`\`123\`456\`\`" in markdown
+    assert "``123`456``" in markdown
