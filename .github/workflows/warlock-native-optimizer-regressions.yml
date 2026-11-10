@@ -1,0 +1,33 @@
+name: Warlock source-native optimizer forwarding regressions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - tools/wf_warlock_native_optimizer.py
+      - tests/test_work1_warlock_world_finalists.py
+      - .github/workflows/warlock-native-optimizer-regressions.yml
+  push:
+    branches:
+      - work/warlock-l55-survival-search-20261110
+    paths:
+      - tools/wf_warlock_native_optimizer.py
+      - tests/test_work1_warlock_world_finalists.py
+      - .github/workflows/warlock-native-optimizer-regressions.yml
+
+permissions:
+  contents: read
+
+jobs:
+  optimizer-forwarding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install focused Python regressions
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify native-paid score forwarding and bounded finalist selection
+        run: python -m pytest -q tests/test_work1_warlock_world_finalists.py
