@@ -65,7 +65,7 @@ def test_later_native_faster_candidate_beats_first_preparable(tmp_path):
     assert all(kw["rng_mode"] == "balanced" and kw["target_count"] == 3
                and kw["health_threshold"] == kw["mana_threshold"] == 1.0
                and kw["recovery_policy"] == "decisions"
-               and kw["require_native_health_damage"] is True for _, kw in calls)
+               and kw["require_native_health_damage"] is False for _, kw in calls)
     assert len(list((tmp_path / "receipts").glob("*.native.json"))) == 3
 
 
@@ -320,39 +320,61 @@ def test_invalid_prepared_source_sha_does_not_consume_paid_mobs(tmp_path):
     assert output["candidates"][0]["status"] == "INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY"
 
 
-def test_passive_or_unobserved_enemy_damage_never_ranks_as_hostile():
+def test_missing_or_malformed_native_damage_receipt_is_still_refused():
     prepared = _prepared("a" * 64)
-    for missing in (True, False):
+    cases = [
+        lambda r: r.pop("native_health_damage"),
+        lambda r: r["native_health_damage"].update(observed=False),
+        lambda r: r["native_health_damage"].update(damage_taken=-1.),
+        lambda r: r["native_health_damage"].update(damage_events=-1),
+        lambda r: r["native_health_damage"].update(damage_events=0),
+    ]
+    for mutate in cases:
         result = _receipt("a" * 64)
-        if missing:
-            del result["native_health_damage"]
-        else:
-            result["native_health_damage"].update(
-                observed=True, damage_taken=0.0, damage_events=0)
+        mutate(result)
         assert score_native_chain(result, prepared, mob_count=3,
                                   expected_target_hp=1200.) == (
-            None, "NATIVE_HOSTILE_INCOMING_DAMAGE_NOT_OBSERVED")
+            None, "NATIVE_HEALTH_DAMAGE_RECEIPT_MISSING_OR_INVALID")
 
 
-def test_hostile_candidate_refused_if_native_damage_receipt_not_observed(tmp_path):
+def test_zero_damage_is_observed_native_outcome_not_missing_telemetry():
+    prepared = _prepared("a" * 64)
+    result = _receipt("a" * 64)
+    result["native_health_damage"].update(
+        observed=True, damage_taken=0.0, damage_events=0)
+    # Native world ACK, original source and post-last-kill paid full HP/mana
+    # are still required; player HP loss itself must not be optimized for.
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        20.0, "MEASURED_NATIVE_FULLY_RECOVERED")
+    result["native_terminal_recovery"]["mana_after"] = 1400.
+    assert score_native_chain(result, prepared, mob_count=3,
+                              expected_target_hp=1200.) == (
+        None, "NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL")
+
+
+def test_observed_no_player_damage_may_win_native_paid_comparison(tmp_path):
     paths = {}
-    for cid in ("safe_dummy", "real_enemy"):
+    for cid in ("avoids_damage", "takes_damage"):
         path = tmp_path / f"{cid}.json"
         path.write_text(json.dumps(_prepared(cid[0] * 64)))
         paths[cid] = path
 
     def runner(binary, path, **kwargs):
-        assert kwargs["require_native_health_damage"] is True
-        result = _receipt(path.stem[0] * 64)
-        if path.stem == "safe_dummy":
-            result["native_health_damage"]["damage_taken"] = 0.0
-            result["native_health_damage"]["damage_events"] = 0
+        assert kwargs["require_native_health_damage"] is False
+        result = _receipt(path.stem[0] * 64,
+                          kill_seconds=14 if path.stem == "avoids_damage" else 13,
+                          recovery_seconds=2 if path.stem == "avoids_damage" else 7)
+        if path.stem == "avoids_damage":
+            result["native_health_damage"].update(
+                observed=True, damage_taken=0., damage_events=0)
         return result
 
     output = compare_prepared_candidates(
         binary=Path("rust"), prepared_paths=paths, actor_level=30,
         mob_count=3, target_hp=1200., run_native=runner)
-    assert output["comparable_candidates"] == 1
-    assert output["winner_candidate_id"] is None
-    assert output["candidates"][0]["status"] == "NATIVE_HOSTILE_INCOMING_DAMAGE_NOT_OBSERVED"
-    assert output["candidates"][1]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert output["comparable_candidates"] == 2
+    assert output["winner_candidate_id"] == "avoids_damage"
+    assert output["winner_elapsed_seconds"] == 16
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+               for row in output["candidates"])
