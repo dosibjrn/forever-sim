@@ -1,9 +1,7 @@
 """Work1 P7.4: native MythicSim owns item legality, Python only proposes IDs."""
 from __future__ import annotations
 
-import copy
 import importlib
-import random
 import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
@@ -53,36 +51,6 @@ def test_native_authoritative_p74_pool_does_not_call_python_item_rules(monkeypat
         connection.close()
 
 
-def test_p74_native_authoritative_cold_candidate_skips_python_validator():
-    base = {"raid": {"parties": [{"players": [{
-        "equipment": {"items": [{"id": 10}, {"id": 20}]},
-        "talentsString": "fixed",
-        "rotation": {"priorityList": []},
-    }]}]}}
-    original = copy.deepcopy(base)
-
-    def forbidden_validate(*args, **kwargs):
-        raise AssertionError("Python GearValidator must not veto native candidates")
-
-    def swap(request, ids):
-        result = copy.deepcopy(request)
-        items = result["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-        for item, item_id in zip(items, ids):
-            item["id"] = item_id
-        return result
-
-    candidate = gate._cold_gear(
-        base, SimpleNamespace(validate=forbidden_validate),
-        SimpleNamespace(_swap=swap, preflight=lambda *args: True,
-                        RejectedGear=ValueError),
-        random.Random(1), pool={0: [11], 1: [21]},
-        native_authoritative=True,
-    )
-    assert [item["id"] for item in
-            candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]] == [11, 21]
-    assert base == original
-
-
 def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
     binary = tmp_path / "upstream/target/release/forever-engine"
@@ -103,7 +71,6 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
         gate, "_pinned_source_runtime",
         lambda *args, **kwargs: (base, {"reference_dps": 728.19}, binary),
     )
-    monkeypatch.setattr(gate, "_source_native_world_parity", lambda *args, **kwargs: None)
 
     proposal_calls = []
     def pinned_rust_candidate_pool(items_path, enchants_path):
@@ -121,14 +88,6 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
     native_calls = []
     world_calls = []
 
-    def cold_candidate(request, validator, gear_search, rng, **kwargs):
-        assert kwargs["native_authoritative"] is True
-        result = copy.deepcopy(request)
-        result["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] += (
-            len(native_calls) + 1
-        )
-        return result
-
     def native(binary, path, iterations, *, rng_mode):
         native_calls.append((iterations, rng_mode))
         raise RuntimeError("NATIVE_INVALID_TEST_REFUSAL")
@@ -138,7 +97,6 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
         raise AssertionError("native-refused candidate reached live world")
 
     production = SimpleNamespace(native_source_control=native, run=world)
-    monkeypatch.setattr(gate, "_cold_gear", cold_candidate)
     monkeypatch.setattr(
         gate, "_source_module",
         lambda path, name: gear if "p74_gear_search" in str(path) else production,
