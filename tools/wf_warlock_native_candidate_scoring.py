@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Score several Rust-prepared Warlock candidates with charged final recovery.
+
+Forever owns request/result forwarding and ranking, not Warcraft rules. Existing
+native engines only report between-kill recovery; those receipts cannot be
+silently promoted to a full HP+mana terminally-recovered optimization score.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+from pathlib import Path
+from typing import Callable, Mapping
+
+
+def _positive(value: object) -> bool:
+    return type(value) in (int, float) and math.isfinite(value) and value > 0
+
+
+def _nonnegative(value: object) -> bool:
+    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
+                       expected_target_hp: float) -> tuple[float | None, str]:
+    """Total source-ACK-clock elapsed time, or a precise unranked reason.
+
+    A future source-native terminal_recovery receipt must belong to the same
+    last-kill ACK clock, have real elapsed time and show both resources full.
+    No external recovery timer, resource reset, or guessed Warcraft effect.
+    """
+    if (type(mob_count) is not int or not 2 <= mob_count <= 100
+            or not _positive(expected_target_hp)):
+        raise ValueError("INVALID_NATIVE_SCORING_SCENARIO")
+    source = prepared.get("request_sha256")
+    player = prepared.get("player")
+    stats = player.get("stats", {}) if isinstance(player, dict) else {}
+    if (not isinstance(source, str) or len(source) != 64
+            or not _positive(stats.get("Health"))
+            or not _positive(stats.get("Mana"))):
+        return None, "INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY"
+    windows = receipt.get("native_windows")
+    mana = receipt.get("native_actor_mana_after_world_kills")
+    if (receipt.get("source_sha256") != source
+            or receipt.get("world_target_hp") != expected_target_hp
+            or receipt.get("world_targets_killed") != mob_count
+            or receipt.get("continuous_native_actor") is not True
+            or receipt.get("actual_2d_ack") is not True
+            or receipt.get("native_recovery_clock_accounted") is not True
+            or receipt.get("native_recovery_mode") != "decisions_food_water"
+            or receipt.get("paid_recovery") is not True
+            or not isinstance(windows, list) or len(windows) != mob_count
+            or not isinstance(mana, list) or len(mana) != mob_count):
+        return None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT"
+    last_clock = 0
+    for index, (window, value) in enumerate(zip(windows, mana)):
+        if (not isinstance(window, dict) or window.get("index") != index
+                or type(window.get("native_kill_ns")) is not int
+                or window["native_kill_ns"] <= last_clock
+                or not _positive(window.get("actor_health"))
+                or not _nonnegative(value)):
+            return None, "INCOMPLETE_NATIVE_ACTOR_OR_ACK_CLOCK"
+        last_clock = window["native_kill_ns"]
+    elapsed = receipt.get("world_elapsed_seconds")
+    if not _positive(elapsed) or not math.isclose(
+            elapsed, last_clock / 1e9, abs_tol=1e-6):
+        return None, "NATIVE_WORLD_ELAPSED_CLOCK_MISMATCH"
+    terminal = receipt.get("native_terminal_recovery")
+    if not isinstance(terminal, dict):
+        return None, "NATIVE_TERMINAL_FULL_RECOVERY_NOT_RECORDED"
+    if (terminal.get("paid") is not True
+            or terminal.get("native_clock_accounted") is not True
+            or type(terminal.get("start_clock_ns")) is not int
+            or terminal["start_clock_ns"] != last_clock
+            or type(terminal.get("end_clock_ns")) is not int
+            or terminal["end_clock_ns"] < last_clock):
+        return None, "NATIVE_TERMINAL_RECOVERY_CLOCK_NOT_PAID"
+    if (not all(_nonnegative(terminal.get(key)) for key in (
+            "health_before", "mana_before", "health_after", "mana_after"))
+            or not math.isclose(terminal["health_before"],
+                                windows[-1]["actor_health"], abs_tol=1e-6)
+            or not math.isclose(terminal["mana_before"], mana[-1], abs_tol=1e-6)
+            or not math.isclose(terminal["health_after"],
+                                stats["Health"], abs_tol=1e-6)
+            or not math.isclose(terminal["mana_after"],
+                                stats["Mana"], abs_tol=1e-6)):
+        return None, "NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL"
+    debt = (terminal["health_before"] < stats["Health"] - 1e-6
+            or terminal["mana_before"] < stats["Mana"] - 1e-6)
+    if debt and terminal["end_clock_ns"] == last_clock:
+        return None, "NATIVE_TERMINAL_FREE_RESOURCE_RESET"
+    return terminal["end_clock_ns"] / 1e9, "MEASURED_NATIVE_FULLY_RECOVERED"
+
+
+def compare_prepared_candidates(*, binary: Path,
+                                prepared_paths: Mapping[str, Path],
+                                actor_level: int, mob_count: int,
+                                target_hp: float,
+                                run_native: Callable | None = None,
+                                artifact_dir: Path | None = None) -> dict:
+    """Evaluate every source-prepared alternative, using balanced one-iteration.
+
+    Work2 supplies the legal frontier and compatible receipt cache. The Rust
+    prepare path remains the only game-legality authority; this function
+    does not generate or hand-roll any talent/gear/APL/pet build.
+    """
+    if (type(actor_level) is not int or not 10 <= actor_level <= 60
+            or type(mob_count) is not int or not 2 <= mob_count <= 100
+            or not _positive(target_hp) or len(prepared_paths) < 2):
+        raise ValueError("INVALID_NATIVE_CANDIDATE_COMPARISON")
+    if run_native is None:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] /
+                               "integrations/mythicsim-rust"))
+        from live_two_world_pulls import run as run_native
+    rows = []
+    if artifact_dir is not None:
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+    for candidate_id, path in prepared_paths.items():
+        if (not isinstance(candidate_id, str) or not candidate_id
+                or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+                       for c in candidate_id)):
+            raise ValueError("INVALID_NATIVE_CANDIDATE_ID")
+        prepared = json.loads(path.read_text())
+        player = prepared.get("player", {})
+        if (player.get("class") != "ClassWarlock"
+                or player.get("level") != actor_level):
+            raise ValueError("NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH")
+        row = {"candidate_id": candidate_id,
+               "prepared_sha256": _sha256(path),
+               "source_sha256": prepared.get("request_sha256"),
+               "mob_count": mob_count, "rng_mode": "balanced", "iterations": 1}
+        try:
+            receipt = run_native(binary, path, target_count=mob_count,
+                                 mob_health=target_hp, rng_mode="balanced",
+                                 recovery_policy="decisions",
+                                 health_threshold=1.0, mana_threshold=1.0)
+            if artifact_dir is not None:
+                (artifact_dir / f"{candidate_id}.native.json").write_text(
+                    json.dumps(receipt, indent=2, allow_nan=False) + "\n")
+            score, status = score_native_chain(receipt, prepared,
+                                               mob_count=mob_count,
+                                               expected_target_hp=target_hp)
+            row.update(status=status, elapsed_seconds=score,
+                       acked_world_kills=receipt.get("world_targets_killed"))
+        except (RuntimeError, AssertionError, ValueError, OSError) as exc:
+            row.update(status="NATIVE_REFUSAL", elapsed_seconds=None,
+                       refusal=str(exc)[-1500:])
+        rows.append(row)
+    measured = sorted((r for r in rows if r["elapsed_seconds"] is not None),
+                      key=lambda r: (r["elapsed_seconds"], r["candidate_id"]))
+    # One fully-scored candidate is still a baseline, not competitive search.
+    return {"kind": "native_warlock_comparable_candidate_screen_v1",
+            "actor_level": actor_level, "mob_count": mob_count,
+            "rng_mode": "balanced", "iterations": 1,
+            "terminal_full_recovery_required": True,
+            "candidates": rows, "comparable_candidates": len(measured),
+            "winner_candidate_id": (measured[0]["candidate_id"]
+                                    if len(measured) >= 2 else None),
+            "winner_elapsed_seconds": (measured[0]["elapsed_seconds"]
+                                       if len(measured) >= 2 else None),
+            "status": ("MEASURED_BOUNDED_NATIVE_COMPARISON" if len(measured) >= 2
+                       else "PROVISIONAL_NO_COMPETITIVE_FULL_RECOVERY")}
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--binary", type=Path, required=True)
+    ap.add_argument("--prepared", action="append", required=True,
+                    help="Repeat CANDIDATE_ID=RUST_PREPARED_JSON for 2+ candidates")
+    ap.add_argument("--level", type=int, required=True)
+    ap.add_argument("--mob-count", type=int, default=3)
+    ap.add_argument("--target-hp", type=float, required=True)
+    ap.add_argument("--out", type=Path, required=True)
+    args = ap.parse_args()
+    candidates = {}
+    for spec in args.prepared:
+        candidate_id, sep, path = spec.partition("=")
+        if not sep or candidate_id in candidates or not path:
+            ap.error("each --prepared needs unique CANDIDATE_ID=PATH")
+        candidates[candidate_id] = Path(path)
+    result = compare_prepared_candidates(
+        binary=args.binary, prepared_paths=candidates,
+        actor_level=args.level, mob_count=args.mob_count,
+        target_hp=args.target_hp, artifact_dir=args.out)
+    (args.out / "comparison.json").write_text(
+        json.dumps(result, indent=2, allow_nan=False) + "\n")
+    print(json.dumps(result, sort_keys=True, allow_nan=False))
+
+
+if __name__ == "__main__":
+    main()
