@@ -86,6 +86,15 @@ def _paid_row(*, route: Path, summary: Path, source: Path, binary_sha: str,
     attempt = attempts[0]
     if attempt.get("variant") != "best_apl":
         raise ValueError("unexpected native candidate variant")
+    # The summary header is not sufficient to authenticate a cached paid
+    # finalist: the individual native attempt must belong to this exact
+    # candidate and hostile recovery protocol, including native refusals.
+    if (attempt.get("original_source_sha256") != native_source.sha256(source)
+            or attempt.get("native_binary_sha256") != binary_sha
+            or attempt.get("actor_level") != level
+            or attempt.get("hostile_player_tank_requested") is not True
+            or attempt.get("recovery_request") != recovery):
+        raise ValueError("cached native attempt differs from candidate or hostile recovery")
     result = {"status": attempt.get("status"), "targets_killed": attempt.get("killed"),
               "error": attempt.get("error"), "native_summary": str(summary)}
     if attempt.get("status") != "COMPLETED_100_REAL_NATIVE_GSIM_KILLS":
@@ -231,7 +240,10 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
     ranked = sorted((row for row in rows if row.get("status") == "MEASURED_NATIVE_100"),
                     key=lambda row: (row["elapsed_seconds"], row["index"])) if comparable else []
     trees = {row["tree_index"] for row in ranked}
-    winner = ranked[0] if len(ranked) >= 2 and len(trees) >= 2 else None
+    # Never advertise a completed comparison while a bounded finalist is still
+    # awaiting an actual 100-mob world. A partial measured leader is not a winner.
+    winner = (ranked[0] if not pending and len(ranked) >= 2
+              and len(trees) >= 2 else None)
     result = {
         "kind": "warlock_native_world_finalist_comparison_v1",
         "status": ("INCOMPARABLE_NATIVE_SCENARIOS" if not comparable
