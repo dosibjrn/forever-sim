@@ -138,6 +138,10 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
         # simpler and less error-prone than reconstructing all possible parents.
         for j,child in enumerate(nodes):
             for i,parent in enumerate(prev_nodes):
+                # Do not blend analytic scores with paid native measurements:
+                # their costs are not necessarily comparable route segments.
+                if parent.native_paid_prepared != child.native_paid_prepared:
+                    continue
                 # A banked point can be carried only between *two* actual
                 # native-paid prepared observations of the same allocation.
                 # This is a route transition, not a Python talent-legality
@@ -161,11 +165,18 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
         # local score depends only on the child, only the cheapest source at r-1
         # matters for each destination.
         for r in range(1,max_respecs+1):
-            sources=[(cell.cost,i) for (i,rr),cell in prev_layer.items() if rr==r-1]
-            if not sources:
-                continue
-            src_cost,src_i=min(sources)
+            # A respec is not authority to stitch an analytic path into a
+            # native-paid route (or vice versa).
+            sources_by_authority={
+                paid: [(cell.cost,i) for (i,rr),cell in prev_layer.items()
+                       if rr==r-1 and prev_nodes[i].native_paid_prepared==paid]
+                for paid in (False,True)
+            }
             for j,child in enumerate(nodes):
+                sources=sources_by_authority[child.native_paid_prepared]
+                if not sources:
+                    continue
+                src_cost,src_i=min(sources)
                 cost=src_cost+float(child.score_s_per_100)*float(w.get(level,0.0))
                 key=(j,r); old=nxt.get(key)
                 if old is None or cost<old.cost-1e-12:
