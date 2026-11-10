@@ -350,6 +350,7 @@ def test_shared_warlock_guide_never_replays_already_paid_l20_native_world():
     assert "run: python -m pytest -q tests/test_work2_warlock_route_guide.py tests/test_work2_warlock_next_level_source.py" in workflow
     assert (ROOT / ".github/workflows/work2-warlock-l41-l50-native-batch.yml").is_file()
 
+
 def test_completed_disposable_delete_smoke_is_retired_without_disabling_gc():
     """The live create/list/delete smoke is complete; keep only safe routine GC.
 
@@ -363,7 +364,7 @@ def test_completed_disposable_delete_smoke_is_retired_without_disabling_gc():
         encoding="utf-8")
     assert "    - cron: '23 */6 * * *'" in guard
     assert "      - name: Inventory and bounded evidence-safe GC" in guard
-    assert 'APPLY: ${{ github.event_name == ' + "'schedule'" + ' || ' in guard
+    assert "APPLY: ${{ github.event_name == 'schedule' || " in guard
     assert "collect_local_references" in guard
     assert "verify_deleted_artifacts_absent(" in guard
 
