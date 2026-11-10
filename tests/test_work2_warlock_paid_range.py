@@ -2,6 +2,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from tools import wf_warlock_paid_range as paid_range
 
 
@@ -271,3 +273,78 @@ def test_paid_range_workflow_forwards_its_own_real_actions_run_url():
     ).read_text()
     assert ('--run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/'
             'actions/runs/$GITHUB_RUN_ID"') in workflow
+
+
+@pytest.mark.parametrize(("failure", "expected_status"), [
+    ("exception", "PAID_DRIVER_ERROR"),
+    ("missing_failed_receipt", "PAID_RECEIPT_MISSING"),
+    ("missing_success_receipt", "PAID_ACK_UNVERIFIED"),
+    ("incomplete_success_receipt", "PAID_ACK_UNVERIFIED"),
+])
+def test_unverified_paid_range_attempt_is_preserved_not_repaid(
+        tmp_path, monkeypatch, failure, expected_status):
+    binary, source, route = _inputs(tmp_path)
+    calls = _mock_native(monkeypatch)
+
+    def unfinished_paid_producer(args):
+        level = int(args[args.index("--actor-level") + 1])
+        calls["paid"].append(level)
+        paid_dir = Path(args[args.index("--out") + 1])
+        paid_dir.mkdir(parents=True, exist_ok=True)
+        (paid_dir / "GUIDE.md").write_text("Unverified native producer text\n")
+        if failure == "exception":
+            raise RuntimeError("native transport dropped after attempt")
+        if failure == "incomplete_success_receipt":
+            (paid_dir / "route.json").write_text(
+                '{"class":"warlock","measured_levels":[]}')
+        return 2 if failure == "missing_failed_receipt" else 0
+
+    monkeypatch.setattr(paid_range.guide, "main", unfinished_paid_producer)
+    kwargs = dict(binary=binary, source=source, predecessor_route=route,
+                  out=tmp_path / "range", from_level=42, end_level=44)
+    first = paid_range.run(**kwargs)
+    assert first["completed_new_levels"] == []
+    assert first["reused_levels"] == []
+    assert first["next_level"] == 43
+    assert first["last_paid_route"] == str(route)
+    assert first["stopped"]["level"] == 43
+    assert first["stopped"]["status"] == expected_status
+    receipt = Path(first["stopped"]["driver_error"])
+    report = json.loads(receipt.read_text())
+    assert report["status"] == expected_status
+    assert report["native_binary_sha256"] == paid_range.next_level.sha256(binary)
+    assert len(report["selected_source_sha256"]) == 64
+    assert Path(first["latest_guide"]).read_text().startswith(
+        f"# Warlock L43: {expected_status}")
+    assert (receipt.parent / "GUIDE.md").read_text() == (
+        "Unverified native producer text\n")  # original output is immutable
+
+    resumed = paid_range.run(**kwargs)
+    assert resumed["stopped"] == first["stopped"]
+    assert resumed["completed_new_levels"] == []
+    assert resumed["last_paid_route"] == str(route)
+    assert calls["paid"] == [43]  # no duplicate native 100-target payment
+    assert calls["proposal"] == [43]
+    assert Path(resumed["latest_guide"]).read_text() == Path(
+        first["latest_guide"]).read_text()
+
+
+def test_cached_driver_error_rejects_unrelated_selected_source(tmp_path, monkeypatch):
+    binary, source, route = _inputs(tmp_path)
+    _mock_native(monkeypatch)
+
+    def stopped_paid_producer(args):
+        out = Path(args[args.index("--out") + 1])
+        out.mkdir(parents=True, exist_ok=True)
+        return 2
+
+    monkeypatch.setattr(paid_range.guide, "main", stopped_paid_producer)
+    kwargs = dict(binary=binary, source=source, predecessor_route=route,
+                  out=tmp_path / "range", from_level=42, end_level=43)
+    stopped = paid_range.run(**kwargs)["stopped"]
+    receipt = Path(stopped["driver_error"])
+    report = json.loads(receipt.read_text())
+    report["selected_source_sha256"] = "0" * 64
+    receipt.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match="unverified paid error has mismatched identity"):
+        paid_range.run(**kwargs)
