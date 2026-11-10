@@ -20,14 +20,52 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def verified_paid_predecessor(*, route: Path, source: Path, from_level: int) -> dict:
+    """Require a real paid prior-level receipt for automatic route extension.
+
+    This matches only executed-world identity and the exact persisted request.
+    Rust remains authoritative for the next actor and Warcraft legality.
+    """
+    previous = json.loads(route.read_text())
+    if previous.get("class") != "warlock" or not isinstance(previous.get("observations"), list):
+        raise ValueError("predecessor must be a Warlock native route report")
+    levels = previous.get("measured_levels")
+    if (not isinstance(levels, list) or not levels
+            or any(type(l) is not int for l in levels) or max(levels) != from_level):
+        raise ValueError("predecessor must end at the last paid measured level")
+    fingerprint = sha256(source)
+    matches = [
+        row for row in previous["observations"]
+        if isinstance(row, dict)
+        and row.get("level") == from_level
+        and row.get("status") == "measured_native_chain"
+        and row.get("source_request_sha256") == fingerprint
+        and row.get("native_world_ack") is True
+        and row.get("paid_native_recovery") is True
+        and row.get("targets_requested") == 100
+        and row.get("targets_killed") == 100
+        and isinstance(row.get("native_actor"), dict)
+        and row["native_actor"].get("level") == from_level
+        and row["native_actor"].get("class") == "ClassWarlock"
+    ]
+    if not matches:
+        raise ValueError("source request has no matching completed paid native predecessor")
+    return {"level": from_level, "observation_id": matches[0]["id"],
+            "source_request_sha256": fingerprint}
+
+
 def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
-            to_level: int = 21, max_proposals: int = 30) -> dict:
+            to_level: int = 21, max_proposals: int = 30,
+            predecessor_route: Path | None = None) -> dict:
     if to_level != from_level + 1 or not 10 <= from_level < 60:
         raise ValueError("source proposals require exactly one adjacent level in 10..60")
     if max_proposals < 1:
         raise ValueError("max_proposals must be positive")
     if not binary.is_file() or not source.is_file():
         raise ValueError("native binary and original source request are required")
+    predecessor = (verified_paid_predecessor(
+        route=predecessor_route, source=source, from_level=from_level)
+        if predecessor_route is not None else None)
     original = json.loads(source.read_text())
     actor = original["raid"]["parties"][0]["players"][0]
     if actor.get("class") != "ClassWarlock":
@@ -260,6 +298,8 @@ def main() -> None:
     parser.add_argument("--from-level", type=int, default=20)
     parser.add_argument("--to-level", type=int, default=21)
     parser.add_argument("--max-proposals", type=int, default=30)
+    parser.add_argument("--predecessor-route", type=Path,
+                        help="Require exact executed paid previous-level source receipt")
     args = parser.parse_args()
     result = propose(**vars(args))
     print(json.dumps(result, indent=2))

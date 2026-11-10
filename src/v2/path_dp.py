@@ -65,7 +65,29 @@ def _added_talent(parent:Any, child:Any, model:ClassModel)->str|None:
     """Generic legality hook; DP never inspects class-specific build fields."""
     return model.legal_one_point_transition(parent, child)
 
-def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel)->list[LevelNode]:
+def _is_paid_native_level_node(node: LevelNode, level: int) -> bool:
+    """Qualify native execution receipts; do not revalidate Rust gameplay."""
+    receipt = (node.details or {}).get("native_receipt")
+    if node.source != "native_paid" or not isinstance(receipt, Mapping):
+        return False
+    actor = receipt.get("native_actor")
+    return (receipt.get("status") == "measured_native_chain"
+            and receipt.get("level") == level
+            and isinstance(actor, Mapping)
+            and actor.get("class") == "ClassWarlock"
+            and actor.get("level") == level
+            and receipt.get("native_world_ack") is True
+            and receipt.get("paid_native_recovery") is True
+            and receipt.get("targets_requested") == 100
+            and receipt.get("targets_killed") == 100
+            and isinstance(receipt.get("source_request_sha256"), str)
+            and len(receipt["source_request_sha256"]) == 64
+            and isinstance(receipt.get("engine_binary_sha256"), str)
+            and len(receipt["engine_binary_sha256"]) == 64)
+
+
+def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel,
+                       *, native_paid:bool=False)->list[LevelNode]:
     """For identical talent allocations retain the lowest node score.
 
     Policy is free to change between levels and carries no transition state, so
@@ -78,7 +100,14 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel)->l
         if int(n.level)!=int(level):
             raise ValueError(f'node level mismatch: expected {level}, got {n.level}')
         points=model.build_points(n.talents)
-        if points!=int(level)-9:
+        if native_paid:
+            if not _is_paid_native_level_node(n, level):
+                raise ValueError(f'level {level} node lacks a matching paid native actor/chain receipt')
+            # Native preparation may bank talent points. No Python game legality
+            # inference is made: the execution receipt is authoritative.
+            if points < 0 or points > int(level)-9:
+                raise ValueError(f'level {level} native node has impossible point count {points}')
+        elif points!=int(level)-9:
             raise ValueError(f'level {level} node has {points} talent points; expected {level-9}')
         k=model.build_key(n.talents)
         old=best.get(k)
@@ -89,7 +118,8 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel)->l
 
 def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
                   weights:Mapping[int,float]|None=None,start_level:int|None=None,
-                  end_level:int|None=None, model:ClassModel|None=None)->PathResult:
+                  end_level:int|None=None, model:ClassModel|None=None,
+                  native_paid:bool=False)->PathResult:
     if not pools:
         raise ValueError('no level pools')
     model = model or active_class_model()
@@ -102,7 +132,7 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
     if any(b!=a+1 for a,b in zip(levels,levels[1:])):
         raise ValueError('path DP requires contiguous level pools')
     max_respecs=max(0,int(max_respecs))
-    pp={l:_dedup_level_nodes(l,pools[l],model) for l in levels}
+    pp={l:_dedup_level_nodes(l,pools[l],model,native_paid=native_paid) for l in levels}
     if any(not pp[l] for l in levels):
         raise ValueError('empty candidate pool')
     w=weights or {l:level_weight_per_100(l) for l in levels}
@@ -128,8 +158,12 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
         # simpler and less error-prone than reconstructing all possible parents.
         for j,child in enumerate(nodes):
             for i,parent in enumerate(prev_nodes):
-                added=_added_talent(parent.talents,child.talents,model)
-                if added is None:
+                # Both native-paid endpoints carry actual actor/chain receipts.
+                # Unchanged talents are a banked-point hold, not a respec.
+                hold = (native_paid and
+                        model.build_key(parent.talents) == model.build_key(child.talents))
+                added = None if hold else _added_talent(parent.talents,child.talents,model)
+                if not hold and added is None:
                     continue
                 for r in range(max_respecs+1):
                     pc=prev_layer.get((i,r))
@@ -138,7 +172,7 @@ def solve_path_dp(pools:Mapping[int,Sequence[LevelNode]],*,max_respecs:int=2,
                     cost=pc.cost+float(child.score_s_per_100)*float(w.get(level,0.0))
                     key=(j,r); old=nxt.get(key)
                     if old is None or cost<old.cost-1e-12:
-                        nxt[key]=_Cell(cost,(i,r),'point',added)
+                        nxt[key]=_Cell(cost,(i,r),'hold' if hold else 'point',added)
 
         # Respec jump: because the jump cost itself is zero and the destination
         # local score depends only on the child, only the cheapest source at r-1

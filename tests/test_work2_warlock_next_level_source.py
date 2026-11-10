@@ -232,3 +232,90 @@ def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatc
         {"id": 101}, {"id": 0}]
     assert requests[-1] == selected
     assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+
+
+def paid_predecessor(tmp_path):
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["encounter"]["targets"][0]["level"] = 23
+    original["raid"]["parties"][0]["players"][0]["level"] = 23
+    source.write_text(json.dumps(original))
+    report = {
+        "class": "warlock",
+        "measured_levels": [20, 21, 22, 23],
+        "observations": [{
+            "id": "paid-l23",
+            "level": 23,
+            "status": "measured_native_chain",
+            "source_request_sha256": next_level.sha256(source),
+            "native_world_ack": True,
+            "paid_native_recovery": True,
+            "targets_requested": 100,
+            "targets_killed": 100,
+            "native_actor": {"class": "ClassWarlock", "level": 23},
+        }],
+    }
+    route = tmp_path / "route.json"
+    route.write_text(json.dumps(report))
+    return source, binary, route, report
+
+
+def test_l24_proposal_uses_exact_paid_l23_predecessor(tmp_path, monkeypatch):
+    source, binary, route, _ = paid_predecessor(tmp_path)
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1] == "options":
+            options = native_options()
+            options["level"] = 24
+            options["talents"]["points_available"] = 15
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        assert cmd[1] == "prepare"
+        assert cmd[cmd.index("--actor-level") + 1] == "24"
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        assert request["encounter"]["targets"][0]["level"] == 24
+        assert request["raid"]["parties"][0]["players"][0]["level"] == 24
+        with open(cmd[cmd.index("--outfile") + 1], "w") as prepared:
+            json.dump({"player": {"level": 24, "class": "ClassWarlock"}}, prepared)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    receipt = next_level.propose(binary=binary, source=source,
+                                  out=tmp_path / "l24", from_level=23,
+                                  to_level=24, predecessor_route=route)
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["from_level"] == 23 and receipt["to_level"] == 24
+    assert [cmd[1] for cmd in calls] == ["options", "prepare"]
+    assert next_level.verified_paid_predecessor(
+        route=route, source=source, from_level=23)["observation_id"] == "paid-l23"
+
+
+def test_l24_rejects_unpaid_stale_or_wrong_source_before_native_calls(tmp_path, monkeypatch):
+    source, binary, route, report = paid_predecessor(tmp_path)
+    calls = []
+    monkeypatch.setattr(next_level.subprocess, "run",
+                        lambda *args, **kw: calls.append(args) or None)
+
+    report["observations"][0]["targets_killed"] = 99
+    route.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match="matching completed paid native predecessor"):
+        next_level.propose(binary=binary, source=source, out=tmp_path / "partial",
+                           from_level=23, to_level=24, predecessor_route=route)
+
+    report["observations"][0]["targets_killed"] = 100
+    report["measured_levels"] = [20, 21, 22]
+    route.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match="last paid measured level"):
+        next_level.propose(binary=binary, source=source, out=tmp_path / "stale",
+                           from_level=23, to_level=24, predecessor_route=route)
+
+    report["measured_levels"] = [20, 21, 22, 23]
+    route.write_text(json.dumps(report))
+    original = json.loads(source.read_text())
+    original["raid"]["parties"][0]["players"][0]["talentsString"] = "0-0-012"
+    source.write_text(json.dumps(original))
+    with pytest.raises(ValueError, match="matching completed paid native predecessor"):
+        next_level.propose(binary=binary, source=source, out=tmp_path / "unpaid",
+                           from_level=23, to_level=24, predecessor_route=route)
+    assert calls == []
