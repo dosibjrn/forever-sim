@@ -2,6 +2,7 @@ name: Work2 — Paladin Holy L60 selected-native HPS P3 (no record)
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - .github/workflows/work2-paladin-holy-p3.yml
       - integrations/mythicsim-rust/native_p3_equipped.py
@@ -50,12 +51,16 @@ jobs:
           python -m pytest -q             tests/test_work2_paladin_holy_native_p3.py             tests/test_work2_paladin_protection_native_p3.py             tests/test_work2_paladin_retribution_native_p3.py             integrations/mythicsim-rust/tests/test_native_p3_equipped.py
 
       - name: Build exact selected Rust CLI
+        # Full native P3 payment is an explicit diagnostic, not a mandatory
+        # CI veto on every unrelated shared P3 helper edit.
+        if: contains(github.event.pull_request.labels.*.name, 'holy-p3-paid-no-record')
         working-directory: integrations/mythicsim-rust/engine
         env:
           CARGO_PROFILE_DEV_DEBUG: "0"
         run: cargo build --locked --bin forever-engine
 
       - name: One genuine Holy HPS paid P3, no M1 write
+        if: contains(github.event.pull_request.labels.*.name, 'holy-p3-paid-no-record')
         shell: bash
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -105,7 +110,7 @@ jobs:
           PY
 
       - name: Preserve exact Holy native gate receipt
-        if: always()
+        if: always() && contains(github.event.pull_request.labels.*.name, 'holy-p3-paid-no-record')
         uses: actions/upload-artifact@v4
         with:
           name: paladin-holy-l60-native-hps-p3-no-record

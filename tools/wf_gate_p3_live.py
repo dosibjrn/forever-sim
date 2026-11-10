@@ -324,10 +324,10 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
                                    class_key: str, level: int) -> dict:
     """Forward Rust get_options item proposals without Python equip legality.
 
-    Only native_eligible rows have a Rust-provided slot. For Warlock L20,
-    also carry the exact IDs of proficiency_unverified rows to the paid native
-    evaluator, never asserting that they equip or earn P3 credit. The native
-    engine alone accepts/refuses each candidate request.
+    Only native_eligible rows have a Rust-provided slot. Keep exact IDs
+    with unknown proficiency for every selected-native caller, too: these are
+    proposals for the paid native evaluator, not Python equip decisions or
+    P3 credit. The native engine alone accepts/refuses each candidate request.
     """
     import importlib.util
 
@@ -374,16 +374,16 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
                  if row["eligibility"] == "native_eligible"]
     unverified_ids = [row["item_id"] for row in source["items"]
                       if row["eligibility"] == "proficiency_unverified"]
-    # This is the owned Warlock P3 adapter's proposal path, not a Warcraft
-    # legality or slot decision. Other existing source-native routes are
-    # unchanged until their real callers adopt unknown-slot proposals.
+    # Proficiency-unknown IDs are native-paid proposals for all existing
+    # unified-options P3 callers (Mage, Paladin, Warlock). Do not pre-veto
+    # them by class or silently promote them to legal equipment.
     return {
-        "status": "ok" if confirmed or (warlock_l20 and unverified_ids) else "empty",
+        "status": "ok" if confirmed or unverified_ids else "empty",
         "transport": "MYTHICSIM_NATIVE_GET_OPTIONS",
         "source": source["source_revision"],
         "coverage": source["coverage"],
         "unverified_candidate_count": len(unverified_ids),
-        "unverified_item_ids": unverified_ids if warlock_l20 else [],
+        "unverified_item_ids": unverified_ids,
         "items": confirmed,
     }
 
@@ -653,8 +653,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             return {'status': 'BLOCKED', 'reasons': [str(exc)],
                     'production_component': 'src.game.native_p3_item_options',
                     'real_source_search_evaluated': 0}
-        if not native_options['items'] and not (
-                is_warlock_native and native_options.get("unverified_item_ids")):
+        if not native_options['items'] and not native_options.get("unverified_item_ids"):
             return {'status': 'BLOCKED',
                     'reasons': [('NATIVE_ITEM_OPTIONS_NO_SOURCE_CANDIDATES'
                                  if is_warlock_native
