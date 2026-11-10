@@ -100,6 +100,9 @@ def test_completed_warlock_one_shot_paid_ci_is_replaced():
         "work2-warlock-l20-native-reanchor.yml",
         "work2-warlock-l40-paid-alternative.yml",
         "work1-warlock-l41-native-selection.yml",
+        # This completed L20 30/300s experiment already yielded real paid
+        # receipts; its old PR-open/dispatch job must not restart it.
+        "work2-warlock-l20-paid-cold.yml",
     ]
     for name in retired:
         obsolete = ROOT / ".github/workflows" / name
@@ -131,3 +134,21 @@ def test_accepted_druid_l30_one_shot_paid_workflows_remain_retired():
             f"accepted Druid L30 gate must not remain a paid one-shot: {name}"
         )
     assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
+
+
+def test_retired_l20_cold_keeps_fast_forever_regressions():
+    """Cold producer and native refusal bridge still receive cheap PR tests."""
+    ci = (ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml").read_text(
+        encoding="utf-8")
+    for path in (
+        "tools/wf_warlock_l20_native_cold.py",
+        "tools/wf_warlock_l20_gate_bridge.py",
+        "tests/test_work2_warlock_native_cold.py",
+        "tests/test_work2_warlock_native_cold_cli.py",
+        "tests/test_work2_warlock_gate_bridge.py",
+    ):
+        assert f"      - {path}" in ci, f"PR trigger missing for {path}"
+        if path.startswith("tests/"):
+            assert f"          {path}" in ci, f"cheap regression suite lost {path}"
+    assert "python -m pytest -q" in ci
+    assert not (ROOT / ".github/workflows/work2-warlock-l20-paid-cold.yml").exists()
