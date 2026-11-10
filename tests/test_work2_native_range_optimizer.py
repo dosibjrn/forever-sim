@@ -325,6 +325,63 @@ def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_rec
     assert all((tmp_path / "artifacts").exists() for _ in calls)
 
 
+def test_independent_paid_rankings_keep_exact_requested_build_fields(tmp_path):
+    """A real ranked result must expose the native source build, not nulls."""
+    import hashlib
+    import json
+
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"pinned-native-binary")
+    manifest = _prepared_manifest(tmp_path)
+    for index, entry in enumerate(json.loads(manifest.read_text())["entries"]):
+        source = manifest.parent / entry["source_request"]
+        prepared_path = manifest.parent / entry["prepared"]
+        player = {
+            "class": "ClassWarlock", "level": 20,
+            "talentsString": ("110-0-0" if index == 0 else "0-110-0"),
+            "equipment": {"items": [{"id": 100 + index}]},
+            "rotation": {"priorityList": [{"action": {"castSpell": {
+                "spellId": {"spellId": 101 + index}}}}]},
+            "warlock": {"options": {"classOptions": {"summon": 3 + index}}},
+        }
+        source.write_text(json.dumps({
+            "raid": {"parties": [{"players": [player]}]},
+            "encounter": {"targets": [{"level": 20}]},
+        }) + "\n")
+        prepared = json.loads(prepared_path.read_text())
+        prepared["request_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+        prepared_path.write_text(json.dumps(prepared) + "\n")
+
+    observed = []
+    def evaluator(**request):
+        return evaluate_request(
+            request, manifest=manifest, binary=binary, target_hp=400.0,
+            scorer_command=["native-work1-scorer"], artifact_dir=tmp_path / "paid",
+            run_command=_fake_native_comparison(observed),
+        )
+
+    report = optimize(20, 20, 1, 3, 2, evaluate=evaluator, mode="independent")
+    assert report["status"] == "INDEPENDENT_NATIVE_ANCHORS_RANKED"
+    assert len(observed) == 1
+    assert report["ranked_alternatives"] == []  # Not stitched into a route.
+    builds = report["independent_level_rankings"]["20"]
+    assert [r["talents"] for r in builds] == ["110-0-0", "0-110-0"]
+    assert [r["pet"] for r in builds] == [3, 4]
+    assert [r["gear"]["items"][0]["id"] for r in builds] == [100, 101]
+    assert [r["apl"]["priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"]
+            for r in builds] == [101, 102]
+    for ranked in builds:
+        raw = ranked["receipt"]
+        assert raw["talents"] == ranked["talents"]
+        assert raw["pet"] == ranked["pet"]
+        assert raw["gear"] == ranked["gear"]
+        assert raw["apl"] == ranked["apl"]
+        source = __import__("pathlib").Path(raw["source_request_file"])
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == ranked["source_request_sha256"]
+
+
 def test_scored_adapter_does_not_pay_single_source_or_unproved_sparse_ancestry(tmp_path):
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
     binary = tmp_path / "rust-engine"
