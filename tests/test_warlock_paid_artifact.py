@@ -53,3 +53,21 @@ def test_no_paid_route_is_not_accepted_as_predecessor(tmp_path):
     (archive / "warlock-paid-range" / "L44" / "receipt" / "paid" / "route.json").unlink()
     with pytest.raises(ValueError, match="found 0"):
         stage(archive, 44, tmp_path / "staged")
+
+
+def test_paid_batch_token_can_download_predecessor_artifacts():
+    """The authenticated Actions artifact ZIP endpoint requires actions: read.
+
+    A contents-only GITHUB_TOKEN cannot be assumed to download a prior run's
+    paid native receipt. Keep this scope when changing the reusable workflow.
+    """
+    from pathlib import Path
+
+    workflow = (
+        Path(__file__).resolve().parents[1]
+        / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+    ).read_text()
+    assert "/actions/artifacts/$PREDECESSOR_ARTIFACT_ID/zip" in workflow
+    permissions = workflow.split("\npermissions:\n", 1)[1].split("\njobs:\n", 1)[0]
+    assert "contents: read" in permissions
+    assert "actions: read" in permissions
