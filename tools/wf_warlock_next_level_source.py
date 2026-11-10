@@ -76,6 +76,11 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     actor = original["raid"]["parties"][0]["players"][0]
     if actor.get("class") != "ClassWarlock":
         raise ValueError("expected original Warlock actor")
+    # An adjacent-level transition must start from the actual predecessor actor,
+    # not merely a target fixture labeled as that level. This is request
+    # provenance/forwarding integrity; native prepare still owns game legality.
+    if type(actor.get("level")) is not int or actor["level"] != from_level:
+        raise ValueError("source actor level differs from from_level")
     encounter_level = original["encounter"]["targets"][0].get("level")
     if encounter_level != from_level:
         raise ValueError("original source target level differs from from_level")
@@ -88,6 +93,11 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
     # The level point budget and each possible rank come from the selected
     # Rust binary. Forever only proposes a one-rank mutation; Rust decides
     # whether the proposed actor can be prepared and executed.
+    # A reused output directory must never present a previous run\'s selected
+    # actor or receipt as belonging to this native invocation.
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "source_request.json").unlink(missing_ok=True)
+    (out / "proposal.json").unlink(missing_ok=True)
     options_call = subprocess.run(
         [str(binary.resolve()), "options", "--class", "warlock",
          "--level", str(to_level)],
@@ -168,6 +178,9 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
         request_file = attempts_dir / f"candidate_{number:02d}.json"
         prepared_file = attempts_dir / f"candidate_{number:02d}.prepared.json"
         request_file.write_text(json.dumps(mutated, indent=2) + "\n")
+        # A successful exit without a newly written prepared actor is not proof
+        # of preparation; remove any artifact from an earlier run first.
+        prepared_file.unlink(missing_ok=True)
         result = subprocess.run(
             [str(binary.resolve()), "prepare", "--request",
              str(request_file.resolve()), "--actor-level", str(to_level),
@@ -260,6 +273,7 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
             request = attempts_dir / f"fallback_{tag}.json"
             prepared = attempts_dir / f"fallback_{tag}.prepared.json"
             request.write_text(json.dumps(frozen, indent=2) + "\n")
+            prepared.unlink(missing_ok=True)
             response = subprocess.run(
                 [str(binary.resolve()), "prepare", "--request",
                  str(request.resolve()), "--actor-level", str(to_level),
@@ -294,6 +308,74 @@ def propose(*, binary: Path, source: Path, out: Path, from_level: int = 20,
                     })
             final_ok, final_reason, final_request, final_prepared = try_native_gear("final")
             if final_ok:
+                # A bad inherited item must not force us to bank an otherwise
+                # native-preparable talent point. Retry the same Rust-supplied
+                # mutations on the equipment subset Rust just accepted.
+                # Neither candidate order nor item probing decides legality.
+                recovered_refusals = []
+                for retry, (_new_rank, _investment, ti, index, field) in enumerate(
+                        alternatives[:max_proposals], start=1):
+                    candidate = copy.deepcopy(frozen)
+                    candidate_actor = candidate["raid"]["parties"][0]["players"][0]
+                    slots = list(allocations[ti])
+                    if len(slots) <= index:
+                        slots.extend(["0"] * (index + 1 - len(slots)))
+                    slots[index] = str(int(slots[index]) + 1)
+                    pieces = list(allocations)
+                    pieces[ti] = "".join(slots)
+                    candidate_actor["talentsString"] = "-".join(pieces)
+                    request = attempts_dir / f"recovered_talent_{retry:02d}.json"
+                    prepared = attempts_dir / f"recovered_talent_{retry:02d}.prepared.json"
+                    request.write_text(json.dumps(candidate, indent=2) + "\n")
+                    prepared.unlink(missing_ok=True)
+                    response = subprocess.run(
+                        [str(binary.resolve()), "prepare", "--request",
+                         str(request.resolve()), "--actor-level", str(to_level),
+                         "--outfile", str(prepared.resolve())],
+                        capture_output=True, text=True, timeout=60, check=False)
+                    if response.returncode:
+                        recovered_refusals.append({
+                            "field_name": field, "tree_index": ti,
+                            "reason": (response.stderr or response.stdout)[-1200:]})
+                        continue
+                    try:
+                        prepared_actor = json.loads(prepared.read_text())["player"]
+                    except (ValueError, KeyError, OSError):
+                        recovered_refusals.append({
+                            "field_name": field, "tree_index": ti,
+                            "reason": "NATIVE_PREPARED_ACTOR_MISSING"})
+                        continue
+                    if (prepared_actor.get("level") != to_level
+                            or prepared_actor.get("class") != "ClassWarlock"):
+                        recovered_refusals.append({
+                            "field_name": field, "tree_index": ti,
+                            "reason": "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH"})
+                        continue
+                    selected = out / "source_request.json"
+                    selected.write_bytes(request.read_bytes())
+                    receipt = {
+                        "kind": "adjacent_native_warlock_candidate",
+                        "status": "NATIVE_PREPARED_NOT_YET_PAID",
+                        "from_level": from_level, "to_level": to_level,
+                        "original_source_sha256": sha256(source),
+                        "native_binary_sha256": sha256(binary),
+                        "selected_source_sha256": sha256(selected),
+                        "native_prepared_sha256": sha256(prepared),
+                        "native_options_source_revision": options.get("source_revision"),
+                        "source_talents": actor["talentsString"],
+                        "candidate_talents": candidate_actor["talentsString"],
+                        "selection": "native_prepared_talent_after_gear_recovery",
+                        "talent_points_newly_spent": 1,
+                        "field_name": field, "tree_index": ti,
+                        "native_gear_kept": kept,
+                        "native_gear_refusals": native_gear_refusals,
+                        "attempted": len(rejected) + retry,
+                        "native_refusals_before_selection": rejected,
+                        "native_refusals_after_gear_recovery": recovered_refusals,
+                        "next_step": "execute actual retained-actor hostile 100-kill native/gsim chain",
+                    }
+                    (out / "proposal.json").write_text(json.dumps(receipt, indent=2) + "\n")
+                    return receipt
                 selected = out / "source_request.json"
                 selected.write_bytes(final_request.read_bytes())
                 receipt = {

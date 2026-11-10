@@ -11,7 +11,7 @@ def source_file(tmp_path):
     source = {
         "encounter": {"targets": [{"level": 20, "stats": [0] * 40}]},
         "raid": {"parties": [{"players": [{
-            "class": "ClassWarlock", "talentsString": "0-0-011",
+            "class": "ClassWarlock", "level": 20, "talentsString": "0-0-011",
             "rotation": {"priorityList": []},
         }]}]},
     }
@@ -87,6 +87,134 @@ def test_native_refusal_is_preserved_without_false_candidate(tmp_path, monkeypat
     assert receipt["native_refusals"]
     assert "PREPARE_UNSUPPORTED" in receipt["native_refusals"][0]["reason"]
     assert not (out / "source_request.json").exists()
+
+
+def test_reused_output_never_promotes_stale_native_prepared_actor(tmp_path, monkeypatch):
+    """Exit 0 without a fresh native output cannot reuse yesterday's actor."""
+    source, binary = source_file(tmp_path)
+    out = tmp_path / "reused"
+    attempts = out / "candidate_attempts"
+    attempts.mkdir(parents=True)
+    stale = attempts / "candidate_01.prepared.json"
+    stale.write_text(json.dumps({"player": {"level": 21, "class": "ClassWarlock"}}))
+    (out / "source_request.json").write_text('{"stale":true}')
+    (out / "proposal.json").write_text('{"status":"NATIVE_PREPARED_NOT_YET_PAID"}')
+    seen = []
+
+    def native(cmd, **kwargs):
+        seen.append(cmd[1])
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        # A buggy/interrupted native invocation exits success but emits no output.
+        assert cmd[1] == "prepare"
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    with pytest.raises(RuntimeError, match="refused all"):
+        next_level.propose(binary=binary, source=source, out=out, max_proposals=1)
+    receipt = json.loads((out / "proposal.json").read_text())
+    assert seen == ["options", "prepare"]
+    assert receipt["status"] == "NATIVE_PREPARE_REFUSED_ALL_PROPOSALS"
+    assert receipt["native_refusals"][0]["reason"] == "NATIVE_PREPARED_ACTOR_MISSING"
+    assert not stale.exists()
+    assert not (out / "source_request.json").exists()
+
+
+def test_reused_native_gear_fallback_requires_new_prepared_artifact(tmp_path, monkeypatch):
+    """An old fallback-empty prepare must not justify importing inherited gear."""
+    source, binary = source_file(tmp_path)
+    actor = json.loads(source.read_text())
+    actor["raid"]["parties"][0]["players"][0]["equipment"] = {"items": [{"id": 101}]}
+    source.write_text(json.dumps(actor))
+    out = tmp_path / "reused-gear"
+    attempts = out / "candidate_attempts"
+    attempts.mkdir(parents=True)
+    stale = attempts / "fallback_empty.prepared.json"
+    stale.write_text(json.dumps({"player": {"level": 21, "class": "ClassWarlock"}}))
+    called = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        name = (cmd[cmd.index("--request") + 1]).split("/")[-1]
+        called.append(name)
+        if name.startswith("candidate_"):
+            return subprocess.CompletedProcess(cmd, 1, stderr="native rejects full loadout")
+        # A success exit with no output is not an accepted source actor.
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    with pytest.raises(RuntimeError, match="refused all"):
+        next_level.propose(binary=binary, source=source, out=out, max_proposals=1)
+    receipt = json.loads((out / "proposal.json").read_text())
+    assert called == ["candidate_01.json", "fallback_empty.json"]
+    assert receipt["native_gear_refusals"][0]["phase"] == "empty"
+    assert not stale.exists()
+    assert not (out / "source_request.json").exists()
+
+
+def test_recovered_gear_never_spends_talent_from_stale_prepared_output(tmp_path, monkeypatch):
+    """Only a freshly native-prepared recovered talent can replace banked fallback."""
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["raid"]["parties"][0]["players"][0]["equipment"] = {
+        "items": [{"id": 101}, {"id": 202}],
+    }
+    source.write_text(json.dumps(original))
+    out = tmp_path / "reused-recovery"
+    attempts = out / "candidate_attempts"
+    attempts.mkdir(parents=True)
+    stale = attempts / "recovered_talent_01.prepared.json"
+    stale.write_text(json.dumps({"player": {"level": 21, "class": "ClassWarlock"}}))
+    calls = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(native_options()))
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        candidate = request["raid"]["parties"][0]["players"][0]
+        name = (cmd[cmd.index("--request") + 1]).split("/")[-1]
+        calls.append(name)
+        if name.startswith("recovered_talent"):
+            return subprocess.CompletedProcess(cmd, 0)  # no fresh prepared file
+        if name.startswith("candidate") or any(
+                i.get("id") == 202 for i in candidate["equipment"]["items"]):
+            return subprocess.CompletedProcess(cmd, 1, stderr="native refuses gear")
+        with open(cmd[cmd.index("--outfile") + 1], "w") as f:
+            json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, f)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    receipt = next_level.propose(binary=binary, source=source, out=out, max_proposals=1)
+    selected = json.loads((out / "source_request.json").read_text())
+    selected_actor = selected["raid"]["parties"][0]["players"][0]
+    assert "recovered_talent_01.json" in calls
+    assert receipt["selection"] == "native_prepared_carry_forward_with_item_probes"
+    assert receipt["talent_points_newly_spent"] == 0
+    assert selected_actor["talentsString"] == "0-0-011"
+    assert selected_actor["equipment"]["items"] == [{"id": 101}, {"id": 0}]
+    assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+    assert not stale.exists()
+
+
+def test_adjacent_source_refuses_stale_or_missing_actor_level_before_native_calls(tmp_path, monkeypatch):
+    """A target-level label cannot launder an unrelated actor into a route."""
+    source, binary = source_file(tmp_path)
+    calls = []
+    monkeypatch.setattr(next_level.subprocess, "run",
+                        lambda *args, **kwargs: calls.append(args) or None)
+    original = json.loads(source.read_text())
+    actor = original["raid"]["parties"][0]["players"][0]
+    for wrong_level in (19, 21, None, True):
+        if wrong_level is None:
+            actor.pop("level", None)
+        else:
+            actor["level"] = wrong_level
+        source.write_text(json.dumps(original))
+        with pytest.raises(ValueError, match="source actor level differs from from_level"):
+            next_level.propose(binary=binary, source=source,
+                               out=tmp_path / f"wrong-{wrong_level}")
+    assert calls == []
 
 
 def test_native_options_budget_and_source_level_must_match(tmp_path, monkeypatch):
@@ -188,6 +316,7 @@ def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatc
     source, binary = source_file(tmp_path)
     original = json.loads(source.read_text())
     original["encounter"]["targets"][0]["level"] = 21
+    original["raid"]["parties"][0]["players"][0]["level"] = 21
     original["raid"]["parties"][0]["players"][0]["equipment"] = {
         "items": [{"id": 101}, {"id": 202}],
     }
@@ -230,8 +359,58 @@ def test_l22_banked_talents_use_native_prepared_gear_subset(tmp_path, monkeypatc
     selected = json.loads((out / "source_request.json").read_text())
     assert selected["raid"]["parties"][0]["players"][0]["equipment"]["items"] == [
         {"id": 101}, {"id": 0}]
-    assert requests[-1] == selected
+    # The accepted carry-forward request remains the selected fallback even
+    # after the new, unsuccessful recovered-gear talent probes.
+    assert selected in requests
+    assert requests[-1]["raid"]["parties"][0]["players"][0]["talentsString"] != "0-0-011"
     assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+
+
+
+def test_recovered_native_gear_allows_new_talent_point_instead_of_banking(tmp_path, monkeypatch):
+    """Native can reject inherited gear yet accept its recovered talent build."""
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["encounter"]["targets"][0]["level"] = 21
+    actor = original["raid"]["parties"][0]["players"][0]
+    actor["level"] = 21
+    actor["equipment"] = {"items": [{"id": 101}, {"id": 202}]}
+    source.write_text(json.dumps(original))
+    options = native_options()
+    options["level"] = 22
+    options["talents"]["points_available"] = 4
+    paid_native_prepares = []
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        request = json.loads(open(cmd[cmd.index("--request") + 1]).read())
+        candidate = request["raid"]["parties"][0]["players"][0]
+        paid_native_prepares.append(copy.deepcopy(candidate))
+        if any(item.get("id") == 202 for item in candidate["equipment"]["items"]):
+            return subprocess.CompletedProcess(cmd, 1, stderr="native rejects inherited item")
+        with open(cmd[cmd.index("--outfile") + 1], "w") as file:
+            json.dump({"player": {"class": "ClassWarlock", "level": 22}}, file)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "recovered"
+    receipt = next_level.propose(binary=binary, source=source, out=out,
+                                 from_level=21, to_level=22, max_proposals=2)
+    selected = json.loads((out / "source_request.json").read_text())
+    chosen = selected["raid"]["parties"][0]["players"][0]
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["selection"] == "native_prepared_talent_after_gear_recovery"
+    assert receipt["talent_points_newly_spent"] == 1
+    assert receipt["source_talents"] == "0-0-011"
+    assert chosen["talentsString"] == receipt["candidate_talents"] == "0-0-021"
+    assert chosen["equipment"]["items"] == [{"id": 101}, {"id": 0}]
+    assert receipt["native_gear_kept"] == [{"slot": 0, "id": 101}]
+    assert receipt["native_gear_refusals"][0]["id"] == 202
+    assert receipt["native_refusals_before_selection"]
+    assert paid_native_prepares[-1] == chosen
+    assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+    assert json.loads(source.read_text()) == original
 
 
 def paid_predecessor(tmp_path):
