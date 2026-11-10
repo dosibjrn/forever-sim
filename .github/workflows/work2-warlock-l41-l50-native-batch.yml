@@ -6,12 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       predecessor_artifact_id:
-        description: "Existing paid Actions artifact ID containing the from-level receipt"
-        required: true
+        description: "Existing paid predecessor artifact ID (ignored for new L10 root)"
+        required: false
         type: string
         default: "13757719649"
       from_level:
-        description: "Already paid predecessor level (inclusive starting point)"
+        description: "Already paid predecessor level, or 10 to start a brand-new native L10 actor"
         required: true
         type: number
         default: 44
@@ -36,8 +36,8 @@ on:
         type: string
         default: "7b811d37969bd1886cf123835fc87b699d1f5fbd"
       predecessor_binary_sha256:
-        description: "SHA256 of binary that executed the paid predecessor"
-        required: true
+        description: "SHA256 of paid predecessor binary (ignored for new L10 root)"
+        required: false
         type: string
         default: "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458"
 
@@ -75,6 +75,7 @@ jobs:
         run: |
           python -m pytest -q tests/test_work2_warlock_paid_range.py \
             tests/test_work2_warlock_next_level_source.py \
+            tests/test_work2_warlock_l10_root.py \
             tests/test_work2_warlock_route_guide.py \
             tests/test_work2_native_paid_banked_path_dp.py \
             tests/test_work2_native_paid_route_publisher.py \
@@ -83,6 +84,7 @@ jobs:
         working-directory: engine
         run: cargo build --locked --bin forever-engine
       - name: Download only selected paid predecessor artifact (no native replay)
+        if: ${{ inputs.from_level != 10 }}
         env:
           GH_TOKEN: ${{ github.token }}
           PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}
@@ -96,6 +98,7 @@ jobs:
             -o predecessor.zip
           unzip -q predecessor.zip -d predecessor-archive
       - name: Stage exactly one paid predecessor source/receipt for requested level
+        if: ${{ inputs.from_level != 10 }}
         working-directory: project
         env:
           FROM_LEVEL: ${{ inputs.from_level }}
@@ -105,6 +108,7 @@ jobs:
             --from-level "$FROM_LEVEL" --out ../predecessor-staged \
             --resume-cache-out ../warlock-paid-range
       - name: Confirm authentic predecessor 100/100 and source/binary lineage
+        if: ${{ inputs.from_level != 10 }}
         working-directory: project
         env:
           FROM_LEVEL: ${{ inputs.from_level }}
@@ -122,7 +126,26 @@ jobs:
               predecessor_binary_sha256=os.environ["PREDECESSOR_BINARY_SHA256"])
           print("REUSED_AUTHENTIC_PAID_PREDECESSOR", result, flush=True)
           PY
+      - name: Bootstrap a genuine L10 Rust actor and pay only still-unpaid L10–L19
+        if: ${{ inputs.from_level == 10 }}
+        id: root
+        continue-on-error: true
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: '1'
+          END_LEVEL: ${{ inputs.end_level }}
+          MAX_NEW_LEVELS: ${{ inputs.max_new_levels }}
+          MAX_PROPOSALS: ${{ inputs.max_proposals }}
+        run: |
+          python -u tools/wf_warlock_l10_root.py \
+            --binary ../engine/target/debug/forever-engine \
+            --template ../engine/fixtures/warlock-l20-troll-best-paid.request.json \
+            --end-level "$END_LEVEL" \
+            --max-new-levels "$MAX_NEW_LEVELS" --max-proposals "$MAX_PROPOSALS" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --out ../warlock-paid-range
       - name: Pay only genuinely missing adjacent native levels, resumably
+        if: ${{ inputs.from_level != 10 }}
         id: range
         continue-on-error: true
         working-directory: project
@@ -186,6 +209,38 @@ jobs:
               assert sorted(seen) == list(range(start + 1, end + 1)), (
                   "not every requested level has a verified paid native receipt")
           PY
+      - name: Confirm native-paid L10 root progress or preserve original native refusal
+        if: always() && steps.root.outcome != 'skipped'
+        env:
+          ROOT_STEP_OUTCOME: ${{ steps.root.outcome }}
+          END_LEVEL: ${{ inputs.end_level }}
+          MAX_NEW_LEVELS: ${{ inputs.max_new_levels }}
+        run: |
+          test -s warlock-paid-range/range_progress.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          result = json.loads(Path("warlock-paid-range/range_progress.json").read_text())
+          print(json.dumps(result, indent=2), flush=True)
+          assert result["kind"] == "warlock_native_l10_root_range_v1"
+          assert result["from_level"] == 10 and result["end_level"] == int(os.environ["END_LEVEL"])
+          assert result["full_10_60_native_replay_executed"] is False
+          assert result["elapsed_10_60_seconds"] is None
+          assert len(result["completed_new_levels"]) <= int(os.environ["MAX_NEW_LEVELS"])
+          seen = result["completed_new_levels"] + result["reused_levels"]
+          assert len(seen) == len(set(seen))
+          if result["stopped"] is None:
+              assert sorted(seen) == list(range(10, int(os.environ["END_LEVEL"]) + 1))
+          elif result["stopped"]["status"] == "BOUNDED_NEW_LEVEL_BUDGET":
+              assert seen and min(seen) == 10
+          else:
+              raise SystemExit(f"Original native refusal preserved: {result['stopped']}")
+          PY
+          if [ "$ROOT_STEP_OUTCOME" != "success" ]; then
+            echo "Native L10 producer failed; current native paid 100/100 root is not certified" >&2
+            exit 1
+          fi
       - name: Preserve selected source, native 100-mob receipts, refusal and route output
         if: always()
         uses: actions/upload-artifact@v4
