@@ -398,3 +398,65 @@ def test_paid_l20_predecessor_inside_l20_l28_report_requires_same_binary(tmp_pat
             binary=binary, source=source, out=tmp_path / "refused",
             predecessor_route=route)
     assert not seen
+
+
+
+def test_native_source_level_refusal_stops_after_one_preparation(tmp_path, monkeypatch):
+    """Exact paid L41 native refusal is independent of candidate gear/talents."""
+    source, binary = source_file(tmp_path)
+    original = json.loads(source.read_text())
+    original["encounter"]["targets"][0]["level"] = 40
+    original["raid"]["parties"][0]["players"][0]["level"] = 40
+    source.write_text(json.dumps(original))
+    options = native_options()
+    options["level"] = 41
+    options["talents"]["points_available"] = 32
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd[1])
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        return subprocess.CompletedProcess(cmd, 2, stderr=json.dumps({
+            "prepared": False,
+            "refusal": {"code": "level", "reason": (
+                "player level 41 is unsupported: no source-backed native preparation "
+                "for RaceTroll ClassWarlock (supported: Troll Warlock L10-L40)"
+            )},
+        }))
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    receipt = next_level.propose(binary=binary, source=source,
+                                 out=tmp_path / "l41", from_level=40, to_level=41)
+    assert calls == ["options", "prepare"]
+    assert receipt["status"] == "NATIVE_ACTOR_LEVEL_UNSUPPORTED"
+    assert receipt["attempted"] == 1
+    assert receipt["native_refusals"][0]["native_refusal_code"] == "level"
+    assert "player level 41 is unsupported" in receipt["native_refusals"][0]["reason"]
+    assert not (tmp_path / "l41/source_request.json").exists()
+
+
+def test_non_source_native_level_refusal_does_not_veto_other_talents(tmp_path, monkeypatch):
+    """A generic native code=level can be candidate-specific; keep exploring."""
+    source, binary = source_file(tmp_path)
+    options = native_options()
+    attempts = []
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        attempts.append(cmd)
+        if len(attempts) == 1:
+            return subprocess.CompletedProcess(cmd, 2, stderr=json.dumps({
+                "refusal": {"code": "level", "reason": "candidate item level too high"},
+            }))
+        with open(cmd[cmd.index("--outfile") + 1], "w") as out:
+            json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, out)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    receipt = next_level.propose(binary=binary, source=source,
+                                 out=tmp_path / "retained")
+    assert len(attempts) == 2
+    assert receipt["status"] == "NATIVE_PREPARED_NOT_YET_PAID"
+    assert receipt["native_refusals_before_selection"][0]["native_refusal_code"] == "level"
