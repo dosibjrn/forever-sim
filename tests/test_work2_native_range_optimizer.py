@@ -454,3 +454,61 @@ def test_one_call_cli_manifest_mode_requires_real_native_source_inputs(tmp_path)
             "--native-prepared-manifest", str(tmp_path / "manifest.json"),
             "--out", str(tmp_path / "out.json"),
         ])
+
+
+def test_scored_adapter_source_identity_mismatch_prevents_paid_native_invocation(tmp_path):
+    import json
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"native-binary-test")
+    manifest = _prepared_manifest(tmp_path)
+    root = json.loads(manifest.read_text())
+    request_file = tmp_path / root["entries"][0]["source_request"]
+    request_file.write_text(request_file.read_text() + "new native source bytes")
+    calls = []
+    result = evaluate_request(
+        {"level": 20, "parent": None, "mob_count": 3, "budget": 2,
+         "rng_mode": "balanced", "iterations": 1, "recover_to_full": True},
+        manifest=manifest, binary=binary, target_hp=400.0,
+        scorer_command=["work1-scorer"], artifact_dir=tmp_path / "raw",
+        run_command=_fake_native_comparison(calls))
+    assert calls == []
+    assert len(result) == 2
+    assert any("SOURCE_IDENTITY_MISMATCH" in r["status"] for r in result)
+    assert any("NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER" in r["status"]
+               for r in result)
+
+
+def test_scored_adapter_native_timeout_is_retained_as_unscored_refusal(tmp_path):
+    import subprocess
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"native-binary-test")
+    manifest = _prepared_manifest(tmp_path)
+
+    def timed_out(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd, 1800)
+
+    result = evaluate_request(
+        {"level": 20, "parent": None, "mob_count": 3, "budget": 2,
+         "rng_mode": "balanced", "iterations": 1, "recover_to_full": True},
+        manifest=manifest, binary=binary, target_hp=400.0,
+        scorer_command=["work1-scorer"], artifact_dir=tmp_path / "raw",
+        run_command=timed_out)
+    assert len(result) == 2
+    assert all("NATIVE_SCORER_TRANSPORT_ERROR" in r["status"] for r in result)
+    assert all(r["native_prepared"] is False for r in result)
+
+
+def test_range_report_retains_candidate_id_and_native_failure_detail():
+    def native_refusal(*, level, parent, mob_count, **kwargs):
+        return [{"candidate_id": "affliction", "source_request_sha256": "f" * 64,
+                 "status": "NATIVE_TERMINAL_FULL_RECOVERY_NOT_RECORDED",
+                 "native_refusal": "native source returned no post-final-kill recovery",
+                 "native_prepared": False}]
+    report = optimize(20, 20, 1, 3, 1, evaluate=native_refusal)
+    assert report["status"] == "NO_COMPARABLE_NATIVE_PATH"
+    row = report["rejected_native_attempts"][0]
+    assert row["candidate_id"] == "affliction"
+    assert row["native_status"] == "NATIVE_TERMINAL_FULL_RECOVERY_NOT_RECORDED"
+    assert row["native_refusal"] == "native source returned no post-final-kill recovery"
