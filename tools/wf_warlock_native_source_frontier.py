@@ -41,6 +41,44 @@ def _variants(seed: str, trees: list[dict]):
     yield seed
     seen = {seed}
 
+    # A one-point transfer out of a developed talent tree commonly leaves
+    # the original tree dominant.  Source-native prepare must also get a
+    # chance to judge genuinely different tree families within a tiny budget.
+    # These are *proposals*, not claims of Warcraft legality: slot indices
+    # and rank caps are supplied by Rust options; Rust prepare decides.
+    def whole_tree_family(target_tree: int):
+        remaining = sum(int(rank) for part in fields for rank in part)
+        if remaining == 0:
+            return None
+        target = ["0"] * len(fields[target_tree])
+        for option in slots_by_tree[target_tree]:
+            index, maximum = option.get("index"), option.get("max_rank")
+            if (type(index) is not int or index < 0
+                    or type(maximum) is not int or maximum < 1):
+                continue
+            target.extend("0" for _ in range(index + 1 - len(target)))
+            amount = min(remaining, maximum)
+            target[index] = str(amount)
+            remaining -= amount
+            if remaining == 0:
+                break
+        if remaining:
+            return None
+        proposal = ["0" * len(part) for part in fields]
+        proposal[target_tree] = "".join(target)
+        return "-".join(proposal)
+
+    dominant = max(range(len(fields)), key=lambda idx: sum(
+        int(rank) for rank in fields[idx]
+    ))
+    for target_tree in range(len(fields)):
+        if target_tree == dominant:
+            continue
+        proposal = whole_tree_family(target_tree)
+        if proposal is not None and proposal not in seen:
+            seen.add(proposal)
+            yield proposal
+
     def transfer(source_tree: int, src: int, dest_tree: int, dst: int,
                  cap: int):
         if (type(src) is not int or src < 0 or type(dst) is not int
@@ -102,6 +140,39 @@ def _variants(seed: str, trees: list[dict]):
                     yield candidate
 
 
+def _native_apl_variants(seed: dict, prepared: dict):
+    """Propose fallback policies from spells registered on the prepared actor.
+
+    get_options spell-family rows include unlearned and triggered spells; they
+    must not be presented as executable APL choices. The exact native-prepared
+    actor supplies registered SpellFlagAPL actions; Rust prepare judges every
+    new policy again. No spell-ID or gameplay-eligibility table lives here.
+    """
+    actor = seed["raid"]["parties"][0]["players"][0]
+    rotation = actor.get("rotation")
+    priorities = rotation.get("priorityList") if isinstance(rotation, dict) else None
+    if not isinstance(priorities, list) or not priorities:
+        return
+    spells = prepared.get("player", {}).get("spells", [])
+    if not isinstance(spells, list):
+        return
+    seen = {json.dumps(priorities, sort_keys=True)}
+    for spell in spells:
+        if not isinstance(spell, dict) or "SpellFlagAPL" not in spell.get("flags", []):
+            continue
+        action = spell.get("action_id")
+        spell_id = action.get("spell_id") if isinstance(action, dict) else None
+        if type(spell_id) is not int or spell_id <= 0:
+            continue
+        proposal = copy.deepcopy(seed)
+        fallback = proposal["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+        fallback[-1] = {"action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+        identity = json.dumps(fallback, sort_keys=True)
+        if identity not in seen:
+            seen.add(identity)
+            yield proposal
+
+
 def produce_frontier(
     request: dict[str, Any], *, binary: Path, seed_source: Path, out: Path,
     runner: Callable[..., Any] = subprocess.run,
@@ -150,14 +221,33 @@ def produce_frontier(
     out.mkdir(parents=True, exist_ok=True)
     entries: list[dict] = []
     refusals: list[dict] = []
+    # Keep the root and two distinct talent proposals in a tiny budget, then
+    # offer native-registered APL fallbacks before spending every remaining
+    # attempt on local talent moves. Every proposal still pays a Rust prepare.
+    talent_variants = iter(_variants(actor["talentsString"], trees))
+    root_prepared: dict | None = None
+
+    def proposals():
+        for _ in range(3):
+            variant = next(talent_variants, None)
+            if variant is None:
+                break
+            yield variant, None
+        if root_prepared is not None:
+            for native_apl in _native_apl_variants(seed, root_prepared):
+                yield None, native_apl
+        for variant in talent_variants:
+            yield variant, None
+
     # Accepted proposals and native prepare refusals share the supplied
     # candidate budget. No extra unpaid attempts are hidden from the caller.
-    for index, talents_string in enumerate(_variants(actor["talentsString"], trees)):
+    for index, (talents_string, apl_source) in enumerate(proposals()):
         if index >= budget:
             break
         cid = f"source_{index:03d}"
-        proposal = copy.deepcopy(seed)
-        proposal["raid"]["parties"][0]["players"][0]["talentsString"] = talents_string
+        proposal = copy.deepcopy(seed) if apl_source is None else apl_source
+        if talents_string is not None:
+            proposal["raid"]["parties"][0]["players"][0]["talentsString"] = talents_string
         source_path = out / f"{cid}.source.json"
         prepared_path = out / f"{cid}.prepared.json"
         source_path.write_text(json.dumps(proposal, sort_keys=True) + "\n")
@@ -179,6 +269,8 @@ def produce_frontier(
             refusals.append({"candidate_id": cid, "status": "NATIVE_PREPARE_REFUSED",
                              "native_prepared": False, "native_refusal": str(exc)[-1500:]})
             continue
+        if index == 0:
+            root_prepared = prepared
         entries.append({"id": cid, "level": level, "parent_source_sha256": None,
                         "source_request": str(source_path.resolve()),
                         "prepared": str(prepared_path.resolve())})
