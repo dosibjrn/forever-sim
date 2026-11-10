@@ -121,6 +121,24 @@ def solve_decision_result(
     if not routes:
         return {**base, "status": "target_not_in_decision_result", "pair": None}
 
+    # Never compare a shortened path against a full single-spec route. In
+    # particular, intersecting pair levels and summing only that intersection
+    # can turn a missing native-paid level into fictitious dual-spec savings.
+    # The retained frontiers define the real start when present; otherwise
+    # infer the bounded published interval from the available route paths.
+    route_rows = {
+        name: _step_rows(route)
+        for name, route in routes.items()
+        if route.status == "available" and route.path is not None
+    }
+    starts = [min(rows) for rows in route_rows.values() if target in rows]
+    start = int(result.start_level) if result.start_level > 0 else min(starts, default=target)
+    expected_levels = set(range(start, target + 1))
+    complete_rows = {
+        name: rows for name, rows in route_rows.items()
+        if set(rows) == expected_levels
+    }
+
     # Pair canonical named routes only. Generic user constraints are challengers,
     # not spec identities, and unconstrained is the baseline rather than a second spec.
     available: list[tuple[str, RouteResult, dict[int, dict[str, Any]]]] = []
@@ -130,17 +148,32 @@ def solve_decision_result(
         kind = str(route.definition.get("kind") or "")
         if kind == "generic_constraint":
             continue
-        rows = _step_rows(route)
-        if target in rows:
+        rows = complete_rows.get(name)
+        if rows is not None:
             available.append((name, route, rows))
+    # The unrestricted no-respec route is a genuine single-spec alternative.
+    # Excluding it can invent dual-spec savings when the unrestricted path is
+    # faster than every named endpoint constraint.
+    single_routes = [(name, route) for name, route, _ in available]
+    unrestricted = routes.get("unconstrained")
+    if (unrestricted is not None and "unconstrained" in complete_rows):
+        single_routes.append(("unconstrained", unrestricted))
+    best_single_name, best_single_route = min(
+        single_routes,
+        key=lambda row: (float(row[1].path.cumulative_s),
+                         row[0] != "unconstrained", row[0]),
+    ) if single_routes else (None, None)
+    best_single = (float(best_single_route.path.cumulative_s)
+                   if best_single_route is not None else None)
     if len(available) < 2:
-        return {**base, "status": "insufficient_canonical_routes", "canonical_routes": len(available), "pair": None}
-
-    best_single_name, best_single_route, _ = min(
-        available,
-        key=lambda row: (float(row[1].path.cumulative_s), row[0]),
-    )
-    best_single = float(best_single_route.path.cumulative_s)
+        return {
+            **base, "status": "insufficient_canonical_routes",
+            "canonical_routes": len(available), "pair": None,
+            "best_single_route": best_single_name,
+            "best_single_objective_seconds": best_single,
+            "recommended_strategy": "single_spec" if best_single is not None else None,
+            "dual_spec_purchase_recommended": False,
+        }
     best: tuple[tuple[float, str, str], Any] | None = None
 
     for i, (name_a, route_a, rows_a) in enumerate(available):
@@ -190,8 +223,14 @@ def solve_decision_result(
         return {**base, "status": "no_distinct_canonical_pair", "pair": None}
 
     key, name_a, route_a, name_b, route_b, primary, choices = best
-    total = float(key[0])
-    gain = max(0.0, best_single - total)
+    pair_total = float(key[0])
+    # An optional, cost-free second spec cannot worsen the optimum: keeping
+    # the best single spec without purchasing or switching is always feasible.
+    # Equality is a reason to keep the simpler single-spec strategy.
+    recommend_pair = best_single is None or pair_total < best_single - 1e-9
+    selected_total = pair_total if recommend_pair else best_single
+    gain = (max(0.0, best_single - selected_total)
+            if best_single is not None else None)
     phases = _phases(choices)
     switches = []
     previous_slot = primary
@@ -205,6 +244,9 @@ def solve_decision_result(
             })
         previous_slot = phase["slot"]
     recommendation = (
+        ("No optional dual-spec purchase or switch recommended; follow the "
+         f"best single-spec route ({best_single_name}).")
+        if not recommend_pair else
         "No post-unlock switch needed; keep the primary spec active."
         if not switches else
         "; ".join(f"L{s['level']}: switch to {s['to_route']} ({s['to_slot']})" for s in switches)
@@ -213,16 +255,20 @@ def solve_decision_result(
         **base,
         "status": "available",
         "pair": {"A": _route_identity(name_a, route_a), "B": _route_identity(name_b, route_b)},
-        "primary_before_unlock": primary,
-        "choices": choices,
-        "phases": phases,
-        "switches": switches,
+        "primary_before_unlock": primary if recommend_pair else None,
+        "choices": choices if recommend_pair else [],
+        "phases": phases if recommend_pair else [],
+        "switches": switches if recommend_pair else [],
         "switch_recommendation": recommendation,
-        "objective_seconds": total,
+        "recommended_strategy": "dual_spec" if recommend_pair else "single_spec",
+        "dual_spec_purchase_recommended": recommend_pair,
+        "pair_candidate_objective_seconds": pair_total,
+        "pair_candidate_switches": switches,
+        "objective_seconds": selected_total,
         "best_single_route": best_single_name,
         "best_single_objective_seconds": best_single,
         "gain_seconds": gain,
-        "gain_percent": 100.0 * gain / best_single if best_single > 0 else 0.0,
+        "gain_percent": 100.0 * gain / best_single if best_single and best_single > 0 else 0.0,
         "canonical_routes_considered": len(available),
         "confidence_note": (
             f"Levels {cap + 1}-{target} use provisional/fallback Forever data; verified snapshot ends at level {cap}."

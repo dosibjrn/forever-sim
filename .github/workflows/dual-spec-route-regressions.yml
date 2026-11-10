@@ -1,0 +1,27 @@
+name: Dual-spec route solver regressions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - src/v2/dual_spec.py
+      - tests/test_dual_spec_i17.py
+      - .github/workflows/dual-spec-route-regressions.yml
+
+permissions:
+  contents: read
+
+jobs:
+  dual-spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install focused test runner
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
+      - name: Verify route interval comparability and optional dual-spec
+        run: python -m pytest -q tests/test_dual_spec_i17.py

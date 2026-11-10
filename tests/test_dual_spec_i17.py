@@ -33,7 +33,7 @@ def _path(name: str, scores: dict[int, float]) -> PathResult:
 def _result(target: int=23) -> DecisionResult:
     a=_path('frost',{20:10,21:10,22:100,23:100})
     b=_path('fire',{20:110,21:110,22:10,23:10})
-    unconstrained=_path('best',{20:10,21:10,22:10,23:10})
+    unconstrained=_path('best',{20:30,21:30,22:30,23:30})
     routes={
         'unconstrained':RouteResult('unconstrained',target,'available',{'kind':'unconstrained'},unconstrained),
         'frost':RouteResult('frost',target,'available',{'kind':'tree_points','tree':'frost'},a),
@@ -86,3 +86,80 @@ def test_i17_deterministic_pair_result():
     assert a['pair']==b['pair']
     assert a['phases']==b['phases']
     assert a['objective_seconds']==pytest.approx(b['objective_seconds'])
+
+
+def test_i17_unrestricted_single_baseline_prevents_fictitious_dual_savings():
+    """The user can keep the already-faster unrestricted single-spec route."""
+    result = _result()
+    fast = _path('best_single', {20:10, 21:10, 22:10, 23:10})
+    routes = dict(result.targets[23])
+    routes['unconstrained'] = RouteResult(
+        'unconstrained', 23, 'available', {'kind': 'unconstrained'}, fast)
+    actual = DecisionResult('mage', (), {23: routes}, published_targets=(23,))
+    row = solve_decision_result(actual, unlock_level=20, target_level=23,
+                                verified_level_cap=30)
+    assert row['status'] == 'available'
+    assert row['best_single_route'] == 'unconstrained'
+    assert row['best_single_objective_seconds'] == pytest.approx(40)
+    assert row['pair_candidate_objective_seconds'] == pytest.approx(40)
+    assert row['objective_seconds'] == pytest.approx(40)
+    assert row['gain_seconds'] == 0
+    assert row['recommended_strategy'] == 'single_spec'
+    assert row['dual_spec_purchase_recommended'] is False
+    assert row['switches'] == []
+    assert row['choices'] == []
+    assert 'No optional dual-spec purchase' in row['switch_recommendation']
+    # Candidate pair evidence is retained without presenting it as selected.
+    assert row['pair_candidate_switches'][0]['level'] == 22
+
+
+def test_i17_optional_single_baseline_survives_missing_second_named_route():
+    result = _result()
+    routes = {key: value for key, value in result.targets[23].items()
+              if key != 'fire'}
+    actual = DecisionResult('mage', (), {23: routes}, published_targets=(23,))
+    row = solve_decision_result(actual, unlock_level=20, target_level=23,
+                                verified_level_cap=30)
+    assert row['status'] == 'insufficient_canonical_routes'
+    assert row['best_single_route'] == 'unconstrained'
+    assert row['best_single_objective_seconds'] == pytest.approx(120)
+    assert row['recommended_strategy'] == 'single_spec'
+    assert row['dual_spec_purchase_recommended'] is False
+
+
+def test_i17_incomplete_named_route_cannot_skip_an_expensive_level():
+    """A missing native-paid level must not be treated as zero elapsed time."""
+    result = _result()
+    routes = dict(result.targets[23])
+    # The missing L21 would previously disappear from the pair intersection.
+    routes['fire'] = RouteResult(
+        'fire', 23, 'available', {'kind': 'tree_points', 'tree': 'fire'},
+        _path('fire', {20: 110, 22: 10, 23: 10}))
+    actual = DecisionResult('mage', (), {23: routes}, published_targets=(23,))
+    row = solve_decision_result(actual, unlock_level=20, target_level=23,
+                                verified_level_cap=30)
+    assert row['status'] == 'insufficient_canonical_routes'
+    assert row['pair'] is None
+    assert row['recommended_strategy'] == 'single_spec'
+    assert row['dual_spec_purchase_recommended'] is False
+    assert row['best_single_route'] == 'unconstrained'
+    assert row['best_single_objective_seconds'] == pytest.approx(120)
+
+
+def test_i17_incomplete_unrestricted_route_is_not_comparable_single_baseline():
+    """Only full-length paths can establish the single-vs-dual gain."""
+    result = _result()
+    routes = dict(result.targets[23])
+    routes['unconstrained'] = RouteResult(
+        'unconstrained', 23, 'available', {'kind': 'unconstrained'},
+        _path('partial', {20: 1, 22: 1, 23: 1}))
+    actual = DecisionResult('mage', (), {23: routes}, published_targets=(23,))
+    row = solve_decision_result(actual, unlock_level=20, target_level=23,
+                                verified_level_cap=30)
+    assert row['status'] == 'available'
+    assert row['best_single_route'] == 'frost'
+    assert row['best_single_objective_seconds'] == pytest.approx(220)
+    assert row['pair_candidate_objective_seconds'] == pytest.approx(40)
+    assert row['objective_seconds'] == pytest.approx(40)
+    assert row['gain_seconds'] == pytest.approx(180)
+    assert row['recommended_strategy'] == 'dual_spec'
