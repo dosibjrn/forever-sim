@@ -236,6 +236,50 @@ def test_failed_native_anchor_producer_preserves_refusal_and_visits_later_levels
     assert len(stored) == 1
     assert json.loads(stored[0].read_text())["native_refusal"] == refusal["native_refusal"]
 
+def test_one_cli_request_uses_level_specific_scenario_hp_unless_overridden(
+    tmp_path, monkeypatch,
+):
+    """Sampling L20 and L60 must not silently fight identical-health mobs."""
+    from tools import wf_warlock_native_range_optimize as cli
+    from tools import wf_warlock_native_range_scored_adapter as scored
+
+    target_hps = []
+
+    def native_source(command, *, input, capture_output, text, timeout, check):
+        request = json.loads(input)
+        assert request["parent"] is None
+        return subprocess.CompletedProcess(
+            command, 0, stdout=json.dumps({"entries": [], "refusals": []}),
+        )
+
+    def native_paid(request, *, target_hp, **kwargs):
+        target_hps.append((request["level"], target_hp))
+        return [
+            receipt(request["level"], 3, "A", 12.0),
+            receipt(request["level"], 3, "B", 9.0),
+        ]
+
+    monkeypatch.setattr(cli.subprocess, "run", native_source)
+    monkeypatch.setattr(scored, "evaluate_request", native_paid)
+
+    arguments = [
+        "--start-level", "20", "--end-level", "60", "--level-stride", "40",
+        "--mob-count", "3", "--budget", "4",
+        "--native-frontier-command", "native-frontier",
+        "--native-binary", str(tmp_path / "native"),
+        "--native-receipts-dir", str(tmp_path / "receipts"),
+        "--out", str(tmp_path / "result.json"),
+    ]
+    assert cli.main(arguments) == 0
+    result = json.loads((tmp_path / "result.json").read_text())
+    assert result["sampled_levels_completed"] == [20, 60]
+    assert target_hps == [(20, 484.0), (60, 3052.0)]
+
+    # An explicit fixed HP remains available for byte-compatible prior
+    # scenarios, but is never silently imposed on the new sampled range.
+    target_hps.clear()
+    assert cli.main(arguments + ["--native-target-hp", "400"]) == 0
+    assert target_hps == [(20, 400.0), (60, 400.0)]
 
 def test_one_sparse_compatible_optimizer_call_returns_one_three_level_build_path():
     """Sparse rank compatibility is not a demand to simulate intervening levels."""
