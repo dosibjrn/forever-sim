@@ -159,7 +159,7 @@ def test_comparison_pays_genuine_hostile_worlds_and_ignores_short_dps(
     paid = _fake_native(monkeypatch, predecessor)
     result = world.run(**args, max_new_trials=3)
     assert paid == [1, 2, 3]
-    assert result["status"] == "MEASURED_CROSS_TREE_100"
+    assert result["status"] == "MEASURED_SAME_BUILD_FAMILY_100"
     assert result["world_winner"]["candidate_index"] == 2
     assert result["world_winner"]["elapsed_seconds"] == 750
     assert result["candidates"][2]["targets_killed"] == 41
@@ -289,7 +289,7 @@ def test_bounded_native_finalists_spread_across_prepared_trees(
     result = world.run(**args, max_candidates=3, max_new_trials=3)
     assert paid == [1, 2, 3]
     assert [row["tree_index"] for row in result["candidates"]] == [0, 1, 2]
-    assert result["status"] == "MEASURED_CROSS_TREE_100"
+    assert result["status"] == "MEASURED_SAME_BUILD_FAMILY_100"
     assert result["world_winner"]["tree_index"] == 1
     assert result["world_winner"]["elapsed_seconds"] == 750
 
@@ -317,9 +317,64 @@ def test_equal_paid_native_world_elapsed_has_no_invented_talent_winner(
     paid = _fake_native(monkeypatch, predecessor, times=times)
     result = world.run(**args, max_new_trials=3, max_candidates=3)
     assert paid == [1, 2, 3]
-    assert result["status"] == "MEASURED_CROSS_TREE_TIE_100"
+    assert result["status"] == "MEASURED_SAME_BUILD_FAMILY_TIE_100"
     assert result["tied_best_candidate_indexes"] == ties
     assert result["world_winner"] is None
     assert result["pending_candidate_indexes"] == []
     assert all(row["status"] == "MEASURED_NATIVE_100"
                for row in result["candidates"])
+
+
+
+def test_paid_l47_one_rank_choices_are_all_destruction_heavy():
+    """Cross-tree new-point labels do not establish Affli/Demo/Destro builds."""
+    variants = (
+        "1-0-2555355132000000",  # new Affliction point
+        "0-1-2555355132000000",  # new Demonology point
+        "0-0-2555355133000000",  # new Destruction point
+    )
+    invested = [world._talent_points_by_tree(talents) for talents in variants]
+    assert [world._dominant_talent_tree(points) for points in invested] == [2, 2, 2]
+    assert invested[0][0] == 1 and invested[0][2] > 20
+    assert invested[1][1] == 1 and invested[1][2] > 20
+    assert invested[2][2] > invested[0][2]
+
+
+def test_paid_rank_tree_is_not_misreported_as_distinct_build_family(
+        tmp_path, monkeypatch):
+    args, predecessor = _setup(tmp_path)
+    paid = _fake_native(monkeypatch, predecessor, times=(777.7, 777.7, 777.7))
+    result = world.run(**args, max_new_trials=3)
+    assert paid == [1, 2, 3]
+    assert result["status"] == "MEASURED_SAME_BUILD_FAMILY_TIE_100"
+    assert result["distinct_build_families_compared"] is False
+    assert result["source_talent_points_by_tree"] == [0, 0, 2]
+    assert result["source_dominant_talent_tree_index"] == 2
+    assert result["measured_dominant_talent_tree_indexes"] == [2]
+    assert [candidate["tree_index"] for candidate in result["candidates"]] == [0, 1, 2]
+    assert [candidate["dominant_talent_tree_index"]
+            for candidate in result["candidates"]] == [2, 2, 2]
+    assert result["world_winner"] is None
+    assert result["new_native_100_trials"] == 3
+
+
+def test_genuinely_different_dominant_build_families_keep_cross_tree_status(
+        tmp_path, monkeypatch):
+    args, predecessor = _setup(tmp_path)
+    proposal = json.loads(args["shortlist"].read_text())
+    for row, talents in zip(proposal["candidates"],
+                            ("333-0-011", "0-333-011", "0-0-333")):
+        candidate_path = args["shortlist"].parent / row["source_request"]
+        candidate = json.loads(candidate_path.read_text())
+        candidate["raid"]["parties"][0]["players"][0]["talentsString"] = talents
+        candidate_path.write_text(json.dumps(candidate))
+        row["candidate_talents"] = talents
+        row["source_request_sha256"] = world.native_source.sha256(candidate_path)
+    args["shortlist"].write_text(json.dumps(proposal))
+    paid = _fake_native(monkeypatch, predecessor, times=(900, 750, 1000))
+    result = world.run(**args, max_new_trials=3)
+    assert paid == [1, 2, 3]
+    assert result["distinct_build_families_compared"] is True
+    assert result["measured_dominant_talent_tree_indexes"] == [0, 1, 2]
+    assert result["status"] == "MEASURED_CROSS_TREE_100"
+    assert result["world_winner"]["candidate_index"] == 2
