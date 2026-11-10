@@ -1,4 +1,4 @@
-name: Work2 one-shot request for existing native-paid L45-L46 range
+name: Work2 one-shot request for existing native-paid L47-L60 range
 # Branch-local invocation bridge only; NEVER merge this temporary workflow.
 on:
   push:
@@ -40,6 +40,7 @@ jobs:
           now = dt.datetime.now(dt.timezone.utc)
           recent = [run for run in runs if
                     run.get("head_branch") == "main" and
+                    run.get("status") in ("queued","in_progress","requested","waiting","pending") and
                     now - dt.datetime.fromisoformat(run["created_at"].replace("Z","+00:00"))
                     < dt.timedelta(hours=4)]
           if recent:
@@ -48,10 +49,10 @@ jobs:
               raise SystemExit(0)
 
           inputs = {
-              "predecessor_artifact_id": "13757719649",
-              "from_level": "44",
-              "end_level": "46",
-              "max_new_levels": "2",
+              "predecessor_artifact_id": "13767012142",
+              "from_level": "46",
+              "end_level": "60",
+              "max_new_levels": "14",
               "max_proposals": "30",
               "selected_rust_sha": "7b811d37969bd1886cf123835fc87b699d1f5fbd",
               "predecessor_binary_sha256": "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458",
@@ -62,6 +63,6 @@ jobs:
           with urllib.request.urlopen(request, timeout=20) as response:
               if response.status != 204:
                   raise RuntimeError(f"Unexpected dispatch HTTP {response.status}")
-          print("DISPATCHED_EXISTING_MAIN_NATIVE_PAID_RANGE_L45_L46", flush=True)
+          print("DISPATCHED_EXISTING_MAIN_NATIVE_PAID_RANGE_L47_L60", flush=True)
           print("Dispatch identity:", json.dumps(inputs, sort_keys=True), flush=True)
           PY
