@@ -308,7 +308,7 @@ def collect_local_references(root: Path) -> tuple[set[int], set[int]]:
         record_references(path.read_text(encoding="utf-8"), runs, artifacts)
     # Executable gate tools and native entrypoints may retain the only paid
     # run/artifact reference in source comments. Protect these small, bounded
-    # production script roots without scanning synthetic tests or game data.
+    # production script roots without scanning generated fixtures or game data.
     # A corrupt executable fails the evidence scan closed before any DELETE.
     for folder in ("tools", "integrations/mythicsim-rust"):
         for path in (root / folder).glob("*.py"):
