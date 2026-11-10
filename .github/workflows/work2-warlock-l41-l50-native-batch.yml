@@ -43,6 +43,7 @@ on:
 
 permissions:
   contents: read
+  actions: read  # Download the authenticated paid predecessor Actions artifact.
 
 jobs:
   paid-native-range:
