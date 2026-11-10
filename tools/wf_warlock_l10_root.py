@@ -227,17 +227,43 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
                        "proposal": str(proposal_dir / "proposal.json"),
                        "route": str(route)}
             return save(10)
-        code = guide.main([
-            "--execute-native", "--actor-level", "10",
-            "--binary", str(binary), "--source", str(source),
-            "--health-threshold", str(health_threshold),
-            "--mana-threshold", str(mana_threshold),
-            "--trial", f"native-l10-root-{key}",
-            *(['--run-url', run_url] if run_url else []),
-            "--out", str(paid_dir),
-        ])
+        try:
+            code = guide.main([
+                "--execute-native", "--actor-level", "10",
+                "--binary", str(binary), "--source", str(source),
+                "--health-threshold", str(health_threshold),
+                "--mana-threshold", str(mana_threshold),
+                "--trial", f"native-l10-root-{key}",
+                *(['--run-url', run_url] if run_url else []),
+                "--out", str(paid_dir),
+            ])
+        except Exception as exc:
+            # A transport/driver exception is not a native Warcraft refusal.
+            # Keep it inspectable without granting paid credit or hiding CI failure.
+            reason = f"{type(exc).__name__}: {exc}"
+            _write(paid_dir / "driver_error.json", {
+                "status": "PAID_DRIVER_ERROR", "error": reason, "actor_level": 10,
+                "native_binary_sha256": engine_sha,
+                "selected_source_sha256": next_level.sha256(source),
+            })
+            if not route.is_file():
+                _refusal_report(paid_dir, status="PAID_DRIVER_ERROR", reason=reason,
+                                binary_sha=engine_sha, template_sha=template_sha)
+            stopped = {"level": 10, "status": "PAID_DRIVER_ERROR",
+                       "route": str(route), "error": reason}
+            return save(10)
         if code:
-            stopped = {"level": 10, "status": "NATIVE_PAID_REFUSAL", "route": str(route)}
+            if not route.is_file():
+                # The producer must not silently drop the original failed attempt.
+                # An absent receipt is a driver failure, not evidence of native refusal.
+                reason = f"paid guide returned exit code {code} without route.json"
+                _refusal_report(paid_dir, status="PAID_RECEIPT_MISSING", reason=reason,
+                                binary_sha=engine_sha, template_sha=template_sha)
+                stopped = {"level": 10, "status": "PAID_RECEIPT_MISSING",
+                           "route": str(route), "error": reason}
+            else:
+                stopped = {"level": 10, "status": "NATIVE_PAID_REFUSAL",
+                           "route": str(route)}
             return save(10)
         # A return code alone cannot establish a paid 100/100 root.
         next_level.verified_paid_predecessor(
