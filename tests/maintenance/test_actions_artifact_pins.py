@@ -40,6 +40,43 @@ def test_gc_unmerged_local_pr_with_missing_ref_fails_closed():
         ], "dosibjrn/forever-sim")
 
 
+def test_gc_preserves_deleted_local_unmerged_pr_branch_from_label():
+    """GitHub can clear head.repo after branch deletion; unmerged evidence stays."""
+    repo = "dosibjrn/forever-sim"
+    branches = unmerged_pr_branch_refs([
+        {"state": "closed", "merged_at": None,
+         "head": {"ref": "clean/deleted-but-unmerged", "repo": None,
+                  "label": "dosibjrn:clean/deleted-but-unmerged"}},
+        {"state": "open", "merged_at": None,
+         "head": {"ref": "work/active", "repo": None,
+                  "label": "dosibjrn:work/active"}},
+        {"state": "closed", "merged_at": "2026-11-10T08:00:00Z",
+         "head": {"ref": "work/merged", "repo": None,
+                  "label": "dosibjrn:work/merged"}},
+        {"state": "closed", "merged_at": None,
+         "head": {"ref": "work/external", "repo": None,
+                  "label": "outside:work/external"}},
+    ], repo)
+    assert branches == {"clean/deleted-but-unmerged", "work/active"}
+    assert protects_open_pr_artifact(
+        {"workflow_run": {"head_branch": "clean/deleted-but-unmerged"}},
+        branches)
+    assert not protects_open_pr_artifact(
+        {"workflow_run": {"head_branch": "work/merged"}}, branches)
+
+
+@pytest.mark.parametrize("head", [
+    {"ref": None, "repo": None, "label": "dosibjrn:work/unmerged"},
+    {"ref": "work/unmerged", "repo": None, "label": "dosibjrn:other/branch"},
+])
+def test_gc_ambiguous_deleted_local_pr_origin_fails_closed(head):
+    """An owner-local label with missing/mismatched ref must stop deletion."""
+    with pytest.raises(ValueError, match="trustworthy head branch"):
+        unmerged_pr_branch_refs([
+            {"state": "closed", "merged_at": None, "head": head}
+        ], "dosibjrn/forever-sim")
+
+
 def test_local_evidence_includes_merge_owned_ledger_and_document_links(tmp_path):
     for name, contents in {
         "OVERALL_PLAN.md": "plan https://github.com/o/r/actions/runs/12",
