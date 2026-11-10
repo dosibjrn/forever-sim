@@ -283,13 +283,15 @@ def test_native_p3_ordinary_unmeasured_fields_do_not_veto_paid_score_sensitivity
     # production selector, using an already paid source-policy coefficient.
     # Spirit is present but has no measured effect in this selected policy.
     # P3's approved contract does not demand a weight for every item field.
+    # Unique test-only IDs avoid process-global production item-vector cache
+    # collisions with unrelated native gear fixtures.
     items = (
         ItemRecord(
-            item_id=25, name="Native caster chest A", slot="chest",
+            item_id=9888123451, name="Native caster chest A", slot="chest",
             item_level=3, required_level=1, spell_power=6.0, spirit=4.0,
             identity_origin="mythicsim_native", source_type="mythicsim_native"),
         ItemRecord(
-            item_id=26, name="Native caster chest B", slot="chest",
+            item_id=9888123452, name="Native caster chest B", slot="chest",
             item_level=2, required_level=1, spell_power=2.0, spirit=8.0,
             identity_origin="mythicsim_native", source_type="mythicsim_native"),
     )
