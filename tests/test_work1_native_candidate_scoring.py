@@ -194,3 +194,54 @@ def test_one_paid_candidate_and_one_refusal_are_not_optimized(tmp_path):
     assert result["winner_candidate_id"] is None
     assert result["status"] == "PROVISIONAL_NO_COMPETITIVE_FULL_RECOVERY"
     assert result["candidates"][1]["status"] == "NATIVE_REFUSAL"
+
+
+def test_duplicate_native_prepared_source_is_not_an_optimized_comparison(tmp_path):
+    paths = {}
+    for candidate_id in ("original", "same_build"):
+        path = tmp_path / f"{candidate_id}.json"
+        path.write_text(json.dumps(_prepared("a" * 64)))
+        paths[candidate_id] = path
+    calls = []
+
+    def runner(binary, path, **kwargs):
+        calls.append(path.stem)
+        return _receipt("a" * 64)
+
+    output = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths=paths, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=runner,
+        artifact_dir=tmp_path / "receipts")
+    assert calls == ["original"]
+    assert output["comparable_candidates"] == 1
+    assert output["status"] == "PROVISIONAL_NO_COMPETITIVE_FULL_RECOVERY"
+    assert output["winner_candidate_id"] is None
+    assert output["candidates"][1]["status"] == "DUPLICATE_NATIVE_PREPARED_SOURCE"
+    assert output["candidates"][1]["duplicate_of"] == "original"
+    assert not (tmp_path / "receipts" / "same_build.native.json").exists()
+
+
+def test_duplicate_proposal_does_not_hide_a_later_faster_native_build(tmp_path):
+    paths = {}
+    for candidate_id, source in (("first", "a" * 64),
+                                 ("alias", "a" * 64),
+                                 ("later", "b" * 64)):
+        path = tmp_path / f"{candidate_id}.json"
+        path.write_text(json.dumps(_prepared(source)))
+        paths[candidate_id] = path
+    calls = []
+
+    def runner(binary, path, **kwargs):
+        calls.append(path.stem)
+        if path.stem == "first":
+            return _receipt("a" * 64, kill_seconds=15, recovery_seconds=10)
+        return _receipt("b" * 64, kill_seconds=17, recovery_seconds=2)
+
+    output = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths=paths, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=runner)
+    assert calls == ["first", "later"]
+    assert output["comparable_candidates"] == 2
+    assert output["winner_candidate_id"] == "later"
+    assert output["winner_elapsed_seconds"] == 19
+    assert output["candidates"][1]["status"] == "DUPLICATE_NATIVE_PREPARED_SOURCE"
