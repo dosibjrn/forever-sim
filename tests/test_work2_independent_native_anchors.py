@@ -36,8 +36,7 @@ def test_one_invocation_ranks_five_paid_independent_levels_with_no_fake_route():
         return [receipt(level, mobs, "A", 12.0, recovery=10.0),
                 receipt(level, mobs, "B", 8.0, recovery=1.0)]
 
-    result = optimize(20, 60, 10, 3, 20, evaluate=evaluator,
-                      mode="independent")
+    result = optimize(20, 60, 10, 3, 20, evaluate=evaluator)
     assert [row["level"] for row in calls] == [20, 30, 40, 50, 60]
     assert all(row["parent"] is None
                and row["search_mode"] == "independent"
