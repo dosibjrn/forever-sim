@@ -64,7 +64,7 @@ jobs:
           route=json.loads(Path("previous/warlock-l29-native-route/route.json").read_text())
           source=Path("previous/warlock-l29-native-route/native_l29/best_apl/source_request.json").read_bytes()
           assert 29 in route["measured_levels"], "Paid L29 predecessor absent"
-          l29=[r for r in route["observations"] if r["level"]==28]
+          l29=[r for r in route["observations"] if r["level"]==29]
           assert l29 and any(r["source_request_sha256"]==hashlib.sha256(source).hexdigest()
                              for r in l29), "L29 actual paid-world source fingerprint mismatch"
           assert hashlib.sha256(source).hexdigest() == "f96c1741445387567b431694349c7be33ec1ca9cc09f167b74c3060d735896b4", "Unexpected L29 source request"
@@ -138,7 +138,7 @@ jobs:
           PYTHONUNBUFFERED: '1'
         run: |
           python -u tools/wf_warlock_route_guide.py \
-            --execute-native --actor-level 29 \
+            --execute-native --actor-level 30 \
             --binary ../engine/target/debug/forever-engine \
             --source ../warlock-l30-source/source_request.json \
             --health-threshold 0.7 --mana-threshold 0.25 \
