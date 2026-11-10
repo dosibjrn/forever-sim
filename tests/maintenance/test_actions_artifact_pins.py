@@ -788,3 +788,31 @@ def test_local_native_log_gh_cli_command_protects_its_run(tmp_path):
     runs, artifacts = collect_local_references(tmp_path)
     assert runs == {42777347218}
     assert artifacts == set()
+
+
+def test_plaintext_and_streaming_native_receipts_pin_runs_before_gc(tmp_path):
+    """An evidence file's extension must not permit deleting its only paid receipt."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+
+    receipts = {
+        "docs/evidence/hostile-native.txt":
+            "Only hostile run: https://github.com/dosibjrn/forever-sim/actions/runs/42780000123",
+        "evidence/world/partial.jsonl":
+            '{"artifact_id": 13750000001, "status": "NATIVE_PAID"}\\n',
+        "gate_evidence/warlock/receipt.yaml":
+            "artifact_id: 13750000002\\n",
+        "gate_sources/warlock/receipt.yml":
+            "github_run_id: 42780000124\\n",
+    }
+    for name, contents in receipts.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents, encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42780000123, 42780000124}
+    assert artifacts == {13750000001, 13750000002}
