@@ -183,6 +183,10 @@ def compare_prepared_candidates(*, binary: Path,
     cache_identity = (_exact_paid_cache_identity(
         binary, actor_level=actor_level, mob_count=mob_count,
         target_hp=float(target_hp)) if artifact_dir is not None else None)
+    # Retain original paid receipts even if an optimizer assigns a different
+    # label to the same native-prepared candidate on a later frontier pass.
+    existing_cache_files = (sorted(artifact_dir.glob("*.native.cache.json"))
+                            if cache_identity is not None else [])
     for candidate_id, path in prepared_paths.items():
         if (not isinstance(candidate_id, str) or not candidate_id
                 or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
@@ -227,26 +231,37 @@ def compare_prepared_candidates(*, binary: Path,
                 if artifact_dir is not None else None)
             receipt = None
             reused = False
-            # Only original fully paid ACKs with exact engine, native actor,
-            # source code, scenario, RNG and recovery settings qualify.
+            paid_receipt_path = native_receipt_path
+            # Candidate labels can change between frontier passes. Reuse an
+            # original source-native ACK under any label only after checking
+            # the full engine/scenario/source identity, original byte digest
+            # and unchanged terminal-recovery scoring predicate.
             if (cache_identity is not None and native_receipt_path is not None
                     and metadata_path is not None):
-                try:
-                    metadata = json.loads(metadata_path.read_text())
-                    expected = dict(cache_identity,
-                                    prepared_sha256=prepared_sha,
-                                    source_sha256=source_sha,
-                                    native_raw_receipt_sha256=_sha256(native_receipt_path))
-                    if metadata == expected:
-                        old = json.loads(native_receipt_path.read_text())
+                for cached_metadata_path in [metadata_path] + [
+                        p for p in existing_cache_files if p != metadata_path]:
+                    cached_receipt_path = cached_metadata_path.with_name(
+                        cached_metadata_path.name.removesuffix(
+                            ".native.cache.json") + ".native.json")
+                    try:
+                        metadata = json.loads(cached_metadata_path.read_text())
+                        expected = dict(
+                            cache_identity, prepared_sha256=prepared_sha,
+                            source_sha256=source_sha,
+                            native_raw_receipt_sha256=_sha256(cached_receipt_path))
+                        if metadata != expected:
+                            continue
+                        old = json.loads(cached_receipt_path.read_text())
                         old_score, old_status = score_native_chain(
                             old, prepared, mob_count=mob_count,
                             expected_target_hp=target_hp)
                         if (old_score is not None
                                 and old_status == "MEASURED_NATIVE_FULLY_RECOVERED"):
                             receipt, reused = old, True
-                except (OSError, ValueError, TypeError):
-                    pass
+                            paid_receipt_path = cached_receipt_path
+                            break
+                    except (OSError, ValueError, TypeError):
+                        continue
             if receipt is None:
                 receipt = run_native(binary, path, target_count=mob_count,
                                      mob_health=target_hp, rng_mode="balanced",
@@ -284,8 +299,8 @@ def compare_prepared_candidates(*, binary: Path,
                     terminal_max_mana=terminal["max_mana"],
                 )
                 if native_receipt_path is not None:
-                    row.update(native_raw_receipt_file=str(native_receipt_path),
-                               native_raw_receipt_sha256=_sha256(native_receipt_path))
+                    row.update(native_raw_receipt_file=str(paid_receipt_path),
+                               native_raw_receipt_sha256=_sha256(paid_receipt_path))
         except (RuntimeError, AssertionError, ValueError, OSError,
                 subprocess.SubprocessError) as exc:
             row.update(status="NATIVE_REFUSAL", elapsed_seconds=None,

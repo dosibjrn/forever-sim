@@ -440,6 +440,21 @@ def test_exact_paid_receipt_reuse_requires_same_engine_source_and_scenario(
     assert len(calls) == 1
     assert repeat["candidates"][0]["reused_exact_native_paid_receipt"] is True
     assert repeat["candidates"][0]["elapsed_seconds"] == 20.0
+    # A resumed frontier may re-label the exact same prepared source. It must
+    # reference the original paid ACK, not spend three more native kills or
+    # create a second, unauthenticated paid file for the new label.
+    renamed = tmp_path / "renamed.json"
+    renamed.write_bytes(prepared.read_bytes())
+    alias = compare_prepared_candidates(
+        binary=binary, prepared_paths={"new_frontier_label": renamed},
+        actor_level=30, mob_count=3, target_hp=1200.,
+        run_native=native, artifact_dir=artifacts)
+    assert len(calls) == 1
+    assert alias["candidates"][0]["reused_exact_native_paid_receipt"] is True
+    assert alias["candidates"][0]["elapsed_seconds"] == 20.0
+    assert alias["candidates"][0]["native_raw_receipt_file"] == str(
+        artifacts / "candidate.native.json")
+    assert not (artifacts / "new_frontier_label.native.json").exists()
     # A modified receipt is no longer original paid evidence.
     raw = artifacts / "candidate.native.json"
     raw.write_text(raw.read_text().replace(
