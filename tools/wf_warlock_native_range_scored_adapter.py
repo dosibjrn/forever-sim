@@ -38,6 +38,31 @@ def _refusal(entry: dict, reason: str, source: str | None = None) -> dict:
     }
 
 
+def _requested_source_build(source_path: Path) -> dict:
+    """Forward original native-request choices, never infer game legality.
+
+    Source SHA and prepared actor identity are checked by the caller before
+    these requested (not independently verified as executed) fields are used.
+    Historical minimal source fixtures may not include a full raid/player.
+    """
+    source = json.loads(source_path.read_text())
+    try:
+        actor = source["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError):
+        return {}
+    if not isinstance(actor, dict):
+        return {}
+    warlock = actor.get("warlock")
+    options = warlock.get("options") if isinstance(warlock, dict) else None
+    class_options = options.get("classOptions") if isinstance(options, dict) else None
+    return {
+        "talents": actor.get("talentsString"),
+        "pet": class_options.get("summon") if isinstance(class_options, dict) else None,
+        "gear": actor.get("equipment"),
+        "apl": actor.get("rotation"),
+    }
+
+
 def evaluate_request(
     request: dict, *, manifest: Path, binary: Path, target_hp: float,
     scorer_command: list[str], artifact_dir: Path,
@@ -87,10 +112,8 @@ def evaluate_request(
         raise ValueError("NATIVE_PREPARED_MANIFEST_REFUSALS_INVALID")
     if len(native_refusals) > budget:
         raise ValueError("NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET")
-    # A producer may supply a reusable multi-level manifest, so only this
-    # level/parent's proposals spend the current request budget. Never silently
-    # truncate matching source-prepared entries: their native prepare attempts
-    # have *already happened*, even if we decline to pay for world combat.
+    # Count every already-prepared matching attempt, never silently slice it.
+    # Unrelated levels/parents in a reusable manifest do not spend this budget.
     selected = [entry for entry in source["entries"]
                 if isinstance(entry, dict) and entry.get("level") == level
                 and entry.get("parent_source_sha256") == parent_sha]
@@ -108,6 +131,7 @@ def evaluate_request(
         for row in native_refusals
     ]
     candidates: dict[str, tuple[Path, dict, str, dict]] = {}
+    requested_builds: dict[str, dict] = {}
     for entry in selected:
         candidate_id = entry.get("id")
         if (not isinstance(candidate_id, str) or not candidate_id
@@ -127,8 +151,8 @@ def evaluate_request(
                 raise ValueError("NATIVE_PREPARED_SOURCE_IDENTITY_MISMATCH")
             lineage: dict = {}
             if parent is not None:
-                # This must be a separately emitted native source/continuity
-                # receipt, NEVER a flag copied from the optimizer's parent.
+                # This must be a separately recorded native-prepared source
+                # chain, NEVER a flag copied from the optimizer's parent.
                 lineage = json.loads(
                     (manifest.parent / entry["native_continuity_receipt"]).read_text())
                 if (lineage.get("source_request_sha256") != native_source_sha
@@ -139,6 +163,38 @@ def evaluate_request(
                             and lineage.get("native_intermediate_levels_verified")
                             is not True)):
                     raise ValueError("NATIVE_SOURCE_CONTINUITY_NOT_RECORDED")
+                if lineage.get("scope") == (
+                        "source-native prepared build lineage, not world XP/travel"):
+                    # Re-read the Rust prepare artifacts; a manifest boolean
+                    # or skipped intermediate file cannot authorize a paid edge.
+                    if (lineage.get("native_engine_binary_sha256") != _sha(binary)
+                            or lineage.get("native_parent_raw_receipt_sha256")
+                            != _sha(Path(parent["native_raw_receipt_file"]))):
+                        raise ValueError("NATIVE_SOURCE_CHAIN_PARENT_OR_ENGINE_MISMATCH")
+                    trail = lineage.get("infill")
+                    if (not isinstance(trail, list)
+                            or [step.get("level") for step in trail
+                                if isinstance(step, dict)]
+                            != list(range(parent_level + 1, level))):
+                        raise ValueError("NATIVE_SOURCE_CHAIN_INCOMPLETE_LEVELS")
+                    for step in trail:
+                        request_path = Path(step["source_request"])
+                        prepared_step_path = Path(step["prepared"])
+                        if (_sha(request_path) != step.get("source_request_sha256")
+                                or _sha(prepared_step_path) != step.get("prepared_sha256")):
+                            raise ValueError("NATIVE_SOURCE_CHAIN_FILE_IDENTITY_MISMATCH")
+                        prepared_step = json.loads(prepared_step_path.read_text())
+                        source_step = json.loads(request_path.read_text())
+                        if (prepared_step.get("request_sha256")
+                                != step["source_request_sha256"]
+                                or prepared_step["player"].get("class") != "ClassWarlock"
+                                or prepared_step["player"].get("level") != step["level"]
+                                or source_step["raid"]["parties"][0]["players"][0].get("level")
+                                != step["level"]
+                                or source_step["encounter"]["targets"][0].get("level")
+                                != step["level"]):
+                            raise ValueError("NATIVE_SOURCE_CHAIN_PREPARE_IDENTITY_MISMATCH")
+            requested_builds[candidate_id] = _requested_source_build(source_path)
             candidates[candidate_id] = (prepared_path, prepared, native_source_sha, lineage)
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refused.append(_refusal(entry, "NATIVE_PREPARED_OR_CONTINUITY_REFUSAL:"
@@ -256,6 +312,9 @@ def evaluate_request(
                 raise ValueError("NATIVE_TERMINAL_CAPACITY_NOT_FULL")
             rows.append({
                 "status": comparison["status"], "candidate_id": cid,
+                # Exact requested build, preserved from the hash-matched native
+                # source rather than silently published as unknown/null.
+                **requested_builds[cid],
                 "level": level, "mob_count": mobs,
                 "targets_killed": raw.get("world_targets_killed"),
                 "rng_mode": "balanced", "iterations": 1,
