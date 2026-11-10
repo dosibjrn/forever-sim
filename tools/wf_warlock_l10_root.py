@@ -191,7 +191,16 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
     def save(next_level_number: int) -> dict:
         native_guide = latest_route.with_name("GUIDE.md")
         latest_guide = out / "GUIDE.md"
-        if native_guide.is_file():
+        if stopped and stopped.get("status") == "PAID_ACK_UNVERIFIED":
+            # Keep the producer's original guide in the paid artifact, but do
+            # not publish it as verified when its source-linked ACK failed.
+            latest_guide.parent.mkdir(parents=True, exist_ok=True)
+            latest_guide.write_text(
+                "# Warlock L10 — paid ACK not verified\n\n"
+                "No source-linked native 100/100 L10 completion was verified. "
+                "Inspect the preserved native route and "
+                "ack_verification_error.json before any continuation.\n")
+        elif native_guide.is_file():
             latest_guide.parent.mkdir(parents=True, exist_ok=True)
             latest_guide.write_bytes(native_guide.read_bytes())
         else:
@@ -209,8 +218,29 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
         _write(out / "range_progress.json", result)
         return result
 
+    def unverified_ack(exc: Exception) -> dict:
+        nonlocal stopped
+        # A producer can publish a route/guide without the complete original
+        # native 100/100 source-linked ACK. Preserve those bytes and record the
+        # exact forwarding/receipt-verification failure; never pay/advance it.
+        reason = f"{type(exc).__name__}: {exc}"
+        _write(paid_dir / "ack_verification_error.json", {
+            "status": "PAID_ACK_UNVERIFIED", "level": 10, "error": reason,
+            "native_binary_sha256": engine_sha,
+            "selected_source_sha256": (
+                next_level.sha256(source) if source.is_file() else None),
+            "route": str(route),
+        })
+        stopped = {"level": 10, "status": "PAID_ACK_UNVERIFIED",
+                   "route": str(route), "error": reason}
+        return save(10)
+
     if route.is_file():
-        if paid_range._cached_paid_refusal(route, 10):
+        try:
+            paid_refusal = paid_range._cached_paid_refusal(route, 10)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return unverified_ack(exc)
+        if paid_refusal:
             # Keep the original class of refusal on resumed runs rather than
             # converting a paid-driver exception into a Warcraft failure.
             refusal = next(row for row in json.loads(route.read_text())["native_refusals"]
@@ -218,8 +248,11 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
                            and row.get("status"))
             stopped = {"level": 10, "status": refusal["status"], "route": str(route)}
             return save(10)
-        next_level.verified_paid_predecessor(
-            route=route, source=source, binary=binary, from_level=10)
+        try:
+            next_level.verified_paid_predecessor(
+                route=route, source=source, binary=binary, from_level=10)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return unverified_ack(exc)
         reused.append(10)
     else:
         proposal_file = proposal_dir / "proposal.json"
@@ -289,9 +322,13 @@ def run(*, binary: Path, template: Path, out: Path, end_level: int = 19,
                 stopped = {"level": 10, "status": "NATIVE_PAID_REFUSAL",
                            "route": str(route)}
             return save(10)
-        # A return code alone cannot establish a paid 100/100 root.
-        next_level.verified_paid_predecessor(
-            route=route, source=source, binary=binary, from_level=10)
+        # A return code alone cannot establish a paid 100/100 root. Publish
+        # a resumable machine/human refusal without overwriting native bytes.
+        try:
+            next_level.verified_paid_predecessor(
+                route=route, source=source, binary=binary, from_level=10)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return unverified_ack(exc)
         completed.append(10)
     if end_level == 10:
         return save(11)
