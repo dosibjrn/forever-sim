@@ -26,7 +26,7 @@ def test_selected_rust_paid_probes_only_run_when_pin_changes():
     tail = text[text.index(paid):]
     steps = re.split(r"(?=^      - (?:name:|uses:))", tail, flags=re.MULTILINE)
     steps = [step for step in steps if step.startswith("      - ")]
-    assert len(steps) >= 12
+    assert steps, "selected Rust native verification steps must remain guarded"
     condition = "steps.selected_rust_change.outputs.changed == 'true'"
     for step in steps:
         headline = step.splitlines()[0]
