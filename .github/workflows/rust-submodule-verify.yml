@@ -61,10 +61,29 @@ jobs:
             tests/test_work2_mage_native_p3.py \
             tests/test_work2_paladin_retribution_native_p3.py \
             tests/test_work2_paladin_protection_native_p3.py
+      # Native source/gateway integration is expensive; keep focused Forever
+      # adapter regressions on Python-only PRs, but do not rebuild and pay
+      # unrelated P3 no-record probes when the selected Rust pin is unchanged.
+      - name: Detect selected Rust pin change
+        id: selected_rust_change
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          git fetch --no-tags --depth=1 origin "$base"
+          if git diff --name-only "$base" HEAD -- .gitmodules integrations/mythicsim-rust/engine | grep -q .; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo "Selected Rust pin unchanged; focused adapter regressions ran, no native cold/probe replay." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Build the exact selected engine
+        if: steps.selected_rust_change.outputs.changed == 'true'
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
       - name: Probe unified get_options JSON on two class/level pairs
+        if: steps.selected_rust_change.outputs.changed == 'true'
         working-directory: integrations/mythicsim-rust/engine
         shell: bash
         run: |
@@ -95,6 +114,7 @@ jobs:
           done
 
       - name: Probe Feral L60 P3 on selected native engine (no record)
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
@@ -157,6 +177,7 @@ jobs:
           PY
 
       - name: Run Mage Arcane L60 unified-options native P3 (no record)
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
@@ -194,6 +215,7 @@ jobs:
           PY
 
       - name: Run Mage Fire L60 selected-native P3 (no record)
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
@@ -229,6 +251,7 @@ jobs:
           PY
 
       - name: Run Mage Frost L60 selected-native P3 (no record)
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
@@ -264,6 +287,7 @@ jobs:
           PY
 
       - name: Run Paladin Retribution L60 selected-native P3 (no record)
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
@@ -310,7 +334,7 @@ jobs:
           }, default=str), flush=True)
           PY
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.selected_rust_change.outputs.changed == 'true'
         with:
           name: paladin-retribution-l60-native-p3-no-record
           path: ${{ runner.temp }}/paladin-retribution-p3/
@@ -318,6 +342,7 @@ jobs:
           retention-days: 30
 
       - name: Run Paladin Protection L60 selected-native TPS P3 (no record)
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
@@ -365,7 +390,7 @@ jobs:
           }, default=str), flush=True)
           PY
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.selected_rust_change.outputs.changed == 'true'
         with:
           name: paladin-protection-l60-native-p3-no-record
           path: ${{ runner.temp }}/paladin-protection-p3/
@@ -373,6 +398,7 @@ jobs:
           retention-days: 30
 
       - name: Run no-record Rogue L20 P3 native capability and gate receipt
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -431,6 +457,7 @@ jobs:
           PY
 
       - name: Run no-record Priest and Mage L20 P3 with native item options
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -468,6 +495,7 @@ jobs:
           PY
           done
       - name: Run no-record Shaman L20 P3 with native item options
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -500,6 +528,7 @@ jobs:
           PY
 
       - name: Run no-record Paladin L20 P3 with native player context and item options
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -534,6 +563,7 @@ jobs:
           PY
 
       - name: Run no-record Mage L30 P3 with native item options
+        if: steps.selected_rust_change.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -571,7 +601,7 @@ jobs:
           PY
 
       - name: Upload no-record native P3 reports
-        if: always()
+        if: always() && steps.selected_rust_change.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: native-p3-no-record-${{ github.sha }}
