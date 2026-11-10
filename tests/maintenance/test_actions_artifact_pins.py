@@ -816,3 +816,46 @@ def test_plaintext_and_streaming_native_receipts_pin_runs_before_gc(tmp_path):
     runs, artifacts = collect_local_references(tmp_path)
     assert runs == {42780000123, 42780000124}
     assert artifacts == {13750000001, 13750000002}
+
+
+
+def test_product_native_route_observations_pin_paid_artifacts(tmp_path):
+    """Published route inputs protect paid native evidence even without prose pins."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+
+    for name, contents in {
+        "data/warlock/native_route_observations.json":
+            '{"observations": [{"run_url": '
+            '"https://github.com/dosibjrn/forever-sim/actions/runs/42669041997", '
+            '"artifact_url": '
+            '"https://github.com/dosibjrn/forever-sim/actions/runs/42669041997/artifacts/13698202699"}]}',
+        "data/druid/native_route_observations.json":
+            '{"artifact_id": 13750000003, "run_id": 42780000125}',
+        # Ordinary game-source data is not a GC receipt scan target.
+        "data/forever/game-data.json": '{"artifact_id": 999999}',
+    }.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents, encoding="utf-8")
+
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42669041997, 42780000125}
+    assert artifacts == {13698202699, 13750000003}
+
+
+def test_corrupt_product_route_receipt_aborts_artifact_cleanup(tmp_path):
+    """A damaged production route receipt cannot silently unpin evidence."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    route = tmp_path / "data/warlock/native_route_observations.json"
+    route.parent.mkdir(parents=True, exist_ok=True)
+    route.write_bytes(b'{"run_url": "https://github.com/o/r/actions/runs/123"}\xff')
+    with pytest.raises(UnicodeDecodeError):
+        collect_local_references(tmp_path)
