@@ -174,6 +174,7 @@ def test_one_cli_process_orchestrates_several_native_evaluator_calls(tmp_path, m
     code = cli.main([
         "--start-level", "20", "--end-level", "30", "--level-stride", "10",
         "--mob-count", "3", "--budget", "10", "--beam-width", "2",
+        "--mode", "continuing",
         "--evaluator-command", "native-scorer --pinned",
         "--out", str(output),
     ])
