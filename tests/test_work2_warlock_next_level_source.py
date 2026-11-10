@@ -319,3 +319,30 @@ def test_l24_rejects_unpaid_stale_or_wrong_source_before_native_calls(tmp_path, 
         next_level.propose(binary=binary, source=source, out=tmp_path / "unpaid",
                            from_level=23, to_level=24, predecessor_route=route)
     assert calls == []
+
+
+def test_native_options_refusal_is_published_without_prepared_candidate(tmp_path, monkeypatch):
+    source, binary = source_file(tmp_path)
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        assert cmd[1] == "options"
+        return subprocess.CompletedProcess(
+            cmd, 2, stderr=json.dumps({
+                "refusal": {"code": "source_level_unavailable",
+                            "reason": "native L25 options unavailable"}}))
+
+    monkeypatch.setattr(next_level.subprocess, "run", fake_run)
+    out = tmp_path / "refused_options"
+    with pytest.raises(RuntimeError, match="NATIVE_OPTIONS_REFUSAL"):
+        next_level.propose(binary=binary, source=source, out=out)
+    receipt = json.loads((out / "proposal.json").read_text())
+    assert len(calls) == 1
+    assert receipt["status"] == "NATIVE_OPTIONS_REFUSED"
+    assert receipt["attempted"] == 0
+    assert receipt["native_refusals"][0]["stage"] == "options"
+    assert receipt["native_refusals"][0]["native_refusal_code"] == "source_level_unavailable"
+    assert receipt["original_source_sha256"] == next_level.sha256(source)
+    assert receipt["native_binary_sha256"] == next_level.sha256(binary)
+    assert not (out / "source_request.json").exists()
