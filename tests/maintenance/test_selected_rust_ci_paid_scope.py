@@ -102,7 +102,7 @@ def test_warlock_shoot_cargo_regression_is_explicitly_requested():
         "cargo test --locked "
         "warlock_wand_registers_native_shoot_for_apl_and_combat -- --nocapture"
     ) in text
-    assert "Require exact selected engine pin" in text
+    assert "Assert selected Rust gitlink and official source repository" in text
     assert "working-directory: integrations/mythicsim-rust/engine" in text
 
     pin_workflow = WORKFLOW.read_text(encoding="utf-8")
