@@ -760,3 +760,84 @@ def test_gearless_actor_can_native_prepare_banked_talents_after_rank_refusals(tm
     assert json.loads((out / "source_request.json").read_text())[
         "raid"]["parties"][0]["players"][0]["talentsString"] == "0-0-011"
     assert receipt["selected_source_sha256"] == next_level.sha256(out / "source_request.json")
+
+
+def test_work1_native_paid_shortlist_preserves_three_tree_alternatives(tmp_path, monkeypatch):
+    """A short native screen cannot silently promote the first valid rank to route winner."""
+    source, binary = source_file(tmp_path)
+    calls = []
+
+    def native(command, **kwargs):
+        calls.append(command[1])
+        if command[1] == "options":
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps(native_options()))
+        outfile = command[command.index("--outfile") + 1]
+        if command[1] == "prepare":
+            request = json.loads(open(command[command.index("--request") + 1]).read())
+            assert request["simOptions"]["iterations"] == 8
+            assert request["encounter"]["duration"] == 30
+            player = request["raid"]["parties"][0]["players"][0]
+            with open(outfile, "w") as file:
+                json.dump({"player": {"level": 21, "class": "ClassWarlock",
+                                      "talentsString": player["talentsString"]}}, file)
+            return subprocess.CompletedProcess(command, 0)
+        assert command[1] == "sim" and "--rng-mode" in command
+        prepared = json.loads(open(command[command.index("--infile") + 1]).read())
+        talents = prepared["player"]["talentsString"]
+        # Fake ONLY the native transport for scored receipts, not gameplay.
+        score = 100.0 + (10 if talents.startswith("0-1-") else 0)
+        with open(outfile, "w") as file:
+            json.dump({"result": {"raidMetrics": {"parties": [{
+                "players": [{"dps": {"avg": score}}]}]}}}, file)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    out = tmp_path / "cross_tree"
+    result = next_level.propose(binary=binary, source=source, out=out,
+                                max_proposals=3, native_paid_shortlist=True)
+    assert result["status"] == "NATIVE_SCREENED_NOT_WORLD_PAID"
+    assert [r["tree_index"] for r in result["candidates"]] == [0, 1, 2]
+    assert result["attempted"] == 3
+    assert all(r["screen_status"] == "NATIVE_SCREEN_PAID"
+               and r["native_paid_receipt_sha256"]
+               for r in result["candidates"])
+    assert result["candidates"][1]["screen_dps_30s"] == 110.0
+    assert result["world_winner"] is None
+    assert result["source_talents"] == "0-0-011"
+    assert result["original_source_sha256"] == next_level.sha256(source)
+    assert result["native_binary_sha256"] == next_level.sha256(binary)
+    assert not (out / "source_request.json").exists()
+    assert calls == ["options", "prepare", "sim", "prepare", "sim", "prepare", "sim"]
+    for row in result["candidates"]:
+        candidate_path = out / row["source_request"]
+        assert next_level.sha256(candidate_path) == row["source_request_sha256"]
+        candidate = json.loads(candidate_path.read_text())
+        assert candidate["raid"]["parties"][0]["players"][0]["level"] == 21
+        assert "simOptions" not in candidate  # original full-world candidate not screen
+    assert json.loads((out / "native_paid_shortlist.json").read_text()) == result
+
+
+def test_work1_native_paid_shortlist_retains_prepared_screen_refusal(
+        tmp_path, monkeypatch):
+    """Refused 30s sim remains observable and must not masquerade as a 100-mob result."""
+    source, binary = source_file(tmp_path)
+
+    def native(command, **kwargs):
+        if command[1] == "options":
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps(native_options()))
+        if command[1] == "prepare":
+            with open(command[command.index("--outfile") + 1], "w") as file:
+                json.dump({"player": {"level": 21, "class": "ClassWarlock"}}, file)
+            return subprocess.CompletedProcess(command, 0)
+        return subprocess.CompletedProcess(command, 2, stderr="native short-screen refusal")
+
+    monkeypatch.setattr(next_level.subprocess, "run", native)
+    out = tmp_path / "screen_refusal"
+    result = next_level.propose(binary=binary, source=source, out=out,
+                                max_proposals=1, native_paid_shortlist=True)
+    assert result["status"] == "NATIVE_SCREENED_NOT_WORLD_PAID"
+    assert result["candidates"][0]["screen_status"] == "NATIVE_SCREEN_REFUSED"
+    assert "native short-screen refusal" in result["candidates"][0]["screen_refusal"]
+    assert result["candidates"][0]["screen_dps_30s"] is None
+    assert result["world_winner"] is None
+    assert not (out / "source_request.json").exists()
