@@ -385,7 +385,7 @@ def test_live_gc_invokes_bounded_complete_post_delete_verification():
     assert "gc_planning_reference, verify_deleted_artifacts_absent," in workflow
     assert "verified_removed_footprint)" in workflow
     assert "after_artifacts = verify_deleted_artifacts_absent(" in workflow
-    assert "deleted, list_artifacts, attempts=12, delay_seconds=5," in workflow
+    assert "deleted + already_absent, list_artifacts, attempts=12, delay_seconds=5," in workflow
     assert "fetch_deleted_status=deleted_artifact_get_status)" in workflow
     assert 'status, _ = request(f"artifacts/{artifact_id}")' in workflow
     assert workflow.index('request(f"artifacts/{aid}", "DELETE")') < workflow.index(
@@ -550,8 +550,6 @@ def test_gc_only_credits_successful_204_deletes_not_concurrently_absent_404():
     assert 'if status not in (204, 404):' not in workflow
     assert workflow.index('deleted + already_absent, list_artifacts') < workflow.index(
         'all_artifacts, after_artifacts, deleted)')
-
-
 
 def test_concurrent_artifact_expiry_not_misattributed_to_gc_deleted_bytes():
     """Confirmed DELETE IDs and other vanished IDs have distinct accounting."""
