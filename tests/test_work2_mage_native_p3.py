@@ -69,10 +69,70 @@ def test_unified_mage_options_only_forward_confirmed_native_slot(monkeypatch):
     assert result["coverage"]["item_eligibility_complete"] is False
     assert result["unverified_candidate_count"] == 1
     assert [item["item_id"] for item in result["items"]] == [900, 901]
-    assert p3._native_p3_equipped_slot_proposals(result)["slots"] == {
-        "weapon": {"selected_ids": [900]},
-        "head": {"selected_ids": [901]},
-    }
+    assert result["unverified_item_ids"] == [902]
+    proposals = p3._native_p3_equipped_slot_proposals(result)["slots"]
+    assert proposals["weapon"]["selected_ids"] == [900, 902]
+    assert proposals["head"]["selected_ids"] == [901, 902]
+    assert len(proposals) == 17
+    assert proposals["feet"]["selected_ids"] == [902]
+
+
+
+def test_unknown_proficiency_native_proposals_are_paid_not_pre_vetoed(monkeypatch):
+    """Mage and Paladin unknown slot IDs reach Rust, including its refusals."""
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "selected-engine")
+
+    for cls, spec, checkpoint, actor, objective in (
+        ("mage", "arcane", "mage_l60", "ClassMage", "DPS"),
+        ("paladin", "holy", "paladin_holy_l60", "ClassPaladin", "HPS"),
+    ):
+        payload = _unified_payload()
+        payload["class"] = cls
+        payload["items"] = [{
+            "item_id": 902, "eligibility": "proficiency_unverified",
+            "native": None, "unverified": {"item_type": "ItemTypeUnknown"},
+        }]
+        def fake_cli(command, **_kwargs):
+            assert command[:6] == [
+                "selected-engine", "options", "--class", cls, "--level", "60"]
+            return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+
+        monkeypatch.setattr(subprocess, "run", fake_cli)
+        paid_calls = []
+        def native_paid(_root, binary, selection, budget, *, checkpoint):
+            paid_calls.append((binary, selection, budget, checkpoint))
+            return {
+                "status": "PAID_NATIVE_REFUSAL", "paid_attempts": 2,
+                "objective": objective, "actor_checkpoint_verified": True,
+                "native_prepared_actor": {
+                    "actor_class": actor, "actor_level": 60,
+                    "engine_revision": "selected-rust-source",
+                },
+                "source_occupied_slots": ["head"],
+                "evaluations": [{
+                    "status": "VALID", "score": 10.0,
+                    "request_sha256": "real-native-baseline",
+                }],
+                "native_slot_evaluations": [{
+                    "swap": {"slot": "head", "to_id": 902},
+                    "status": "UNSUPPORTED", "reason": "native gear refusal",
+                }],
+                "native_slots_valid": 0,
+            }
+
+        monkeypatch.setattr(p3, "_paid_native_equipped_probe", native_paid)
+        result = p3.run_live(ROOT, cls, 60, spec=spec)
+        assert len(paid_calls) == 1
+        binary, selection, budget, actual_checkpoint = paid_calls[0]
+        assert (binary, budget, actual_checkpoint) == (
+            "selected-engine", 44, checkpoint)
+        assert selection["slots"]["head"]["selected_ids"] == [902]
+        assert result["status"] == "FAIL"
+        assert result["real_catalogue_legal_items"] == 0
+        assert result["native_unverified_candidate_count"] == 1
+        assert result["native_equipped_paid_attempts"] == 2
+        assert "P3_NATIVE_SLOT_UNSCORED:head:UNSUPPORTED" in result["reasons"]
+        assert "runtime_proof" not in result
 
 
 def test_mage_p3_routes_to_unified_native_without_gameir(monkeypatch):
