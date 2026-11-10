@@ -406,3 +406,51 @@ def test_scored_adapter_preserves_native_scorer_failure_without_fake_scores(tmp_
     assert len(result) == 2
     assert all(r["native_prepared"] is False for r in result)
     assert all("NATIVE_SCORER_EXIT_3" in r["status"] for r in result)
+
+
+def test_one_call_cli_directly_runs_work1_native_scorer_manifest_adapter(tmp_path, monkeypatch):
+    import json
+    from tools import wf_warlock_native_range_optimize as cli
+    from tools import wf_warlock_native_range_scored_adapter as adapter
+
+    calls = []
+
+    def checked_adapter(request, *, manifest, binary, target_hp,
+                        scorer_command, artifact_dir):
+        calls.append((request["level"], request["parent"],
+                      request["mob_count"], target_hp, scorer_command))
+        parent = request["parent"]
+        return [
+            receipt(request["level"], request["mob_count"], label, 2.0,
+                    parent, recovery=0.5)
+            for label in (("A", "B") if parent is None else (parent["talents"],))
+        ]
+
+    monkeypatch.setattr(adapter, "evaluate_request", checked_adapter)
+    output = tmp_path / "scored-route.json"
+    code = cli.main([
+        "--start-level", "20", "--end-level", "30", "--level-stride", "10",
+        "--mob-count", "3", "--budget", "10", "--beam-width", "2",
+        "--native-prepared-manifest", str(tmp_path / "manifest.json"),
+        "--native-binary", str(tmp_path / "pinned-rust"),
+        "--native-target-hp", "400", "--native-receipts-dir",
+        str(tmp_path / "raw-receipts"),
+        "--native-scorer-command", "python existing-work1-native-scorer.py",
+        "--out", str(output),
+    ])
+    report = json.loads(output.read_text())
+    assert code == 0
+    assert report["status"] == "SAMPLED_NATIVE_PATH_RANKED"
+    assert report["sampled_levels_completed"] == [20, 30]
+    assert [call[0] for call in calls] == [20, 30, 30]
+    assert all(call[2:] == (3, 400.0, ["python", "existing-work1-native-scorer.py"])
+               for call in calls)
+
+
+def test_one_call_cli_manifest_mode_requires_real_native_source_inputs(tmp_path):
+    from tools import wf_warlock_native_range_optimize as cli
+    with pytest.raises(SystemExit, match="2"):
+        cli.main([
+            "--native-prepared-manifest", str(tmp_path / "manifest.json"),
+            "--out", str(tmp_path / "out.json"),
+        ])
