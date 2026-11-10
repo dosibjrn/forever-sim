@@ -296,18 +296,19 @@ def test_bounded_native_finalists_spread_across_prepared_trees(
     assert result["world_winner"]["elapsed_seconds"] == 750
 
 
-def test_native_cross_tree_workflow_opt_in_and_evidence_preservation():
-    """Only explicit label/dispatch may spend native 100-mob world compute."""
+def test_native_cross_tree_workflow_manual_only_and_evidence_preservation():
+    """Paid 100-mob comparisons require explicit manual dispatch and identities."""
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
-    assert "workflow_dispatch:" in workflow
-    assert "github.event.action == 'labeled'" in workflow
-    assert "github.event.label.name == 'work1-native-world'" in workflow
+    assert "  workflow_dispatch:\n" in workflow
+    assert "labeled" not in workflow
+    assert "    if: github.event_name == 'workflow_dispatch'" in workflow
+    assert "PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}" in workflow
+    assert "FROM_LEVEL: ${{ inputs.from_level }}" in workflow
     assert "wf_warlock_next_level_source.py" in workflow
     assert "wf_warlock_shortlist_world.py" in workflow
     assert "wf_warlock_paid_artifact.py" in workflow
     assert "actions/upload-artifact@v4" in workflow
-
 
 @pytest.mark.parametrize("times, ties", [
     ((777.7, 777.7, 777.7), [1, 2, 3]),

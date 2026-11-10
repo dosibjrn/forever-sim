@@ -546,6 +546,10 @@ def test_scored_adapter_keeps_single_native_successor_for_a_competing_parent(tmp
             "native_recovery_clock_accounted": True,
             "native_recovery_mode": "decisions_food_water",
             "paid_recovery": True,
+            # Work1's shared scorer now requires genuine hostile source damage
+            # in addition to ACK kills and fully charged terminal restoration.
+            "native_health_damage": {
+                "observed": True, "damage_taken": 30.0, "damage_events": 3},
             "native_windows": [
                 {"index": i, "native_kill_ns": (i + 1) * 1_000_000_000,
                  "actor_health": 80.0} for i in range(3)

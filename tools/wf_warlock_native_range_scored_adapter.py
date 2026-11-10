@@ -77,10 +77,13 @@ def evaluate_request(
         raise ValueError("NATIVE_PREPARED_MANIFEST_REFUSALS_INVALID")
     if len(native_refusals) > budget:
         raise ValueError("NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET")
+    # Count every already-prepared matching attempt, never silently slice it.
+    # Unrelated levels/parents in a reusable manifest do not spend this budget.
     selected = [entry for entry in source["entries"]
                 if isinstance(entry, dict) and entry.get("level") == level
-                and entry.get("parent_source_sha256") == parent_sha
-                ][:budget - len(native_refusals)]
+                and entry.get("parent_source_sha256") == parent_sha]
+    if len(selected) + len(native_refusals) > budget:
+        raise ValueError("NATIVE_FRONTIER_EXCEEDS_CANDIDATE_BUDGET")
 
     # A native producer can fail to prepare a proposal before the paid scorer
     # sees it. Preserve that exact refusal as a budgeted attempt; never drop it

@@ -2,7 +2,7 @@ name: Native-paid route continuity regressions
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
     branches: [main]
     paths:
       - src/v2/path_dp.py
@@ -39,25 +39,21 @@ on:
   workflow_dispatch:
     inputs:
       predecessor_artifact_id:
-        description: "Existing paid native source/route artifact ID"
+        description: "Explicit authentic predecessor for a genuinely unmeasured successor (no repeat L47 baseline)"
         required: true
         type: string
-        default: "13767012142"
       from_level:
         description: "Source-paid predecessor level (successor is from_level + 1)"
         required: true
         type: number
-        default: 46
       selected_rust_sha:
         description: "Exact selected Rust source revision"
         required: true
         type: string
-        default: "7b811d37969bd1886cf123835fc87b699d1f5fbd"
       predecessor_binary_sha256:
         description: "Exact binary SHA256 of predecessor's genuine 100-mob receipt"
         required: true
         type: string
-        default: "133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458"
       max_proposals:
         description: "Maximum native prepare probes per complete talent family"
         required: true
@@ -75,7 +71,7 @@ permissions:
 
 jobs:
   native-paid-route:
-    if: github.event_name == 'pull_request' && github.event.action != 'labeled'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -90,24 +86,21 @@ jobs:
 
   # The real native 100/100 comparison is deliberately opt-in, never an
   # automatic response to every source push or a rerun of paid L20–L60 routes.
-  # On a same-repo PR, apply the 'work1-native-world' label once to launch the
-  # exact L46→L47 experiment. On main, workflow_dispatch accepts other genuine
-  # paid predecessors. Every native rejection is retained in the artifact.
+  # The old PR label launcher replayed the already-measured L46→L47
+  # experiment. Require deliberate manual dispatch and explicit source,
+  # predecessor and binary identities for any NEW paid comparison.
+  # Every native rejection remains in the artifact.
   cross-tree-native-world:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.action == 'labeled' &&
-       github.event.label.name == 'work1-native-world' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 65
     env:
-      FROM_LEVEL: ${{ inputs.from_level || 46 }}
-      PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id || '13767012142' }}
-      PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 || '133c96ba50b7589036e062e18a3315e28ac2562064cb99e96d501fc4ee054458' }}
-      SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha || '7b811d37969bd1886cf123835fc87b699d1f5fbd' }}
-      MAX_PROPOSALS: ${{ inputs.max_proposals || 240 }}
-      MAX_FINALISTS: ${{ inputs.max_finalists || 3 }}
+      FROM_LEVEL: ${{ inputs.from_level }}
+      PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}
+      PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}
+      SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha }}
+      MAX_PROPOSALS: ${{ inputs.max_proposals }}
+      MAX_FINALISTS: ${{ inputs.max_finalists }}
     steps:
       - name: Checkout exact comparison source
         uses: actions/checkout@v4

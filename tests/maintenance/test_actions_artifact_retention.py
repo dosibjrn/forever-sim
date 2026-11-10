@@ -405,3 +405,38 @@ def test_retired_warlock_paid_optimizer_and_manual_only_native_joint_sweep():
         assert "      - " + path + "\n" in fast_ci
     assert ("python integrations/mythicsim-rust/tests/"
             "test_native_joint_28_sweep.py -v") in fast_ci
+
+
+def test_historical_paid_l44_l46_range_is_not_prefilled_on_manual_dispatch():
+    """A manual paid baseline dispatch must choose fresh explicit native provenance.
+
+    L20–L60 100/100 baselines are already measured. The legacy adjacent-range
+    launcher may serve a genuinely unmeasured request (including L10 root),
+    but no UI default may silently replay its historic L44→L46 request.
+    This is an anti-repeat-work safeguard, not a new native acceptance gate.
+    """
+    workflow = (ROOT / ".github/workflows/work2-warlock-l41-l50-native-batch.yml"
+                ).read_text(encoding="utf-8")
+    dispatch = workflow.split("\n  workflow_dispatch:\n", 1)[1].split(
+        "\npermissions:\n", 1)[0]
+    assert "  pull_request:" not in workflow.split("\non:\n", 1)[1].split(
+        "\npermissions:\n", 1)[0]
+
+    def input_body(field):
+        # Match the NEXT six-space input key, not the nested eight-space
+        # description/required/default keys inside the current input.
+        remainder = dispatch.split(f"      {field}:\n", 1)[1]
+        return re.split(r"(?m)^      [a-z_]+:[ \t]*$", remainder, maxsplit=1)[0]
+
+    for field in (
+        "predecessor_artifact_id", "from_level", "end_level",
+        "selected_rust_sha", "predecessor_binary_sha256",
+    ):
+        body = input_body(field)
+        assert "\n        default:" not in body, field
+    # Explicit input is still available for authentic new continuation; this
+    # does not delete paid receipts or restrict the generic route optimizer.
+    for field in ("from_level", "end_level", "selected_rust_sha"):
+        body = input_body(field)
+        assert "\n        required: true\n" in body, field
+    assert "      - name: Preserve selected source, native 100-mob receipts" in workflow
