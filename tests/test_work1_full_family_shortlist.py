@@ -161,11 +161,16 @@ def test_paid_provenance_refused_before_querying_native_options(tmp_path, monkey
     assert seen == []
 
 
-def test_workflow_uses_existing_opt_in_paid_comparator_after_full_native_family_screen():
+def test_workflow_requires_manual_dispatch_for_paid_cross_tree_comparison():
+    """A PR metadata label must not repeat the already-paid L46-to-L47 run."""
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
     assert "wf_warlock_full_family_shortlist.py" in workflow
     assert "wf_warlock_shortlist_world.py" in workflow
-    assert "github.event.action == 'labeled'" in workflow
-    assert "github.event.label.name == 'work1-native-world'" in workflow
+    assert "  workflow_dispatch:\n" in workflow
+    assert "types: [opened, synchronize, reopened]" in workflow
+    assert "labeled" not in workflow
+    assert "    if: github.event_name == 'workflow_dispatch'" in workflow
+    assert "PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}" in workflow
+    assert "SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha }}" in workflow
     assert "actions/upload-artifact@v4" in workflow
