@@ -170,6 +170,35 @@ def test_failed_native_payment_resumes_without_repaying_same_refusal(tmp_path, m
     assert Path(resumed["latest_guide"]).read_text() == "Refused native L43\n"
 
 
+
+def test_missing_native_guide_never_leaves_an_old_range_guide(tmp_path, monkeypatch):
+    binary, source, route = _inputs(tmp_path)
+    _mock_native(monkeypatch)
+    output = tmp_path / "range"
+    output.mkdir()
+    (output / "GUIDE.md").write_text("Unrelated previous range guide")
+
+    def refuse_without_guide(args):
+        level = int(args[args.index("--actor-level") + 1])
+        paid = Path(args[args.index("--out") + 1])
+        paid.mkdir(parents=True, exist_ok=True)
+        (paid / "route.json").write_text(json.dumps({
+            "class": "warlock", "measured_levels": [42],
+            "native_refusals": [{"level": level, "status": "NATIVE_EXECUTION_REFUSED"}],
+        }))
+        return 2
+
+    monkeypatch.setattr(paid_range.guide, "main", refuse_without_guide)
+    result = paid_range.run(
+        binary=binary, source=source, predecessor_route=route, out=output,
+        from_level=42, end_level=43,
+    )
+    assert result["stopped"]["status"] == "NATIVE_PAID_REFUSAL"
+    assert result["latest_guide"] is None
+    assert not (output / "GUIDE.md").exists()
+
+
+
 def test_cached_refusal_requires_unmeasured_same_level(tmp_path):
     report = tmp_path / "route.json"
     report.write_text(json.dumps({
