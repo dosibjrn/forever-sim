@@ -95,6 +95,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mob-count", type=int, default=3)
     parser.add_argument("--budget", type=int, default=100)
     parser.add_argument("--beam-width", type=int, default=3)
+    parser.add_argument("--mode", choices=("independent", "continuing"),
+                        default="independent",
+                        help="Independent native-prepared per-level rankings (default), "
+                             "or source-attested continuing sampled paths")
     parser.add_argument("--rng-mode", default="balanced")
     parser.add_argument("--iterations", type=int, default=1)
     evaluator = parser.add_mutually_exclusive_group(required=True)
@@ -147,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
         args.mob_count, args.budget,
         evaluate=native_evaluator,
         beam_width=args.beam_width, rng_mode=args.rng_mode,
-        iterations=args.iterations, recover_to_full=True,
+        iterations=args.iterations, recover_to_full=True, mode=args.mode,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
@@ -157,7 +161,8 @@ def main(argv: list[str] | None = None) -> int:
         "ranked": len(result["ranked_alternatives"]),
         "out": str(args.out),
     }, sort_keys=True))
-    return 0 if result["status"] == "SAMPLED_NATIVE_PATH_RANKED" else 2
+    return 0 if result["status"] in ("SAMPLED_NATIVE_PATH_RANKED",
+                                     "INDEPENDENT_NATIVE_ANCHORS_RANKED") else 2
 
 
 if __name__ == "__main__":
