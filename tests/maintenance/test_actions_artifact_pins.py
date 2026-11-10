@@ -1084,3 +1084,46 @@ def test_unreadable_executable_provenance_fails_closed(tmp_path, name):
     path.write_bytes(b"# artifact_id=13750000141 \xff")
     with pytest.raises(UnicodeDecodeError):
         collect_local_references(tmp_path)
+
+
+@pytest.mark.parametrize(("reference", "run_id"), [
+    ("Previously paid native route run `42669041997` is retained.", 42669041997),
+    ("Exact native run **`42798513199`** is still under review.", 42798513199),
+])
+def test_markdown_paid_run_id_from_handoff_pins_origin_artifacts(reference, run_id):
+    """An explicitly backticked native run ID pins its originating artifacts."""
+    runs, artifacts = set(), set()
+    record_references(reference, runs, artifacts)
+    assert runs == {run_id}
+    assert artifacts == set()
+    assert artifact_run_id({"workflow_run": {"id": run_id}}) in runs
+
+
+def test_markdown_paid_run_id_rejects_counts_and_malformed_tokens():
+    runs, artifacts = set(), set()
+    record_references(
+        "run `0`; run `42`; run `1234567`; run `42669041997abc`; "
+        "run `42669041997`extra; run `42669041997; "
+        "runner `42669041997`; run `00042669041997`",
+        runs, artifacts,
+    )
+    assert runs == set()
+    assert artifacts == set()
+
+
+def test_markdown_paid_run_id_collected_from_retained_evidence(tmp_path):
+    """A paid run cited only in retained source evidence blocks stage5 GC."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    receipt = tmp_path / "docs/evidence/native-warlock-handoff.md"
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(
+        "Selected paid run `42669041997` with source-native 100-mob replay.\n",
+        encoding="utf-8",
+    )
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {42669041997}
+    assert artifacts == set()
