@@ -47,6 +47,7 @@ on:
       - 'tools/wf_gate_p7_5_live.py'
       - 'tests/gates/test_wf_gate_p7_5_receipts.py'
       - 'tools/wf_gate_p7_5_receipts.py'
+      - 'tools/wf_gate_p7_5_prior.py'
       - 'tests/test_p7_search_deadline_contract.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
       - 'src/game/evaluation.py'
@@ -119,6 +120,7 @@ jobs:
           tools/wf_gate_p7_4_live.py
           tools/wf_gate_p7_5_live.py
           tools/wf_gate_p7_5_receipts.py
+          tools/wf_gate_p7_5_prior.py
           src/v2/source_budgeted_gear.py
           tools/wf_gate_p3_live.py
           src/game/native_p3_player_context.py

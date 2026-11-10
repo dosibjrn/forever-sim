@@ -161,92 +161,73 @@ def test_rejects_contradictory_reports_in_one_run():
             spec="balance", gate="P7.3")
 
 
-def test_trusted_new_engine_m1_pass_supersedes_old_pin_only_for_p75_comparison(
-        tmp_path, monkeypatch):
-    """Full Merge-owned revalidation passes on selected engine; ledger stays old."""
+def test_accepted_pass_uses_original_receipt_even_when_new_engine_exists(tmp_path):
+    """Never fetch newer official runs merely because the selected engine changed."""
     _ledger(tmp_path)
     logs = {
         1001: _log("P7.1", 729.7, "old-rust"),
         1002: _log("P7.2", 722.4, "old-rust"),
         1003: _log("P7.3", 749.54, "old-rust"),
-        2001: _log("P7.1", 761.3895, ENGINE),
     }
-    calls = []
+    called = []
     def read_run(repo, run_id):
-        calls.append(run_id)
+        called.append(run_id)
         return logs[run_id]
+
     bundle = collect_accepted_receipts(
-        tmp_path, REPO, "druid", 60, "balance", read_run=read_run,
-        selected_engine=ENGINE, recent_run_ids=[2001])
-    receipt = bundle["receipts"][0]
-    assert receipt["gate"] == "P7.1"
-    assert receipt["m1_revalidated"] is True
-    assert receipt["registered_run_url"].endswith("/1001")
-    assert receipt["run_url"].endswith("/2001")
-    assert 2001 in calls
-    filename = tmp_path / "revalidated.json"
-    filename.write_text(json.dumps(bundle))
-    monkeypatch.setenv("FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS", str(filename))
-    accepted = strongest_accepted_prior(
-        tmp_path, "druid", 60, "balance",
-        engine_revision=ENGINE, source_sha256=SOURCE, reference_dps=REFERENCE)
-    assert accepted["dps"] == 761.3895
-    assert accepted["compatible_gates"] == ["P7.1"]
-    # The comparable DPS came from the NEW trusted same-pin run, not the
-    # historical accepted ledger row on the old native engine.
-    assert accepted["run_urls"] == [f"https://github.com/{REPO}/actions/runs/2001"]
-    # Revalidation is only a verified compatible comparator, not an M1 writer.
-    assert "2001" not in (tmp_path / "docs/planning/M1_PASSES.tsv").read_text()
+        tmp_path, REPO, "druid", 60, "balance", read_run=read_run)
+    assert called == [1001, 1002, 1003]
+    assert all("m1_revalidated" not in row for row in bundle["receipts"])
+    assert [r["run_url"].split("/")[-1] for r in bundle["receipts"]] == [
+        "1001", "1002", "1003"]
 
 
-def test_revalidated_prior_requires_real_1000_fight_pass_and_registered_origin(
+def test_old_engine_pass_is_permanent_but_not_current_engine_comparator(
         tmp_path, monkeypatch):
+    """Mismatched source revision excludes an optional prior, never its PASS."""
     _ledger(tmp_path)
     logs = {
         1001: _log("P7.1", 729.7, "old-rust"),
         1002: _log("P7.2", 722.4, "old-rust"),
         1003: _log("P7.3", 749.54, "old-rust"),
-        2001: _log("P7.1", 761.3895, ENGINE),
     }
     bundle = collect_accepted_receipts(
         tmp_path, REPO, "druid", 60, "balance",
-        read_run=lambda _, run_id: logs[run_id],
-        selected_engine=ENGINE, recent_run_ids=[2001])
-    path = tmp_path / "revalidated.json"
+        read_run=lambda _, run_id: logs[run_id])
+    path = tmp_path / "accepted.json"
+    path.write_text(json.dumps(bundle))
     monkeypatch.setenv("FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS", str(path))
-    def read():
-        path.write_text(json.dumps(bundle))
-        return strongest_accepted_prior(
-            tmp_path, "druid", 60, "balance",
-            engine_revision=ENGINE, source_sha256=SOURCE,
-            reference_dps=REFERENCE)
-    assert read() is not None
-    entry = bundle["receipts"][0]
-    entry.pop("m1_revalidated")
-    assert read() is None
-    entry["m1_revalidated"] = True
-    entry["registered_run_url"] = "https://github.com/other/repo/actions/runs/1001"
-    assert read() is None
-    entry["registered_run_url"] = f"https://github.com/{REPO}/actions/runs/1001"
-    entry["report"]["sampled_source_fights"] = 3
-    assert read() is None
+    assert strongest_accepted_prior(
+        tmp_path, "druid", 60, "balance",
+        engine_revision=ENGINE, source_sha256=SOURCE,
+        reference_dps=REFERENCE) is None
+    assert all("PASS" in logs[n] for n in (1001, 1002, 1003))
+    assert "PASS" in (tmp_path / "docs/planning/M1_PASSES.tsv").read_text()
 
 
-def test_untrusted_or_wrong_engine_recent_m1_run_cannot_upgrade_receipt(tmp_path):
+def test_replacement_run_url_cannot_supersede_original_pass(tmp_path, monkeypatch):
     _ledger(tmp_path)
     logs = {
-        1001: _log("P7.1", 729.7, "old-rust"),
-        1002: _log("P7.2", 722.4, "old-rust"),
-        1003: _log("P7.3", 749.54, "old-rust"),
-        2001: _log("P7.1", 761.3895, "another-rust"),
-        2002: _log("P7.2", 765.0, ENGINE),
+        1001: _log("P7.1", 729.7, ENGINE),
+        1002: _log("P7.2", 722.4, ENGINE),
+        1003: _log("P7.3", 749.54, ENGINE),
     }
     bundle = collect_accepted_receipts(
         tmp_path, REPO, "druid", 60, "balance",
-        read_run=lambda _, run_id: logs[run_id],
-        selected_engine=ENGINE, recent_run_ids=[2001, 2002])
-    assert "m1_revalidated" not in bundle["receipts"][0]
-    assert bundle["receipts"][0]["run_url"].endswith("/1001")
-    assert bundle["receipts"][1]["gate"] == "P7.2"
-    assert bundle["receipts"][1]["m1_revalidated"] is True
-    assert bundle["receipts"][2]["run_url"].endswith("/1003")
+        read_run=lambda _, run_id: logs[run_id])
+    path = tmp_path / "accepted.json"
+    monkeypatch.setenv("FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS", str(path))
+    path.write_text(json.dumps(bundle))
+    assert strongest_accepted_prior(
+        tmp_path, "druid", 60, "balance",
+        engine_revision=ENGINE, source_sha256=SOURCE,
+        reference_dps=REFERENCE)["dps"] == 749.54
+    original = bundle["receipts"][0]["run_url"]
+    bundle["receipts"][0]["run_url"] = f"https://github.com/{REPO}/actions/runs/2001"
+    bundle["receipts"][0]["registered_run_url"] = original
+    bundle["receipts"][0]["m1_revalidated"] = True
+    path.write_text(json.dumps(bundle))
+    assert strongest_accepted_prior(
+        tmp_path, "druid", 60, "balance",
+        engine_revision=ENGINE, source_sha256=SOURCE,
+        reference_dps=REFERENCE) is None

@@ -35,7 +35,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Current approved execution policy:** MythicSim **Rust preferred, Go equally valid** under PROCESS, with one selected pinned engine per compatible gate chain and live gsim-2D integration wherever required. The Rust-only target architecture does not silently remove an approved Go path or existing causal world requirement. Build PASS is not gameplay PASS.
 
-**Current work:** follow [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md) and [PROCESS v2.22](PROCESS.md), not obsolete P7 2D-only tasks or checkpoint-level provenance audits. Druid L60 Balance already counts as 1/148. Fix missing active gate behavior elsewhere; correct or invalidate only genuinely defective gate results.
+**Current work:** follow [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md) and [PROCESS v2.25](PROCESS.md), not obsolete P7 2D-only tasks or checkpoint-level provenance audits. Druid L60 Balance already counts as 1/148. Earn only still-unaccepted gates: **an officially recorded PASS is final through 148/148**, even if the engine or behavior changes later. Fix newly discovered production defects forward without re-running, invalidating or downgrading accepted gate receipts. The Warlock best-known route and the generic resumable level-range coordinator are the current product priority.
 
 **Balance Druid L60 P7.3 historical receipt:** [WF663](docs/evidence/druid-l60-balance/p7.3/WF663_ACCEPTANCE.md) is historical diagnostic evidence. Current P7.3 is a native-paid talent-axis capability under [the approved P7 contract](docs/gates/P7.md), not a separate 2D causality gate.
 
