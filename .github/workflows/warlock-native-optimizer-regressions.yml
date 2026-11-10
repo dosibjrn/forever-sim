@@ -6,6 +6,11 @@ on:
     paths:
       - tools/wf_warlock_native_optimizer.py
       - tests/test_work1_warlock_world_finalists.py
+      - tools/wf_warlock_l20_native_cold.py
+      - tools/wf_warlock_l20_gate_bridge.py
+      - tests/test_work2_warlock_native_cold.py
+      - tests/test_work2_warlock_native_cold_cli.py
+      - tests/test_work2_warlock_gate_bridge.py
       - .github/workflows/warlock-native-optimizer-regressions.yml
   push:
     branches:
@@ -13,6 +18,11 @@ on:
     paths:
       - tools/wf_warlock_native_optimizer.py
       - tests/test_work1_warlock_world_finalists.py
+      - tools/wf_warlock_l20_native_cold.py
+      - tools/wf_warlock_l20_gate_bridge.py
+      - tests/test_work2_warlock_native_cold.py
+      - tests/test_work2_warlock_native_cold_cli.py
+      - tests/test_work2_warlock_gate_bridge.py
       - .github/workflows/warlock-native-optimizer-regressions.yml
 
 permissions:
@@ -29,5 +39,10 @@ jobs:
           python-version: "3.11"
       - name: Install focused Python regressions
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
-      - name: Verify native-paid score forwarding and bounded finalist selection
-        run: python -m pytest -q tests/test_work1_warlock_world_finalists.py
+      - name: Verify native-paid scoring, cold CLI and gate receipt forwarding
+        run: >-
+          python -m pytest -q
+          tests/test_work1_warlock_world_finalists.py
+          tests/test_work2_warlock_native_cold.py
+          tests/test_work2_warlock_native_cold_cli.py
+          tests/test_work2_warlock_gate_bridge.py
