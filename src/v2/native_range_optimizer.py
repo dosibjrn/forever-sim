@@ -116,23 +116,33 @@ def optimize(
     covered: list[int] = []
     competing: dict[str, int] = {}
     last_frontier: list[tuple[float, Mapping[str, Any] | None, list[dict[str, Any]]]] = []
-    for level in levels:
+    native_attempts_by_level: dict[str, int] = {}
+    for level_index, level in enumerate(levels):
+        # Budget the entire request, not just the first sample. A scorer may
+        # spend up to its allotted candidate count but cannot starve every
+        # later requested level by using the whole remaining global budget.
+        levels_left = len(levels) - level_index
+        level_budget = max(1, (budget - examined) // levels_left)
+        level_attempts = 0
         next_paths: dict[tuple[str, str], tuple[float, Mapping[str, Any], list[dict[str, Any]]]] = {}
         at_level = 0
-        for base_cost, parent, history in frontier:
-            remaining = budget - examined
+        for parent_index, (base_cost, parent, history) in enumerate(frontier):
+            remaining = min(budget - examined, level_budget - level_attempts)
             if remaining <= 0:
                 break
+            parent_count_left = len(frontier) - parent_index
+            parent_budget = max(1, remaining // parent_count_left)
             receipts = evaluate(
-                level=level, parent=parent, mob_count=mob_count, budget=remaining,
+                level=level, parent=parent, mob_count=mob_count, budget=parent_budget,
                 rng_mode=rng_mode, iterations=iterations, recover_to_full=True,
             )
             if not isinstance(receipts, Sequence) or isinstance(receipts, (str, bytes)):
                 raise TypeError("native evaluator must return a sequence of receipts")
-            if len(receipts) > remaining:
+            if len(receipts) > parent_budget:
                 raise ValueError("native evaluator exceeded candidate budget")
             for row in receipts:
                 examined += 1
+                level_attempts += 1
                 at_level += 1
                 if not isinstance(row, Mapping):
                     rejected.append({"level": level, "reason": "non-mapping native receipt"})
@@ -163,6 +173,7 @@ def optimize(
                 old = next_paths.get(key)
                 if old is None or cost < old[0]:
                     next_paths[key] = (cost, row, [*history, step])
+        native_attempts_by_level[str(level)] = level_attempts
         competing[str(level)] = len(next_paths)
         if not next_paths:
             break
@@ -191,6 +202,7 @@ def optimize(
         "mob_count": mob_count, "rng_mode": rng_mode, "iterations": iterations,
         "recover_to_full": True, "candidate_budget": budget,
         "native_candidates_examined": examined, "beam_width": beam_width,
+        "native_attempts_by_level": native_attempts_by_level,
         "competing_qualified_paths_by_level": competing,
         "ranked_alternatives": ranked,
         "rejected_native_attempts": rejected,
