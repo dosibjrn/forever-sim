@@ -107,6 +107,8 @@ def test_completed_warlock_one_shot_paid_ci_is_replaced():
         # retain source-native forwarding tests, not paid one-shot launchers.
         "work2-warlock-l20-p71-native.yml",
         "work2-warlock-l20-p73-native.yml",
+        # Warlock L20 P3 officially PASS on 2026-11-09; no paid no-record replay.
+        "work2-warlock-l20-native-p3.yml",
     ]
     for name in retired:
         obsolete = ROOT / ".github/workflows" / name
@@ -182,3 +184,29 @@ def test_accepted_warlock_l20_p7_axes_keep_fast_source_forwarding_tests():
         "fixture provenance test reads the selected native Rust submodule")
     assert not (ROOT / ".github/workflows/work2-warlock-l20-p71-native.yml").exists()
     assert not (ROOT / ".github/workflows/work2-warlock-l20-p73-native.yml").exists()
+
+
+def test_accepted_warlock_l20_p3_keeps_fast_native_transport_coverage():
+    """Previously accepted P3 stays closed; its source/refusal adapters still regress.
+
+    Do not rebuild Rust or re-pay the accepted L20 gate on unrelated PRs.
+    """
+    ci = (ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml").read_text(
+        encoding="utf-8")
+    for path in (
+        "tools/wf_gate_p3_live.py",
+        "tools/wf_native_warlock_l20_equipped.py",
+        "integrations/mythicsim-rust/native_p3_equipped.py",
+        "integrations/mythicsim-rust/native_executor.py",
+        "tests/test_work2_warlock_l20_native_p3.py",
+        "tests/test_work2_warlock_l20_equipped_source.py",
+    ):
+        assert ci.count("      - " + path + "\n") == 2, (
+            f"cheap PR and push coverage missing for {path}")
+    for path in (
+        "tests/test_work2_warlock_l20_native_p3.py",
+        "tests/test_work2_warlock_l20_equipped_source.py",
+    ):
+        assert "          " + path + "\n" in ci
+    assert not (ROOT / ".github/workflows/work2-warlock-l20-native-p3.yml").exists()
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
