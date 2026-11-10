@@ -47,6 +47,9 @@ def test_measured_l20_l21_banked_hold_flows_into_route_json_and_guide():
     assert path["steps"][1]["native_observation_id"] == "real-native-l21"
     assert path["xp_progression_simulated"] is False
     assert path["cumulative_leveling_seconds"] is None
+    assert path["observed_100_mob_total_seconds"] == 4200.0
+    assert [step["observed_100_mob_seconds"] for step in path["steps"]] == [1400.0] * 3
+    assert "4200.0000 s" in render_guide(result)
     assert result["full_10_60_native_replay_executed"] is False
     assert "L21: hold" in render_guide(result)
 
@@ -188,6 +191,7 @@ def test_no_prepared_native_paid_actor_still_has_no_talent_lineage():
     path = report(l20, l21)["native_paid_talent_continuity"]
     assert path["status"] == "no_native_prepared_paid_start"
     assert path["levels"] == []
+    assert path["observed_100_mob_total_seconds"] is None
 
 
 def test_paid_isolated_l20_does_not_hide_longer_different_binary_interior():
@@ -255,6 +259,8 @@ def test_same_engine_native_paid_path_minimizes_actual_paid_100_mob_time():
     ]
     # B's actual comparable two-level 100-target total is 1,000 s;
     # A's is 3,100 s. This does not infer leveling XP or a 10-60 replay.
+    assert path["observed_100_mob_total_seconds"] == 1000.0
+    assert [step["observed_100_mob_seconds"] for step in path["steps"]] == [200.0, 800.0]
     assert path["cumulative_leveling_seconds"] is None
 
 
