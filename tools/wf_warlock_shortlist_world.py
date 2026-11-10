@@ -39,7 +39,9 @@ def _candidate_sources(shortlist: dict, directory: Path, original: dict,
     results = []
     seen = set()
     level = shortlist["to_level"]
-    for row in shortlist["candidates"][:limit]:
+    # Validate all source-receipt candidates before choosing the bounded paid
+    # finalists, even when a candidate falls beyond the paid trial budget.
+    for row in shortlist["candidates"]:
         label = row.get("source_request")
         if (not isinstance(label, str)
                 or not label.startswith("candidate_attempts/candidate_")
@@ -65,7 +67,37 @@ def _candidate_sources(shortlist: dict, directory: Path, original: dict,
             raise ValueError("missing source-native talent tree identity")
         seen.add(row["source_request_sha256"])
         results.append((row, source))
-    return results
+    # A source-native shortlist may have several prepared proposals from the
+    # same talent tree before a different tree's first successful prepare.
+    # Preserve Rust's order within each tree, but pay a bounded spread across
+    # source-labeled trees rather than accidentally comparing one tree thrice.
+    by_tree = {tree: [] for tree in (0, 1, 2)}
+    for candidate in results:
+        by_tree[candidate[0]["tree_index"]].append(candidate)
+    balanced = []
+    for depth in range(max(map(len, by_tree.values()), default=0)):
+        for tree in (0, 1, 2):
+            if depth < len(by_tree[tree]):
+                balanced.append(by_tree[tree][depth])
+                if len(balanced) == limit:
+                    return balanced
+    return balanced
+
+
+def _talent_points_by_tree(talents: str) -> list[int]:
+    """Describe invested rank digits, without judging native talent legality."""
+    if (not isinstance(talents, str)
+            or len(talents.split("-")) != 3
+            or any(not part or not part.isascii() or not part.isdigit()
+                   for part in talents.split("-"))):
+        raise ValueError("native source talent allocation cannot be described")
+    return [sum(int(rank) for rank in tree) for tree in talents.split("-")]
+
+
+def _dominant_talent_tree(points: list[int]) -> int | None:
+    """Tree with strictly the most invested points; ties have no unique family."""
+    largest = max(points)
+    return points.index(largest) if largest > 0 and points.count(largest) == 1 else None
 
 
 def _paid_row(*, route: Path, summary: Path, source: Path, binary_sha: str,
@@ -173,6 +205,8 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
             or not isinstance(proposal.get("candidates"), list)):
         raise ValueError("not a matching source-native prepared shortlist")
     original = _json(source)
+    source_talent_points = _talent_points_by_tree(
+        original["raid"]["parties"][0]["players"][0]["talentsString"])
     level = proposal["to_level"]
     paid = proposal.get("paid_predecessor")
     if not isinstance(paid, dict) or paid != native_source.verified_paid_predecessor(
@@ -204,8 +238,11 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
         summary = folder / f"native_l{level}" / "summary.json"
         route = folder / "route.json"
         trial = f"source-cross-tree-L{level}-{_digest(identity)}-{index:02d}"
+        candidate_points = _talent_points_by_tree(candidate["candidate_talents"])
         row = {"index": index, "tree_index": candidate["tree_index"],
                "talent": candidate["field_name"], "talents": candidate["candidate_talents"],
+               "talent_points_by_tree": candidate_points,
+               "dominant_talent_tree_index": _dominant_talent_tree(candidate_points),
                "original_source_sha256": candidate["source_request_sha256"],
                "native_screen_dps_30s": candidate.get("screen_dps_30s")}
         if summary.is_file() and not route.is_file():
@@ -240,21 +277,45 @@ def run(*, binary: Path, source: Path, predecessor_route: Path, shortlist: Path,
     ranked = sorted((row for row in rows if row.get("status") == "MEASURED_NATIVE_100"),
                     key=lambda row: (row["elapsed_seconds"], row["index"])) if comparable else []
     trees = {row["tree_index"] for row in ranked}
-    # Never advertise a completed comparison while a bounded finalist is still
-    # awaiting an actual 100-mob world. A partial measured leader is not a winner.
-    winner = (ranked[0] if not pending and len(ranked) >= 2
-              and len(trees) >= 2 else None)
+    # The tree receiving a NEW rank is not the candidate's build family.
+    # E.g. one Affliction point atop 30+ Destruction points is still a
+    # Destruction-heavy build. Count the source-issued rank digits only for
+    # transparent presentation, never as a legality or power model.
+    families = {row["dominant_talent_tree_index"] for row in ranked}
+    actual_cross_family = len(families) >= 2 and None not in families
+    # A tie is genuinely measured, but selecting the first row as a "winner"
+    # fabricates an Affliction advantage when the native world elapsed times
+    # are equal. Do not introduce a Python gameplay tie-breaker.
+    comparison_complete = not pending and len(ranked) >= 2 and len(trees) >= 2
+    tied_best = ([row for row in ranked
+                  if row["elapsed_seconds"] == ranked[0]["elapsed_seconds"]]
+                 if comparison_complete else [])
+    winner = (ranked[0] if comparison_complete and len(tied_best) == 1
+              else None)
     result = {
         "kind": "warlock_native_world_finalist_comparison_v1",
         "status": ("INCOMPARABLE_NATIVE_SCENARIOS" if not comparable
-                   else "MEASURED_CROSS_TREE_100" if winner
+                   else ("MEASURED_CROSS_TREE_TIE_100" if actual_cross_family
+                         else "MEASURED_SAME_BUILD_FAMILY_TIE_100")
+                   if len(tied_best) > 1
+                   else ("MEASURED_CROSS_TREE_100" if actual_cross_family
+                         else "MEASURED_SAME_BUILD_FAMILY_100")
+                   if winner
                    else "PARTIAL_WORLD_PAID"),
         "from_level": level - 1, "level": level,
+        "source_talent_points_by_tree": source_talent_points,
+        "source_dominant_talent_tree_index": _dominant_talent_tree(source_talent_points),
+        "measured_dominant_talent_tree_indexes": sorted(
+            family for family in families if family is not None),
+        "distinct_build_families_compared": actual_cross_family,
+        "tree_index_meaning": "new_rank_allocated_to_tree_not_build_family",
         "paid_predecessor": paid, "native_binary_sha256": binary_sha,
         "recovery": recovery, "new_native_100_trials": spent,
         "reused_native_100_trials": sum(
             row.get("status") != "PENDING_UNPAID" for row in rows) - spent,
         "pending_candidate_indexes": pending,
+        "tied_best_candidate_indexes": ([row["index"] for row in tied_best]
+                                        if len(tied_best) > 1 else []),
         "candidates": rows,
         "world_winner": ({"candidate_index": winner["index"],
                           "tree_index": winner["tree_index"],
