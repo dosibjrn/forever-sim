@@ -132,7 +132,7 @@ def test_live_native_source_prepares_independent_level_without_ancestry(tmp_path
         proposal = json.loads(actual.read_text())
         actor = proposal["raid"]["parties"][0]["players"][0]
         prepared_levels.append(actor["level"])
-        assert cmd[cmd.index("--actor-level") + 1] == "30"
+        assert command[command.index("--actor-level") + 1] == "30"
         assert actor["level"] == proposal["encounter"]["targets"][0]["level"] == 30
         target.write_text(json.dumps({
             "request_sha256": hashlib.sha256(actual.read_bytes()).hexdigest(),
