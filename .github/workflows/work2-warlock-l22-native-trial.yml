@@ -1,0 +1,119 @@
+name: Work2 Warlock L22 one changed native paid route trial
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches: [main]
+    paths:
+      - tools/wf_warlock_next_level_source.py
+      - tests/test_work2_warlock_next_level_source.py
+      - .github/workflows/work2-warlock-l22-native-trial.yml
+
+permissions:
+  contents: read
+
+jobs:
+  paid-native-l22:
+    # This is one independent new L22 chain, not an L21 or cold-search rerun.
+    if: github.head_ref == 'work2/warlock-l22-banked-talent-native-proposal-20261110'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact Work2 producer
+        uses: actions/checkout@v4
+        with:
+          path: project
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout tested native actor source
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          path: engine
+          ref: 35d2c65c21263fe185facc1b5d2743b450fcad47
+      - name: Verify source pin
+        run: |
+          set -euo pipefail
+          test "$(git -C engine rev-parse HEAD)" = "35d2c65c21263fe185facc1b5d2743b450fcad47"
+          git -C project rev-parse HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Forever world adapter and tests
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Verify native-boundary producer and guide
+        working-directory: project
+        run: |
+          python -m pytest -q tests/test_work2_warlock_next_level_source.py tests/test_work2_warlock_route_guide.py
+      - name: Build exact pinned native executor
+        working-directory: engine
+        run: cargo build --locked --bin forever-engine
+      - name: Retrieve the actual successful L21 native source and route evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous
+          curl -fLsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/dosibjrn/mythicsim-forever-engine/actions/artifacts/13717741443/zip" \
+            -o previous.zip
+          unzip -q previous.zip -d previous
+          test -s previous/warlock-l21-source/source_request.json
+          test -s previous/warlock-l21-native-route/route.json
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          route=json.loads(Path("previous/warlock-l21-native-route/route.json").read_text())
+          source=Path("previous/warlock-l21-source/source_request.json").read_bytes()
+          assert route["measured_levels"] == [20,21],route["measured_levels"]
+          l21=[r for r in route["observations"] if r["level"]==21]
+          assert l21 and any(r["source_request_sha256"]==hashlib.sha256(source).hexdigest()
+                             for r in l21), "L21 paid receipt/source identity mismatch"
+          assert route["full_10_60_native_replay_executed"] is False
+          print("VERIFIED_PAID_L21_BASELINE",hashlib.sha256(source).hexdigest(),flush=True)
+          PY
+      - name: Propose actual L22 candidate using Rust options and prepare
+        id: propose
+        continue-on-error: true
+        working-directory: project
+        run: |
+          python -u tools/wf_warlock_next_level_source.py \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../previous/warlock-l21-source/source_request.json \
+            --from-level 21 --to-level 22 \
+            --out ../warlock-l22-source
+      - name: Publish exact source-native L22 refusal without invented route
+        if: steps.propose.outcome == 'failure'
+        working-directory: project
+        run: |
+          test -s ../warlock-l22-source/proposal.json
+          python -u tools/wf_warlock_route_guide.py \
+            --native-proposal ../warlock-l22-source/proposal.json \
+            --baseline-observations ../previous/warlock-l21-native-route/route.json \
+            --out ../warlock-l22-native-route
+      - name: Execute actual hostile L22 100-target paid native Decisions chain
+        if: steps.propose.outcome == 'success'
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python -u tools/wf_warlock_route_guide.py \
+            --execute-native --actor-level 22 \
+            --binary ../engine/target/debug/forever-engine \
+            --source ../warlock-l22-source/source_request.json \
+            --health-threshold 0.7 --mana-threshold 0.25 \
+            --baseline-observations ../previous/warlock-l21-native-route/route.json \
+            --trial paid-source-native-l22 \
+            --out ../warlock-l22-native-route
+      - name: Preserve full actual L21 source, L22 requests, refusals and measured guide
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-warlock-l22-paid-${{ github.run_id }}
+          path: |
+            previous/warlock-l21-source/source_request.json
+            previous/warlock-l21-native-route/route.json
+            warlock-l22-source/
+            warlock-l22-native-route/
+          if-no-files-found: warn
+          retention-days: 3
