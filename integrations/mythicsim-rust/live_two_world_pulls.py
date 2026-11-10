@@ -798,6 +798,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             **food_water,
             "native_recovery_clock_accounted": native_recovery_clock_accounted,
             "native_recovery_mode": result.get("recovery_mode"),
+            # Forward only an actual selected-Rust post-final-kill refill receipt.
+            # Older pins omit it: missing is not full-resource recovery.
+            "native_terminal_recovery": result.get("terminal_recovery"),
             "native_recovery_seconds_per_gap": result.get("recovery_seconds_per_gap"),
             "native_recovery_thresholds": result.get("thresholds"),
             "native_passive_recovery_elapsed_seconds": (
