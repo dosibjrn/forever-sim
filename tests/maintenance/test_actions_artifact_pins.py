@@ -180,10 +180,10 @@ def test_regression_source_paid_run_ids_are_evidence_pins(tmp_path):
         path.write_text("", encoding="utf-8")
     sources = {
         "tests/test_wf_native_priest_l20_cold.py":
-            "# Real cold run #41893190218 refused 4095 full-build combinations\\n",
+            "# Real cold run #41893190218 refused 4095 full-build combinations\n",
         "tests/generic/search/test_work2_p4_p5_cli_receipts.py":
             '"""Regression for actual Druid L60 Balance P4 30s '
-            'Actions #41502526876:"""\\n',
+            'Actions #41502526876:"""\n',
     }
     for name, content in sources.items():
         path = tmp_path / name
