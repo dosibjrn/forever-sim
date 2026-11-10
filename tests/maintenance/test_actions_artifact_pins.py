@@ -152,6 +152,25 @@ def test_plain_actions_reference_parser_does_not_pin_counts_or_malformed_ids():
     assert artifacts == set()
 
 
+def test_native_stage5_source_comment_pins_split_artifact_reference(tmp_path):
+    """An in-repo Rust failure reproducer must protect its original paid receipt."""
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    source = tmp_path / "integrations/mythicsim-rust/tests/test_native_joint_two_class.py"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text(
+        "    # Reduced exact reproducer from stage-5 run #41655733807, artifact\\n"
+        "    # #13241065075: zero-DPS native Life Tap failure\\n"
+        "    # malformed artifact #13241065075x and bare 99999999999 are not pins\\n",
+        encoding="utf-8")
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == {41655733807}
+    assert artifacts == {13241065075}
+
+
 def test_markdown_artifact_id_without_run_url_remains_pinned(tmp_path):
     """A retained native Go receipt explicitly uses artifact ID **`id`**."""
     for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
