@@ -73,6 +73,16 @@ _ACTIONS_PLAIN_RUN_ID = re.compile(
 _ARTIFACT_PLAIN_ID = re.compile(
     r"\bartifact\s+([1-9]\d{7,})\b", flags=re.IGNORECASE)
 
+# A bare artifact ID can be the sole link in a GitHub issue or native
+# evidence note, rendered as Markdown: "artifact `13698202699`" or
+# "artifact **`13241065075`**". Neither the plain-number parser nor the
+# "artifact #/ID" parser accepts this syntax. Require a complete long ID and
+# closing markup so counts and malformed alphanumeric tokens are not pins.
+_ARTIFACT_MARKDOWN_ID = re.compile(
+    r"\bartifact\s+(?:\*\*)?`([1-9]\d{7,})`(?:\*\*)?(?!\w)",
+    flags=re.IGNORECASE,
+)
+
 # Retained paid/native receipts and PR discussions can give a reproducible
 # GitHub CLI command instead of a link: "gh run view 123" or "gh run download
 # 123". Both identify an originating Actions run whose artifacts must be pinned.
@@ -100,6 +110,7 @@ def record_references(body: str | None, runs: set[int], artifacts: set[int]) -> 
     runs.update(int(match) for match in _ACTIONS_NUMBER.findall(text))
     runs.update(int(match) for match in _ACTIONS_PLAIN_RUN_ID.findall(text))
     artifacts.update(int(match) for match in _ARTIFACT_PLAIN_ID.findall(text))
+    artifacts.update(int(match) for match in _ARTIFACT_MARKDOWN_ID.findall(text))
     runs.update(int(match) for match in _GH_RUN_COMMAND.findall(text))
 
 

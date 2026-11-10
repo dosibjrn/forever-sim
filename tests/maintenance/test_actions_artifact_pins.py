@@ -188,6 +188,43 @@ def test_markdown_artifact_id_without_run_url_remains_pinned(tmp_path):
     assert artifacts == {13075957889}
 
 
+@pytest.mark.parametrize(("reference", "artifact_id"), [
+    ("Paid native route artifact `13698202699` is retained in the issue.", 13698202699),
+    ("Stage5 source regression artifact **`13241065075`** is needed.", 13241065075),
+])
+def test_bare_markdown_artifact_ids_from_real_issue_comments(reference, artifact_id):
+    """Explicit bare backtick IDs in issue #1102 must pin their paid artifacts."""
+    runs, artifacts = set(), set()
+    record_references(reference, runs, artifacts)
+    assert runs == set()
+    assert artifacts == {artifact_id}
+
+
+def test_bare_markdown_artifact_id_collected_from_retained_evidence(tmp_path):
+    for name in ("OVERALL_PLAN.md", "PROCESS.md", "README.md",
+                 "docs/planning/M1_PASSES.tsv"):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    receipt = tmp_path / "docs/evidence/source-native.md"
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text("Native failure artifact `13241065075`.\n", encoding="utf-8")
+    runs, artifacts = collect_local_references(tmp_path)
+    assert runs == set()
+    assert artifacts == {13241065075}
+
+
+def test_bare_markdown_artifact_id_rejects_counts_and_malformed_tokens():
+    runs, artifacts = set(), set()
+    record_references(
+        "artifact `0`; artifact `23`; artifact `1234567`; "
+        "artifact `13698202699abc`; artifact `13698202699`extra; "
+        "artifact `13698202699; artifact `0000136982`",
+        runs, artifacts)
+    assert runs == set()
+    assert artifacts == set()
+
+
 def test_markdown_artifact_id_rejects_malformed_number_suffix():
     runs, artifacts = set(), set()
     record_references(
