@@ -120,3 +120,34 @@ def test_disconnected_native_binary_retains_proven_start_not_false_respec():
     assert path["status"] == "single_native_paid_level"
     assert path["levels"] == [20]
     assert path["steps"][0]["native_observation_id"] == "native-a-l20"
+
+
+def test_incomplete_paid_candidate_does_not_discard_valid_same_level_path():
+    l20 = "0-0-11111111111"
+    incomplete = observation(21, l20)
+    incomplete["id"] = "l21-missing-executed-request-identity"
+    # A linked Actions result may be publishable as a measured snapshot even
+    # when it lacks the exact source SHA required for talent lineage.
+    incomplete["source_request_sha256"] = None
+    valid = observation(21, l20)
+    valid["id"] = "l21-fully-attributed"
+    path = report(observation(20, l20), incomplete, valid)[
+        "native_paid_talent_continuity"]
+    assert path["levels"] == [20, 21]
+    assert path["steps"][1]["kind"] == "hold"
+    assert path["steps"][1]["native_observation_id"] == "l21-fully-attributed"
+
+
+def test_incomplete_first_level_candidate_cannot_hide_other_paid_engine():
+    l20 = "0-0-11111111111"
+    incomplete = _engine_observation(20, l20, "a")
+    incomplete["source_request_sha256"] = None
+    path = report(
+        incomplete,
+        _engine_observation(20, l20, "b"),
+        _engine_observation(21, l20, "b"),
+    )["native_paid_talent_continuity"]
+    assert path["engine_binary_sha256"] == "b" * 64
+    assert path["levels"] == [20, 21]
+    assert all(step["native_observation_id"].startswith("native-b-")
+               for step in path["steps"])
