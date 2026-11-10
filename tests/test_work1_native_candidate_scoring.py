@@ -1,5 +1,6 @@
 """Forever-owned competitive native scoring; no mechanics or world replay in tests."""
 import copy
+import hashlib
 import json
 from pathlib import Path
 
@@ -67,6 +68,22 @@ def test_later_native_faster_candidate_beats_first_preparable(tmp_path):
                and kw["recovery_policy"] == "decisions"
                and kw["require_native_health_damage"] is False for _, kw in calls)
     assert len(list((tmp_path / "receipts").glob("*.native.json"))) == 3
+    # Per-candidate native breakdown is part of the scored output: Work2
+    # can consume the paid post-kill debt without reconstructing a model.
+    first, later = output["candidates"][:2]
+    assert first["world_elapsed_before_terminal_seconds"] == 18
+    assert first["terminal_recovery_seconds"] == 12
+    assert later["world_elapsed_before_terminal_seconds"] == 16
+    assert later["terminal_recovery_seconds"] == 2
+    assert later["elapsed_seconds"] == (
+        later["world_elapsed_before_terminal_seconds"]
+        + later["terminal_recovery_seconds"])
+    assert later["terminal_health"] == later["terminal_max_health"] == 1000
+    assert later["terminal_mana"] == later["terminal_max_mana"] == 1500
+    receipt_path = Path(later["native_raw_receipt_file"])
+    assert receipt_path == tmp_path / "receipts" / "later.native.json"
+    assert later["native_raw_receipt_sha256"] == hashlib.sha256(
+        receipt_path.read_bytes()).hexdigest()
 
 
 def test_terminal_time_changes_winner_even_when_combat_is_faster(tmp_path):
@@ -197,6 +214,8 @@ def test_one_paid_candidate_and_one_refusal_are_not_optimized(tmp_path):
     assert result["winner_candidate_id"] is None
     assert result["status"] == "PROVISIONAL_NO_COMPETITIVE_FULL_RECOVERY"
     assert result["candidates"][1]["status"] == "NATIVE_REFUSAL"
+    assert "terminal_recovery_seconds" not in result["candidates"][1]
+    assert "native_raw_receipt_sha256" not in result["candidates"][1]
 
 
 def test_duplicate_native_prepared_source_is_not_an_optimized_comparison(tmp_path):
