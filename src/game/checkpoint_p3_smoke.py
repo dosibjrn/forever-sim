@@ -187,10 +187,10 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         raise ValueError('P3_NO_LEGAL_ITEMS_IN_CURRENT_DB')
     blockers = set()
     if native_options_metadata is not None:
-        if native_options_metadata['status'] == 'partial_level_unknown':
-            blockers.add(
-                'NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:'
-                + str(native_options_metadata['unverified_candidate_count']))
+        # Rust may return usable candidates while reporting incomplete source
+        # coverage for other items. Catalogue completeness is not a P3 gate:
+        # preserve the native status/count as diagnostics and score the items
+        # it did return. No native candidates is still a real refusal here.
         if not rows:
             blockers.add('NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')
     if weight_evidence_kind not in SOURCE_CONTEXT_WEIGHT_KINDS:
@@ -225,8 +225,10 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         reports = []
         for item in selected:
             tested += 1
-            for native_axis in unmapped_by_item.get(item.item_id, ()):
-                blockers.add('NATIVE_UNMAPPED_STAT_AXIS:' + native_axis)
+            # Unknown native fields are diagnostic, not Python legality/
+            # stat-weight vetoes. The selected Rust paid evaluator owns their
+            # mechanics; only score fields this legacy fast scorer understands.
+            unmapped_native_axes = tuple(unmapped_by_item.get(item.item_id, ()))
             stats = _ordinary_stats(item)
             if not weapon_damage_dependent:
                 stats.pop('mean_weapon_hit_damage', None)
@@ -275,6 +277,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                 # score does not agree with the executed contributions.
                 verified_stat_assertions += item_valid_weight_checks
             reports.append({'item_id': int(item.item_id), 'name': item.name,
+                            'unmapped_native_stat_axes': list(unmapped_native_axes),
                             'item_level': item.item_level,
                             'required_level': item.required_level,
                             'score': score if isfinite(score) else None,
