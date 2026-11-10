@@ -106,6 +106,24 @@ jobs:
       MAX_PROPOSALS: ${{ inputs.max_proposals }}
       MAX_FINALISTS: ${{ inputs.max_finalists }}
     steps:
+      # Validate manual paid-work requests before either repository checkout.
+      # Malformed identities/budgets must never start a source fetch or Cargo build.
+      - name: Preflight bounded paid comparison inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SELECTED_RUST_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PREDECESSOR_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PREDECESSOR_BINARY_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$FROM_LEVEL" =~ ^[0-9]+$ ]]
+          [[ "$MAX_PROPOSALS" =~ ^[0-9]+$ ]]
+          [[ "$MAX_FINALISTS" =~ ^[0-9]+$ ]]
+          test "$FROM_LEVEL" -ge 10
+          test "$FROM_LEVEL" -lt 60
+          test "$MAX_PROPOSALS" -ge 1
+          test "$MAX_PROPOSALS" -le 1000
+          test "$MAX_FINALISTS" -ge 1
+          test "$MAX_FINALISTS" -le 6
       - name: Checkout exact comparison source
         uses: actions/checkout@v4
         with:
@@ -117,18 +135,11 @@ jobs:
           repository: dosibjrn/mythicsim-forever-engine
           ref: ${{ env.SELECTED_RUST_SHA }}
           path: engine
-      - name: Verify selected revision and bounded request
+      - name: Verify exact checked-out native revision
+        shell: bash
         run: |
           set -euo pipefail
           test "$(git -C engine rev-parse HEAD)" = "$SELECTED_RUST_SHA"
-          [[ "$PREDECESSOR_ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          [[ "$PREDECESSOR_BINARY_SHA256" =~ ^[0-9a-f]{64}$ ]]
-          [[ "$FROM_LEVEL" =~ ^[0-9]+$ ]]
-          [[ "$MAX_PROPOSALS" =~ ^[0-9]+$ ]]
-          [[ "$MAX_FINALISTS" =~ ^[0-9]+$ ]]
-          test "$FROM_LEVEL" -ge 10 && test "$FROM_LEVEL" -lt 60
-          test "$MAX_PROPOSALS" -ge 1 && test "$MAX_PROPOSALS" -le 1000
-          test "$MAX_FINALISTS" -ge 1 && test "$MAX_FINALISTS" -le 6
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
