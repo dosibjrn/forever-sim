@@ -242,8 +242,8 @@ def test_one_sparse_compatible_optimizer_call_returns_one_three_level_build_path
     calls = []
     talents = {
         20: [("5-0-0", 3.0), ("0-5-0", 5.0)],
-        40: [("0-25-0", 1.0), ("20-0-0", 7.0)],
-        60: [("0-45-0", 1.0), ("40-0-0", 6.0)],
+        40: [("0-55-0", 1.0), ("55-0-0", 7.0)],
+        60: [("0-555-0", 1.0), ("555-0-0", 6.0)],
     }
 
     def native(**request):
@@ -276,7 +276,7 @@ def test_one_sparse_compatible_optimizer_call_returns_one_three_level_build_path
     # Independent fastest L20 (5-0-0) is incompatible with the faster
     # L40/L60 alternative (0-25-0 / 0-45-0).
     assert [step["talents"] for step in best["steps"]] == [
-        "0-5-0", "0-25-0", "0-45-0",
+        "0-5-0", "0-55-0", "0-555-0",
     ]
     assert best["sampled_cumulative_seconds"] == 7.0
     assert [step["gear"]["items"] for step in best["steps"]] == [
@@ -308,8 +308,8 @@ def test_generic_optimize_cli_accepts_class_tree_stride_two_mobs_and_balanced(
     calls = []
     by_level = {
         20: ["5-0-0", "0-5-0"],
-        40: ["20-0-0", "0-25-0"],
-        60: ["40-0-0", "0-45-0"],
+        40: ["55-0-0", "0-55-0"],
+        60: ["555-0-0", "0-555-0"],
     }
 
     def native(**request):
