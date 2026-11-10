@@ -530,3 +530,23 @@ def test_live_gc_reports_targeted_removals_and_net_change_separately():
     assert 'reclaimed_MiB={(total-after)' not in workflow
     assert workflow.index("verify_deleted_artifacts_absent(") < workflow.index(
         "verified_removed_footprint(")
+
+
+def test_gc_only_credits_successful_204_deletes_not_concurrently_absent_404():
+    """A vanished artifact cannot be billed as reclaimed by this GC run.
+
+    Both statuses need a verified post-DELETE absence, but targeted bytes must
+    count only IDs for which our own authenticated DELETE returned HTTP 204.
+    This is storage-report accuracy, not an additional M1 gate.
+    """
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/actions-storage-preventive-gc.yml").read_text(
+                    encoding="utf-8")
+    assert 'if status == 204:\\n                      deleted.append(aid)' .replace('\\n', '\n') in workflow
+    assert 'elif status == 404:' in workflow
+    assert 'already_absent.append(aid)' in workflow
+    assert 'deleted + already_absent, list_artifacts' in workflow
+    assert 'all_artifacts, after_artifacts, deleted)' in workflow
+    assert 'if status not in (204, 404):' not in workflow
+    assert workflow.index('deleted + already_absent, list_artifacts') < workflow.index(
+        'all_artifacts, after_artifacts, deleted)')
