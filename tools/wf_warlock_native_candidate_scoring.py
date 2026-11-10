@@ -62,17 +62,19 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
             or not isinstance(windows, list) or len(windows) != mob_count
             or not isinstance(mana, list) or len(mana) != mob_count):
         return None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT"
-    # This scorer is for hostile leveling mobs, not a passive target dummy.
-    # The bridge carries original Rust incoming-damage receipts even when the
-    # caller did not ask it to fail early. A 3-kill zero-damage chain must not
-    # outrank a genuine survivor simply because it needed less food.
+    # Original native incoming-damage telemetry must be present and internally
+    # consistent, but taking damage is NOT a performance requirement: a valid
+    # hostile run can avoid all player damage through pet tanking or control.
+    # Never turn a missing port into an observed zero-damage receipt.
     incoming = receipt.get("native_health_damage")
     if (not isinstance(incoming, dict)
             or incoming.get("observed") is not True
-            or not _positive(incoming.get("damage_taken"))
+            or not _nonnegative(incoming.get("damage_taken"))
             or type(incoming.get("damage_events")) is not int
-            or incoming["damage_events"] < 1):
-        return None, "NATIVE_HOSTILE_INCOMING_DAMAGE_NOT_OBSERVED"
+            or incoming["damage_events"] < 0
+            or (incoming["damage_taken"] > 0
+                and incoming["damage_events"] == 0)):
+        return None, "NATIVE_HEALTH_DAMAGE_RECEIPT_MISSING_OR_INVALID"
     last_clock = 0
     for index, (window, value) in enumerate(zip(windows, mana)):
         if (not isinstance(window, dict) or window.get("index") != index
@@ -185,7 +187,7 @@ def compare_prepared_candidates(*, binary: Path,
                                  mob_health=target_hp, rng_mode="balanced",
                                  recovery_policy="decisions",
                                  health_threshold=1.0, mana_threshold=1.0,
-                                 require_native_health_damage=True)
+                                 require_native_health_damage=False)
             if artifact_dir is not None:
                 (artifact_dir / f"{candidate_id}.native.json").write_text(
                     json.dumps(receipt, indent=2, allow_nan=False) + "\n")

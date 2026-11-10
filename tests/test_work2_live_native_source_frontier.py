@@ -736,3 +736,50 @@ def test_unscaled_seed_is_preserved_when_native_points_not_advertised(tmp_path):
     )
     assert len(result["entries"]) == 3
     assert proposed == ["11-0-0", "00-2-0", "00-0-2"]
+
+def test_native_apl_fallback_uses_first_prepared_family_after_seed_refusal(tmp_path):
+    """An invalid initial root must not suppress a valid native APL search."""
+    seed, binary = _root_source(tmp_path)
+    source = json.loads(seed.read_text())
+    source["raid"]["parties"][0]["players"][0]["rotation"] = {
+        "priorityList": [{"action": {"castSpell": {"spellId": {"spellId": 101}}}}],
+    }
+    seed.write_text(json.dumps(source))
+    options = {"level": 20, "talents": {"status": "ok", "trees": [
+        {"talents": [{"index": i, "max_rank": 5} for i in range(2)]}
+        for _ in range(3)
+    ]}}
+    observed = []
+
+    def native(cmd, **kwargs):
+        if cmd[1] == "options":
+            return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(options))
+        request_path = Path(cmd[cmd.index("--request") + 1])
+        prepared_path = Path(cmd[cmd.index("--outfile") + 1])
+        actor = json.loads(request_path.read_text())["raid"]["parties"][0]["players"][0]
+        talents = actor["talentsString"]
+        spell = actor["rotation"]["priorityList"][-1]["action"]["castSpell"]["spellId"]["spellId"]
+        observed.append((talents, spell))
+        if talents == "11-0-0":
+            return subprocess.CompletedProcess(cmd, 2, stderr="Rust refused seed")
+        prepared_path.write_text(json.dumps({
+            "request_sha256": hashlib.sha256(request_path.read_bytes()).hexdigest(),
+            "player": {"class": "ClassWarlock", "level": 20, "spells": [
+                {"action_id": {"spell_id": 101}, "flags": ["SpellFlagAPL"]},
+                {"action_id": {"spell_id": 102}, "flags": ["SpellFlagAPL"]},
+            ]},
+        }))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    report = produce_frontier(
+        _request(budget=4), binary=binary, seed_source=seed,
+        out=tmp_path / "prepared", runner=native,
+    )
+    assert observed == [
+        ("11-0-0", 101), ("00-2-0", 101), ("00-0-2", 101),
+        ("00-2-0", 102),
+    ]
+    assert len(report["refusals"]) == 1
+    assert report["refusals"][0]["status"] == "NATIVE_PREPARE_REFUSED"
+    assert len(report["entries"]) == 3
+    assert all(Path(entry["prepared"]).exists() for entry in report["entries"])

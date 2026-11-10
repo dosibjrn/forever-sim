@@ -415,7 +415,7 @@ def produce_frontier(
             refusals.append({"candidate_id": cid, "status": "NATIVE_PREPARE_REFUSED",
                              "native_prepared": False, "native_refusal": str(exc)[-1500:]})
             continue
-        if index == 0:
+        if root_prepared is None and talents_string is not None:
             root_prepared = prepared
             root_proposal = proposal
         entry = {"id": cid, "level": level,

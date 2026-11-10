@@ -1,7 +1,7 @@
 """Artifact upload steps must not silently inherit the 90-day Actions default.
 
 This is an operational storage regression, not a Warcraft gate or an
-additional M1 acceptance predicate. Native no-record evidence is still uploaded.
+additional M1 acceptance predicate. Still-unaccepted native P3 evidence is uploaded.
 """
 from __future__ import annotations
 
@@ -50,8 +50,8 @@ def test_actions_upload_steps_set_explicit_bounded_retention():
     assert uploads > 0
 
 
-def test_rust_pin_pr_no_record_p3_uploads_expire_after_seven_days():
-    """Repeatable no-record native P3 PR diagnostics should not occupy a month.
+def test_rust_pin_unaccepted_p3_upload_expires_after_seven_days():
+    """Only still-unaccepted P3 diagnostic artifacts may be uploaded on pin changes.
 
     This does not prune accepted M1 receipts or issue-pinned evidence; it only
     bounds new artifacts from the selected-Rust-pin verification workflow.
@@ -60,7 +60,7 @@ def test_rust_pin_pr_no_record_p3_uploads_expire_after_seven_days():
     lines = workflow.read_text(encoding="utf-8").splitlines()
     upload_indices = [index for index, line in enumerate(lines)
                       if UPLOAD.search(line)]
-    assert len(upload_indices) == 3, "review retention when adding a PR artifact"
+    assert len(upload_indices) == 1, "accepted L60 P3 artifact uploads must stay retired"
     for index in upload_indices:
         indent = len(lines[index]) - len(lines[index].lstrip(" "))
         step_body = []
