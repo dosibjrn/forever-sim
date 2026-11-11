@@ -99,16 +99,15 @@ def _dedup_level_nodes(level:int,nodes:Sequence[LevelNode], model:ClassModel,
     for n in nodes:
         if int(n.level)!=int(level):
             raise ValueError(f'node level mismatch: expected {level}, got {n.level}')
-        points=model.build_points(n.talents)
         if native_paid:
+            # Rust already prepared and executed this actor. A Python point
+            # budget is a second Warcraft-legality veto, not route evidence.
             if not _is_paid_native_level_node(n, level):
                 raise ValueError(f'level {level} node lacks a matching paid native actor/chain receipt')
-            # Native preparation may bank talent points. No Python game legality
-            # inference is made: the execution receipt is authoritative.
-            if points < 0 or points > int(level)-9:
-                raise ValueError(f'level {level} native node has impossible point count {points}')
-        elif points!=int(level)-9:
-            raise ValueError(f'level {level} node has {points} talent points; expected {level-9}')
+        else:
+            points=model.build_points(n.talents)
+            if points!=int(level)-9:
+                raise ValueError(f'level {level} node has {points} talent points; expected {level-9}')
         k=model.build_key(n.talents)
         old=best.get(k)
         if old is None or (n.score_s_per_100,model.policy_description(n.policy,level) if n.policy else '') < (old.score_s_per_100,model.policy_description(old.policy,level) if old.policy else ''):
