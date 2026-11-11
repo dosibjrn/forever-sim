@@ -1146,3 +1146,117 @@ def test_native_rest_policies_have_distinct_session_and_disk_cache_identities(
     assert baseline[2] is False and changed[2] is False
     assert changed_again[2] is True
     assert baseline[3] != changed[3] == changed_again[3]
+
+
+def test_rolling_native_world_apl_request_is_forwarded_and_ack_checked():
+    """Only native-applied two-live-world evidence can unlock rolling ranking."""
+    from live_two_world_pulls import (
+        _persistent_api_evaluate_request, _verify_native_rolling_world_apl,
+    )
+    policy = copy.deepcopy(api.ROLLING_WORLD_APL_50)
+    request = _persistent_api_evaluate_request(
+        targets=2, rng_mode="balanced", health_threshold=1.0,
+        mana_threshold=1.0, world_apl=policy)
+    assert request == {
+        "op": "evaluate", "targets": 2, "rng_mode": "balanced",
+        "recover_at_end": True, "world_apl": policy,
+    }
+    kills = [
+        {"target_id": "m1", "ack_sha256": "first"},
+        {"target_id": "m0", "ack_sha256": "second"},
+    ]
+    # An old serial native report must fail even when it killed both mobs.
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        _verify_native_rolling_world_apl({}, requested=policy, kills=kills)
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        _verify_native_rolling_world_apl(
+            {"applied_world_apl": policy, "world_overlap": {
+                "max_concurrent_alive_targets": 1,
+                "simultaneously_alive_world_target_ids": ["m1", "m0"],
+            }}, requested=policy, kills=kills)
+    observed = {
+        "max_concurrent_alive_targets": 2,
+        "simultaneously_alive_world_target_ids": ["m1", "m0"],
+        "native_target_to_world_id": {"0": "m1", "1": "m0"},
+        "old_target_dot_ticks_after_switch_acked": 1,
+    }
+    assert _verify_native_rolling_world_apl({
+        "applied_world_apl": policy, "world_overlap": observed,
+    }, requested=policy, kills=kills) == observed
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        _verify_native_rolling_world_apl({
+            "applied_world_apl": policy, "world_overlap": observed,
+        }, requested=policy, kills=[
+            {"target_id": "m1", "ack_sha256": "same"},
+            {"target_id": "m0", "ack_sha256": "same"},
+        ])
+
+
+def test_rolling_world_apl_unacknowledged_serial_receipt_is_unranked(
+        tmp_path, monkeypatch):
+    """Request the rolling axis without ever crediting old serial results."""
+    observed = []
+    def fake_native_world(binary, prepared_path, **kwargs):
+        observed.append(kwargs.get("world_apl"))
+        return paid_world(binary, prepared_path, **kwargs)
+
+    native = make_evaluator(tmp_path, monkeypatch, fake_native_world)
+    native.compare_world_rolling_50 = True
+    try:
+        rows = native(
+            level=20, parent=None, mob_count=2, budget=2,
+            rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert observed == [None, api.ROLLING_WORLD_APL_50]
+    assert [row["status"] for row in rows] == [
+        "MEASURED_NATIVE_FULLY_RECOVERED", "NATIVE_API_CANDIDATE_REFUSED",
+    ]
+    assert rows[1]["proposal_axis"] == "world_rolling_50pct"
+    assert rows[1]["native_world_policy"]["world_apl"] == (
+        api.ROLLING_WORLD_APL_50)
+    assert "ROLLING_APL_NOT_PROVEN" in rows[1]["native_refusal"]
+    assert len(list((tmp_path / "paid").glob("*.native.json"))) == 1
+
+
+def test_source_echoed_rolling_policy_never_shares_serial_native_paid_cache(
+        tmp_path, monkeypatch):
+    """Synthetic native telemetry tests cache identity, NOT real overlap."""
+    calls = []
+    def synthetic_native_world(binary, prepared_path, **kwargs):
+        policy = kwargs.get("world_apl")
+        calls.append(copy.deepcopy(policy))
+        receipt = paid_world(binary, prepared_path, **kwargs)
+        if policy is not None:
+            receipt["native_world_apl"] = copy.deepcopy(policy)
+            receipt["native_world_overlap_verified"] = True
+            receipt["native_world_overlap"] = {
+                "max_concurrent_alive_targets": 2,
+                "simultaneously_alive_world_target_ids": ["m1", "m0"],
+                "native_target_to_world_id": {"0": "m1", "1": "m0"},
+                "old_target_dot_ticks_after_switch_acked": 1,
+            }
+            receipt["world_kills"] = [
+                {"target_id": "m1", "ack_sha256": "ack-1"},
+                {"target_id": "m0", "ack_sha256": "ack-2"},
+            ]
+        return receipt
+
+    native = make_evaluator(tmp_path, monkeypatch, synthetic_native_world)
+    try:
+        source = native._source(20, None)
+        prepared = native.session.request({
+            "op": "prepare", "actor_level": 20, "request": source})
+        params = dict(level=20, mobs=2, target_hp=100.0)
+        serial = native._paid(source, prepared, cid="serial", **params)
+        rolling = native._paid(
+            source, prepared, cid="rolling",
+            world_apl=copy.deepcopy(api.ROLLING_WORLD_APL_50), **params)
+        repeat = native._paid(
+            source, prepared, cid="rolling-repeat",
+            world_apl=copy.deepcopy(api.ROLLING_WORLD_APL_50), **params)
+    finally:
+        native.close()
+    assert calls == [None, api.ROLLING_WORLD_APL_50]
+    assert serial[2] is False and rolling[2] is False and repeat[2] is True
+    assert serial[3] != rolling[3] == repeat[3]

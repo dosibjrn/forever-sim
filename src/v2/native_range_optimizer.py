@@ -73,6 +73,26 @@ def _receipt_error(
             or type(recovery) not in (int, float) or not math.isfinite(recovery)
             or recovery < 0 or recovery > elapsed):
         return "native charged elapsed/recovery clock missing"
+    policy = row.get("native_world_policy")
+    if isinstance(policy, Mapping) and policy.get("pull_mode") == "rolling":
+        if (row.get("native_world_apl") != policy.get("world_apl")
+                or row.get("native_world_overlap_verified") is not True
+                or not isinstance(row.get("native_world_overlap"), Mapping)):
+            return "rolling World-APL lacks source-applied two-live-target ACK evidence"
+        kills = row.get("native_world_kills")
+        overlap = row["native_world_overlap"]
+        if (overlap.get("max_concurrent_alive_targets") != 2
+                or type(overlap.get("old_target_dot_ticks_after_switch_acked"))
+                   is not int
+                or overlap["old_target_dot_ticks_after_switch_acked"] < 1):
+            return "native old-target DoT ACK after rolling switch missing"
+        if (not isinstance(kills, list) or len(kills) != 2
+                or any(not isinstance(kill, Mapping) for kill in kills)
+                or len({kill.get("target_id") for kill in kills}) != 2
+                or len({kill.get("ack_sha256") for kill in kills}) != 2
+                or any(not isinstance(kill.get("ack_sha256"), str)
+                       or not kill["ack_sha256"] for kill in kills)):
+            return "rolling World-APL distinct world kills/ACK IDs missing"
     if parent is not None:
         if row.get("engine_binary_sha256") != parent["engine_binary_sha256"]:
             return "cross-engine path is not comparable"
@@ -184,6 +204,104 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
         "baseline": evidence(full),
         "thirty_percent": evidence(thirty),
         "full_minus_thirty_elapsed_seconds": full_seconds - thirty_seconds,
+    })
+    return summary
+
+
+def measured_world_rolling_head_to_head(
+        result: Mapping[str, Any], *, level: int) -> dict[str, Any]:
+    """Rank only source-ACKed simultaneous worlds against an identical serial build.
+
+    A newly requested 50%-HP switch is not evidence of two live enemies;
+    serial receipts and unacknowledged native policies remain unranked.
+    """
+    rows = result.get("independent_level_rankings", {}).get(str(level), [])
+    accepted = {"serial": [], "rolling": []}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        paid = row.get("receipt")
+        policy = row.get("native_world_policy")
+        if (not isinstance(paid, Mapping) or not isinstance(policy, Mapping)
+                or policy != paid.get("native_world_policy")
+                or _receipt_error(
+                    paid, level=level, parent=None, mob_count=result["mob_count"],
+                    rng_mode=result["rng_mode"], iterations=result["iterations"]
+                ) is not None
+                or not _sha(paid.get("native_raw_receipt_sha256"))
+                or not paid.get("native_raw_receipt_file")
+                or row.get("native_elapsed_seconds") != paid.get("elapsed_seconds")
+                or row.get("terminal_recovery_seconds")
+                   != paid.get("terminal_recovery_seconds")
+                or any(row.get(field) != paid.get(field)
+                       for field in ("source_request_sha256", "engine_binary_sha256",
+                                     "talents", "gear", "apl", "pet"))):
+            continue
+        mode = policy.get("pull_mode")
+        if (mode == "serial" and
+                policy.get("rest_when_health_below") == 1.0 and
+                policy.get("rest_when_mana_below") == 1.0):
+            accepted["serial"].append(row)
+        elif (mode == "rolling" and
+                paid.get("native_world_overlap_verified") is True and
+                paid.get("native_world_apl") == policy.get("world_apl")):
+            accepted["rolling"].append(row)
+
+    def build_key(row):
+        return (row["source_request_sha256"], row["engine_binary_sha256"],
+                json.dumps([row.get(field) for field in
+                            ("talents", "gear", "apl", "pet")],
+                           sort_keys=True, separators=(",", ":")))
+
+    pairs = [(serial, rolling)
+             for serial in accepted["serial"]
+             for rolling in accepted["rolling"]
+             if build_key(serial) == build_key(rolling)]
+    refusals = [row for row in result.get("rejected_native_attempts", [])
+                if isinstance(row, Mapping) and row.get("level") == level
+                and row.get("proposal_axis") == "world_rolling_50pct"]
+    summary = {
+        "status": "NATIVE_ROLLING_WORLD_APL_INCOMPLETE",
+        "level": level, "mob_count": result["mob_count"],
+        "serial_paid_candidates": len(accepted["serial"]),
+        "rolling_overlap_paid_candidates": len(accepted["rolling"]),
+        "rolling_refusals": refusals,
+        "winner": None, "baseline": None, "rolling": None,
+        "serial_minus_rolling_elapsed_seconds": None,
+    }
+    if not pairs:
+        return summary
+
+    serial, rolling = min(pairs, key=lambda pair: (
+        min(pair[0]["native_elapsed_seconds"], pair[1]["native_elapsed_seconds"]),
+        pair[0]["source_request_sha256"]))
+    def evidence(row):
+        paid = row["receipt"]
+        return {
+            "source_request_sha256": paid["source_request_sha256"],
+            "engine_binary_sha256": paid["engine_binary_sha256"],
+            "native_raw_receipt_file": paid["native_raw_receipt_file"],
+            "native_raw_receipt_sha256": paid["native_raw_receipt_sha256"],
+            "native_world_policy": paid["native_world_policy"],
+            "charged_elapsed_seconds": paid["elapsed_seconds"],
+            "terminal_hp": paid["terminal_hp"],
+            "terminal_max_hp": paid["terminal_max_hp"],
+            "terminal_mana": paid["terminal_mana"],
+            "terminal_max_mana": paid["terminal_max_mana"],
+            "native_world_overlap": paid.get("native_world_overlap"),
+            "native_world_kills": paid.get("native_world_kills"),
+        }
+    serial_time, rolling_time = (
+        float(serial["native_elapsed_seconds"]),
+        float(rolling["native_elapsed_seconds"]),
+    )
+    summary.update({
+        "status": "MEASURED_NATIVE_ROLLING_WORLD_APL_HEAD_TO_HEAD",
+        "winner": ("rolling" if rolling_time < serial_time
+                   else "serial" if serial_time < rolling_time else "tie"),
+        "baseline": evidence(serial),
+        "rolling": evidence(rolling),
+        "serial_minus_rolling_elapsed_seconds": serial_time - rolling_time,
     })
     return summary
 
@@ -1073,6 +1191,10 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                     help="Compare native serial full-rest baseline against "
                          "HP<30%% OR mana<30%% rest-until-full; refuse unless "
                          "Rust explicitly acknowledges applied thresholds")
+    ap.add_argument("--compare-world-rolling-50", action="store_true",
+                    help="Compare a serial native world against a source-ACKed "
+                         "two-live-target policy switching at 50%% current "
+                         "target HP; refuse until real overlap is observed")
     ap.add_argument("--probe-native-continuity", action="store_true",
                     help="Probe one fresh paid native first-world and same-session "
                          "XP/level transition; never reuse sampled-world cache")
@@ -1108,6 +1230,12 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if args.compare_world_rest_30 and (
             args.start_level != args.end_level or args.budget < 2):
         ap.error("--compare-world-rest-30 requires one level and budget >= 2")
+    if args.compare_world_rolling_50 and (
+            args.compare_world_rest_30 or args.probe_native_continuity
+            or args.start_level != args.end_level or args.budget < 2
+            or args.n_mobs != 2):
+        ap.error("--compare-world-rolling-50 needs one level, two hostile "
+                 "targets, budget >= 2 and no competing probe")
     if args.probe_native_continuity:
         if args.end_level != args.start_level + 1:
             ap.error("--probe-native-continuity needs exactly one level transition")
@@ -1128,6 +1256,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
             target_hp=args.target_hp,
             **({"compare_world_rest_30": True}
                if args.compare_world_rest_30 else {}),
+            **({"compare_world_rolling_50": True}
+               if args.compare_world_rolling_50 else {}),
         )
         try:
             if args.probe_native_continuity:
@@ -1162,6 +1292,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if args.compare_world_rest_30:
         result["world_rest_head_to_head"] = measured_world_rest_head_to_head(
             result, level=args.start_level)
+    if args.compare_world_rolling_50:
+        result["world_rolling_head_to_head"] = measured_world_rolling_head_to_head(
+            result, level=args.start_level)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
     # Publish only verified native-paid candidates. The offline HTML generator
@@ -1191,6 +1324,13 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         print("Policy winner: " + comparison["winner"]
               + "; full minus 30%-rest charged seconds: "
               + f"{comparison['full_minus_thirty_elapsed_seconds']:.3f}")
+    if args.compare_world_rolling_50:
+        comparison = result["world_rolling_head_to_head"]
+        print("Native rolling World-APL head-to-head: " + comparison["status"])
+        if comparison["status"] != "MEASURED_NATIVE_ROLLING_WORLD_APL_HEAD_TO_HEAD":
+            print("No two-live-target winner: inspect native refusals in --out.")
+            return 2
+        print("Rolling policy winner: " + comparison["winner"])
     if result["ranked_alternatives"]:
         best = result["ranked_alternatives"][0]
         print(f"{cls}: sampled compatible build path, "
