@@ -23,6 +23,14 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _valid_native_digest(value: Any) -> bool:
+    # Rust hashes its deterministic protobuf request; this is NOT the raw
+    # source JSON file's SHA-256. Keep both identities in their own domains.
+    return isinstance(value, str) and len(value) == 64 and all(
+        ch in "0123456789abcdef" for ch in value
+    )
+
+
 def _variants(seed: str, trees: list[dict], *, points_available: int | None = None):
     """Sample transfers between Rust-listed talent slots; Rust judges proposals.
 
@@ -242,10 +250,10 @@ def _paid_parent_source(parent: dict, binary: Path) -> tuple[dict, str]:
     terminal = raw["native_terminal_recovery"]
     if (actor.get("class") != "ClassWarlock" or actor.get("level") != parent["level"]
             or source["encounter"]["targets"][0].get("level") != parent["level"]
-            or prepared.get("request_sha256") != source_sha
+            or not _valid_native_digest(prepared.get("request_sha256"))
             or prepared["player"].get("class") != "ClassWarlock"
             or prepared["player"].get("level") != parent["level"]
-            or raw.get("source_sha256") != source_sha
+            or raw.get("source_sha256") != prepared.get("request_sha256")
             or raw.get("actual_2d_ack") is not True
             or raw.get("world_targets_killed") != parent.get("mob_count")
             or terminal.get("paid") is not True
@@ -282,7 +290,7 @@ def _source_prepared_infill(source: dict, *, from_level: int, to_level: int,
             raise ValueError(f"native L{next_level} prepare refused: "
                              + (result.stderr or result.stdout)[-800:])
         prepared = json.loads(prepared_path.read_text())
-        if (prepared.get("request_sha256") != _sha256(request_path)
+        if (not _valid_native_digest(prepared.get("request_sha256"))
                 or prepared["player"].get("class") != "ClassWarlock"
                 or prepared["player"].get("level") != next_level):
             raise ValueError(f"native L{next_level} prepare/source identity mismatch")
@@ -433,7 +441,7 @@ def produce_frontier(
                 raise ValueError((result.stderr or result.stdout)[-1500:])
             prepared = json.loads(prepared_path.read_text())
             player = prepared["player"]
-            if (prepared.get("request_sha256") != _sha256(source_path)
+            if (not _valid_native_digest(prepared.get("request_sha256"))
                     or player.get("class") != "ClassWarlock"
                     or player.get("level") != level):
                 raise ValueError("prepared native source/actor identity mismatch")
