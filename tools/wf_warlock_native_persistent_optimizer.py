@@ -657,6 +657,7 @@ class PersistentNativeEvaluator:
                 continue
             seen.add(identity)
             cid = f"L{level}_api_{len(results):03d}"
+            prepared_ok = False
             try:
                 prepared = self.session.request(
                     {"op": "prepare", "request": source, "actor_level": level})
@@ -666,6 +667,7 @@ class PersistentNativeEvaluator:
                         or not isinstance(prepared.get("request_sha256"), str)
                         or len(prepared["request_sha256"]) != 64):
                     raise ValueError("RUST_NATIVE_PREPARED_ACTOR_INVALID")
+                prepared_ok = True
                 if not apl_expanded:
                     apl_expanded = True
                     # Only prepared-native SpellFlagAPL actions may enter a
@@ -727,7 +729,7 @@ class PersistentNativeEvaluator:
                 results.append({
                     "status": "NATIVE_API_CANDIDATE_REFUSED",
                     "candidate_id": cid, "level": level,
-                    "native_prepared": False,
+                    "native_prepared": prepared_ok,
                     "proposal_axis": proposal_axis,
                     "native_refusal": str(exc)[-1500:],
                 })
