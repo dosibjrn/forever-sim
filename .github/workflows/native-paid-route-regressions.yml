@@ -70,16 +70,6 @@ on:
         required: false
         type: number
         default: 3
-      m05_stride:
-        description: "M0.5 existing generic optimizer sampled-level density (none = historical adjacent paid mode)"
-        required: false
-        type: choice
-        options: [none, '10', '5', '1']
-        default: none
-      m05_cache_run_id:
-        description: "Existing paid-cache run ID; empty reuses the same-stride measured run"
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -250,111 +240,5 @@ jobs:
           path: |
             predecessor-staged/
             cross-tree/
-          if-no-files-found: warn
-          retention-days: 14
-
-  # The M0.5 stride-10, stride-5 and stride-1 native-paid milestones already
-  # succeeded. Keep this one shared production runner for deliberate new
-  # measurements only; opening/reopening an old feature PR must never repay
-  # an accepted density. Pull requests still run the focused tests above.
-  sparse-optimizer-real:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    permissions:
-      contents: read
-      actions: read
-    env:
-      M05_STRIDE: ${{ inputs.m05_stride }}
-      M05_BUDGET: ${{ inputs.m05_stride == '1' && '450' || inputs.m05_stride == '5' && '110' || '60' }}
-    steps:
-      - name: Checkout exact generic optimizer PR
-        uses: actions/checkout@v4
-        with:
-          path: project
-          # v1 original paid receipts name their original Forever commit.
-          # Fetch its Git objects so native-world source identity is verified
-          # before any historical two-mob ACK is reused.
-          fetch-depth: 0
-      - name: Checkout exact recovery-capable source Rust
-        uses: actions/checkout@v4
-        with:
-          repository: dosibjrn/mythicsim-forever-engine
-          ref: dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9
-          path: engine
-      - name: Confirm exact Rust revision
-        run: test "$(git -C engine rev-parse HEAD)" = "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install native-world Python dependencies
-        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Build recovery-capable Rust binary
-        working-directory: engine
-        run: cargo build --locked --bin forever-engine
-      - name: Reuse original paid predecessor receipts only after exact identity and ACK checks
-        uses: actions/download-artifact@v4
-        continue-on-error: true  # Artifact retention expiry must not veto a new native run.
-        with:
-          name: ${{ inputs.m05_cache_run_id && format('requested-m05-optimize-{0}', inputs.m05_cache_run_id) || inputs.m05_stride == '1' && 'requested-m05-optimize-42985475032' || inputs.m05_stride == '5' && 'requested-m05-optimize-42984895024' || 'requested-m05-optimize-42981742152' }}
-          run-id: ${{ inputs.m05_cache_run_id || inputs.m05_stride == '1' && '42985475032' || inputs.m05_stride == '5' && '42984895024' || '42981742152' }}
-          github-token: ${{ github.token }}
-          path: project/runs
-      - name: Resolve old paid-run merge commits for safe source-object cache matching
-        working-directory: project
-        run: |
-          python - <<'PY'
-          import json
-          import re
-          import subprocess
-          from pathlib import Path
-
-          # Old Actions pull_request receipts can record a temporary merge
-          # commit not reachable from normal branch history, even with a full
-          # checkout. Fetch only authentic artifact metadata's exact SHA.
-          commits = set()
-          for path in Path("runs/native-api-paid-cache").glob("*.native.cache.json"):
-              try:
-                  record = json.loads(path.read_text())
-                  rev = record.get("forever_commit")
-                  if (record.get("cache_schema") == 1
-                          and isinstance(rev, str)
-                          and re.fullmatch(r"[0-9a-f]{40}", rev)):
-                      commits.add(rev)
-              except (OSError, ValueError, TypeError):
-                  continue
-          for rev in sorted(commits):
-              present = subprocess.run(
-                  ["git", "cat-file", "-e", rev + "^{commit}"],
-                  capture_output=True, check=False)
-              if present.returncode != 0:
-                  fetched = subprocess.run(
-                      ["git", "fetch", "--quiet", "--no-tags", "origin", rev],
-                      capture_output=True, check=False)
-                  if fetched.returncode != 0:
-                      print("Original source commit unavailable; exact cache "
-                            "verification will refuse reuse:", rev)
-          PY
-      - name: Run actual M0.5 sampled compatible optimizer (Rust ACK and paid dual restoration)
-        working-directory: project
-        env:
-          PYTHONUNBUFFERED: "1"
-        run: |
-          set -euo pipefail
-          case "$M05_STRIDE" in 10|5|1) ;; *) echo "Invalid M0.5 stride" >&2; exit 2;; esac
-          python -m src.v2.runner optimize \
-            --class warlock --tree unconstrained \
-            --start-level 20 --end-level 60 --level-stride "$M05_STRIDE" \
-            --n-mobs 2 --recover-at-end true --rng balanced \
-            --backend rust --budget "$M05_BUDGET" \
-            --native-binary ../engine/target/debug/forever-engine \
-            --source fixtures/warlock-l20-native-paid-30s.request.json \
-            --out "runs/m05-l20-l60-stride${M05_STRIDE}.json"
-      - name: Preserve real source/prepare/ACK/terminal receipts and optimizer result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: requested-m05-optimize-${{ github.run_id }}
-          path: project/runs/
           if-no-files-found: warn
           retention-days: 14
