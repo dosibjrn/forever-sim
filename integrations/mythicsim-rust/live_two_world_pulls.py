@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
+from src.game.runtime.native_step_protocol import snapshot_gsim_world
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from src.game.model import ActorDefinition, ResourceDefinition
 from src.game.runtime import ActorState, CombatRuntime, TargetState
@@ -98,6 +99,36 @@ def _verified_world_elapsed(windows: list[dict], world_kills: list[dict]) -> dic
         "world_elapsed_seconds": elapsed,
         "world_seconds_per_target_without_paid_recovery": elapsed / len(windows),
         "world_per_target_elapsed_seconds_without_paid_recovery": elapsed_per_target_s,
+    }
+
+
+def _verified_joint_overlap_elapsed(windows: list[dict],
+                                    world_kills: list[dict]) -> dict:
+    """One retained native Fight; two independently ACKed 2D kill clocks.
+
+    Source reports one joint window and must not be split into fabricated
+    serial per-target resource windows. World kill deltas are real ACK clocks.
+    """
+    if (len(windows) != 1 or len(world_kills) != 2
+            or windows[0].get("index") != 0):
+        raise AssertionError("RUST_WORLD_OVERLAP_JOINT_WINDOW_INVALID")
+    native_end_ns = windows[0].get("native_kill_ns")
+    first = world_kills[0].get("world_kill_clock_ns")
+    last = world_kills[1].get("world_kill_clock_ns")
+    if (any(type(ns) is not int for ns in (native_end_ns, first, last))
+            or not 0 < first < last <= native_end_ns
+            or world_kills[0].get("target_id") == world_kills[1].get("target_id")
+            or not all(isinstance(k.get("ack_sha256"), str)
+                       and len(k["ack_sha256"]) == 64 for k in world_kills)
+            or world_kills[0]["ack_sha256"] == world_kills[1]["ack_sha256"]):
+        raise AssertionError("RUST_WORLD_OVERLAP_WORLD_KILL_CLOCK_INVALID")
+    return {
+        "world_elapsed_seconds": last / 1e9,
+        "world_seconds_per_target_without_paid_recovery": last / 2e9,
+        "world_per_target_elapsed_seconds_without_paid_recovery":
+            [first / 1e9, (last - first) / 1e9],
+        "native_joint_window_end_ns": native_end_ns,
+        "world_kill_order": [k["target_id"] for k in world_kills],
     }
 
 
@@ -490,6 +521,61 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
+def _paid_joint_overlap_route(kills: list[dict], walks: list[dict],
+                              trace: list, *, switch: dict) -> tuple[list[dict], float]:
+    """Account only executed gsim movement after the source A->B switch.
+
+    Unlike serial travel, the movement does NOT start after A's lethal ACK.
+    The joint fight may kill B before A; the horizon is their last world death.
+    """
+    if len(kills) != 2 or len(walks) != 1 or not isinstance(switch, dict):
+        raise AssertionError("RUST_WORLD_OVERLAP_ROUTE_RECEIPT_COUNT_INVALID")
+    leg = walks[0]
+    start_ns = switch.get("switch_native_clock_ns")
+    final_ns = kills[-1].get("world_kill_clock_ns")
+    start = leg.get("start_s")
+    arrival = leg.get("arrival_s")
+    yards = leg.get("scheduled_yards")
+    steps = leg.get("scheduled_movement_steps")
+    queued_positions = leg.get("scheduled_step_positions")
+    generation = leg.get("movement_generation")
+    if (type(start_ns) is not int or type(final_ns) is not int
+            or not 0 <= start_ns < final_ns
+            or any(type(v) not in (float, int) or not isfinite(v)
+                   for v in (start, arrival, yards))
+            or abs(start - start_ns / 1e9) > 1e-6
+            or arrival < start or yards < 0
+            or type(steps) is not int or steps < 0
+            or not isinstance(queued_positions, list)
+            or len(queued_positions) != steps
+            or (yards > 0 and (type(generation) is not int or steps == 0))
+            or (yards == 0 and (generation is not None or steps != 0
+                                or start != arrival))):
+        raise AssertionError("RUST_WORLD_OVERLAP_ROUTE_SOURCE_CLOCK_INVALID")
+    final_s = final_ns / 1e9
+    executed = [event for event in trace
+                if yards > 0 and event.kind == "SpatialPlayerMoveStep"
+                and event.payload.get("move_generation") == generation
+                and start < event.time_s <= final_s + 1e-9]
+    if (len(executed) > steps
+            or any(tuple(event.payload.get("xy", ())) != tuple(expected)
+                   for event, expected in zip(executed, queued_positions))
+            or any(b.time_s <= a.time_s for a, b in zip(executed, executed[1:]))
+            or (final_s >= arrival and len(executed) != steps)):
+        raise AssertionError("RUST_WORLD_OVERLAP_ROUTE_GSIM_STEPS_INVALID")
+    paid_s = min(final_s - start, arrival - start) if yards > 0 else 0.0
+    return ([{
+        "target_id": leg["target_id"],
+        "source_switch_clock_ns": start_ns,
+        "final_world_kill_clock_ns": final_ns,
+        "actual_paid_world_movement_s": paid_s,
+        "observed_gsim_movement_steps": len(executed),
+        "scheduled_arrival_s": arrival,
+        "arrival_reached_before_kill": final_s >= arrival,
+        "start_reason": "source_acked_live_overlap_switch",
+    }], paid_s)
+
+
 def _native_recovery_cli_args(recovery_policy: str | None,
                               recovery_seconds: int | None,
                               health_threshold: float,
@@ -560,7 +646,9 @@ def _verify_native_recovery_thresholds(result: dict, *,
 
 
 def _verify_native_rolling_world_apl(
-        result: dict, *, requested: dict, kills: list[dict]) -> dict:
+        result: dict, *, requested: dict, kills: list[dict],
+        source_switch: dict, old_target_dot_ticks: int,
+        first_world_id: str, second_world_id: str) -> dict:
     """Require native two-live-target telemetry plus real distinct world ACKs.
 
     The current serial Rust scheduler cannot supply this evidence. An
@@ -571,25 +659,33 @@ def _verify_native_rolling_world_apl(
     overlap = result.get("world_overlap")
     kill_ids = [row["target_id"] for row in kills]
     kill_acks = [row["ack_sha256"] for row in kills]
-    mapping = (overlap.get("native_target_to_world_id")
-               if isinstance(overlap, dict) else None)
+    # Rust #55 currently proves the joint source Fight but does not yet
+    # return applied_world_apl. Keep this exact policy echo mandatory:
+    # an ignored API request cannot become a paid optimizer observation.
     if (applied != requested or not isinstance(overlap, dict)
-            or overlap.get("max_concurrent_alive_targets") != 2
-            or set(overlap.get("simultaneously_alive_world_target_ids", []))
-               != set(kill_ids)
-            or not isinstance(mapping, dict) or len(mapping) != 2
-            or set(mapping.values()) != set(kill_ids)
-            or any(not isinstance(k, str) or not k.isdigit() for k in mapping)
-            or type(overlap.get("old_target_dot_ticks_after_switch_acked"))
-               is not int
-            or overlap["old_target_dot_ticks_after_switch_acked"] < 1
-            or len(kill_ids) != 2 or len(set(kill_ids)) != 2
+            or overlap.get("source_apl_selected_b") is not True
+            or overlap.get("both_world_targets_lethal_ack") is not True
+            or overlap.get("native_world_target_indices") != [0, 1]
+            or overlap.get("world_target_ids") != [first_world_id, second_world_id]
+            or overlap.get("combined_native_fight_window") is not True
+            or source_switch.get("prior_world_target_id") != first_world_id
+            or source_switch.get("to_native_target_index") != 1
+            or type(old_target_dot_ticks) is not int
+            or old_target_dot_ticks < 1
+            or len(kill_ids) != 2 or set(kill_ids) != {first_world_id, second_world_id}
             or len(set(kill_acks)) != 2
-            or any(not isinstance(ack, str) or not ack for ack in kill_acks)):
+            or any(not isinstance(ack, str) or len(ack) != 64 for ack in kill_acks)):
         raise AssertionError(
             "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN:"
-            f" applied={applied!r} overlap={overlap!r} kills={kill_ids!r}")
-    return overlap
+            f" applied={applied!r} overlap={overlap!r}"
+            f" kills={kill_ids!r} old_dot_ticks={old_target_dot_ticks}")
+    return {
+        **overlap,
+        "native_target_to_world_id": {"0": first_world_id, "1": second_world_id},
+        "max_concurrent_alive_targets": 2,
+        "simultaneously_alive_world_target_ids": [first_world_id, second_world_id],
+        "old_target_dot_ticks_after_switch_acked": old_target_dot_ticks,
+    }
 
 
 def accumulate_acked_native_source_effects(
@@ -610,6 +706,79 @@ def accumulate_acked_native_source_effects(
         if isinstance(action_id, str) and action_id and isinstance(caster, str):
             actions = counts.setdefault(caster, {})
             actions[action_id] = actions.get(action_id, 0) + 1
+
+
+def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
+                                 old_id: str, new_id: str, previous_ack: str,
+                                 source_sequence: int, last_clock_ns: int,
+                                 boundary_clock_ns: int) -> dict:
+    """Only Rust's earlier, hash-bound live A health ACK can admit B."""
+    if not isinstance(source, dict):
+        raise AssertionError("RUST_WORLD_OVERLAP_SOURCE_SWITCH_MISSING")
+    old, new = world.targets[old_id], world.targets[new_id]
+    health = source.get("prior_world_target_health")
+    maximum = source.get("prior_world_target_max_health")
+    switch_ns = source.get("switch_native_clock_ns")
+    # Source-ACK refusal keeps the observed 2D identities available for
+    # diagnosing a real nonlethal switch without certifying a fabricated one.
+    enemy_state = snapshot_gsim_world(world)["enemies"]
+    if (type(source.get("from_native_target_index")) is not int
+            or source["from_native_target_index"] != 0
+            or type(source.get("to_native_target_index")) is not int
+            or source["to_native_target_index"] != 1
+            or source.get("prior_world_target_id") != old_id
+            or source.get("prior_world_ack_id") != previous_ack
+            or not isinstance(previous_ack, str) or len(previous_ack) != 64
+            or type(source.get("source_ack_sequence")) is not int
+            or source["source_ack_sequence"] != source_sequence
+            or type(switch_ns) is not int
+            or not last_clock_ns <= switch_ns <= boundary_clock_ns
+            or type(health) not in (int, float)
+            or type(maximum) not in (int, float)
+            or not isfinite(health) or not isfinite(maximum)
+            or maximum <= 0 or health <= 0 or health > maximum
+            or abs(float(health) - float(old.health)) > 1e-6
+            or abs(float(maximum) - float(old.max_health)) > 1e-6
+            or source.get("health_fraction_at_most") != 0.5
+            or health / maximum > 0.5
+            or not old.alive or not new.alive
+            or not enemy_state[old_id]["engaged"]
+            or enemy_state[new_id]["engaged"]):
+        raise AssertionError(
+            "RUST_WORLD_OVERLAP_SOURCE_SWITCH_UNACKED:"
+            f" old_engaged={enemy_state[old_id]['engaged']}"
+            f" new_engaged={enemy_state[new_id]['engaged']}"
+            f" old_alive={old.alive} new_alive={new.alive}"
+            f" source_hp_fraction={health / maximum if type(health) in (int, float) and type(maximum) in (int, float) and maximum else None}"
+            f" world_hp_fraction={old.health / old.max_health}")
+    return dict(source)
+
+
+def _new_source_acked_world_kills(*, world: CombatRuntime,
+                                  before: dict[str, float],
+                                  ack: dict, clock_ns: int,
+                                  overlap: bool) -> list[dict]:
+    """Record actual 2D kills by world identity, not selected target."""
+    rows = ack.get("native_target_health_acks") if overlap else None
+    deaths = []
+    for target_id, previous_hp in before.items():
+        after_hp = float(world.targets[target_id].health)
+        if previous_hp <= 0 or after_hp != 0:
+            continue
+        if overlap:
+            matched = [row for row in (rows if isinstance(rows, list) else [])
+                       if isinstance(row, dict)
+                       and row.get("world_target_id") == target_id
+                       and row.get("world_target_health_before") == previous_hp
+                       and row.get("world_target_health_after") == 0]
+            if len(matched) != 1:
+                raise AssertionError("RUST_TWO_WORLD_KILL_NOT_INDEX_ACKED")
+        elif (ack.get("world_target_health_before") != previous_hp
+              or ack.get("world_target_health_after") != 0):
+            raise AssertionError("RUST_TWO_WORLD_KILL_NOT_ACKED")
+        deaths.append({"target_id": target_id, "world_kill_clock_ns": clock_ns,
+                       "ack_sha256": ack["world_after_sha256"]})
+    return deaths
 
 
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
@@ -697,6 +866,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     last_clock_ns = -1
     kills = []
     walks = []
+    rolling_switch = None
+    old_target_dot_ticks_after_switch = 0
     events = 0
     # Source-action IDs are emitted by the selected Rust combat boundary.
     # Retain only damage events actually applied/ACKed by the 2D world;
@@ -754,17 +925,54 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     continue
                 raise AssertionError(("RUST_TWO_WORLD_UNEXPECTED_OUTPUT", native))
             index = native["iteration_index"]
-            if index != iteration:
-                if index != iteration + 1 or len(kills) != index or index >= target_count:
-                    raise AssertionError("RUST_TWO_WORLD_TARGET_INDEX_SKIP")
-                if world.targets[targets[iteration]].alive:
-                    raise AssertionError("RUST_TWO_WORLD_NEXT_TARGET_BEFORE_LETHAL")
-                iteration = index
-                # Same CombatRuntime, same gsim actor, same feed and applier.
-                world.engage_target(targets[iteration])
-                world.select_target(targets[iteration])
-                applier.begin_next_world_target(targets[iteration])
             clock_ns = native["native_clock_ns"]
+            source_switch = native.get("source_apl_world_switch")
+            if index != iteration:
+                if index != iteration + 1 or index >= target_count:
+                    raise AssertionError("RUST_TWO_WORLD_TARGET_INDEX_SKIP")
+                if world_apl is not None:
+                    if (target_count != 2 or iteration != 0 or index != 1
+                            or rolling_switch is not None or kills):
+                        raise AssertionError("RUST_WORLD_OVERLAP_THIRD_OR_EARLY_SWITCH")
+                    rolling_switch = _source_acked_rolling_switch(
+                        source_switch, world=world, old_id=targets[0],
+                        new_id=targets[1], previous_ack=previous_ack,
+                        source_sequence=ticks, last_clock_ns=last_clock_ns,
+                        boundary_clock_ns=clock_ns)
+                    iteration = index
+                    # The source APL may switch after the prior world tick.
+                    # Charge that elapsed source-clock gap in the real world
+                    # before engaging B or scheduling any movement.
+                    switch_ns = rolling_switch["switch_native_clock_ns"]
+                    if switch_ns % 1_000_000:
+                        raise AssertionError(
+                            "RUST_WORLD_OVERLAP_SOURCE_SWITCH_MS_UNSUPPORTED")
+                    world.advance_to(switch_ns / 1e9)
+                    world.engage_target(targets[iteration])
+                    world.select_target(targets[iteration])
+                    applier.begin_overlapping_world_target(targets[iteration])
+                    # Queue a real, charged gsim walk at the source-ACKed
+                    # switch, while A is still alive (not after A's kill).
+                    walks.append(_queue_world_walk(
+                        world, targets[iteration],
+                        speed_yards_s=route.movement_speed_yards_s,
+                        approach_radius_yards=approach_radius_yards))
+                else:
+                    if len(kills) != index:
+                        raise AssertionError("RUST_TWO_WORLD_TARGET_INDEX_SKIP")
+                    if world.targets[targets[iteration]].alive:
+                        raise AssertionError("RUST_TWO_WORLD_NEXT_TARGET_BEFORE_LETHAL")
+                    if source_switch is not None:
+                        raise AssertionError("RUST_WORLD_UNREQUESTED_SOURCE_OVERLAP")
+                    iteration = index
+                    world.engage_target(targets[iteration])
+                    world.select_target(targets[iteration])
+                    applier.begin_next_world_target(targets[iteration])
+            elif (source_switch is not None
+                  and (rolling_switch is None or source_switch != rolling_switch)):
+                raise AssertionError("RUST_WORLD_UNACKED_OR_MUTATED_SOURCE_SWITCH")
+            elif rolling_switch is not None and source_switch != rolling_switch:
+                raise AssertionError("RUST_WORLD_OVERLAP_SWITCH_ANCESTRY_LOST")
             if (clock_ns <= last_clock_ns or clock_ns % 1_000_000
                     or native["sequence"] != ticks
                     or native["native_request_sha256"] != source_hash
@@ -807,6 +1015,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 if observed_moving:
                     native_moving_ticks += 1
             feed.accept_range_receipt(receipt["native_range_receipt"])
+            before_health = {target_id: float(world.targets[target_id].health)
+                             for target_id in targets}
             ack = applier.apply(tick, receipt)
             ack["iteration_index"] = iteration
             events += len(ack["applied_event_ids"])
@@ -814,28 +1024,37 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 ack["applied_event_ids"] = []
             accumulate_acked_native_source_effects(
                 native_source_damage_effects_by_caster, receipt, ack)
+            if (rolling_switch is not None
+                    and before_health[targets[0]] > world.targets[targets[0]].health):
+                # The old A really lost 2D HP in this ACK. Only then count
+                # source-periodic effects on A; a dead-target overkill event
+                # must never become evidence of a live post-switch DoT tick.
+                applied = set(ack["applied_event_ids"])
+                old_target_dot_ticks_after_switch += sum(
+                    effect.get("native_target_index") == 0
+                    and effect.get("periodic") is True
+                    and effect.get("event_id") in applied
+                    and effect.get("damage", 0) > 0
+                    for effect in ack["applied_events"])
+            newly_dead = _new_source_acked_world_kills(
+                world=world, before=before_health, ack=ack,
+                clock_ns=clock_ns, overlap=rolling_switch is not None)
+            for death in newly_dead:
+                if death["target_id"] in {k["target_id"] for k in kills}:
+                    raise AssertionError("RUST_TWO_WORLD_DUPLICATE_KILL")
+                kills.append(death)
             proc.stdin.write(json.dumps(ack, sort_keys=True, allow_nan=False) + "\n")
             proc.stdin.flush()
             previous_ack = ack["world_after_sha256"]
             last_clock_ns = clock_ns
             ticks += 1
-            if not world.targets[targets[iteration]].alive:
-                if len(kills) != iteration:
-                    raise AssertionError("RUST_TWO_WORLD_DUPLICATE_KILL")
-                if ack["world_target_health_after"] != 0:
-                    raise AssertionError("RUST_TWO_WORLD_KILL_NOT_ACKED")
-                kills.append({"target_id": targets[iteration],
-                              "world_kill_clock_ns": clock_ns,
-                              "ack_sha256": previous_ack})
-                if not corrupt_ack and iteration + 1 < target_count:
-                    # The lethal world ACK has already been transmitted.
-                    # Queue real gsim SpatialPlayerMoveStep events before the
-                    # next source-Rust boundary. Rust sees the ensuing range
-                    # and native actor timeline; no movement is free.
-                    walks.append(_queue_world_walk(
-                        world, targets[iteration + 1],
-                        speed_yards_s=route.movement_speed_yards_s,
-                        approach_radius_yards=approach_radius_yards))
+            if (newly_dead and rolling_switch is None and not corrupt_ack
+                    and iteration + 1 < target_count):
+                # Legacy serial route is still permitted only after lethal.
+                walks.append(_queue_world_walk(
+                    world, targets[iteration + 1],
+                    speed_yards_s=route.movement_speed_yards_s,
+                    approach_radius_yards=approach_radius_yards))
             if corrupt_ack and events:
                 break
         if api_process is None:
@@ -875,29 +1094,47 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 or not result["continuous_native_actor"]
                 or not result["actual_2d_ack"]
                 or type(result.get("paid_recovery")) is not bool
-                or len(result["windows"]) != target_count
+                or len(result["windows"]) != (1 if rolling_switch is not None else target_count)
                 or any(b["native_kill_ns"] <= a["native_kill_ns"]
                        for a, b in zip(result["windows"], result["windows"][1:]))
                 or native_report["checkpoint_certified"]):
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
-        if [k["target_id"] for k in kills] != list(targets):
+        if (len({k["target_id"] for k in kills}) != target_count
+                or set(k["target_id"] for k in kills) != set(targets)
+                or (rolling_switch is None
+                    and [k["target_id"] for k in kills] != list(targets))):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
+        if world_apl is not None and rolling_switch is None:
+            raise AssertionError("RUST_WORLD_ROLLING_SOURCE_SWITCH_NOT_OBSERVED")
+        if rolling_switch is not None and (
+                not isinstance(result.get("world_overlap"), dict)
+                or result["windows"][0].get("index") != 0
+                or result["windows"][0].get("native_kill_ns", 0)
+                   < kills[-1]["world_kill_clock_ns"]):
+            raise AssertionError("RUST_WORLD_OVERLAP_JOINT_WINDOW_NOT_PROVEN")
         native_world_overlap = (
             _verify_native_rolling_world_apl(
-                result, requested=world_apl, kills=kills)
+                result, requested=world_apl, kills=kills,
+                source_switch=rolling_switch,
+                old_target_dot_ticks=old_target_dot_ticks_after_switch,
+                first_world_id=targets[0], second_world_id=targets[1])
             if world_apl is not None else None
         )
         # Rust is the health authority; no invented gsim player damage.
         # A completed native-damage world kill must not hide a dead actor.
-        elapsed = _verified_world_elapsed(result["windows"], kills)
+        native_window_count = 1 if rolling_switch is not None else target_count
+        elapsed = (_verified_joint_overlap_elapsed(result["windows"], kills)
+                   if rolling_switch is not None
+                   else _verified_world_elapsed(result["windows"], kills))
         min_native_health = _native_survival_min_health(
-            result["windows"], target_count)
+            result["windows"], native_window_count)
         native_mana = _native_mana_continuity(
-            result["windows"], target_count)
+            result["windows"], native_window_count)
         food_water = _native_food_water_receipts(
             result["windows"], required=requested_mode == "decisions")
         recovery = _native_paid_recovery_receipts(
-            result["windows"], kills, decisions=requested_mode == "decisions")
+            result["windows"], ([kills[-1]] if rolling_switch is not None else kills),
+            decisions=requested_mode == "decisions")
         if requested_mode == "fixed":
             # The earlier pinned fixed-duration Rust bridge did not yet emit
             # recovery_mode, but it DID echo the exact applied duration.
@@ -924,8 +1161,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             require_zero=require_native_zero_health_damage)
         if require_native_moving and walks and native_moving_ticks == 0:
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
-        route_receipts, paid_world_movement_s = _paid_world_route_receipts(
-            kills, walks, world.trace)
+        route_receipts, paid_world_movement_s = (
+            _paid_joint_overlap_route(
+                kills, walks, world.trace, switch=rolling_switch)
+            if rolling_switch is not None
+            else _paid_world_route_receipts(kills, walks, world.trace))
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
             "world_target_hp": mob_health,
