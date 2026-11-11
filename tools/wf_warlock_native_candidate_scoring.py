@@ -65,7 +65,7 @@ def _exact_paid_cache_identity(binary: Path, *, actor_level: int,
                 or any(len(sha) != 40 or any(ch not in "0123456789abcdef"
                                               for ch in sha) for sha in shas)):
             return None
-        fingerprint = hashlib.sha256(("\\n".join(shas)).encode()).hexdigest()
+        fingerprint = hashlib.sha256(("\n".join(shas)).encode()).hexdigest()
         return {
             "cache_schema": 2,
             "forever_paid_runtime_sha256": fingerprint,

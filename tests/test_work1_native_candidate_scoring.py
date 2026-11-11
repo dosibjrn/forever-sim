@@ -571,16 +571,15 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
     binary = tmp_path / "forever-engine"
     binary.write_bytes(b"native engine A")
     shas = ["a" * 40 for _ in scorer._PAID_RUNTIME_GIT_PATHS]
-    commit = ["1" * 40]
     dirty = [False]
 
     def git(argv, *, cwd, capture_output, text, check, timeout):
         assert argv[0] == "git" and cwd.is_dir()
         if argv[1] == "status":
-            return subprocess.CompletedProcess(argv, 0, " M unrelated-workflow.yml\\n" if dirty[0] else "")
+            return subprocess.CompletedProcess(argv, 0, " M unrelated-workflow.yml\n" if dirty[0] else "")
         assert argv[1] == "rev-parse"
         assert tuple(value.removeprefix("HEAD:") for value in argv[2:]) == scorer._PAID_RUNTIME_GIT_PATHS
-        return subprocess.CompletedProcess(argv, 0, "\\n".join(shas) + "\\n")
+        return subprocess.CompletedProcess(argv, 0, "\n".join(shas) + "\n")
 
     monkeypatch.setattr(scorer.subprocess, "run", git)
     def identity():
@@ -590,7 +589,7 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
     first = identity()
     assert first and first["cache_schema"] == 2
     assert "forever_commit" not in first
-    commit[0] = "2" * 40  # CI/workflow-only HEAD change; runtime object IDs stay same.
+    # A workflow-only commit changes HEAD, not the tracked runtime object IDs.
     assert identity() == first
     shas[-1] = "b" * 40  # Actual paid adapter implementation changed.
     changed = identity()
