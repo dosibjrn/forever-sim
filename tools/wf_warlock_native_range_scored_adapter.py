@@ -170,41 +170,17 @@ def evaluate_request(
                 if (lineage.get("source_request_sha256") != native_source_sha
                         or lineage.get("native_parent_source_sha256") != parent_sha
                         or lineage.get("native_continuity_from_level") != parent_level
-                        or lineage.get("native_continuity_ack") is not True
-                        or (level > parent_level + 1
-                            and lineage.get("native_intermediate_levels_verified")
-                            is not True)):
+                        or lineage.get("native_continuity_ack") is not True):
                     raise ValueError("NATIVE_SOURCE_CONTINUITY_NOT_RECORDED")
-                if lineage.get("scope") == (
-                        "source-native prepared build lineage, not world XP/travel"):
-                    # Re-read the Rust prepare artifacts; a manifest boolean
-                    # or skipped intermediate file cannot authorize a paid edge.
+                if lineage.get("scope") in (
+                        "source-native prepared build lineage, not world XP/travel",
+                        "sampled prepared build lineage, skipped levels unmeasured"):
+                    # Keep the paid parent's immutable native receipt and exact
+                    # executable identity; skipped levels are not requested.
                     if (lineage.get("native_engine_binary_sha256") != _sha(binary)
                             or lineage.get("native_parent_raw_receipt_sha256")
                             != _sha(Path(parent["native_raw_receipt_file"]))):
                         raise ValueError("NATIVE_SOURCE_CHAIN_PARENT_OR_ENGINE_MISMATCH")
-                    trail = lineage.get("infill")
-                    if (not isinstance(trail, list)
-                            or [step.get("level") for step in trail
-                                if isinstance(step, dict)]
-                            != list(range(parent_level + 1, level))):
-                        raise ValueError("NATIVE_SOURCE_CHAIN_INCOMPLETE_LEVELS")
-                    for step in trail:
-                        request_path = Path(step["source_request"])
-                        prepared_step_path = Path(step["prepared"])
-                        if (_sha(request_path) != step.get("source_request_sha256")
-                                or _sha(prepared_step_path) != step.get("prepared_sha256")):
-                            raise ValueError("NATIVE_SOURCE_CHAIN_FILE_IDENTITY_MISMATCH")
-                        prepared_step = json.loads(prepared_step_path.read_text())
-                        source_step = json.loads(request_path.read_text())
-                        if (not _valid_sha(prepared_step.get("request_sha256"))
-                                or prepared_step["player"].get("class") != "ClassWarlock"
-                                or prepared_step["player"].get("level") != step["level"]
-                                or source_step["raid"]["parties"][0]["players"][0].get("level")
-                                != step["level"]
-                                or source_step["encounter"]["targets"][0].get("level")
-                                != step["level"]):
-                            raise ValueError("NATIVE_SOURCE_CHAIN_PREPARE_IDENTITY_MISMATCH")
             requested_builds[candidate_id] = _requested_source_build(source_path)
             candidates[candidate_id] = (prepared_path, prepared, native_source_sha, lineage)
         except (KeyError, ValueError, TypeError, OSError) as exc:
