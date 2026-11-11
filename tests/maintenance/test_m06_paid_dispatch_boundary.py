@@ -35,6 +35,19 @@ def test_original_native_payment_needs_explicit_boolean_dispatch():
     assert "python -m src.v2.runner optimize" in paid_job
 
 
+
+def test_m06_original_dispatch_cannot_also_launch_predecessor_100_mobs():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    m06_job = _job("work2-m06-original-native", text)
+    predecessor_job = _job("cross-tree-native-world", text)
+    assert "inputs.run_m06_original == true" in m06_job
+    assert (
+        "    if: ${{ github.event_name == 'workflow_dispatch' "
+        "&& inputs.predecessor_artifact_id != '' "
+        "&& inputs.run_m06_original != true }}"
+    ) in predecessor_job
+
+
 def test_native_paid_pr_regressions_remain_fast_and_not_paid():
     text = WORKFLOW.read_text(encoding="utf-8")
     fast_job = _job("native-paid-route", text)
