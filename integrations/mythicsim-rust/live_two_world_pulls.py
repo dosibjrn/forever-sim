@@ -689,7 +689,9 @@ def _verify_native_rolling_world_apl(
 
 
 def accumulate_acked_native_source_effects(
-        counts: dict, native_receipt: dict, world_ack: dict) -> None:
+        counts: dict, native_receipt: dict, world_ack: dict,
+        *, observations: list[dict] | None = None,
+        clock_ns: int | None = None) -> None:
     """Forward only Rust damage effects that the 2D world actually ACKed.
 
     This is a transport/accounting observation, not a Warcraft source audit,
@@ -706,6 +708,21 @@ def accumulate_acked_native_source_effects(
         if isinstance(action_id, str) and action_id and isinstance(caster, str):
             actions = counts.setdefault(caster, {})
             actions[action_id] = actions.get(action_id, 0) + 1
+            # A timestamped source damage *effect* is observable at the
+            # 2D ACK boundary; it must never be relabeled as a player cast or
+            # as 2D final HP actually lost (overkill may differ).
+            if observations is not None and type(clock_ns) is int and clock_ns >= 0:
+                damage = effect.get("damage")
+                if type(damage) in (int, float) and isfinite(damage) and damage >= 0:
+                    observations.append({
+                        "clock_ns": clock_ns,
+                        "source_action_id": action_id,
+                        "native_caster_type": caster,
+                        "source_damage": damage,
+                        "periodic": effect.get("periodic") is True,
+                        "native_target_index": effect.get("native_target_index"),
+                        "event_id": effect["event_id"],
+                    })
 
 
 def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
@@ -888,6 +905,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     # Retain only damage events actually applied/ACKed by the 2D world;
     # these are observed effects, NOT an inferred spell-cast count.
     native_source_damage_effects_by_caster = {}
+    native_acked_damage_effect_timeline = []
     ticks = 0
     native_moving_ticks = 0
     native_moving_receipts = 0
@@ -1039,7 +1057,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             if corrupt_ack and events:
                 ack["applied_event_ids"] = []
             accumulate_acked_native_source_effects(
-                native_source_damage_effects_by_caster, receipt, ack)
+                native_source_damage_effects_by_caster, receipt, ack,
+                observations=native_acked_damage_effect_timeline, clock_ns=clock_ns)
             if (rolling_switch is not None
                     and before_health[targets[0]] > world.targets[targets[0]].health):
                 # The old A really lost 2D HP in this ACK. Only then count
@@ -1233,6 +1252,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "native_health_damage": native_health_damage,
             "native_damage_events": events,
             "native_source_damage_effects_by_caster": native_source_damage_effects_by_caster,
+            "native_acked_damage_effect_timeline": native_acked_damage_effect_timeline,
             "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
             "native_moving_receipts": native_moving_receipts,
