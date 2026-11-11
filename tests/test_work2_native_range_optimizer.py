@@ -77,46 +77,6 @@ def test_same_optimizer_accepts_dense_resolution_as_only_arguments():
     assert sampled_levels(20, 59, 10) == (20, 30, 40, 50, 59)
 
 
-
-@pytest.mark.parametrize("mode", ["independent", "continuing", "compatible"])
-def test_single_beam_pays_real_samples_without_inventing_competition(mode):
-    """A one-slot beam is a valid search limit, not a native refusal.
-
-    One authentic sampled path is provisional; it must not be called a
-    performance-ranked competition or a continuously simulated journey.
-    """
-    calls = []
-
-    def evaluator(*, level, parent, mob_count, **kwargs):
-        calls.append((level, parent is not None))
-        row = receipt(level, mob_count, "A", 7.0, parent, recovery=2.0)
-        row["talents"] = "100-0-0"  # source-prepared allocation, opaque to this test
-        return [row]
-
-    result = optimize(20, 40, 20, 2, 2, evaluate=evaluator,
-                      beam_width=1, mode=mode)
-    assert result["status"] == {
-        "independent": "INDEPENDENT_NATIVE_ANCHORS_PARTIAL",
-        "continuing": "SAMPLED_NATIVE_PREFIX_ONLY",
-        "compatible": "SAMPLED_COMPATIBLE_PATH_PROVISIONAL",
-    }[mode]
-    assert result["native_candidates_examined"] == 2
-    assert result["sampled_levels_completed"] == [20, 40]
-    assert result["rejected_native_attempts"] == []
-    assert calls == ([(20, False), (40, True)] if mode == "continuing"
-                     else [(20, False), (40, False)])
-    if mode == "independent":
-        assert result["ranked_alternatives"] == []
-        assert all(len(result["independent_level_rankings"][str(level)]) == 1
-                   for level in (20, 40))
-    else:
-        assert len(result["ranked_alternatives"]) == 1
-        assert result["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 14.0
-        assert all(step["receipt"]["native_full_recovery_paid"] is True
-                   for step in result["ranked_alternatives"][0]["steps"])
-
-
-
 def test_native_paid_full_resource_terminal_time_changes_winner():
     def variants(*, level, parent, mob_count, **kwargs):
         # Fast combat with unpaid debt costs 25 seconds to restore both bars.
@@ -997,16 +957,58 @@ def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
     m05 = workflow.split("  sparse-optimizer-real:\n", 1)[1]
+    assert "github.event.action == 'reopened'" in m05
     assert "github.event.action == 'opened'" in m05
     assert "m05_stride:" in workflow and "m05_cache_run_id:" in workflow
     assert '--start-level 20 --end-level 60 --level-stride "$M05_STRIDE"' in m05
     assert '--n-mobs 2 --recover-at-end true --rng balanced' in m05
-    assert '--backend rust --budget 60' in m05
+    assert '--backend rust --budget "$M05_BUDGET"' in m05
+    assert "inputs.m05_stride == '1' && '450'" in m05
+    assert "inputs.m05_stride == '5' && '110'" in m05
     assert "requested-sparse-optimize-42980239306" in m05
     assert "requested-m05-optimize-{0}" in m05
     assert "inputs.m05_cache_run_id || '42980239306'" in m05
     assert "if: always()" in m05 and "path: project/runs/" in m05
     assert "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9" in m05
+
+
+@pytest.mark.parametrize("mode", ["independent", "continuing", "compatible"])
+def test_single_beam_pays_real_samples_without_inventing_competition(mode):
+    """A one-slot beam is a valid search limit, not a native refusal.
+
+    One authentic sampled path is provisional; it must not be called a
+    performance-ranked competition or a continuously simulated journey.
+    """
+    calls = []
+
+    def evaluator(*, level, parent, mob_count, **kwargs):
+        calls.append((level, parent is not None))
+        row = receipt(level, mob_count, "A", 7.0, parent, recovery=2.0)
+        row["talents"] = "100-0-0"  # source-prepared allocation, opaque to this test
+        return [row]
+
+    result = optimize(20, 40, 20, 2, 2, evaluate=evaluator,
+                      beam_width=1, mode=mode)
+    assert result["status"] == {
+        "independent": "INDEPENDENT_NATIVE_ANCHORS_PARTIAL",
+        "continuing": "SAMPLED_NATIVE_PREFIX_ONLY",
+        "compatible": "SAMPLED_COMPATIBLE_PATH_PROVISIONAL",
+    }[mode]
+    assert result["native_candidates_examined"] == 2
+    assert result["sampled_levels_completed"] == [20, 40]
+    assert result["rejected_native_attempts"] == []
+    assert calls == ([(20, False), (40, True)] if mode == "continuing"
+                     else [(20, False), (40, False)])
+    if mode == "independent":
+        assert result["ranked_alternatives"] == []
+        assert all(len(result["independent_level_rankings"][str(level)]) == 1
+                   for level in (20, 40))
+    else:
+        assert len(result["ranked_alternatives"]) == 1
+        assert result["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 14.0
+        assert all(step["receipt"]["native_full_recovery_paid"] is True
+                   for step in result["ranked_alternatives"][0]["steps"])
+
 
 def test_compatible_optimizer_does_not_require_optional_native_hint_api():
     """A no-hint native scorer must not crash or pay fake backseed searches."""

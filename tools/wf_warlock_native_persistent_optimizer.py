@@ -20,7 +20,7 @@ from tools.wf_warlock_native_source_frontier import (
     _backward_ancestor_variants, _native_apl_variants, _variants,
 )
 from tools.wf_warlock_native_candidate_scoring import (
-    _exact_paid_cache_identity, score_native_chain,
+    _exact_paid_cache_identity, _verified_legacy_paid_cache, score_native_chain,
 )
 
 BRIDGE = Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"
@@ -257,6 +257,33 @@ class PersistentNativeEvaluator:
                         return receipt, elapsed, True, path
             except (ValueError, TypeError, OSError, KeyError):
                 pass
+        # Earlier density runs wrote schema-1 records with a whole-commit
+        # key. A workflow/cache-helper-only change must not repay those mobs:
+        # verify historical source-world Git objects plus the complete native
+        # identity, original raw digest and CURRENT strict recovery scorer.
+        # Never rewrite the historical receipt or metadata.
+        if identity is not None:
+            for legacy_meta in sorted(self.artifact_dir.glob("*.native.cache.json")):
+                if legacy_meta == meta:
+                    continue
+                try:
+                    old_record = json.loads(legacy_meta.read_text())
+                    if not _verified_legacy_paid_cache(old_record, identity):
+                        continue
+                    old_path = legacy_meta.with_name(
+                        legacy_meta.name.removesuffix(".native.cache.json")
+                        + ".native.json")
+                    if _file_digest(old_path) != old_record["native_raw_receipt_sha256"]:
+                        continue
+                    old_receipt = json.loads(old_path.read_text())
+                    old_elapsed, old_verdict = score_native_chain(
+                        old_receipt, prepared, mob_count=mobs,
+                        expected_target_hp=target_hp)
+                    if (old_elapsed is not None
+                            and old_verdict == "MEASURED_NATIVE_FULLY_RECOVERED"):
+                        return old_receipt, old_elapsed, True, old_path
+                except (ValueError, TypeError, OSError, KeyError):
+                    continue
         receipt = self.run_world(
             self.binary, None, target_count=mobs, mob_health=target_hp,
             rng_mode="balanced", recovery_policy="decisions",
