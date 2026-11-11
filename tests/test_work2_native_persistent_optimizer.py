@@ -809,3 +809,52 @@ def test_unadvertised_source_pet_and_item_axes_remain_explicitly_unpaid(
         native.close()
     assert rows
     assert not any(row.get("proposal_axis") in ("gear", "pet") for row in rows)
+
+
+def test_human_readable_top_three_cli_retains_exact_paid_receipts(
+        tmp_path, monkeypatch):
+    from src.v2.native_range_optimizer import main
+    native = make_evaluator(tmp_path, monkeypatch)
+    shortlist = tmp_path / "paid-shortlist.md"
+    result = tmp_path / "native.json"
+    try:
+        status = main([
+            "--class", "warlock", "--tree", "unconstrained",
+            "--start-level", "20", "--end-level", "20",
+            "--level-stride", "1", "--n-mobs", "2",
+            "--recover-at-end", "true", "--rng", "balanced",
+            "--backend", "rust", "--budget", "6",
+            "--shortlist-out", str(shortlist), "--out", str(result),
+        ], evaluate=native)
+    finally:
+        native.close()
+    assert status == 0
+    report = shortlist.read_text()
+    paid = json.loads(result.read_text())
+    assert paid["ranked_alternatives"]
+    assert "## Level 20" in report
+    assert "### #1" in report and "### #2" in report and "### #3" in report
+    assert "Source protobuf SHA256" in report
+    assert "Native paid qualified" in report
+    assert "NoSummon / unspecified" in report
+    assert "NOT a global optimum" in report
+    assert paid["independent_level_rankings"]["20"][0][
+        "receipt"]["source_request_sha256"] in report
+
+
+def test_paid_world_failure_preserves_prepare_phase_and_axis(tmp_path, monkeypatch):
+    def unpaid(*args, **kwargs):
+        result = paid_world(*args, **kwargs)
+        result["native_terminal_recovery"]["mana_after"] = 80.0
+        return result
+    native = make_evaluator(tmp_path, monkeypatch, world=unpaid)
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=2,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert rows and all(row["native_prepared"] is True
+                        and row["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+                        and row["proposal_axis"] == "talent" for row in rows)
+    assert all("NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL" in row["native_refusal"]
+               for row in rows)
