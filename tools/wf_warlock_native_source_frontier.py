@@ -2,10 +2,9 @@
 """Live Rust-owned Warlock proposals for the one-call native range optimizer.
 
 Independent anchor roots retarget the seed to each requested sample level and
-let Rust options/prepare refuse invalid builds. Continuing paths must start
-from an exact paid native parent and obtain source-prepared actors at *every*
-skipped level before more native-paid comparisons. This is source-build
-continuity, not an earned XP/travel or continuous world-leveling receipt.
+let Rust options/prepare refuse invalid builds. Continuing proposals retain the exact paid native parent and prepare at the
+requested sampled level only. Skipped levels are not combat or prepare gates;
+this is not an earned XP/travel or continuous world-leveling receipt.
 """
 from __future__ import annotations
 
@@ -267,41 +266,6 @@ def _paid_parent_source(parent: dict, binary: Path) -> tuple[dict, str]:
     return source, _sha256(raw_path)
 
 
-def _source_prepared_infill(source: dict, *, from_level: int, to_level: int,
-                            binary: Path, folder: Path, runner):
-    """Preserve the build and obtain actual Rust prepare ACKs at every skipped level.
-
-    This proves source-build preparability, not earned XP/world continuity.
-    """
-    trail = []
-    for next_level in range(from_level + 1, to_level):
-        source = copy.deepcopy(source)
-        source["raid"]["parties"][0]["players"][0]["level"] = next_level
-        source["encounter"]["targets"][0]["level"] = next_level
-        request_path = folder / f"infill_L{next_level}.source.json"
-        prepared_path = folder / f"infill_L{next_level}.prepared.json"
-        request_path.write_text(json.dumps(source, sort_keys=True) + "\n")
-        prepared_path.unlink(missing_ok=True)
-        result = runner([str(binary.resolve()), "prepare", "--request",
-                         str(request_path.resolve()), "--actor-level", str(next_level),
-                         "--outfile", str(prepared_path.resolve())],
-                        capture_output=True, text=True, timeout=60, check=False)
-        if result.returncode:
-            raise ValueError(f"native L{next_level} prepare refused: "
-                             + (result.stderr or result.stdout)[-800:])
-        prepared = json.loads(prepared_path.read_text())
-        if (not _valid_native_digest(prepared.get("request_sha256"))
-                or prepared["player"].get("class") != "ClassWarlock"
-                or prepared["player"].get("level") != next_level):
-            raise ValueError(f"native L{next_level} prepare/source identity mismatch")
-        trail.append({"level": next_level,
-                      "source_request": str(request_path.resolve()),
-                      "source_request_sha256": _sha256(request_path),
-                      "prepared": str(prepared_path.resolve()),
-                      "prepared_sha256": _sha256(prepared_path)})
-    return source, trail
-
-
 def produce_frontier(
     request: dict[str, Any], *, binary: Path, seed_source: Path, out: Path,
     runner: Callable[..., Any] = subprocess.run,
@@ -317,7 +281,6 @@ def produce_frontier(
             or not 1 <= request["mob_count"] <= 100):
         raise ValueError("INVALID_NATIVE_FRONTIER_REQUEST")
     parent = request.get("parent")
-    infill = []
     raw_parent_sha = None
     if parent is not None:
         try:
@@ -328,9 +291,8 @@ def produce_frontier(
             seed, raw_parent_sha = _paid_parent_source(parent, binary)
             out = out / parent["source_request_sha256"][:16]
             out.mkdir(parents=True, exist_ok=True)
-            seed, infill = _source_prepared_infill(
-                seed, from_level=parent["level"], to_level=level,
-                binary=binary, folder=out, runner=runner)
+            # Sparse checkpoints are samples: only the requested level is
+            # native-prepared, not each unmeasured skipped level.
             seed = copy.deepcopy(seed)
             seed["raid"]["parties"][0]["players"][0]["level"] = level
             seed["encounter"]["targets"][0]["level"] = level
@@ -468,10 +430,10 @@ def produce_frontier(
                 "native_parent_raw_receipt_sha256": raw_parent_sha,
                 "native_continuity_from_level": parent["level"],
                 "native_continuity_ack": True,
-                "native_intermediate_levels_verified": True,
+                "native_intermediate_levels_verified": False,
                 "native_engine_binary_sha256": _sha256(binary),
-                "scope": "source-native prepared build lineage, not world XP/travel",
-                "infill": infill,
+                "scope": "sampled prepared build lineage, skipped levels unmeasured",
+                "infill": [],
             }, sort_keys=True) + "\n")
             entry["native_continuity_receipt"] = str(lineage_path.resolve())
         entries.append(entry)
@@ -481,7 +443,7 @@ def produce_frontier(
                                      if parent is not None else None),
             "source_root_sha256": (_sha256(seed_source) if parent is None else
                                    parent["source_request_sha256"]),
-            "native_intermediate_prepares": len(infill)}
+            "native_intermediate_prepares": 0}
 
 
 def main() -> int:
