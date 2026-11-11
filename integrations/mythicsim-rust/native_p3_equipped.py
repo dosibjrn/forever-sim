@@ -155,6 +155,35 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         if index < len(entries) and isinstance(entries[index], dict)
         and type(entries[index].get("id")) is int and entries[index]["id"] > 0
     }
+    # The checked-in Rogue L20 source request deliberately starts naked.
+    # A P3 equipped-vs-equipped pair needs a real occupied baseline. Seed
+    # exactly one structural slot using two distinct Rust item-options IDs;
+    # native prepare and both paid executions still accept/refuse the items.
+    # This is not a Python equipment-legality decision or a simulated score.
+    native_source_seed = None
+    if class_key == "rogue" and level == 20 and not occupied_slots:
+        for slot, index in NATIVE_SLOT_POSITIONS:
+            if index >= len(entries):
+                continue
+            source = selection.get(slot)
+            ids = source.get("selected_ids") if isinstance(source, dict) else None
+            if not isinstance(ids, list):
+                continue
+            distinct = list(dict.fromkeys(
+                item_id for item_id in ids
+                if type(item_id) is int and item_id > 0))
+            if len(distinct) < 2:
+                continue
+            reference = copy.deepcopy(reference)
+            entries = _first_player(reference)["equipment"]["items"]
+            entries[index] = {"id": distinct[0]}
+            occupied_slots = {slot}
+            native_source_seed = {
+                "slot": slot, "item_id": distinct[0],
+                "source": "SELECTED_NATIVE_P3_ITEM_OPTIONS",
+                "original_reference_naked": True,
+            }
+            break
     occupied_selection = {
         slot: options for slot, options in selection.items()
         if slot in occupied_slots
@@ -348,6 +377,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                                      if slot not in attempted_slots],
         "native_slot_attempt_cap": max_paid_attempts,
         "source_occupied_slots": source_occupied_slots,
+        "native_source_seed": native_source_seed,
         "actor_requested_level": requested_level,
         "actor_checkpoint_verified": bool(actor_matched and paired),
         "native_prepared_actor": prepared,
