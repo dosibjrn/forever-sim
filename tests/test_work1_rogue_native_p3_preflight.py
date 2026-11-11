@@ -215,3 +215,40 @@ def test_feral_p3_offhand_native_scores_required_and_refusals_not_waived():
     assert rejected["pass_count"] == 1
     assert "P3_NATIVE_SLOT_UNSCORED:offhand:UNSUPPORTED" in rejected["reasons"]
     assert "runtime_proof" not in rejected
+
+
+def test_rogue_l20_native_gate_uses_shipped_source_without_environment_override(monkeypatch):
+    """Source-native scoring is runnable without a caller-supplied request path."""
+    from tools.wf_gate_p3_live import _rogue_l20_native_request
+    import src.game.native_p3_item_options as native_options
+
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", raising=False)
+    fixture = root / "integrations/mythicsim-rust/fixtures/rogue-l20-p3-native.request.json"
+    assert _rogue_l20_native_request(root) == str(fixture)
+    assert fixture.is_file()
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    calls = []
+
+    def probe(root, binary, selection, remaining):
+        calls.append((binary, selection, remaining))
+        return _paid_receipt()
+
+    with (
+        patch.object(native_options, "query_native_p3_item_options",
+                     return_value={"status": "ok", "items": [
+                         {"slot": "one_hand", "item_id": 24071, "item_level": 20}]}),
+        patch("tools.wf_gate_p3_live._paid_native_equipped_probe", side_effect=probe),
+    ):
+        result = run_live(root, "rogue", 20, spec="unrestricted")
+
+    assert calls == [("/selected/native", {"slots": {
+        "weapon": {"selected_ids": [24071]}}}, 44)]
+    assert result["native_equipped_paid_attempts"] == 2
+    assert result["status"] == "PASS"
+
+
+def test_rogue_l20_explicit_native_request_override_is_preserved(monkeypatch):
+    from tools.wf_gate_p3_live import _rogue_l20_native_request
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/existing-rogue.json")
+    assert _rogue_l20_native_request(Path(".")) == "/tmp/existing-rogue.json"
