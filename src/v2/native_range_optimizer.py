@@ -709,6 +709,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     ap.add_argument("--target-hp", type=float,
                     help="Optional fixed enemy HP override; default uses the "
                          "ordinary-mob scenario HP at each sampled level")
+    ap.add_argument("--probe-native-continuity", action="store_true",
+                    help="Probe one fresh paid native first-world and same-session "
+                         "XP/level transition; never reuse sampled-world cache")
     ap.add_argument("--out", type=Path, help="Optional machine-readable result path")
     ap.add_argument("--guide-out", type=Path,
                     help="Optional player-facing guide for native-paid sampled decisions")
@@ -721,11 +724,21 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if args.backend != "rust" or args.rng != "balanced" or args.iterations != 1:
         ap.error("the current native adapter supports rust/balanced/one iteration")
     output = args.out or Path("runs") / (
-        f"optimize_{cls}_L{args.start_level}-{args.end_level}"
-        f"_stride{args.level_stride}_mobs{args.n_mobs}.json"
+        (f"native_continuity_{cls}_L{args.start_level}-{args.end_level}"
+         f"_mobs{args.n_mobs}.json")
+        if args.probe_native_continuity else
+        (f"optimize_{cls}_L{args.start_level}-{args.end_level}"
+         f"_stride{args.level_stride}_mobs{args.n_mobs}.json")
     )
     if args.guide_out and args.guide_out.resolve() == output.resolve():
         ap.error("--guide-out must differ from --out")
+    if args.probe_native_continuity:
+        if args.end_level != args.start_level + 1:
+            ap.error("--probe-native-continuity needs exactly one level transition")
+        if args.guide_out:
+            ap.error("a retained-actor probe cannot publish a sampled build guide")
+        if args.n_mobs < 2:
+            ap.error("native world bridge requires at least two hostile targets")
     if evaluate is None:
         if not args.native_binary.is_file() or not args.source.is_file():
             ap.error("native engine and initial source request must exist")
@@ -737,25 +750,42 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
             target_hp=args.target_hp,
         )
         try:
+            if args.probe_native_continuity:
+                result = native.probe_native_level_transition(
+                    from_level=args.start_level, to_level=args.end_level,
+                    mob_count=args.n_mobs, candidate_budget=args.budget)
+            else:
+                result = optimize(
+                    args.start_level, args.end_level, args.level_stride,
+                    args.n_mobs, args.budget, evaluate=native,
+                    beam_width=args.beam_width, rng_mode=args.rng,
+                    iterations=args.iterations, mode="compatible",
+                    class_name=cls, talent_tree=args.tree, backend=args.backend,
+                )
+        finally:
+            native.close()
+    else:
+        if args.probe_native_continuity:
+            if not callable(getattr(evaluate, "probe_native_level_transition", None)):
+                raise ValueError("NATIVE_CONTINUITY_PROBE_NEEDS_SESSION_EVALUATOR")
+            result = evaluate.probe_native_level_transition(
+                from_level=args.start_level, to_level=args.end_level,
+                mob_count=args.n_mobs, candidate_budget=args.budget)
+        else:
             result = optimize(
                 args.start_level, args.end_level, args.level_stride,
-                args.n_mobs, args.budget, evaluate=native,
+                args.n_mobs, args.budget, evaluate=evaluate,
                 beam_width=args.beam_width, rng_mode=args.rng,
                 iterations=args.iterations, mode="compatible",
                 class_name=cls, talent_tree=args.tree, backend=args.backend,
             )
-        finally:
-            native.close()
-    else:
-        result = optimize(
-            args.start_level, args.end_level, args.level_stride,
-            args.n_mobs, args.budget, evaluate=evaluate,
-            beam_width=args.beam_width, rng_mode=args.rng,
-            iterations=args.iterations, mode="compatible",
-            class_name=cls, talent_tree=args.tree, backend=args.backend,
-        )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    if args.probe_native_continuity:
+        print(f"Native same-session L{args.start_level}->L{args.end_level} "
+              f"continuity: {result['status']}; "
+              f"continuous_leveling_proven={result['continuous_leveling_proven']}")
+        return 0 if result["status"] == "NATIVE_RETAINED_LEVEL_ADVANCED" else 2
     if args.guide_out and result["ranked_alternatives"]:
         args.guide_out.parent.mkdir(parents=True, exist_ok=True)
         args.guide_out.write_text(render_sampled_build_guide(result))
