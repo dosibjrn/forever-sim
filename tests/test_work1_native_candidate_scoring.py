@@ -564,19 +564,30 @@ def test_cross_frontier_shared_paid_cache_reuses_exact_ack_only(tmp_path, monkey
 
 
 def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path, monkeypatch):
-    """Same paid source may be reused; a changed source, binary or dirty tree may not."""
+    """Non-runtime edits reuse receipts; native changes and dirty sources never do."""
     import subprocess
     from tools import wf_warlock_native_candidate_scoring as scorer
 
     binary = tmp_path / "forever-engine"
     binary.write_bytes(b"native engine A")
     shas = ["a" * 40 for _ in scorer._PAID_RUNTIME_GIT_PATHS]
-    dirty = [False]
+    dirty = ["clean"]
 
     def git(argv, *, cwd, capture_output, text, check, timeout):
         assert argv[0] == "git" and cwd.is_dir()
         if argv[1] == "status":
-            return subprocess.CompletedProcess(argv, 0, " M unrelated-workflow.yml\n" if dirty[0] else "")
+            # Unrelated working-tree changes are outside the same paths used
+            # to fingerprint the paid runtime. Changed/untracked runtime
+            # files are unsafe even if HEAD's Git object IDs still match.
+            assert argv[2:5] == ["--porcelain", "--untracked-files=all", "--"]
+            assert tuple(argv[5:]) == scorer._PAID_RUNTIME_GIT_PATHS
+            rows = {
+                "clean": "",
+                "unrelated-workflow": "",
+                "runtime-modified": " M tools/wf_warlock_native_candidate_scoring.py\n",
+                "runtime-untracked": "?? src/game/untracked_runtime.py\n",
+            }
+            return subprocess.CompletedProcess(argv, 0, rows[dirty[0]])
         assert argv[1] == "rev-parse"
         assert tuple(value.removeprefix("HEAD:") for value in argv[2:]) == scorer._PAID_RUNTIME_GIT_PATHS
         return subprocess.CompletedProcess(argv, 0, "\n".join(shas) + "\n")
@@ -591,6 +602,9 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
     assert "forever_commit" not in first
     # A workflow-only commit changes HEAD, not the tracked runtime object IDs.
     assert identity() == first
+    dirty[0] = "unrelated-workflow"
+    assert identity() == first
+    dirty[0] = "clean"
     shas[-1] = "b" * 40  # Actual paid adapter implementation changed.
     changed = identity()
     assert changed != first
@@ -598,5 +612,8 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
     shas[-1] = "a" * 40
     binary.write_bytes(b"native engine B")
     assert identity()["native_binary_sha256"] != first["native_binary_sha256"]
-    dirty[0] = True
+    binary.write_bytes(b"native engine A")
+    dirty[0] = "runtime-modified"
+    assert identity() is None
+    dirty[0] = "runtime-untracked"
     assert identity() is None
