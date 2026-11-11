@@ -127,6 +127,73 @@ def test_one_session_scores_all_three_samples_with_actual_paid_clock_contract(
     assert native.session.closed
 
 
+def test_exact_paid_cache_identity_is_session_scoped_and_level_specific(
+        tmp_path, monkeypatch):
+    """One binary/Git identity read serves every paid candidate and level.
+
+    Exact prepared source + scenario fields still have separate cache keys,
+    and a second clean session can reuse those paid receipts without a new
+    native world execution. No combat or source legality is mocked as PASS.
+    """
+    FakeSession.instances.clear()
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"exact pinned native test binary")
+    fixture = Path("fixtures/warlock-l20-native-paid-30s.request.json")
+    paid_dir = tmp_path / "paid"
+    calls = []
+
+    def identity(path, *, actor_level, mob_count, target_hp):
+        calls.append((actor_level, mob_count, target_hp))
+        return {
+            "cache_schema": 1, "forever_commit": "f" * 40,
+            "native_binary_sha256": api._file_digest(path),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced",
+            "iterations": 1, "recovery_policy": "decisions",
+        }
+
+    monkeypatch.setattr(api, "_exact_paid_cache_identity", identity)
+
+    def sampled(native, level):
+        return native(level=level, parent=None, mob_count=2, budget=2,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+
+    first = api.PersistentNativeEvaluator(
+        binary, fixture, paid_dir, session_factory=FakeSession,
+        run_world=paid_world)
+    try:
+        paid20 = sampled(first, 20)
+        paid40 = sampled(first, 40)
+    finally:
+        first.close()
+    assert len(calls) == 1
+    assert calls[0] == (20, 2, float(api.representative_hp(20)))
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+               and row["reused_exact_native_paid_receipt"] is False
+               for row in paid20 + paid40)
+    stored = [json.loads(path.read_text())
+              for path in paid_dir.glob("*.native.cache.json")]
+    assert len(stored) == len(paid20) + len(paid40)
+    assert {meta["actor_level"] for meta in stored} == {20, 40}
+    assert {meta["target_hp"] for meta in stored} == {
+        float(api.representative_hp(20)), float(api.representative_hp(40))}
+    assert {meta["native_binary_sha256"] for meta in stored} == {
+        api._file_digest(binary)}
+
+    second = api.PersistentNativeEvaluator(
+        binary, fixture, paid_dir, session_factory=FakeSession,
+        run_world=lambda *a, **k: pytest.fail("matching paid cache must reuse original"))
+    try:
+        replay20 = sampled(second, 20)
+        replay40 = sampled(second, 40)
+    finally:
+        second.close()
+    assert len(calls) == 2  # one clean identity acquisition per session
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+               and row["reused_exact_native_paid_receipt"] is True
+               for row in replay20 + replay40)
+
+
 def test_unpaid_terminal_resources_refused_and_never_ranked(tmp_path, monkeypatch):
     def unpaid(*args, **kwargs):
         receipt = paid_world(*args, **kwargs)

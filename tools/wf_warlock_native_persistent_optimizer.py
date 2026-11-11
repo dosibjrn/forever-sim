@@ -183,6 +183,12 @@ class PersistentNativeEvaluator:
             from live_two_world_pulls import run as run_world
         self.run_world = run_world
         self.engine_sha = _file_digest(binary)
+        # The binary and checkout are fixed for this native API session.
+        # Initialize the expensive Git/binary cache identity at the *first
+        # paid proposal*, not from a source fixture (which can omit level).
+        # A session with only native prepare refusals pays no cache setup.
+        self._paid_cache_identity_seed: dict | None = None
+        self._paid_cache_identity_initialized = False
         self.options: dict[int, dict] = {}
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -218,8 +224,19 @@ class PersistentNativeEvaluator:
         # raw-JSON SHA wrongly equated to Rust's protobuf request digest.
         prepared_digest = _digest(json.dumps(
             prepared, sort_keys=True, separators=(",", ":")).encode())
-        identity = _exact_paid_cache_identity(
-            self.binary, actor_level=level, mob_count=mobs, target_hp=target_hp)
+        if not self._paid_cache_identity_initialized:
+            # The helper hashes the pinned binary and checks the clean Git
+            # checkout only once; target-specific fields are overwritten for
+            # every later native receipt. A dirty tree never gains cache reuse.
+            self._paid_cache_identity_seed = _exact_paid_cache_identity(
+                self.binary, actor_level=level, mob_count=mobs,
+                target_hp=float(target_hp))
+            self._paid_cache_identity_initialized = True
+        identity = (
+            dict(self._paid_cache_identity_seed, actor_level=level,
+                 mob_count=mobs, target_hp=float(target_hp))
+            if self._paid_cache_identity_seed is not None else None
+        )
         if identity is not None:
             identity = dict(identity, source_sha256=native_sha,
                             prepared_sha256=prepared_digest)
