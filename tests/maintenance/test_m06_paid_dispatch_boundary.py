@@ -44,7 +44,7 @@ def test_m06_original_dispatch_cannot_also_launch_predecessor_100_mobs():
     assert (
         "    if: ${{ github.event_name == 'workflow_dispatch' "
         "&& inputs.predecessor_artifact_id != '' "
-        "&& inputs.run_m06_original != true }}\\n"
+        "&& inputs.run_m06_original != true }}"
     ) in predecessor_job
 
 
