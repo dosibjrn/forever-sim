@@ -32,6 +32,10 @@ def test_selected_native_world_job_reaches_executable_checks_without_source_grep
     # not by this expensive selected-Rust/2D world job. Editing archived
     # evidence must not compile Rust or re-pay unrelated world scenarios.
     assert "docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json" not in trigger
+    # P4/P5 gate-helper and legacy Warlock 100-mob edits do not enter this
+    # selected-Rust/2D smoke; both have separate focused workflow coverage.
+    assert "tools/wf_gate_p4_p5_partial.py" not in trigger
+    assert "tools/wf_warlock_l20_100mob.py" not in trigger
     assert "- 'integrations/mythicsim-rust/engine'" in trigger
     # The downstream scenario checks still exercise native + 2D behavior.
     assert "native_source_control(binary, request, 5, rng_mode=mode)" in text
