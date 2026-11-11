@@ -154,3 +154,81 @@ def test_indexless_or_wrong_world_lethal_cannot_be_recorded():
     with pytest.raises(AssertionError, match="KILL_NOT_INDEX_ACKED"):
         new_kills(world=world, before=before, ack=forged,
                   clock_ns=500_000_000, overlap=True)
+
+
+def test_joint_world_kill_clocks_use_one_native_fight_not_two_serial_windows():
+    measure = _bridge["_verified_joint_overlap_elapsed"]
+    kills = [
+        {"target_id": "m0", "world_kill_clock_ns": 2_000_000_000,
+         "ack_sha256": "a" * 64},
+        {"target_id": "m1", "world_kill_clock_ns": 3_000_000_000,
+         "ack_sha256": "b" * 64},
+    ]
+    actual = measure([{"index": 0, "native_kill_ns": 3_000_000_000}], kills)
+    assert actual["world_elapsed_seconds"] == 3
+    assert actual["world_per_target_elapsed_seconds_without_paid_recovery"] == [2, 1]
+    assert actual["world_kill_order"] == ["m0", "m1"]
+    with pytest.raises(AssertionError, match="JOINT_WINDOW_INVALID"):
+        measure([{"index": 0, "native_kill_ns": 3_000_000_000},
+                 {"index": 1, "native_kill_ns": 4_000_000_000}], kills)
+    with pytest.raises(AssertionError, match="KILL_CLOCK_INVALID"):
+        measure([{"index": 0, "native_kill_ns": 3_000_000_000}],
+                [kills[0], {**kills[1], "ack_sha256": "a" * 64}])
+    with pytest.raises(AssertionError, match="KILL_CLOCK_INVALID"):
+        measure([{"index": 0, "native_kill_ns": 2_500_000_000}], kills)
+
+
+def test_joint_route_is_charged_from_source_switch_not_first_world_death():
+    world = two_live_world()
+    world.advance_to(0.1)
+    walk = _bridge["_queue_world_walk"](
+        world, "m0", speed_yards_s=7., approach_radius_yards=12.)
+    assert walk["scheduled_yards"] > 0
+    assert walk["start_s"] == pytest.approx(0.1)
+    final_s = walk["arrival_s"] + 0.2
+    world.advance_to(final_s)
+    final_ns = round(final_s * 1_000_000_000)
+    kills = [
+        {"target_id": "m0", "world_kill_clock_ns": 1_000_000_000},
+        {"target_id": "m1", "world_kill_clock_ns": final_ns},
+    ]
+    receipts, paid_s = _bridge["_paid_joint_overlap_route"](
+        kills, [walk], world.trace,
+        switch={"switch_native_clock_ns": 100_000_000})
+    assert paid_s == pytest.approx(walk["arrival_s"] - 0.1)
+    assert receipts[0]["observed_gsim_movement_steps"] == walk[
+        "scheduled_movement_steps"]
+    assert receipts[0]["start_reason"] == "source_acked_live_overlap_switch"
+    with pytest.raises(AssertionError, match="SOURCE_CLOCK_INVALID"):
+        _bridge["_paid_joint_overlap_route"](
+            kills, [walk], world.trace,
+            switch={"switch_native_clock_ns": 200_000_000})
+
+
+def test_joint_source_apl_policy_does_not_pass_without_native_applied_echo():
+    verify = _bridge["_verify_native_rolling_world_apl"]
+    policy = {
+        "pull_mode": "rolling", "switch_trigger": {
+            "type": "current_target_hp_fraction_at_most", "fraction": 0.5},
+        "max_live_targets": 2,
+    }
+    overlap = {
+        "source_apl_selected_b": True,
+        "both_world_targets_lethal_ack": True,
+        "native_world_target_indices": [0, 1],
+        "world_target_ids": ["m1", "m0"],
+        "combined_native_fight_window": True,
+    }
+    kills = [{"target_id": "m0", "ack_sha256": "b" * 64},
+             {"target_id": "m1", "ack_sha256": "c" * 64}]
+    source = {"prior_world_target_id": "m1", "to_native_target_index": 1}
+    args = dict(requested=policy, kills=kills, source_switch=source,
+                old_target_dot_ticks=2, first_world_id="m1",
+                second_world_id="m0")
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        verify({"world_overlap": overlap}, **args)
+    assert verify({"world_overlap": overlap, "applied_world_apl": policy},
+                  **args)["old_target_dot_ticks_after_switch_acked"] == 2
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        verify({"world_overlap": overlap, "applied_world_apl": policy},
+               **{**args, "old_target_dot_ticks": 0})
