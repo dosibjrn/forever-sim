@@ -659,6 +659,7 @@ def _optimize_compatible_samples(
     # A scorer must explicitly support source+policy exclusion; without it a
     # second call could only spend budget replaying its bootstrap proposals.
     adaptive_levels: list[int] = []
+    adaptive_decisions: list[dict[str, Any]] = []
     adaptive_attempts = 0
     if adaptive_capable and ranked and measured["native_candidates_examined"] < budget:
         # A single bounded pass guarantees that a repeatedly refused level
@@ -685,7 +686,16 @@ def _optimize_compatible_samples(
                     ) / rows[0]["native_elapsed_seconds"])
                 else:
                     gap = 0.0
-                return (-int(len(finalists) > 1), gap, len(rows), level)
+                # A narrow time gap is useful only once genuine build
+                # alternatives exist. Prefer levels where native-paid
+                # talent/gear/APL/pet dimensions still have one observed
+                # value; Rust options/prepare remains the source of choices.
+                breadth = _retained_native_paid_axis_breadth(measured, level)
+                missing_axes = sum(
+                    count < 2 for count in breadth[1].values()
+                ) if breadth is not None else 4
+                return (-missing_axes, -int(len(finalists) > 1),
+                        gap, len(rows), level)
 
             level = min(pending, key=decision_priority)
             pending.remove(level)
@@ -694,6 +704,16 @@ def _optimize_compatible_samples(
                 continue
             available = budget - measured["native_candidates_examined"]
             allowance = max(1, available // (len(pending) + 1))
+            breadth_before = _retained_native_paid_axis_breadth(
+                measured, level)
+            adaptive_decisions.append({
+                "level": level,
+                "native_attempt_allowance": allowance,
+                "uncompared_paid_axes_before": (
+                    [axis for axis, count in breadth_before[1].items()
+                     if count < 2] if breadth_before is not None
+                    else ["talents", "gear", "apl", "pet"]),
+            })
             excluded = {
                 (row["source_request_sha256"],
                  json.dumps(row.get("native_world_policy"), sort_keys=True))
@@ -781,6 +801,7 @@ def _optimize_compatible_samples(
         "backward_seeded_levels": seeded_levels,
         "adaptive_native_attempts": adaptive_attempts,
         "adaptive_selected_levels": adaptive_levels,
+        "adaptive_decisions": adaptive_decisions,
         "adaptive_native_candidates_measured": sum(
             len(measured["independent_level_rankings"].get(str(level), []))
             for level in levels

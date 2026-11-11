@@ -105,3 +105,28 @@ def test_backseed_keeps_separately_paid_world_policy_for_same_source():
     assert len({json.dumps(row["native_world_policy"], sort_keys=True)
                 for row in same_source}) == 2
     assert report["native_candidates_examined"] <= 24
+
+
+def test_adaptive_pays_undercompared_talent_level_before_tight_apl_margin():
+    """Prefer untested native build axes; do not invent their performance."""
+    choices = {
+        20: [paid(20, 2, "5-0-0", 5.0, variant="l20-gear1"),
+             paid(20, 2, "5-0-0", 9.0, variant="l20-gear2")],
+        40: [paid(40, 2, "55-0-0", 5.0, variant="l40-family1"),
+             paid(40, 2, "54-0-0", 5.01, variant="l40-family2")],
+    }
+
+    def native(*, level, parent, budget, mob_count, rng_mode, iterations,
+               recover_to_full, candidate_hints=None,
+               excluded_paid_source_policies=None, **kwargs):
+        if excluded_paid_source_policies is not None:
+            return []  # No fictional paid winner: native offers no more.
+        return choices[level][:budget]
+
+    report = optimize(20, 40, 20, 2, 10, evaluate=native,
+                      mode="compatible", beam_width=2)
+    assert report["sampled_levels_compatible"] == [20, 40]
+    assert report["adaptive_selected_levels"] == [20, 40]
+    assert report["adaptive_native_attempts"] == 0
+    assert report["native_candidates_examined"] == 4
+    assert report["status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
