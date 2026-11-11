@@ -124,6 +124,15 @@ def _source_item_alternatives(source: dict, options: dict):
             yield single
 
 
+class NativeApiRefusal(ValueError):
+    """Keep the Rust refusal code structured across the NDJSON transport."""
+
+    def __init__(self, error):
+        self.code = error.get("code") if isinstance(error, dict) else None
+        self.reason = error.get("reason") if isinstance(error, dict) else str(error)
+        super().__init__("RUST_NATIVE_API_REFUSAL:" + str(error)[-1200:])
+
+
 class NativeApiSession:
     """One pinned binary and one ordered NDJSON stream for all sampled levels."""
 
@@ -145,7 +154,7 @@ class NativeApiSession:
             raise RuntimeError("RUST_NATIVE_API_NO_RESPONSE")
         response = json.loads(line)
         if response.get("ok") is not True:
-            raise ValueError("RUST_NATIVE_API_REFUSAL:" + str(response.get("error"))[-1200:])
+            raise NativeApiRefusal(response.get("error"))
         if not isinstance(response.get("result"), dict):
             raise ValueError("RUST_NATIVE_API_RESULT_INVALID")
         return response["result"]
@@ -189,10 +198,6 @@ class PersistentNativeEvaluator:
         # A session with only native prepare refusals pays no cache setup.
         self._paid_cache_identity_seed: dict | None = None
         self._paid_cache_identity_initialized = False
-        # Reuse identical paid worlds within this immutable native API session
-        # even when a dirty/unavailable Git checkout disables disk cache reuse.
-        # Never persist this unverified identity across sessions.
-        self._session_paid: dict[tuple, tuple[dict, float, Path, str]] = {}
         self.options: dict[int, dict] = {}
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -222,35 +227,12 @@ class PersistentNativeEvaluator:
         return source
 
     def _paid(self, source: dict, prepared: dict, *, level: int, mobs: int,
-              target_hp: float, cid: str) -> tuple[dict, float, bool, Path]:
+              target_hp: float, cid: str, fresh_world: bool = False) -> tuple[dict, float, bool, Path]:
         native_sha = prepared["request_sha256"]
         # Cache includes the exact source-produced prepared actor, not a
         # raw-JSON SHA wrongly equated to Rust's protobuf request digest.
         prepared_digest = _digest(json.dumps(
             prepared, sort_keys=True, separators=(",", ":")).encode())
-        # The native source/actor and paid world configuration must match
-        # exactly. A fresh actor is prepared for every independent sample;
-        # this memo never substitutes for a retained-state/XP transition.
-        session_key = (native_sha, prepared_digest, level, mobs, float(target_hp))
-        previous = self._session_paid.get(session_key)
-        if previous is not None:
-            old_receipt, old_elapsed, old_path, old_digest = previous
-            try:
-                if (_file_digest(old_path) == old_digest
-                        and score_native_chain(
-                            old_receipt, prepared, mob_count=mobs,
-                            expected_target_hp=target_hp
-                        ) == (old_elapsed, "MEASURED_NATIVE_FULLY_RECOVERED")):
-                    return old_receipt, old_elapsed, True, old_path
-            except (ValueError, TypeError, OSError, KeyError):
-                pass
-            self._session_paid.pop(session_key, None)
-
-        def retain(receipt: dict, elapsed: float, reused: bool, path: Path):
-            self._session_paid[session_key] = (
-                receipt, elapsed, path, _file_digest(path))
-            return receipt, elapsed, reused, path
-
         if not self._paid_cache_identity_initialized:
             # The helper hashes the pinned binary and checks the clean Git
             # checkout only once; target-specific fields are overwritten for
@@ -273,7 +255,7 @@ class PersistentNativeEvaluator:
         path = self.artifact_dir / (key + ".native.json")
         meta = self.artifact_dir / (key + ".native.cache.json")
         cached = False
-        if identity is not None and path.is_file() and meta.is_file():
+        if not fresh_world and identity is not None and path.is_file() and meta.is_file():
             try:
                 record = json.loads(meta.read_text())
                 if record == dict(identity, native_raw_receipt_sha256=_file_digest(path)):
@@ -281,7 +263,7 @@ class PersistentNativeEvaluator:
                     elapsed, verdict = score_native_chain(
                         receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
                     if elapsed is not None and verdict == "MEASURED_NATIVE_FULLY_RECOVERED":
-                        return retain(receipt, elapsed, True, path)
+                        return receipt, elapsed, True, path
             except (ValueError, TypeError, OSError, KeyError):
                 pass
         # Earlier density runs wrote schema-1 records with a whole-commit
@@ -289,7 +271,7 @@ class PersistentNativeEvaluator:
         # verify historical source-world Git objects plus the complete native
         # identity, original raw digest and CURRENT strict recovery scorer.
         # Never rewrite the historical receipt or metadata.
-        if identity is not None:
+        if not fresh_world and identity is not None:
             for legacy_meta in sorted(self.artifact_dir.glob("*.native.cache.json")):
                 if legacy_meta == meta:
                     continue
@@ -308,7 +290,7 @@ class PersistentNativeEvaluator:
                         expected_target_hp=target_hp)
                     if (old_elapsed is not None
                             and old_verdict == "MEASURED_NATIVE_FULLY_RECOVERED"):
-                        return retain(old_receipt, old_elapsed, True, old_path)
+                        return old_receipt, old_elapsed, True, old_path
                 except (ValueError, TypeError, OSError, KeyError):
                     continue
         receipt = self.run_world(
@@ -346,12 +328,14 @@ class PersistentNativeEvaluator:
                 except FileExistsError:
                     suffix += 1
             path = other
-        return retain(receipt, elapsed, cached, path)
+        return receipt, elapsed, cached, path
 
     def __call__(self, *, level: int, parent: dict | None, mob_count: int,
                  budget: int, rng_mode: str, iterations: int,
                  recover_to_full: bool, search_mode: str = "independent",
-                 candidate_hints: list | None = None) -> list[dict]:
+                 candidate_hints: list | None = None,
+                 fresh_paid_world: bool = False,
+                 stop_after_first_paid: bool = False) -> list[dict]:
         if (parent is not None or search_mode != "independent"
                 or rng_mode != "balanced" or iterations != 1
                 or recover_to_full is not True or not 2 <= mob_count <= 100):
@@ -441,7 +425,8 @@ class PersistentNativeEvaluator:
                         _native_apl_variants(source, prepared), 2))
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
-                    target_hp=target_hp, cid=cid)
+                    target_hp=target_hp, cid=cid,
+                    fresh_world=fresh_paid_world)
                 terminal = receipt["native_terminal_recovery"]
                 actor = source["raid"]["parties"][0]["players"][0]
                 cls_options = actor.get("warlock", {}).get(
@@ -473,6 +458,8 @@ class PersistentNativeEvaluator:
                     "native_raw_receipt_sha256": _file_digest(raw_path),
                     "reused_exact_native_paid_receipt": cached,
                 })
+                if stop_after_first_paid:
+                    break
             except (KeyError, ValueError, TypeError, RuntimeError, AssertionError,
                     OSError, subprocess.SubprocessError) as exc:
                 results.append({
@@ -482,3 +469,87 @@ class PersistentNativeEvaluator:
                     "native_refusal": str(exc)[-1500:],
                 })
         return results
+
+
+    def probe_native_level_transition(self, *, from_level: int, to_level: int,
+                                      mob_count: int = 2,
+                                      candidate_budget: int = 6) -> dict:
+        """One NEW paid world, then native state/advance on the SAME Rust process.
+
+        Source-prepared next-level snapshots are never counted as earned XP.
+        Historic paid sample caches cannot establish a retained actor; bypass
+        them only for this distinct M0.6 continuity probe.
+        """
+        if (type(from_level) is not int or type(to_level) is not int
+                or to_level != from_level + 1 or not 20 <= from_level < 60
+                or type(mob_count) is not int or not 2 <= mob_count <= 100
+                or type(candidate_budget) is not int or candidate_budget < 1):
+            raise ValueError("NATIVE_CONTINUITY_PROBE_ARGUMENTS_INVALID")
+        base = {
+            "from_level": from_level, "to_level": to_level,
+            "mob_count": mob_count, "kind": "retained_actor_native_probe",
+            "continuous_leveling_proven": False,
+            "historical_sample_used_as_continuity": False,
+        }
+        # Stop immediately at the first genuinely paid candidate: later
+        # prepare operations would erase Rust's last_paid_world observation.
+        rows = self(
+            level=from_level, parent=None, mob_count=mob_count,
+            budget=candidate_budget, rng_mode="balanced", iterations=1,
+            recover_to_full=True, fresh_paid_world=True,
+            stop_after_first_paid=True,
+        )
+        paid = next((row for row in rows
+                     if row.get("status") == "MEASURED_NATIVE_FULLY_RECOVERED"), None)
+        if paid is None:
+            return dict(base, status="NATIVE_FIRST_WORLD_UNAVAILABLE",
+                        candidate_attempts=rows)
+        if paid.get("reused_exact_native_paid_receipt") is not False:
+            raise AssertionError("NATIVE_CONTINUITY_PROBE_REUSED_CACHED_WORLD")
+        base["paid_first_world"] = paid
+        base["candidate_attempts"] = len(rows)
+        try:
+            state = self.session.request({"op": "state"})
+        except (ValueError, RuntimeError) as error:
+            return dict(base, status="NATIVE_STATE_UNAVAILABLE",
+                        native_refusal=str(error))
+        base["native_state_after_world"] = state
+        world = state.get("last_paid_world")
+        if (state.get("actor_level") != from_level
+                or state.get("source_sha256") != paid["source_request_sha256"]
+                or not isinstance(world, dict)
+                or world.get("source_sha256") != paid["source_request_sha256"]
+                or world.get("actor_level") != from_level
+                or world.get("world_targets_killed") != mob_count):
+            return dict(base, status="NATIVE_PAID_STATE_NOT_RETAINED",
+                        native_refusal="same-session paid world identity/ACK missing")
+        try:
+            advanced = self.session.request({
+                "op": "advance", "from_level": from_level,
+                "to_level": to_level,
+            })
+        except (ValueError, RuntimeError) as error:
+            return dict(base, status="NATIVE_LEVEL_TRANSITION_UNSUPPORTED",
+                        native_advance_refusal_code=getattr(error, "code", None),
+                        native_refusal=str(error))
+        # An 'ok' on an advance response is not proof of an earned level.
+        # Confirm native post-transition state, with actual XP and retained
+        # combat runtime, rather than independently preparing L21.
+        try:
+            next_state = self.session.request({"op": "state"})
+        except (ValueError, RuntimeError) as error:
+            return dict(base, status="NATIVE_ADVANCE_UNVERIFIED",
+                        native_advance_response=advanced,
+                        native_refusal=str(error))
+        base["native_advance_response"] = advanced
+        base["native_state_after_advance"] = next_state
+        xp = next_state.get("xp_earned")
+        if (next_state.get("actor_level") == to_level
+                and next_state.get("retained_combat_runtime") is True
+                and next_state.get("retained_xp") is True
+                and next_state.get("level_transition_supported") is True
+                and type(xp) in (int, float) and xp > 0):
+            return dict(base, status="NATIVE_RETAINED_LEVEL_ADVANCED",
+                        continuous_leveling_proven=True)
+        return dict(base, status="NATIVE_ADVANCE_UNVERIFIED",
+                    native_refusal="native XP/retained-runtime progression not proved")
