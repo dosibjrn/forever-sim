@@ -489,3 +489,75 @@ def test_native_timeout_refuses_only_one_candidate(tmp_path):
     assert result["candidates"][0]["status"] == "NATIVE_REFUSAL"
     assert result["candidates"][1]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
     assert result["candidates"][1]["elapsed_seconds"] == 20.0
+
+
+def test_cross_frontier_shared_paid_cache_reuses_exact_ack_only(tmp_path, monkeypatch):
+    """New output directories do not force duplicate native kills."""
+    import tools.wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "rust-engine"
+    binary.write_bytes(b"native-recovery-v1")
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    cache = tmp_path / "shared-cache"
+    calls = []
+
+    def identity(executable, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 1, "forever_commit": "f" * 40,
+            "native_binary_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+
+    def paid_native(executable, source, **kwargs):
+        calls.append((executable.read_bytes(), source.read_bytes(),
+                      kwargs["target_count"], kwargs["mob_health"]))
+        result = _receipt(json.loads(source.read_text())["request_sha256"])
+        result["world_target_hp"] = kwargs["mob_health"]
+        return result
+
+    def evaluate(label, source=prepared, target_hp=1200.0):
+        return compare_prepared_candidates(
+            binary=binary, prepared_paths={"proposal": source},
+            actor_level=30, mob_count=3, target_hp=target_hp,
+            run_native=paid_native, artifact_dir=tmp_path / label,
+            paid_cache_dir=cache)["candidates"][0]
+
+    first = evaluate("frontier-1")
+    assert len(calls) == 1
+    assert first["reused_exact_native_paid_receipt"] is False
+    original = Path(first["native_raw_receipt_file"])
+    assert original.parent == cache
+    assert first["elapsed_seconds"] == 20.0
+
+    again = evaluate("frontier-2")
+    assert len(calls) == 1
+    assert again["reused_exact_native_paid_receipt"] is True
+    assert again["native_raw_receipt_file"] == str(original)
+    assert again["native_raw_receipt_sha256"] == hashlib.sha256(
+        original.read_bytes()).hexdigest()
+    assert not list((tmp_path / "frontier-2").glob("*.native.json"))
+
+    # A tampered original is not evidence; pay again without overwriting it.
+    original.write_text(original.read_text().replace(
+        '"world_target_hp": 1200.0', '"world_target_hp": 999.0'))
+    tampered = evaluate("frontier-3")
+    assert len(calls) == 2
+    assert tampered["reused_exact_native_paid_receipt"] is False
+    assert Path(tampered["native_raw_receipt_file"]).parent == tmp_path / "frontier-3"
+
+    binary.write_bytes(b"native-recovery-v2")
+    assert evaluate("frontier-4")["reused_exact_native_paid_receipt"] is False
+    assert len(calls) == 3
+    alternate = tmp_path / "alternate.json"
+    alternate.write_text(json.dumps(_prepared("b" * 64)))
+    assert evaluate("frontier-5", alternate)["reused_exact_native_paid_receipt"] is False
+    assert len(calls) == 4
+    assert evaluate("frontier-6", alternate, 1400.)[
+        "reused_exact_native_paid_receipt"] is False
+    assert len(calls) == 5

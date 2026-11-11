@@ -612,7 +612,9 @@ def test_one_call_cli_directly_runs_work1_native_scorer_manifest_adapter(tmp_pat
     calls = []
 
     def checked_adapter(request, *, manifest, binary, target_hp,
-                        scorer_command, artifact_dir):
+                        scorer_command, artifact_dir, paid_cache_dir):
+        assert paid_cache_dir == tmp_path / "raw-receipts" / "paid-cache"
+        assert paid_cache_dir.is_dir()
         calls.append((request["level"], request["parent"],
                       request["mob_count"], target_hp, scorer_command))
         parent = request["parent"]
@@ -772,7 +774,7 @@ def test_scored_adapter_keeps_single_native_successor_for_a_competing_parent(tmp
     assert observed[0][2] == {
         "target_count": 3, "mob_health": 400.0, "rng_mode": "balanced",
         "recovery_policy": "decisions", "health_threshold": 1.0,
-        "mana_threshold": 1.0,
+        "mana_threshold": 1.0, "require_native_health_damage": False,
     }
     assert len(rows) == 1
     row = rows[0]
@@ -812,3 +814,107 @@ def test_single_native_successor_never_gets_free_terminal_recovery(tmp_path):
     assert len(rows) == 1
     assert rows[0]["native_prepared"] is False
     assert "INCOMPLETE_NATIVE_WORLD" in rows[0]["status"]
+
+def test_live_scored_adapter_reuses_paid_ack_across_fresh_call_dirs(tmp_path, monkeypatch):
+    """The real adapter consumes Work1's stable cache, not a temp-dir label."""
+    import hashlib
+    import json
+    import subprocess
+    from pathlib import Path
+
+    import tools.wf_warlock_native_candidate_scoring as scorer
+    from tools.wf_warlock_native_range_scored_adapter import evaluate_request
+
+    binary = tmp_path / "native-engine"
+    binary.write_bytes(b"selected-rust-v1")
+    manifest = _prepared_manifest(tmp_path)
+    cache = tmp_path / "paid-cache"
+    native_kills = []
+
+    def identity(executable, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 1, "forever_commit": "f" * 40,
+            "native_binary_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+
+    def native(executable, source, **kwargs):
+        native_kills.append((source.name, kwargs["target_count"]))
+        source_sha = json.loads(source.read_text())["request_sha256"]
+        return {
+            "source_sha256": source_sha,
+            "world_target_hp": kwargs["mob_health"],
+            "world_targets_killed": kwargs["target_count"],
+            "continuous_native_actor": True,
+            "actual_2d_ack": True,
+            "paid_recovery": True,
+            "native_recovery_clock_accounted": True,
+            "native_recovery_mode": "decisions_food_water",
+            "native_health_damage": {
+                "observed": True, "damage_taken": 20., "damage_events": 3},
+            "native_windows": [
+                {"index": i, "native_kill_ns": (i + 1) * 1_000_000_000,
+                 "actor_health": 80.} for i in range(3)],
+            "native_actor_mana_after_world_kills": [120.] * 3,
+            "world_elapsed_seconds": 3.,
+            "native_terminal_recovery": {
+                "paid": True, "native_clock_accounted": True,
+                "start_clock_ns": 3_000_000_000,
+                "end_clock_ns": 5_000_000_000,
+                "health_before": 80., "mana_before": 120.,
+                "health_after": 100., "mana_after": 200.,
+                "max_health": 100., "max_mana": 200.,
+            },
+        }
+
+    def run_scorer(cmd, **kwargs):
+        assert "--paid-cache-dir" in cmd
+        prepared = dict(arg.split("=", 1) for i, token in enumerate(cmd[:-1])
+                        if token == "--prepared" for arg in [cmd[i + 1]])
+        screen = scorer.compare_prepared_candidates(
+            binary=binary, prepared_paths={
+                cid: Path(filename) for cid, filename in prepared.items()},
+            actor_level=int(cmd[cmd.index("--level") + 1]),
+            mob_count=int(cmd[cmd.index("--mob-count") + 1]),
+            target_hp=float(cmd[cmd.index("--target-hp") + 1]),
+            run_native=native,
+            artifact_dir=Path(cmd[cmd.index("--out") + 1]),
+            paid_cache_dir=Path(cmd[cmd.index("--paid-cache-dir") + 1]))
+        return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(screen),
+                                           stderr="")
+
+    request = {
+        "level": 20, "parent": None, "budget": 2, "mob_count": 3,
+        "rng_mode": "balanced", "iterations": 1, "recover_to_full": True,
+    }
+
+    def evaluate():
+        return evaluate_request(
+            request, manifest=manifest, binary=binary, target_hp=400.,
+            scorer_command=["native-scorer"], artifact_dir=tmp_path / "invocations",
+            paid_cache_dir=cache, run_command=run_scorer)
+
+    first = evaluate()
+    assert len(native_kills) == 2
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED" for row in first)
+    assert all(not row["reused_exact_native_paid_receipt"] for row in first)
+    original_files = [row["native_raw_receipt_file"] for row in first]
+    assert all(Path(file).parent == cache for file in original_files)
+
+    second = evaluate()
+    assert len(native_kills) == 2  # zero new paid hostile chains
+    assert all(row["reused_exact_native_paid_receipt"] for row in second)
+    assert [row["native_raw_receipt_file"] for row in second] == original_files
+    assert all(row["terminal_hp"] == row["terminal_max_hp"]
+               and row["terminal_mana"] == row["terminal_max_mana"]
+               and row["elapsed_seconds"] == 5. for row in second)
+
+    binary.write_bytes(b"selected-rust-v2")
+    changed = evaluate()
+    assert len(native_kills) == 4
+    assert all(not row["reused_exact_native_paid_receipt"] for row in changed)

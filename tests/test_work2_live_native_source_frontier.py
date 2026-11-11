@@ -269,7 +269,9 @@ def test_live_frontier_is_called_in_same_range_optimizer_request(tmp_path, monke
             }]}
         return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(payload))
 
-    def scorer(request, *, manifest, binary, target_hp, scorer_command, artifact_dir):
+    def scorer(request, *, manifest, binary, target_hp, scorer_command,
+               artifact_dir, paid_cache_dir):
+        assert paid_cache_dir == tmp_path / "retained" / "paid-cache"
         payload = json.loads(manifest.read_text())
         assert artifact_dir.is_dir() and binary.is_file()
         assert scorer_command == ["work1-scorer"]

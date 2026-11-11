@@ -49,7 +49,7 @@ def native_command_evaluator(command: list[str], *, timeout_s: float = 300):
 def live_native_frontier_evaluator(
     command: list[str], *, binary: Path, target_hp: float | None,
     scorer_command: list[str], artifact_dir: Path,
-    run_command=None,
+    paid_cache_dir: Path | None = None, run_command=None,
 ):
     """Ask a live native source producer for the next competing frontier.
 
@@ -104,6 +104,7 @@ def live_native_frontier_evaluator(
             target_hp=(representative_hp(request["level"])
                        if target_hp is None else target_hp),
             scorer_command=scorer_command, artifact_dir=folder,
+            paid_cache_dir=paid_cache_dir,
         )
 
     return evaluate
@@ -141,6 +142,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Work1 native prepared-candidate scorer CLI")
     parser.add_argument("--native-receipts-dir", type=Path,
                         help="Directory retaining original native scorer raw receipts")
+    parser.add_argument("--native-paid-cache-dir", type=Path,
+                        help="Stable native paid cache (default: receipts-dir/paid-cache)")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     if (args.native_prepared_manifest is not None
@@ -149,12 +152,16 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("native manifest requires --native-binary "
                          "and --native-receipts-dir")
         args.native_receipts_dir.mkdir(parents=True, exist_ok=True)
+        paid_cache_dir = (args.native_paid_cache_dir
+                          or args.native_receipts_dir / "paid-cache")
+        paid_cache_dir.mkdir(parents=True, exist_ok=True)
         if args.native_frontier_command is not None:
             native_evaluator = live_native_frontier_evaluator(
                 shlex.split(args.native_frontier_command),
                 binary=args.native_binary, target_hp=args.native_target_hp,
                 scorer_command=shlex.split(args.native_scorer_command),
                 artifact_dir=args.native_receipts_dir,
+                paid_cache_dir=paid_cache_dir,
             )
         else:
             from tools.wf_warlock_native_range_scored_adapter import evaluate_request
@@ -167,6 +174,7 @@ def main(argv: list[str] | None = None) -> int:
                                else args.native_target_hp),
                     scorer_command=shlex.split(args.native_scorer_command),
                     artifact_dir=args.native_receipts_dir,
+                    paid_cache_dir=paid_cache_dir,
                 )
     else:
         native_evaluator = native_command_evaluator(

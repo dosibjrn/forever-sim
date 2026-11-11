@@ -66,6 +66,7 @@ def _requested_source_build(source_path: Path) -> dict:
 def evaluate_request(
     request: dict, *, manifest: Path, binary: Path, target_hp: float,
     scorer_command: list[str], artifact_dir: Path,
+    paid_cache_dir: Path | None = None,
     run_command: Callable[..., Any] = subprocess.run,
     run_native_single: Callable[..., Any] | None = None,
 ) -> list[dict]:
@@ -227,41 +228,24 @@ def evaluate_request(
     import tempfile
     call_dir = Path(tempfile.mkdtemp(prefix=f"level-{level}-native-", dir=artifact_dir))
     if len(candidates) == 1:
-        # A legal continuation often has one successor PER parent. Two or
-        # more source-distinct parent frontiers can still compete globally.
-        # Reuse Work1's native runner and exact paid clock scorer rather than
-        # discarding such a path or fabricating a second candidate.
-        from tools.wf_warlock_native_candidate_scoring import score_native_chain
-        if run_native_single is None:
-            sys.path.insert(0, str(Path(__file__).resolve().parents[1] /
-                                   "integrations/mythicsim-rust"))
-            from live_two_world_pulls import run as run_native_single
-        cid, (path, prepared, src, _) = next(iter(candidates.items()))
-        try:
-            raw = run_native_single(
-                binary, path, target_count=mobs, mob_health=target_hp,
-                rng_mode="balanced", recovery_policy="decisions",
-                health_threshold=1.0, mana_threshold=1.0,
-            )
-            (call_dir / f"{cid}.native.json").write_text(
-                json.dumps(raw, indent=2, allow_nan=False) + "\n")
-            elapsed, status = score_native_chain(
-                raw, prepared, mob_count=mobs, expected_target_hp=target_hp)
-            measured = {cid: {
-                "candidate_id": cid, "prepared_sha256": _sha(path),
-                "source_sha256": src, "mob_count": mobs,
-                "rng_mode": "balanced", "iterations": 1,
-                "status": status, "elapsed_seconds": elapsed,
-            }}
-        except (RuntimeError, AssertionError, ValueError, OSError) as exc:
-            measured = {cid: {"status": "NATIVE_REFUSAL",
-                              "refusal": str(exc)[-1500:]}}
+        # A single source-prepared independent anchor still pays native
+        # combat, but must share the same exact ACK cache as multi-candidate
+        # frontiers. No second, uncached native runner for this case.
+        from tools.wf_warlock_native_candidate_scoring import compare_prepared_candidates
+        cid, (path, _, _, _) = next(iter(candidates.items()))
+        screen = compare_prepared_candidates(
+            binary=binary, prepared_paths={cid: path}, actor_level=level,
+            mob_count=mobs, target_hp=target_hp, run_native=run_native_single,
+            artifact_dir=call_dir, paid_cache_dir=paid_cache_dir)
+        measured = {row["candidate_id"]: row for row in screen["candidates"]}
     else:
         command = [*scorer_command, "--binary", str(binary),
                    "--level", str(level), "--mob-count", str(mobs),
                    "--target-hp", str(target_hp), "--out", str(call_dir)]
         for cid, (path, _, _, _) in candidates.items():
             command.extend(["--prepared", f"{cid}={path}"])
+        if paid_cache_dir is not None:
+            command.extend(["--paid-cache-dir", str(paid_cache_dir)])
         try:
             completed = run_command(command, capture_output=True, text=True,
                                     timeout=1800, check=False)
@@ -391,6 +375,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--target-hp", type=float, required=True)
     parser.add_argument("--artifact-dir", type=Path, required=True)
+    parser.add_argument("--paid-cache-dir", type=Path,
+                        help="Shared exact-input cache for repeat frontier calls")
     parser.add_argument("--scorer-command", required=True,
                         help="Work1's tools/wf_warlock_native_candidate_scoring.py command")
     args = parser.parse_args(argv)
@@ -398,7 +384,8 @@ def main(argv: list[str] | None = None) -> int:
     req = json.load(sys.stdin)
     result = evaluate_request(
         req, manifest=args.manifest, binary=args.binary, target_hp=args.target_hp,
-        scorer_command=shlex.split(args.scorer_command), artifact_dir=args.artifact_dir)
+        scorer_command=shlex.split(args.scorer_command), artifact_dir=args.artifact_dir,
+        paid_cache_dir=args.paid_cache_dir)
     print(json.dumps(result, sort_keys=True, allow_nan=False))
     return 0
 
