@@ -377,9 +377,11 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # additions never become equipped P3 evidence or paid combat attempts.
     native_source_additional_seeds = []
     native_source_unseeded_slots = list(native_source_failed_slots)
+    rejected_seed_slots = {row["slot"] for row in native_source_failed_slots}
     if native_source_seed is not None:
         for extra_slot, extra_index in NATIVE_SLOT_POSITIONS:
-            if extra_slot in occupied_slots or extra_index >= len(entries):
+            if (extra_slot in occupied_slots or extra_slot in rejected_seed_slots
+                    or extra_index >= len(entries)):
                 continue
             source = selection.get(extra_slot)
             ids = source.get("selected_ids") if isinstance(source, dict) else None
