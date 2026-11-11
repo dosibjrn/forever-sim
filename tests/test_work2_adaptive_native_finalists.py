@@ -231,7 +231,7 @@ def test_backward_seed_excludes_previously_paid_source_policy():
 
     def native(*, level, parent, budget, mob_count, rng_mode, iterations,
                recover_to_full, candidate_hints=None,
-               excluded_paid_source_policies=None):
+               excluded_paid_source_policies=None, **kwargs):
         assert parent is None and mob_count == 2
         assert rng_mode == "balanced" and iterations == 1
         assert recover_to_full is True
