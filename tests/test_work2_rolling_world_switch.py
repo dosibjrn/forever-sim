@@ -313,12 +313,18 @@ def test_joint_source_apl_policy_does_not_pass_without_native_applied_echo():
              {"target_id": "m1", "ack_sha256": "c" * 64}]
     source = {"prior_world_target_id": "m1", "to_native_target_index": 1}
     args = dict(requested=policy, kills=kills, source_switch=source,
-                old_target_dot_ticks=2, first_world_id="m1",
+                old_target_dot_ticks=2, first_b_hit_while_a_live=True,
+                first_world_id="m1",
                 second_world_id="m0")
     with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
         verify({"world_overlap": overlap}, **args)
-    assert verify({"world_overlap": overlap, "applied_world_apl": policy},
-                  **args)["old_target_dot_ticks_after_switch_acked"] == 2
+    proven = verify({"world_overlap": overlap, "applied_world_apl": policy},
+                    **args)
+    assert proven["old_target_dot_ticks_after_switch_acked"] == 2
+    assert proven["first_b_source_hit_while_old_a_alive"] is True
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        verify({"world_overlap": overlap, "applied_world_apl": policy},
+               **{**args, "first_b_hit_while_a_live": False})
     with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
         verify({"world_overlap": overlap, "applied_world_apl": policy},
                **{**args, "old_target_dot_ticks": 0})
@@ -395,3 +401,24 @@ def test_unacked_selected_dead_world_is_not_range_credential():
         feed.next_tick(native_world_applier=applier)
     with pytest.raises(GoWorldRangeError, match="WORLD_NATIVE_ACK_SOURCE_MISMATCH"):
         feed.next_tick(native_world_applier=GsimNativeDamageWorldApplier(two_live_world()))
+
+
+def test_b_first_hit_requires_native_ack_and_old_a_survival():
+    check = _bridge["_acked_first_b_hit_with_live_a"]
+    world = two_live_world()
+    world.engage_target("m0")
+    world.select_target("m0")
+    before = {t: world.targets[t].health for t in ("m1", "m0")}
+    world.targets["m0"].apply_damage(10)
+    ack = {"applied_event_ids": ["native-b-hit"], "applied_events": [
+        {"event_id": "native-b-hit", "native_target_index": 1,
+         "damage": 10.0}]}
+    kwargs = dict(before=before, world=world, ack=ack,
+                  old_id="m1", new_id="m0")
+    assert check(**kwargs)
+    assert not check(**{**kwargs, "ack": {**ack, "applied_event_ids": []}})
+    assert not check(**{**kwargs, "ack": {**ack, "applied_events": [
+        {**ack["applied_events"][0], "native_target_index": 0}]}})
+    # If A dies during the same 2D ACK batch, do not infer hit ordering.
+    world.targets["m1"].apply_damage(before["m1"])
+    assert not check(**kwargs)

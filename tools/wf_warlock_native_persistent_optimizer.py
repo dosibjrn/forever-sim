@@ -483,6 +483,7 @@ def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> b
             or overlap.get("max_concurrent_alive_targets") != 2
             or type(overlap.get("old_target_dot_ticks_after_switch_acked")) is not int
             or overlap["old_target_dot_ticks_after_switch_acked"] < 1
+            or overlap.get("first_b_source_hit_while_old_a_alive") is not True
             or not isinstance(kills, list) or len(kills) != 2
             or any(not isinstance(kill, dict) for kill in kills)):
         return False
