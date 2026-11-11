@@ -30,7 +30,7 @@ def paid_row(threshold, elapsed, *, source="a" * 64, pet="Succubus"):
         "elapsed_seconds": elapsed, "terminal_recovery_seconds": 4.0,
         "talents": "111-000-000", "pet": pet,
         "gear": [{"id": 10}], "apl": {"priorityList": ["corruption"]},
-        "native_world_policy": policy,
+        "native_world_policy": policy, "native_world_target_hp": 100.0,
         "proposal_axis": "world_rest_30pct" if threshold == 0.3 else "talent",
         "native_raw_receipt_file": f"runs/rest-{threshold}.native.json",
         "native_raw_receipt_sha256": ("c" if threshold == 1.0 else "d") * 64,
@@ -296,6 +296,8 @@ def test_rolling_paid_overlap_rejects_unjoined_native_and_world_target_ids():
          if k != "native_target_to_world_id"},
         dict(overlap, native_target_to_world_id={"0": "m1", "1": "m1"}),
         dict(overlap, native_target_to_world_id={"zero": "m1", "1": "m0"}),
+        dict(overlap, native_target_to_world_id={"2": "m1", "3": "m0"}),
+        dict(overlap, native_target_to_world_id={"00": "m1", "01": "m0"}),
         dict(overlap, simultaneously_alive_world_target_ids=["m1", "m1"]),
         dict(overlap, simultaneously_alive_world_target_ids=["m1", "other"]),
     ):
@@ -322,6 +324,56 @@ def test_rolling_paid_cache_rejects_missing_native_world_join():
     assert not _native_rolling_receipt_verified(
         broken, ROLLING_WORLD_APL_50)
     assert not _native_rolling_receipt_verified(
+        dict(source, native_world_overlap=dict(
+            source["native_world_overlap"],
+            native_target_to_world_id={"2": "m1", "3": "m0"})),
+        ROLLING_WORLD_APL_50)
+    assert not _native_rolling_receipt_verified(
         dict(source, world_kills=[{"target_id": {}, "ack_sha256": "first"},
                                   {"target_id": "m0", "ack_sha256": "second"}]),
         ROLLING_WORLD_APL_50)
+
+
+def test_rolling_comparison_requires_same_paid_world_scenario_and_distinct_receipts():
+    """Same native build with changed mob HP or recycled raw bytes is not a pair."""
+    baseline = paid_row(1.0, 45)
+    for changed_field, changed_value in (
+        ("native_world_target_hp", 150.0),
+        ("native_world_target_hp", None),
+        ("native_raw_receipt_sha256", "c" * 64),
+        ("native_raw_receipt_sha256", "not-a-sha"),
+    ):
+        challenger = rolling_paid_row(elapsed=12)
+        challenger[changed_field] = changed_value
+        comparison = measured_world_rolling_head_to_head(
+            result_for([baseline, challenger]), level=20)
+        assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+        assert comparison["winner"] is None
+    matched = measured_world_rolling_head_to_head(
+        result_for([baseline, rolling_paid_row()]), level=20)
+    assert matched["status"] == "MEASURED_NATIVE_ROLLING_WORLD_APL_HEAD_TO_HEAD"
+    assert matched["baseline"]["native_world_target_hp"] == 100.0
+    assert matched["rolling"]["native_world_target_hp"] == 100.0
+
+
+def test_serial_paid_cache_rejects_native_applied_rolling_world_apl():
+    """Never charge a rolling native result as the untouched serial control."""
+    from tools.wf_warlock_native_persistent_optimizer import (
+        ROLLING_WORLD_APL_50, _native_rolling_receipt_verified,
+    )
+    assert _native_rolling_receipt_verified({}, None)
+    assert not _native_rolling_receipt_verified(
+        {"native_world_apl": ROLLING_WORLD_APL_50}, None)
+    assert not _native_rolling_receipt_verified(
+        {"native_world_overlap_verified": True}, None)
+
+
+def test_serial_comparison_rejects_native_overlap_even_without_verified_flag():
+    """A receipt containing unclaimed native overlap cannot be a serial control."""
+    baseline = paid_row(1.0, 45)
+    baseline["native_world_overlap"] = {"max_concurrent_alive_targets": 1}
+    comparison = measured_world_rolling_head_to_head(
+        result_for([baseline, rolling_paid_row()]), level=20)
+    assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+    assert comparison["serial_paid_candidates"] == 0
+    assert comparison["winner"] is None

@@ -106,8 +106,9 @@ def _receipt_error(
                        for value in live_ids)
                 or set(live_ids) != set(target_ids)
                 or not isinstance(mapping, Mapping) or len(mapping) != 2
-                or any(not isinstance(index, str) or not index.isdigit()
-                       for index in mapping)
+                # Only the two requested native 0/1 slots can be bound to
+                # the two living gsim targets, not arbitrary numeric keys.
+                or set(mapping) != {"0", "1"}
                 or any(not isinstance(value, str) or not value
                        for value in mapping.values())
                 or set(mapping.values()) != set(target_ids)):
@@ -249,6 +250,7 @@ def measured_world_rolling_head_to_head(
                 ) is not None
                 or not _sha(paid.get("native_raw_receipt_sha256"))
                 or not paid.get("native_raw_receipt_file")
+                or not _positive_number(paid.get("native_world_target_hp"))
                 or row.get("native_elapsed_seconds") != paid.get("elapsed_seconds")
                 or row.get("terminal_recovery_seconds")
                    != paid.get("terminal_recovery_seconds")
@@ -265,7 +267,10 @@ def measured_world_rolling_head_to_head(
             and policy.get("terminal_full_hp_and_mana") is True
         )
         mode = policy.get("pull_mode")
-        if mode == "serial" and rest_matched and "world_apl" not in policy:
+        if (mode == "serial" and rest_matched and "world_apl" not in policy
+                and paid.get("native_world_apl") is None
+                and paid.get("native_world_overlap_verified") is not True
+                and paid.get("native_world_overlap") is None):
             accepted["serial"].append(row)
         elif (mode == "rolling" and rest_matched
                 and policy.get("world_apl") == {
@@ -289,7 +294,16 @@ def measured_world_rolling_head_to_head(
     pairs = [(serial, rolling)
              for serial in accepted["serial"]
              for rolling in accepted["rolling"]
-             if build_key(serial) == build_key(rolling)]
+             if (build_key(serial) == build_key(rolling)
+                 # Prepared actor identity alone cannot establish the same
+                 # hostile HP: world target HP is supplied outside Rust
+                 # prepare by the paid 2D scenario.
+                 and serial["receipt"]["native_world_target_hp"]
+                     == rolling["receipt"]["native_world_target_hp"]
+                 # One raw native run cannot be reused/relabelled as both
+                 # independently executed policies.
+                 and serial["receipt"]["native_raw_receipt_sha256"]
+                     != rolling["receipt"]["native_raw_receipt_sha256"])]
     refusals = [row for row in result.get("rejected_native_attempts", [])
                 if isinstance(row, Mapping) and row.get("level") == level
                 and row.get("proposal_axis") == "world_rolling_50pct"]
@@ -315,6 +329,7 @@ def measured_world_rolling_head_to_head(
             "engine_binary_sha256": paid["engine_binary_sha256"],
             "native_raw_receipt_file": paid["native_raw_receipt_file"],
             "native_raw_receipt_sha256": paid["native_raw_receipt_sha256"],
+            "native_world_target_hp": paid["native_world_target_hp"],
             "native_world_policy": paid["native_world_policy"],
             "charged_elapsed_seconds": paid["elapsed_seconds"],
             "terminal_recovery_seconds": paid["terminal_recovery_seconds"],

@@ -460,7 +460,11 @@ def _native_world_policy(rest_health: float, rest_mana: float,
 def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> bool:
     """Never reuse an overlap receipt without its source/gsim target-ID join."""
     if world_apl is None:
-        return True
+        # An omitted policy is the serial control only when native Rust
+        # did not independently report applying a rolling World-APL.
+        return (receipt.get("native_world_apl") is None
+                and receipt.get("native_world_overlap_verified") is not True
+                and receipt.get("native_world_overlap") is None)
     overlap = receipt.get("native_world_overlap")
     kills = receipt.get("world_kills")
     if (receipt.get("native_world_apl") != world_apl
@@ -484,8 +488,9 @@ def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> b
         and all(isinstance(value, str) and value for value in live_ids)
         and set(live_ids) == set(target_ids)
         and isinstance(mapping, dict) and len(mapping) == 2
-        and all(isinstance(index, str) and index.isdigit()
-                for index in mapping)
+        # Native slots are 0 and 1 for this exact two-world-target API.
+        # Arbitrary numeric keys would permit a mismapped paid cache hit.
+        and set(mapping) == {"0", "1"}
         and all(isinstance(value, str) and value
                 for value in mapping.values())
         and set(mapping.values()) == set(target_ids)
@@ -890,6 +895,7 @@ class PersistentNativeEvaluator:
                     "proposal_axis": proposal_axis,
                     "native_world_policy": _native_world_policy(
                         rest_health, rest_mana, world_apl),
+                    "native_world_target_hp": receipt["world_target_hp"],
                     "native_named_build": _described_build(source, options),
                     "native_options_coverage": options.get("coverage"),
                     "gear": actor.get("equipment"),
