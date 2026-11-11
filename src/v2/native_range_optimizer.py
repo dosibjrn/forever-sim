@@ -83,6 +83,47 @@ def _receipt_error(
 
 
 
+def _retained_native_paid_axis_breadth(
+    result: Mapping[str, Any], level: int,
+) -> tuple[int, dict[str, int]] | None:
+    """Describe observed axis breadth, not source legality or an optimum.
+
+    Include only native-prepared, fully recovered independent candidates
+    whose original paid receipt agrees with the ranked build fields.
+    Refusals, rejected attempts and unmeasured proposals never count.
+    """
+    import json
+
+    rankings = result.get("independent_level_rankings")
+    rows = rankings.get(str(level)) if isinstance(rankings, Mapping) else None
+    if not isinstance(rows, list):
+        return None
+    paid = []
+    fields = ("source_request_sha256", "engine_binary_sha256",
+              "talents", "gear", "apl", "pet")
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        receipt = row.get("receipt")
+        if (not isinstance(receipt, Mapping)
+                or _receipt_error(
+                    receipt, level=level, parent=None,
+                    mob_count=result["mob_count"], rng_mode=result["rng_mode"],
+                    iterations=result["iterations"],
+                ) is not None
+                or any(row.get(field) != receipt.get(field)
+                       for field in fields)):
+            continue
+        paid.append(row)
+    if not paid:
+        return None
+    return len(paid), {
+        field: len({json.dumps(row.get(field), sort_keys=True,
+                               separators=(",", ":")) for row in paid})
+        for field in ("talents", "gear", "apl", "pet")
+    }
+
+
 def _talent_ranks(serialized: Any) -> tuple[tuple[int, ...], ...] | None:
     """Read a native-request talent allocation; do not judge Warcraft legality."""
     if not isinstance(serialized, str):
@@ -334,46 +375,6 @@ def _optimize_compatible_samples(
 
 
 
-
-def _retained_native_paid_axis_breadth(
-    result: Mapping[str, Any], level: int,
-) -> tuple[int, dict[str, int]] | None:
-    """Describe observed axis breadth, not source legality or an optimum.
-
-    Include only native-prepared, fully recovered independent candidates
-    whose original paid receipt agrees with the ranked build fields.
-    Refusals, rejected attempts and unmeasured proposals never count.
-    """
-    import json
-
-    rankings = result.get("independent_level_rankings")
-    rows = rankings.get(str(level)) if isinstance(rankings, Mapping) else None
-    if not isinstance(rows, list):
-        return None
-    paid = []
-    fields = ("source_request_sha256", "engine_binary_sha256",
-              "talents", "gear", "apl", "pet")
-    for row in rows:
-        if not isinstance(row, Mapping):
-            continue
-        receipt = row.get("receipt")
-        if (not isinstance(receipt, Mapping)
-                or _receipt_error(
-                    receipt, level=level, parent=None,
-                    mob_count=result["mob_count"], rng_mode=result["rng_mode"],
-                    iterations=result["iterations"],
-                ) is not None
-                or any(row.get(field) != receipt.get(field)
-                       for field in fields)):
-            continue
-        paid.append(row)
-    if not paid:
-        return None
-    return len(paid), {
-        field: len({json.dumps(row.get(field), sort_keys=True,
-                               separators=(",", ":")) for row in paid})
-        for field in ("talents", "gear", "apl", "pet")
-    }
 
 
 def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
