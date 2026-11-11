@@ -627,6 +627,11 @@ def test_scored_child_rechecks_paid_parent_digest_before_any_native_payment(tmp_
     assert all(row["native_continuity_ack"] is True
                and row["native_intermediate_levels_verified"] is False
                and row["terminal_recovery_seconds"] == 2.0 for row in rows)
+    assert all(
+        row["source_request_file_sha256"]
+        == hashlib.sha256(Path(row["source_request_file"]).read_bytes()).hexdigest()
+        for row in rows
+    )
 
     # Tampering the actually paid parent receipt is still a hard refusal,
     # unlike an unrequested skipped-level native prepare certificate.
