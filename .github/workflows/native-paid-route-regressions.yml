@@ -2,7 +2,7 @@ name: Native-paid route continuity regressions
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
     branches: [main]
     paths:
       - src/v2/path_dp.py
