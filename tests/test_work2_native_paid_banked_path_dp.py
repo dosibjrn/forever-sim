@@ -85,17 +85,26 @@ def test_unmeasured_refused_or_wrong_actor_cannot_be_native_path(tamper):
             max_respecs=0, model=OpaqueNativeBuildModel(), native_paid=True)
 
 
-def test_native_mode_does_not_launder_analytic_nodes_or_over_budget_points():
+def test_native_mode_does_not_launder_analytic_nodes_or_second_guess_rust():
     build = tuple("abcdefghijk")
     paid = paid_node(20, build, 18.0)
     with pytest.raises(ValueError, match="matching paid native actor"):
         solve_path_dp(
             {20: [replace(paid, source="analytic")]},
             model=OpaqueNativeBuildModel(), native_paid=True)
-    with pytest.raises(ValueError, match="impossible point count"):
-        solve_path_dp(
-            {20: [paid_node(20, build + ("z",), 18.0)]},
-            model=OpaqueNativeBuildModel(), native_paid=True)
+
+    # An already native-prepared and paid Warlock actor is authoritative.
+    # Its talent point budget must never be re-judged by Forever Python.
+    class ReceiptOnlyModel(OpaqueNativeBuildModel):
+        def build_points(self, build):
+            raise AssertionError("native-paid DP must not validate Rust talent points")
+
+    native_paid = paid_node(20, build + ("z",), 18.0)
+    path = solve_path_dp(
+        {20: [native_paid]}, weights={20: 1.0},
+        model=ReceiptOnlyModel(), native_paid=True)
+    assert [step.node for step in path.steps] == [native_paid]
+    assert path.cumulative_s == 18.0
 
 
 def test_native_route_defaults_to_no_unobserved_respec():
