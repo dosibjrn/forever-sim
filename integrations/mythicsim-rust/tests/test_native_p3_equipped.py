@@ -630,6 +630,80 @@ def test_naked_rogue_builds_multi_slot_baseline_from_native_prepared_options():
     assert receipt["native_source_unseeded_slots"] == []
 
 
+
+def test_naked_rogue_falls_back_to_next_native_slot_if_first_cannot_prepare():
+    """Rejected native weapon seed must not hide a payable native chest pair."""
+    reference = _reference()
+    for item in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        item["id"] = 0
+    original = copy.deepcopy(reference)
+    prepared_ids = []
+    paid_ids = []
+
+    def prepare(_binary, request):
+        items = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        prepared_ids.append((items[14]["id"], items[4]["id"]))
+        if items[14]["id"]:
+            return {"status": "NATIVE_PREPARE_REFUSED",
+                    "reason": "native cannot equip weapon"}
+        return _prepared_actor(_binary, request)
+
+    def evaluate(_binary, request, *_args, **_kwargs):
+        items = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        paid_ids.append((items[14]["id"], items[4]["id"]))
+        return float(items[4]["id"]), {}, 0.01, "native-paid"
+
+    receipt = compare_equipped_native(
+        "selected-native", reference,
+        {"weapon": {"selected_ids": [410, 411]},
+         "chest": {"selected_ids": [700, 701]}},
+        preparer=prepare, evaluator=evaluate, max_paid_attempts=3)
+
+    assert reference == original
+    assert prepared_ids == [(410, 0), (0, 700)]
+    assert paid_ids == [(0, 700), (0, 701)]
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["paid_attempts"] == 2
+    assert receipt["source_occupied_slots"] == ["chest"]
+    assert receipt["native_source_seed"]["slot"] == "chest"
+    assert receipt["native_source_unseeded_slots"] == [{
+        "slot": "weapon", "refused_prepares": [{
+            "item_id": 410, "status": "NATIVE_PREPARE_REFUSED",
+            "reason": "native cannot equip weapon"}]}]
+
+
+def test_naked_rogue_all_slot_seeds_refused_without_paying():
+    reference = _reference()
+    for item in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        item["id"] = 0
+    paid = []
+
+    def prepare(_binary, request):
+        items = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        return {"status": "NATIVE_PREPARE_REFUSED",
+                "reason": "native refused " + str(items[14]["id"] or items[4]["id"])}
+
+    receipt = compare_equipped_native(
+        "selected-native", reference,
+        {"weapon": {"selected_ids": [410, 411]},
+         "chest": {"selected_ids": [700, 701]}},
+        preparer=prepare, evaluator=lambda *_a, **_kw: paid.append("incorrect"),
+        max_paid_attempts=3)
+
+    assert paid == []
+    assert receipt["status"] == "NATIVE_PREPARE_REFUSED"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["actor_checkpoint_verified"] is False
+    assert receipt["native_source_unseeded_slots"] == [
+        {"slot": "weapon", "refused_prepares": [{
+            "item_id": 410, "status": "NATIVE_PREPARE_REFUSED",
+            "reason": "native refused 410"}]},
+        {"slot": "chest", "refused_prepares": [{
+            "item_id": 700, "status": "NATIVE_PREPARE_REFUSED",
+            "reason": "native refused 700"}]},
+    ]
+
+
 def test_naked_rogue_preserves_unprepared_source_slot_without_paid_coverage():
     reference = _reference()
     for item in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
