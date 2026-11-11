@@ -231,6 +231,59 @@ def _level_aware_apl_variants(source: dict, prepared: dict, options: dict):
     actor = source["raid"]["parties"][0]["players"][0]
     original = actor.get("rotation", {}).get("priorityList", [])
     seen = {json.dumps(original, sort_keys=True)}
+    if isinstance(original, list) and not original:
+        # The level-correct native actor may prepare only after clearing an
+        # inherited APL with a now-unregistered rank. Its registered spells,
+        # NOT the invalid L20/L40 fixture or raw spell family options, are the
+        # sole source for new, independently prepared and paid rotations.
+        registered = [
+            spell for spell in prepared_spells
+            if isinstance(spell, dict) and
+            "SpellFlagAPL" in spell.get("flags", [])
+            and isinstance(spell.get("action_id"), dict)
+            and type(spell["action_id"].get("spell_id")) is int
+            and spell["action_id"]["spell_id"] > 0
+        ] if isinstance(prepared_spells, list) else []
+        observed: set[int] = set()
+        enabled = []
+        for spell in registered:
+            sid = spell["action_id"]["spell_id"]
+            if sid not in observed:
+                observed.add(sid)
+                enabled.append(spell)
+        # Prefer native-reported combat effects, yet retain other registered
+        # APL actions when the prepared contract lacks effect annotations.
+        effectful = [spell for spell in enabled
+                     if isinstance(spell.get("dot"), dict)
+                     or isinstance(spell.get("damage_effect"), dict)]
+        selected = effectful or enabled
+        def action_for(spell):
+            sid = spell["action_id"]["spell_id"]
+            action = {"action": {"castSpell": {
+                "spellId": {"spellId": sid}}}}
+            if isinstance(spell.get("dot"), dict):
+                action["action"]["condition"] = {"not": {"val": {
+                    "dotIsActive": {"spellId": {"spellId": sid}}}}}
+            return action
+        variants = [[action_for(spell)] for spell in selected[:8]]
+        dots = [spell for spell in selected
+                if isinstance(spell.get("dot"), dict)]
+        directs = [spell for spell in selected
+                   if isinstance(spell.get("damage_effect"), dict)]
+        for dot in dots[:2]:
+            for direct in directs[:2]:
+                if dot["action_id"]["spell_id"] != direct["action_id"]["spell_id"]:
+                    variants.insert(0, [action_for(dot), action_for(direct)])
+        for priorities in variants:
+            signature = json.dumps(priorities, sort_keys=True)
+            if signature in seen:
+                continue
+            seen.add(signature)
+            proposal = copy.deepcopy(source)
+            proposal["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"] = priorities
+            yield proposal
+        return
     # Replace existing spell ranks with the last registered source rank of
     # the *same named spell*. No item/spell learnability is inferred from
     # get_options alone; intersection with prepared registry is mandatory.
@@ -662,6 +715,7 @@ class PersistentNativeEvaluator:
         seen: set[str] = set()
         results: list[dict] = []
         apl_expanded = False
+        bootstrap_attempted = False
         target_hp = (float(representative_hp(level))
                      if self.target_hp is None else self.target_hp)
         index = 0
@@ -747,8 +801,53 @@ class PersistentNativeEvaluator:
                     "candidate_id": cid, "level": level,
                     "native_prepared": prepared_ok,
                     "proposal_axis": proposal_axis,
+                    "native_refusal_code": getattr(exc, "code", None),
                     "native_refusal": str(exc)[-1500:],
                 })
+                # A genuinely refused legacy rotation must not eliminate
+                # every registered level-rank candidate. Ask the SAME Rust
+                # session to prepare the SAME actor/build without that APL,
+                # solely to query its registered SpellFlagAPL repertoire.
+                # Bootstrap is not paid, never ranked and never called legal
+                # by Python. Each generated candidate is prepared and paid.
+                if (not prepared_ok and not apl_expanded
+                        and not bootstrap_attempted
+                        and isinstance(exc, NativeApiRefusal)
+                        and source["raid"]["parties"][0]["players"][0].get(
+                            "rotation", {}).get("priorityList")):
+                    bootstrap_attempted = True
+                    bootstrap = copy.deepcopy(source)
+                    bootstrap["raid"]["parties"][0]["players"][0][
+                        "rotation"]["priorityList"] = []
+                    try:
+                        learned = self.session.request({
+                            "op": "prepare", "request": bootstrap,
+                            "actor_level": level,
+                        })
+                        player = learned.get("player", {})
+                        if (player.get("class") != "ClassWarlock"
+                                or player.get("level") != level):
+                            raise ValueError("NATIVE_APL_BOOTSTRAP_WRONG_ACTOR")
+                        repaired = list(islice(_level_aware_apl_variants(
+                            bootstrap, learned, options), 8))
+                        if not repaired:
+                            raise ValueError("NATIVE_APL_BOOTSTRAP_NO_REGISTERED_ACTIONS")
+                        sources[index:index] = [
+                            (candidate, "native_apl_bootstrap")
+                            for candidate in repaired]
+                        apl_expanded = True
+                    except (ValueError, TypeError, KeyError, RuntimeError,
+                            OSError, subprocess.SubprocessError) as boot_error:
+                        if len(results) < budget:
+                            results.append({
+                                "status": "NATIVE_API_CANDIDATE_REFUSED",
+                                "candidate_id": f"L{level}_apl_bootstrap",
+                                "level": level, "native_prepared": False,
+                                "proposal_axis": "native_apl_bootstrap",
+                                "native_refusal_code":
+                                    getattr(boot_error, "code", None),
+                                "native_refusal": str(boot_error)[-1500:],
+                            })
         return results
 
     def probe_native_level_transition(self, *, from_level: int, to_level: int,
