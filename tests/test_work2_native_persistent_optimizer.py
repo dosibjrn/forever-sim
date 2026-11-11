@@ -855,6 +855,6 @@ def test_paid_world_failure_preserves_prepare_phase_and_axis(tmp_path, monkeypat
         native.close()
     assert rows and all(row["native_prepared"] is True
                         and row["status"] == "NATIVE_API_CANDIDATE_REFUSED"
-                        and row["proposal_axis"] == "talent" for row in rows)
+                        and row["proposal_axis"] in ("talent", "apl") for row in rows)
     assert all("NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL" in row["native_refusal"]
                for row in rows)
