@@ -977,6 +977,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                     help="Optional player-facing guide for native-paid sampled decisions")
     ap.add_argument("--shortlist-out", type=Path,
                     help="Human-readable per-level top-three exact paid native candidates")
+    ap.add_argument("--html-out-dir", type=Path,
+                    help="Output folder for offline standalone BiS-style native-paid HTML pages; "
+                         "default is <JSON output parent>/html")
     args = ap.parse_args(argv)
     cls = args.class_name.lower()
     if cls != "warlock":
@@ -1051,6 +1054,12 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
             )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    # Publish only verified native-paid candidates. The offline HTML generator
+    # refuses mocked/provisional/unpaid rows and never performs new world work.
+    if not args.probe_native_continuity:
+        from tools.wf_native_paid_html import write_native_paid_html_reports
+        html_dir = args.html_out_dir or (output.parent / "html")
+        write_native_paid_html_reports(result, html_dir, class_name=cls)
     if args.probe_native_continuity:
         print(f"Native same-session L{args.start_level}->L{args.end_level} "
               f"continuity: {result['status']}; "
