@@ -5,7 +5,9 @@ The paid workflow runs the exact pinned source-native evaluator separately.
 """
 import json
 
-from src.v2.native_range_optimizer import main, measured_world_rest_head_to_head
+from src.v2.native_range_optimizer import (
+    main, measured_world_rest_head_to_head, measured_world_rolling_head_to_head,
+)
 
 
 def paid_row(threshold, elapsed, *, source="a" * 64, pet="Succubus"):
@@ -164,3 +166,81 @@ def test_exact_cli_succeeds_only_with_genuinely_paired_paid_native_rows(tmp_path
     ], evaluate=evaluator) == 0
     assert json.loads(out.read_text())["world_rest_head_to_head"]["winner"] == (
         "thirty_percent")
+
+
+def rolling_paid_row(*, elapsed=38.0, acknowledged=True):
+    """Synthetic transport-only receipt; no native overlap proof asserted here."""
+    from tools.wf_warlock_native_persistent_optimizer import ROLLING_WORLD_APL_50
+
+    row = paid_row(1.0, elapsed)
+    row["candidate_id"] = "rolling-50"
+    row["proposal_axis"] = "world_rolling_50pct"
+    row["native_raw_receipt_sha256"] = "e" * 64
+    row["native_world_policy"] = dict(
+        row["native_world_policy"], pull_mode="rolling",
+        world_apl=ROLLING_WORLD_APL_50,
+    )
+    if acknowledged:
+        row.update({
+            "native_world_apl": ROLLING_WORLD_APL_50,
+            "native_world_overlap_verified": True,
+            "native_world_overlap": {
+                "max_concurrent_alive_targets": 2,
+                "simultaneously_alive_world_target_ids": ["m1", "m0"],
+            },
+            "native_world_kills": [
+                {"target_id": "m1", "ack_sha256": "first"},
+                {"target_id": "m0", "ack_sha256": "second"},
+            ],
+        })
+    return row
+
+
+def test_rolling_head_to_head_requires_original_paid_overlap_and_build_identity():
+    baseline = paid_row(1.0, 45)
+    for challenger in (
+        rolling_paid_row(acknowledged=False),
+        rolling_paid_row(acknowledged=True) | {"native_world_kills": []},
+        rolling_paid_row(acknowledged=True) | {"source_request_sha256": "c" * 64},
+    ):
+        report = result_for([baseline, challenger])
+        comparison = measured_world_rolling_head_to_head(report, level=20)
+        assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+        assert comparison["winner"] is None
+    report = result_for([baseline, rolling_paid_row()])
+    comparison = measured_world_rolling_head_to_head(report, level=20)
+    assert comparison["status"] == "MEASURED_NATIVE_ROLLING_WORLD_APL_HEAD_TO_HEAD"
+    assert comparison["winner"] == "rolling"
+    assert comparison["serial_minus_rolling_elapsed_seconds"] == 7.0
+    assert comparison["rolling"]["native_world_kills"][0]["ack_sha256"] == "first"
+
+
+def test_rolling_cli_refuses_unacknowledged_native_overlap_even_with_serial_win(
+        tmp_path):
+    refusal = {
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "candidate_id": "rolling-50", "level": 20,
+        "native_prepared": True, "proposal_axis": "world_rolling_50pct",
+        "native_refusal_code": "native_world_rolling_unsupported",
+        "native_refusal": "Rust serial scheduler cannot switch before lethal",
+        "native_world_policy": rolling_paid_row()["native_world_policy"],
+    }
+    def evaluate(**request):
+        assert request["level"] == 20
+        assert request["budget"] == 2
+        return [paid_row(1.0, 45), refusal]
+    path = tmp_path / "rolling.json"
+    rc = main([
+        "--class", "warlock", "--tree", "unconstrained",
+        "--start-level", "20", "--end-level", "20", "--level-stride", "1",
+        "--n-mobs", "2", "--budget", "2", "--rng", "balanced",
+        "--backend", "rust", "--compare-world-rolling-50", "--out", str(path),
+    ], evaluate=evaluate)
+    assert rc == 2
+    result = json.loads(path.read_text())
+    assert result["ranked_alternatives"]
+    head = result["world_rolling_head_to_head"]
+    assert head["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+    assert head["rolling_refusals"][0]["native_refusal_code"] == (
+        "native_world_rolling_unsupported")
+    assert head["winner"] is None
