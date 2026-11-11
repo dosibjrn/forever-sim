@@ -28,27 +28,47 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+# Only source files that define the paid native/world execution contract
+# belong to the cache revision identity. Workflow, test, docs and unrelated
+# optimizer edits must not repay an otherwise identical native observation.
+_PAID_RUNTIME_GIT_PATHS = (
+    "src/game",
+    "src/scenarios",
+    "integrations/mythicsim-rust/live_two_world_pulls.py",
+    "tools/wf_warlock_native_candidate_scoring.py",
+    "tools/wf_warlock_native_persistent_optimizer.py",
+)
+
+
 def _exact_paid_cache_identity(binary: Path, *, actor_level: int,
                                mob_count: int, target_hp: float) -> dict | None:
-    """Reuse a paid receipt only for a clean exact Forever commit and Rust binary.
+    """Fingerprint the clean paid runtime rather than an unrelated Git HEAD.
 
-    A dirty/unversioned source tree changes the gsim/world scorer and cannot
-    establish comparable paid execution, even if the native binary is the same.
+    Native receipts are keyed again by Rust-prepared request/content hashes,
+    exact scenario and native binary, and verified through score_native_chain
+    and the raw receipt digest before reuse. Runtime source changes do invalidate
+    this schema-2 identity. Historical schema-1 receipts remain immutable and
+    are deliberately not silently promoted across an unverifiable source diff.
     """
     if not binary.is_file():
         return None
     root = Path(__file__).resolve().parents[1]
     try:
-        revision = subprocess.run(
-            ["git", "rev-parse", "--verify", "HEAD"], cwd=root,
-            capture_output=True, text=True, check=True, timeout=10)
         dirty = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=no"], cwd=root,
             capture_output=True, text=True, check=True, timeout=10)
-        if dirty.stdout.strip() or len(revision.stdout.strip()) != 40:
+        objects = subprocess.run(
+            ["git", "rev-parse", *(f"HEAD:{path}" for path in _PAID_RUNTIME_GIT_PATHS)],
+            cwd=root, capture_output=True, text=True, check=True, timeout=10)
+        shas = objects.stdout.splitlines()
+        if (dirty.stdout.strip() or len(shas) != len(_PAID_RUNTIME_GIT_PATHS)
+                or any(len(sha) != 40 or any(ch not in "0123456789abcdef"
+                                              for ch in sha) for sha in shas)):
             return None
+        fingerprint = hashlib.sha256(("\\n".join(shas)).encode()).hexdigest()
         return {
-            "cache_schema": 1, "forever_commit": revision.stdout.strip(),
+            "cache_schema": 2,
+            "forever_paid_runtime_sha256": fingerprint,
             "native_binary_sha256": _sha256(binary),
             "actor_level": actor_level, "mob_count": mob_count,
             "target_hp": target_hp, "rng_mode": "balanced",

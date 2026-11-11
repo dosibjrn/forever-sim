@@ -561,3 +561,43 @@ def test_cross_frontier_shared_paid_cache_reuses_exact_ack_only(tmp_path, monkey
     assert evaluate("frontier-6", alternate, 1400.)[
         "reused_exact_native_paid_receipt"] is False
     assert len(calls) == 5
+
+
+def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path, monkeypatch):
+    """Same paid source may be reused; a changed source, binary or dirty tree may not."""
+    import subprocess
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"native engine A")
+    shas = ["a" * 40 for _ in scorer._PAID_RUNTIME_GIT_PATHS]
+    commit = ["1" * 40]
+    dirty = [False]
+
+    def git(argv, *, cwd, capture_output, text, check, timeout):
+        assert argv[0] == "git" and cwd.is_dir()
+        if argv[1] == "status":
+            return subprocess.CompletedProcess(argv, 0, " M unrelated-workflow.yml\\n" if dirty[0] else "")
+        assert argv[1] == "rev-parse"
+        assert tuple(value.removeprefix("HEAD:") for value in argv[2:]) == scorer._PAID_RUNTIME_GIT_PATHS
+        return subprocess.CompletedProcess(argv, 0, "\\n".join(shas) + "\\n")
+
+    monkeypatch.setattr(scorer.subprocess, "run", git)
+    def identity():
+        return scorer._exact_paid_cache_identity(
+            binary, actor_level=30, mob_count=2, target_hp=1200.0)
+
+    first = identity()
+    assert first and first["cache_schema"] == 2
+    assert "forever_commit" not in first
+    commit[0] = "2" * 40  # CI/workflow-only HEAD change; runtime object IDs stay same.
+    assert identity() == first
+    shas[-1] = "b" * 40  # Actual paid adapter implementation changed.
+    changed = identity()
+    assert changed != first
+    assert changed["forever_paid_runtime_sha256"] != first["forever_paid_runtime_sha256"]
+    shas[-1] = "a" * 40
+    binary.write_bytes(b"native engine B")
+    assert identity()["native_binary_sha256"] != first["native_binary_sha256"]
+    dirty[0] = True
+    assert identity() is None
