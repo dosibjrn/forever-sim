@@ -719,6 +719,23 @@ def _optimize_compatible_samples(
                  json.dumps(row.get("native_world_policy"), sort_keys=True))
                 for row in current
             }
+            # A prepared native source+policy that already refused world/ACK
+            # or recovery is an attempted challenge too. Do not repay the
+            # identical refusal during adaptive allocation; leave the refusal
+            # recorded and allow distinct source or policy candidates through.
+            # Pre-prepare failures have no authoritative source identity.
+            excluded.update(
+                (row["source_request_sha256"],
+                 json.dumps(row["native_world_policy"], sort_keys=True))
+                for row in measured["rejected_native_attempts"]
+                if row.get("level") == level
+                and row.get("native_status") == "NATIVE_API_CANDIDATE_REFUSED"
+                and row.get("native_prepared") is True
+                and row.get("engine_binary_sha256")
+                    == measured["native_engine_binary_sha256"]
+                and _sha(row.get("source_request_sha256"))
+                and isinstance(row.get("native_world_policy"), Mapping)
+            )
             # Existing measured survivors are hints, not claimed legal
             # successors. Native options/prepare decides every new proposal.
             hints = [{
@@ -1256,6 +1273,7 @@ def optimize(
                         "native_refusal": row.get("native_refusal"),
                         "native_refusal_code": row.get("native_refusal_code"),
                         "native_prepared": row.get("native_prepared"),
+                        "engine_binary_sha256": row.get("engine_binary_sha256"),
                         "proposal_axis": row.get("proposal_axis"),
                         "native_world_policy": row.get("native_world_policy"),
                     })
