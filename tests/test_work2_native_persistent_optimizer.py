@@ -1149,7 +1149,7 @@ def test_native_rest_policies_have_distinct_session_and_disk_cache_identities(
 
 
 def test_rolling_native_world_apl_request_is_forwarded_and_ack_checked():
-    """Only native-applied two-live-world evidence can unlock rolling ranking."""
+    """Real source/world identities and death ACKs, not a policy echo, unlock rolling."""
     from live_two_world_pulls import (
         _persistent_api_evaluate_request, _verify_native_rolling_world_apl,
     )
@@ -1162,34 +1162,52 @@ def test_rolling_native_world_apl_request_is_forwarded_and_ack_checked():
         "recover_at_end": True, "world_apl": policy,
     }
     kills = [
-        {"target_id": "m1", "ack_sha256": "first"},
-        {"target_id": "m0", "ack_sha256": "second"},
+        {"target_id": "m1", "ack_sha256": "a" * 64},
+        {"target_id": "m0", "ack_sha256": "b" * 64},
     ]
-    # An old serial native report must fail even when it killed both mobs.
-    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
-        _verify_native_rolling_world_apl({}, requested=policy, kills=kills)
+    # New required source fields are deliberately not optional. No legacy
+    # serial policy echo can bypass this stronger source-ACKed comparison.
+    evidence = {
+        "source_switch": {
+            "prior_world_target_id": "m1", "to_native_target_index": 1,
+        },
+        "old_target_dot_ticks": 1,
+        "first_world_id": "m1",
+        "second_world_id": "m0",
+    }
     with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
         _verify_native_rolling_world_apl(
-            {"applied_world_apl": policy, "world_overlap": {
-                "max_concurrent_alive_targets": 1,
-                "simultaneously_alive_world_target_ids": ["m1", "m0"],
-            }}, requested=policy, kills=kills)
+            {}, requested=policy, kills=kills, **evidence)
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        _verify_native_rolling_world_apl({
+            "applied_world_apl": policy,
+            "world_overlap": {"source_apl_selected_b": True,
+                              "max_concurrent_alive_targets": 1},
+        }, requested=policy, kills=kills, **evidence)
     observed = {
+        "source_apl_selected_b": True,
+        "both_world_targets_lethal_ack": True,
+        "native_world_target_indices": [0, 1],
+        "world_target_ids": ["m1", "m0"],
+        "combined_native_fight_window": True,
+    }
+    expected = {
+        **observed,
+        "native_target_to_world_id": {"0": "m1", "1": "m0"},
         "max_concurrent_alive_targets": 2,
         "simultaneously_alive_world_target_ids": ["m1", "m0"],
-        "native_target_to_world_id": {"0": "m1", "1": "m0"},
         "old_target_dot_ticks_after_switch_acked": 1,
     }
     assert _verify_native_rolling_world_apl({
         "applied_world_apl": policy, "world_overlap": observed,
-    }, requested=policy, kills=kills) == observed
+    }, requested=policy, kills=kills, **evidence) == expected
     with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
         _verify_native_rolling_world_apl({
             "applied_world_apl": policy, "world_overlap": observed,
         }, requested=policy, kills=[
-            {"target_id": "m1", "ack_sha256": "same"},
-            {"target_id": "m0", "ack_sha256": "same"},
-        ])
+            {"target_id": "m1", "ack_sha256": "c" * 64},
+            {"target_id": "m0", "ack_sha256": "c" * 64},
+        ], **evidence)
 
 
 def test_rolling_world_apl_unacknowledged_serial_receipt_is_unranked(
