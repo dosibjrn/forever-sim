@@ -607,3 +607,70 @@ def test_native_seed_refusal_is_not_promoted_to_paid_evidence():
     assert receipt["status"] == "NATIVE_PREPARE_REFUSED"
     assert receipt["paid_attempts"] == 0
     assert receipt["actor_checkpoint_verified"] is False
+
+
+def test_naked_rogue_prepares_next_source_seed_after_native_item_refusal():
+    """A refused first source item does not strand a genuinely paid Rogue pair."""
+    reference = _reference()
+    for item in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        item["id"] = 0
+    original = copy.deepcopy(reference)
+    prepared_ids = []
+    paid_ids = []
+
+    def prepare(_binary, request):
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][14]["id"]
+        prepared_ids.append(item_id)
+        if item_id == 410:
+            return {"status": "NATIVE_PREPARE_REFUSED", "reason": "source item 410 refused"}
+        return _prepared_actor(_binary, request)
+
+    def paid(_binary, request, _iters, _seed, _rng, _deadline, **_kwargs):
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][14]["id"]
+        paid_ids.append(item_id)
+        assert item_id in (411, 412)
+        return float(item_id), {}, 0.01, f"native-paid-{item_id}"
+
+    receipt = compare_equipped_native(
+        "selected-native", reference, {"weapon": {"selected_ids": [410, 411, 412]}},
+        preparer=prepare, evaluator=paid, max_paid_attempts=2)
+    assert reference == original
+    assert prepared_ids == [410, 411]
+    assert paid_ids == [411, 412]
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["paid_attempts"] == 2
+    assert receipt["actor_checkpoint_verified"] is True
+    assert receipt["comparison"]["delta_dps"] == 1.0
+    assert receipt["native_source_seed"]["item_id"] == 411
+    assert receipt["native_source_seed"]["refused_prepares"] == [{
+        "item_id": 410, "status": "NATIVE_PREPARE_REFUSED",
+        "reason": "source item 410 refused"}]
+
+
+def test_naked_rogue_refused_source_seeds_preserve_no_paid_provenance():
+    reference = _reference()
+    for item in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        item["id"] = 0
+    seen = []
+
+    def prepare(_binary, request):
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][14]["id"]
+        seen.append(item_id)
+        return {"status": "NATIVE_PREPARE_REFUSED", "reason": f"item {item_id} rejected"}
+
+    receipt = compare_equipped_native(
+        "selected-native", reference, {"weapon": {"selected_ids": [410, 411, 412]}},
+        preparer=prepare,
+        evaluator=lambda *a, **k: pytest.fail("No refused actor may be scored"),
+        max_paid_attempts=2)
+    # No third baseline: 412 is held for a distinct paid alternative.
+    assert seen == [410, 411]
+    assert receipt["status"] == "NATIVE_PREPARE_REFUSED"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["actor_checkpoint_verified"] is False
+    assert receipt["native_source_seed"]["refused_prepares"] == [
+        {"item_id": 410, "status": "NATIVE_PREPARE_REFUSED",
+         "reason": "item 410 rejected"},
+        {"item_id": 411, "status": "NATIVE_PREPARE_REFUSED",
+         "reason": "item 411 rejected"},
+    ]
