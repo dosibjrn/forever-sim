@@ -447,8 +447,9 @@ ROLLING_WORLD_APL_50 = {
 class UnverifiedNativeWorldReceipt(ValueError):
     """The native world ran but its returned receipt cannot certify overlap."""
 
-    def __init__(self, receipt_path: Path, receipt_sha256: str):
-        super().__init__("RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN")
+    def __init__(self, receipt_path: Path, receipt_sha256: str,
+                 reason: str = "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN"):
+        super().__init__(reason)
         self.receipt_path = str(receipt_path)
         self.receipt_sha256 = receipt_sha256
 
@@ -686,12 +687,11 @@ class PersistentNativeEvaluator:
             require_native_health_damage=False,
             **({"world_apl": world_apl} if world_apl is not None else {}),
         )
-        if not _native_rolling_receipt_verified(receipt, world_apl):
-            # A complete native/2D response for an ignored or unproved rolling
-            # policy is still original execution evidence. Never cache/rank it
-            # as a paid success, and never overwrite an earlier refused run.
-            # Keep a distinct extension so the successful .native.json cache
-            # and its legacy lookup cannot ingest this observation.
+        def refuse_with_preserved_receipt(reason: str):
+            # A completed native/2D response is useful even when its applied
+            # World-APL, ACKs or final HP/mana do not qualify for scoring.
+            # Preserve every refused attempt independently, but never promote
+            # its bytes into the successful paid cache or ranked frontier.
             raw = json.dumps(receipt, indent=2, allow_nan=False) + "\n"
             attempt = 0
             while True:
@@ -705,11 +705,15 @@ class PersistentNativeEvaluator:
                 except FileExistsError:
                     attempt += 1
             raise UnverifiedNativeWorldReceipt(
-                refused_path, _file_digest(refused_path))
+                refused_path, _file_digest(refused_path), reason)
+
+        if not _native_rolling_receipt_verified(receipt, world_apl):
+            refuse_with_preserved_receipt(
+                "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN")
         elapsed, verdict = score_native_chain(
             receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
         if elapsed is None or verdict != "MEASURED_NATIVE_FULLY_RECOVERED":
-            raise ValueError("RUST_NATIVE_PAID_SCORE_REFUSED:" + verdict)
+            refuse_with_preserved_receipt("RUST_NATIVE_PAID_SCORE_REFUSED:" + verdict)
         # Keep actual original bytes and pin the digest. An inconsistent old
         # cache entry is never overwritten and never becomes a paid result.
         if not path.exists() and not meta.exists():

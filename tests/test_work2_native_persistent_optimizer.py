@@ -314,7 +314,17 @@ def test_unpaid_terminal_resources_refused_and_never_ranked(tmp_path, monkeypatc
                         for row in rows)
     assert all("NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL" in row["native_refusal"]
                for row in rows)
+    original_paths = [Path(row["native_unverified_receipt_file"]) for row in rows]
+    assert len(original_paths) == 3
+    assert len(set(original_paths)) == 3
+    for row, original in zip(rows, original_paths):
+        assert original.is_file()
+        assert hashlib.sha256(original.read_bytes()).hexdigest() == (
+            row["native_unverified_receipt_sha256"])
+        assert json.loads(original.read_text())["native_terminal_recovery"][
+            "mana_after"] == 99.0
     assert not list((tmp_path / "paid").glob("*.native.json"))
+    assert not list((tmp_path / "paid").glob("*.native.cache.json"))
 
 
 def test_native_prepare_refusal_remains_a_candidate_attempt(tmp_path, monkeypatch):
