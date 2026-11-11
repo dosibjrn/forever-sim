@@ -334,6 +334,91 @@ def _optimize_compatible_samples(
 
 
 
+def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
+    """Report genuine per-level top 3 with native-source names when available.
+
+    This renders existing paid receipts only. No extra mechanics, legality,
+    heuristic best-in-slot selection or world evaluations are introduced.
+    """
+    import json
+    from collections import Counter
+
+    levels = result.get("sampled_levels_requested", [])
+    ranked = result.get("independent_level_rankings", {})
+    rejected = result.get("rejected_native_attempts", [])
+    lines = [
+        "# Native Warlock — best tested level snapshots",
+        "",
+        "**Scope:** independently native-prepared and fully recovered world "
+        "observations; these are NOT a global optimum, compatible equipment "
+        "acquisition plan, or continuous XP/travel/training route.",
+        f"**Objective:** {result.get('mob_count')} hostile mob(s), "
+        f"{result.get('rng_mode')} RNG; movement, 2D lethal ACK and "
+        "native paid terminal full HP and mana counted in elapsed time.",
+        "",
+    ]
+    for level in levels:
+        receipts = ranked.get(str(level), [])
+        refused = [row for row in rejected if row.get("level") == level]
+        axes = Counter(row.get("receipt", {}).get("proposal_axis", "unknown")
+                       for row in receipts)
+        lines += [f"## Level {level}", "",
+                  f"**Native paid qualified:** {len(receipts)}; "
+                  f"**refused/unscored:** {len(refused)}; "
+                  f"**attempts:** {result.get('native_attempts_by_level', {}).get(str(level), 0)}.",
+                  "**Paid proposal axes:** "
+                  + (", ".join(f"{axis}={count}" for axis, count in sorted(axes.items()))
+                     if axes else "none"),
+                  ""]
+        if not receipts:
+            lines += ["No paid, fully recovered candidate at this level.", ""]
+        for rank, row in enumerate(receipts[:3], 1):
+            receipt = row.get("receipt", {})
+            labels = receipt.get("native_named_build") or {}
+            lines += [
+                f"### #{rank} — {row['native_elapsed_seconds']:.3f} s",
+                f"- Recovery: {row['terminal_recovery_seconds']:.3f} s "
+                "(already included in elapsed)",
+                f"- Summon: {row.get('pet') or 'NoSummon / unspecified'} "
+                f"(axis {receipt.get('proposal_axis', 'unknown')})",
+                f"- Talents: {row.get('talents')} — "
+                + (", ".join(f"{x.get('name') or 'native slot'} "
+                             f"{x.get('rank')}/{x.get('max_rank')}"
+                             for x in labels.get("talent_names", [])) or
+                   "names unavailable in native options"),
+                "- Equipped native items:",
+            ]
+            items = labels.get("equipped_item_names_ids", [])
+            lines += [
+                f"  - Slot {item.get('position')}: "
+                f"{item.get('name') or 'source name unavailable'} "
+                f"(ID {item.get('item_id')})"
+                for item in items if item.get("item_id") not in (None, 0)
+            ] or ["  - no named/equipped items in native request"]
+            lines.append("- Ordered APL (source-request actions; native prepare paid):")
+            lines += [
+                f"  - {spell.get('priority')}. "
+                f"{spell.get('name') or 'source name unavailable'} "
+                f"({spell.get('rank') or 'rank unverified'}, "
+                f"spell ID {spell.get('spell_id')}), "
+                f"condition {json.dumps(spell.get('condition'), sort_keys=True)}"
+                for spell in labels.get("ordered_apl_spells", [])
+            ] or ["  - no named source APL"]
+            lines += [
+                f"- Source protobuf SHA256: {row['source_request_sha256']}",
+                f"- Exact engine binary SHA256: {row['engine_binary_sha256']}",
+                f"- Original paid receipt: {receipt.get('native_raw_receipt_file')}",
+                "",
+            ]
+        for attempt in refused[:8]:
+            lines.append(f"- Native refusal ({attempt.get('proposal_axis') or 'unknown'}; "
+                         f"prepared={attempt.get('native_prepared')}): "
+                         f"{attempt.get('native_refusal') or attempt.get('reason')}")
+        if refused:
+            lines.append("")
+    return "\n".join(lines).rstrip() + "\n\n"
+
+
 def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
     """Explain a measured sampled path without inventing continuous leveling.
 
@@ -563,6 +648,8 @@ def optimize(
                         "candidate_id": row.get("candidate_id"),
                         "reason": error, "native_status": row.get("status"),
                         "native_refusal": row.get("native_refusal"),
+                        "native_prepared": row.get("native_prepared"),
+                        "proposal_axis": row.get("proposal_axis"),
                     })
                     continue
                 if selected_engine_sha is None:
@@ -715,6 +802,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     ap.add_argument("--out", type=Path, help="Optional machine-readable result path")
     ap.add_argument("--guide-out", type=Path,
                     help="Optional player-facing guide for native-paid sampled decisions")
+    ap.add_argument("--shortlist-out", type=Path,
+                    help="Human-readable per-level top-three exact paid native candidates")
     args = ap.parse_args(argv)
     cls = args.class_name.lower()
     if cls != "warlock":
@@ -732,11 +821,17 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     )
     if args.guide_out and args.guide_out.resolve() == output.resolve():
         ap.error("--guide-out must differ from --out")
+    if args.shortlist_out and (args.shortlist_out.resolve() == output.resolve()
+                               or (args.guide_out and args.shortlist_out.resolve()
+                                   == args.guide_out.resolve())):
+        ap.error("--shortlist-out must differ from JSON and guide outputs")
     if args.probe_native_continuity:
         if args.end_level != args.start_level + 1:
             ap.error("--probe-native-continuity needs exactly one level transition")
         if args.guide_out:
             ap.error("a retained-actor probe cannot publish a sampled build guide")
+        if args.shortlist_out:
+            ap.error("a retained-actor probe cannot publish a native shortlist")
         if args.n_mobs < 2:
             ap.error("native world bridge requires at least two hostile targets")
     if evaluate is None:
@@ -789,6 +884,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if args.guide_out and result["ranked_alternatives"]:
         args.guide_out.parent.mkdir(parents=True, exist_ok=True)
         args.guide_out.write_text(render_sampled_build_guide(result))
+    if args.shortlist_out:
+        args.shortlist_out.parent.mkdir(parents=True, exist_ok=True)
+        args.shortlist_out.write_text(render_native_paid_level_shortlist(result))
     if result["ranked_alternatives"]:
         best = result["ranked_alternatives"][0]
         print(f"{cls}: sampled compatible build path, "
