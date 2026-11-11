@@ -130,3 +130,68 @@ def test_adaptive_pays_undercompared_talent_level_before_tight_apl_margin():
     assert report["adaptive_native_attempts"] == 0
     assert report["native_candidates_examined"] == 4
     assert report["status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
+
+
+def test_adaptive_does_not_repay_same_prepared_world_refusal():
+    """Previously refused exact native source+policy is not a new paid axis.
+
+    Transport rows are synthetic. This tests source/receipt scheduling only,
+    not native gameplay, overlap, or a completed M0.6 paid run.
+    """
+    refusal = paid(
+        20, 2, "5-0-0", 7.0, variant="native-rolling-refused",
+        policy={"pull_mode": "rolling", "world_apl": {"switch": "native"},
+                "rest_when_health_below": 1.0,
+                "rest_when_mana_below": 1.0},
+    )
+    refusal.update({
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "native_world_ack": False,
+        "native_refusal": "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN",
+    })
+    refused_identity = (
+        refusal["source_request_sha256"],
+        json.dumps(refusal["native_world_policy"], sort_keys=True),
+    )
+    revisit = []
+
+    def native(*, level, parent, budget, mob_count, rng_mode, iterations,
+               recover_to_full, candidate_hints=None,
+               excluded_paid_source_policies=None, **kwargs):
+        assert parent is None and mob_count == 2 and rng_mode == "balanced"
+        assert iterations == 1 and recover_to_full is True
+        if excluded_paid_source_policies is None:
+            return (
+                [paid(20, 2, "5-0-0", 5.0, variant="baseline"), refusal]
+                if level == 20
+                else [paid(40, 2, "55-0-0", 10.0, variant="baseline")]
+            )[:budget]
+        revisit.append((level, set(excluded_paid_source_policies)))
+        if level == 20:
+            assert refused_identity in excluded_paid_source_policies
+            assert (
+                paid(20, 2, "5-0-0", 5.0, variant="baseline")[
+                    "source_request_sha256"],
+                json.dumps(paid(20, 2, "5-0-0", 5.0, variant="baseline")[
+                    "native_world_policy"], sort_keys=True),
+            ) in excluded_paid_source_policies
+            # The native producer obeys its exact attempted-identity filter,
+            # spending this slot on a distinct, genuinely new policy request.
+            return [paid(
+                20, 2, "5-0-0", 4.0, variant="new-rest-policy",
+                policy={"rest_when_health_below": 0.3,
+                        "rest_when_mana_below": 0.3},
+            )]
+        return []
+
+    report = optimize(20, 40, 20, 2, 12, evaluate=native,
+                      mode="compatible", beam_width=2, class_name="warlock")
+    assert any(level == 20 for level, _ in revisit)
+    assert report["native_candidates_examined"] <= 12
+    assert any(row["source_request_sha256"] == refusal["source_request_sha256"]
+               and row["engine_binary_sha256"] == refusal["engine_binary_sha256"]
+               and row["native_status"] == "NATIVE_API_CANDIDATE_REFUSED"
+               for row in report["rejected_native_attempts"])
+    assert len(report["independent_level_rankings"]["20"]) == 2
+    assert report["ranked_alternatives"][0]["steps"][0][
+        "receipt"]["candidate_id"] == "new-rest-policy"
