@@ -235,8 +235,8 @@ def test_backward_seed_excludes_previously_paid_source_policy():
         assert parent is None and mob_count == 2
         assert rng_mode == "balanced" and iterations == 1
         assert recover_to_full is True
-        if level == 20 and candidate_hints and any(
-                hint["from_level"] > level for hint in candidate_hints):
+        if (level == 20 and not backward_exclusions and candidate_hints
+                and any(hint["from_level"] > level for hint in candidate_hints)):
             backward_exclusions.append(set(excluded_paid_source_policies))
             assert control_key in excluded_paid_source_policies
             assert refused_key in excluded_paid_source_policies
