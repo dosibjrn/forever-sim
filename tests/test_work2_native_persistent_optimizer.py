@@ -809,6 +809,25 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
     assert any(any(item["name"] == "Test source hat B"
                    for item in row["native_named_build"]["equipped_item_names_ids"])
                for row in rows)
+    # Rust provides the slot; a serialized request index is not itself a
+    # gameplay equipment slot. The report must show both without conflation.
+    from src.v2.native_range_optimizer import render_native_paid_level_shortlist
+    result = {
+        "sampled_levels_requested": [level],
+        "independent_level_rankings": {str(level): [{
+            "source_request_sha256": row["source_request_sha256"],
+            "engine_binary_sha256": row["engine_binary_sha256"],
+            "native_elapsed_seconds": row["elapsed_seconds"],
+            "terminal_recovery_seconds": row["terminal_recovery_seconds"],
+            "talents": row["talents"], "gear": row["gear"],
+            "apl": row["apl"], "pet": row["pet"], "receipt": row,
+        } for row in rows]},
+        "rejected_native_attempts": [],
+        "native_attempts_by_level": {str(level): len(rows)},
+        "mob_count": 2, "rng_mode": "balanced", "iterations": 1,
+    }
+    report = render_native_paid_level_shortlist(result)
+    assert "Native slot head (request index 0): Test source hat B (ID 8002)" in report
 
 
 def test_unadvertised_source_pet_and_item_axes_remain_explicitly_unpaid(
