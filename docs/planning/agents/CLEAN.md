@@ -1,5 +1,12 @@
 # Clean — product-blocker and false-gate critic first, then repository architecture owner
 
+## Owner cleanup target for today's M0.3/M0.4/M0.5 rotation (2026-11-11)
+
+Before unrelated architecture, artifact-ceremony or gate audit work, inspect the exact failing source-native optimize run `42895483716` and current main's **old file-based Warlock source frontier/range scored adapter**. Remove or help Work2 delete implementation-only fake gates: comparing JSON-file SHA against Rust deterministic-protobuf SHA; treating skipped stride=20 L21–39/L41–59 native preparation as a prerequisite; mandatory separately paid parent/level provenance when actual source-native compatible sampled allocation is enough; whole-search abort on one bad rating item; first-legal builds mislabeled optimized. Keep actual native world and full HP/mana recovery receipts honest. Do not delete still-live code before Work2's direct M0.3 API replacement works; use focused regression for any removed active check.
+
+Audit whether old `--class warlock` legacy registry dispatch is already fixed on main before repeating it; avoid PR #1412's dirty rebase churn. Distinguish real L40 source-native prepare deficiency (Work1 fix) from fake SHA/refusal (Clean/Work2 fix). Review unrelated Rust Engine checks: class suite had 12 failures and expensive 11-minute rerun; do not silently suppress actual affected-code failures, but recommend focused API/Warlock verification and avoid treating every old suite failure as an optimizer acceptance gate. Preserve artifact storage safeguards and genuine paid receipts; don't allow storage cleanup to monopolize the next runnable optimized path. After M0.4, inspect same-optimizer stride 10/5/1 rather than adding a duplicate workflow.
+
+
 Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and [REPOSITORY_STRUCTURE](../../REPOSITORY_STRUCTURE.md), especially its **Ideal architecture** and **Convergence rules**. It is the single maintained target architecture; own it and revise it on `main` only when a substantive architectural decision changes, not once per run. Do not create a parallel architecture plan. Inspect the actual tree on latest `main`; the target architecture is not proof that migration is already complete.
 
 ## P0 operational safeguard — keep GitHub Actions storage from blocking real gates (owner request 2026-11-09)

@@ -1,5 +1,10 @@
 # Shared Work1 / Work2 implementation and handoff contract
 
+## Immediate cross-agent implementation rule: 2026-11-11
+
+Today's primary user-visible milestone is a **real paid, complete** `optimize --class warlock --tree unconstrained --start-level 20 --end-level 60 --level-stride 20 --n-mobs 2 --recover-at-end true --rng balanced --backend rust` L20/L40/L60 winner, supported by direct native API M0.3; then same-code stride 10→5→1 at start-level 20 for M0.5. Check exact engine and current main; keep one capability PR per lane. A candidate refusal, false JSON/protobuf SHA, Rust rating item or L40 prepare failure requires an actual code fix, not a new wrapper, test-only PR or invented certificate. No skipped-level combat/prepare requirement for sparse samples. Share actual paid results/refusals with the next agent cycle and do not mark M0.4/M0.5 done until real compatible measured output exists.
+
+
 This file applies to **Work1 and Work2 only**. Read it with [COMMON](COMMON.md) and your own role file. It does not transfer branch ownership or Merge's integration authority.
 
 **One-probe stop/reprioritize:** Implement the smallest production change with a credible reusable active-gate outcome; run the smallest genuine changed-behavior test. If the comparable M1 gate does not improve, stop that probe lane unless the run reveals a new reproducible causal defect. Tell Prio what changed and let it reassess, rather than repeatedly paying to force a stat witness, proof, or green test. An unfinished genuinely reusable capability may continue when its observed intermediate behavior justifies the remaining work.

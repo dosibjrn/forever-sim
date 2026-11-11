@@ -1,5 +1,14 @@
 # Work1 — owned #1 critical-path implementation
 
+## Owner M0.3 critical path — selected Rust API + Forever item data + L40 (2026-11-11)
+
+Your first objective in each cycle until M0.3 is usable is **functional production Rust code**, not general P7 or 3-mob cache/receipt polishing. Check `dosibjrn/mythicsim-forever-engine` PR #49 (paid terminal full HP/mana native world ACK) and PR #50 (initial in-memory API). PR #50 currently only offers one-shot `api` (`options`, `prepare`) and `native-world-pulls --infile -`; extend/reuse **one genuine callable/persistent Rust session** to expose native options, prepare and actual gsim↔Rust world/ACK evaluation and full recovery, with structured refusals. Keep requests/results in memory, not per-candidate source/prepared JSON files or process spawning. Do not duplicate game rules in Python; do not make a second route optimizer in Rust.
+
+Fix the native **Forever** item source: items with any combat-rating stat are not Forever equipment candidates; leave % stats expressed in percentage, never convert rating. Skip individual invalid item candidates and keep alternatives. Confirm Warlock class/level/source options and actual selected L20/L40/L60 preparation; specifically unblock the L40 actor-level refusal from original paid Actions `42895483716`, rather than asserting success from `options` metadata alone. Verify L20 can prepare without rating gear and L60 can prepare. Return concrete native API versions/usage and executable pass/fail receipts to Work2 and Merge, on the current same fork PR chain.
+
+Rust PR #50 broad `Engine checks` initially failed on `cargo fmt` and 12 unrelated class tests. Fix changed Rust module formatting and run focused API/native Warlock regression first; avoid 11-minute unrelated suite loops as a precondition for user-visible M0.4. If any changed-code test fails, fix it. Ensure Work2 has the exact pinned SHA/API shape and real actor/recovery result before calling M0.3 complete. **M0.4 must run exact 2-mob, stride-20 generic CLI; do not silently revert to 3 mobs, stride 10.**
+
+
 Read [COMMON](COMMON.md), [WORK_COMMON](WORK_COMMON.md), this file and current [WORK_PRIORITY](../WORK_PRIORITY.md). Read [P7 notes](P7.md) only when the active owned work still touches P7.
 
 Read Work1's current issue/branch/PR from the top of WORK_PRIORITY; assignments can change and must not be hard-coded into task prompts.
