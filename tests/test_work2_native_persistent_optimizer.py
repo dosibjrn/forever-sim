@@ -678,6 +678,45 @@ def test_schema1_paid_cache_is_reused_only_after_verified_world_identity(
     assert len(different) == 1
     assert different[0]["reused_exact_native_paid_receipt"] is False
 
+    # Synthetic cache-corruption regression: a historical schema-1 sidecar
+    # cannot encode a World-APL dimension. Even when its original digest,
+    # executable identity and current strict native elapsed/recovery score
+    # match, an old source-reported non-serial policy is not a serial control.
+    old_path = metadata_paths[0].with_name(
+        metadata_paths[0].name.removesuffix(".native.cache.json")
+        + ".native.json")
+    old_receipt = json.loads(old_path.read_text())
+    old_receipt["native_world_apl"] = {"pull_mode": "rolling"}
+    old_path.write_text(json.dumps(old_receipt, sort_keys=True) + "\n")
+    old_meta = json.loads(metadata_paths[0].read_text())
+    old_meta["native_raw_receipt_sha256"] = api._file_digest(old_path)
+    metadata_paths[0].write_text(json.dumps(old_meta, sort_keys=True) + "\n")
+    assert scorer._verified_legacy_paid_cache(
+        old_meta, dict(current_identity,
+            source_sha256=initial[0]["source_request_sha256"],
+            prepared_sha256=old_meta["prepared_sha256"]))
+
+    original_native_calls = []
+    def counted_serial_world(*args, **kwargs):
+        original_native_calls.append(kwargs.get("world_apl"))
+        return paid_world(*args, **kwargs)
+
+    monkeypatch.setattr(
+        api, "_exact_paid_cache_identity", lambda *args, **kwargs: current_identity)
+    serial = api.PersistentNativeEvaluator(
+        binary, fixture, tmp_path / "paid", session_factory=FakeSession,
+        run_world=counted_serial_world)
+    try:
+        fresh = serial(level=20, parent=None, mob_count=2, budget=1,
+                       rng_mode="balanced", iterations=1,
+                       recover_to_full=True)
+    finally:
+        serial.close()
+    assert original_native_calls == [None]
+    assert fresh[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert fresh[0]["reused_exact_native_paid_receipt"] is False
+    assert fresh[0]["native_world_apl"] is None
+
 
 def test_orphaned_cache_metadata_preserves_new_paid_receipts(
         tmp_path, monkeypatch):
