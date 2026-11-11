@@ -252,3 +252,35 @@ def test_rogue_l20_explicit_native_request_override_is_preserved(monkeypatch):
     from tools.wf_gate_p3_live import _rogue_l20_native_request
     monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/existing-rogue.json")
     assert _rogue_l20_native_request(Path(".")) == "/tmp/existing-rogue.json"
+
+
+def test_rogue_native_p3_scores_only_source_occupied_slots():
+    """ItemSparse can list unoccupied gear slots; native P3 must not demand them."""
+    from tools.wf_gate_p3_live import _native_rogue_p3_verdict
+    options = {"status": "ok", "items": [
+        {"slot": "one_hand", "item_id": 24071, "item_level": 20},
+        {"slot": "chest", "item_id": 500, "item_level": 20},
+    ]}
+    receipt = _paid_receipt()
+    # The selected Rust request has only a main-hand equipped; its producer
+    # does not attempt an item swap for an empty chest position.
+    receipt["source_occupied_slots"] = ["weapon"]
+    accepted = _native_rogue_p3_verdict(options, receipt)
+    assert accepted["status"] == "PASS"
+    assert accepted["reasons"] == []
+    assert accepted["real_catalogue_slots_scored"] == 1
+    assert "P3_NATIVE_SLOT_UNSCORED:chest:NOT_ATTEMPTED" not in accepted["reasons"]
+
+    # An actually occupied source slot is still required by the P3 contract.
+    receipt["source_occupied_slots"] = ["weapon", "chest"]
+    missing = _native_rogue_p3_verdict(options, receipt)
+    assert missing["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:chest:NOT_ATTEMPTED" in missing["reasons"]
+    assert "runtime_proof" not in missing
+
+    # Older receipts without trustworthy occupied-slot provenance keep the
+    # existing conservative item-options fallback; no fabricated coverage.
+    receipt["source_occupied_slots"] = ["weapon", "weapon"]
+    unverified = _native_rogue_p3_verdict(options, receipt)
+    assert unverified["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:chest:NOT_ATTEMPTED" in unverified["reasons"]
