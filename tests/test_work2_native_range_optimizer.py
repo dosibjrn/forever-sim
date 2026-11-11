@@ -1081,6 +1081,10 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         assert "Native APL" in guide
         assert "2 hostile mob(s)" in guide
         assert "Not a continuous leveling route" in guide
+        assert "not a proven joint gear × talents × APL × pet optimum" in guide
+        assert ("Native-paid candidate breadth: 2; talent allocations 2, "
+                "gear sets 1, APLs 1, pet values 1.") in guide
+        assert "Limited axes (one paid value): gear, APL, pet." in guide
         assert f"{result['ranked_alternatives'][0]['sampled_cumulative_seconds']:.3f} s" in guide
         assert result["full_10_60_continuous_leveling_route_proven"] is False
 
@@ -1100,6 +1104,29 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         # measurements, even if its level list remains complete.
         from copy import deepcopy
         from src.v2.native_range_optimizer import render_sampled_build_guide
+
+        # Original-paid breadth is descriptive, not an additional optimizer
+        # acceptance gate. Fake native receipts only test Forever reporting.
+        varied = deepcopy(result)
+        second = varied["independent_level_rankings"]["20"][1]
+        for field, value in (
+            ("gear", {"items": [{"id": 5678}]}),
+            ("apl", {"priorityList": [{"action": {"castSpell": {"spellId": 99}}}]}),
+            ("pet", "Felhunter"),
+        ):
+            second[field] = value
+            second["receipt"][field] = value
+        varied_guide = render_sampled_build_guide(varied)
+        assert ("Native-paid candidate breadth: 2; talent allocations 2, "
+                "gear sets 2, APLs 2, pet values 2.") in varied_guide
+        assert "Limited axes (one paid value): talents, gear, APL, pet." not in varied_guide
+        # An unprepared/refused third proposal is not a paid pet/gear axis.
+        varied["independent_level_rankings"]["20"].append({
+            "gear": {"items": [{"id": 9999}]}, "pet": "Voidwalker",
+            "receipt": {"status": "NATIVE_API_CANDIDATE_REFUSED"},
+        })
+        assert render_sampled_build_guide(varied) == varied_guide
+
         bad = deepcopy(result)
         bad["ranked_alternatives"][0]["steps"][0]["receipt"]["native_full_recovery_paid"] = False
         with pytest.raises(ValueError, match="unpaid or refused native receipt"):
