@@ -8,6 +8,7 @@ from __future__ import annotations
 from src.v2.native_range_optimizer import (
     _retained_native_paid_axis_breadth,
     optimize,
+    render_sampled_build_guide,
 )
 
 
@@ -100,3 +101,90 @@ def test_paid_axis_breadth_rejects_disagreement_with_original_receipt():
     }
     assert _retained_native_paid_axis_breadth(result, 20) == (
         1, {"talents": 1, "gear": 1, "apl": 1, "pet": 1})
+
+
+def test_refused_source_axes_keep_native_codes_without_becoming_paid_breadth():
+    """Preserve Rust refusal diagnostics; never promote attempts to paid axes.
+
+    Fake transport receipts test reporting only, not Rust execution.
+    """
+    paid = _paid(20, "a", "100-0-0", 1)
+    refused_gear = {
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "candidate_id": "gear-L20", "level": 20,
+        "native_prepared": False, "proposal_axis": "gear",
+        "native_refusal_code": "native_item_not_eligible",
+        "native_refusal": "refused sample gear proposal",
+    }
+    refused_pet = {
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "candidate_id": "pet-L20", "level": 20,
+        "native_prepared": True, "proposal_axis": "pet",
+        "native_refusal_code": "native_summon_unsupported",
+        "native_refusal": "refused sample pet world",
+    }
+
+    # Compatible mode reserves search budget for later backward seeding;
+    # six permits these three initial native attempts without overrun.
+    result = optimize(
+        20, 20, 1, 2, 6,
+        evaluate=lambda **kwargs: [paid, refused_gear, refused_pet],
+        mode="compatible",
+    )
+    assert result["status"] == "SAMPLED_COMPATIBLE_PATH_PROVISIONAL"
+    assert result["native_candidates_examined"] == 3
+    assert result["competing_qualified_paths_by_level"]["20"] == 1
+    rejected = {row["candidate_id"]: row
+                for row in result["rejected_native_attempts"]}
+    assert set(rejected) == {"gear-L20", "pet-L20"}
+    assert (rejected["gear-L20"]["proposal_axis"],
+            rejected["gear-L20"]["native_refusal_code"],
+            rejected["gear-L20"]["native_prepared"]) == (
+                "gear", "native_item_not_eligible", False)
+    assert (rejected["pet-L20"]["proposal_axis"],
+            rejected["pet-L20"]["native_refusal_code"],
+            rejected["pet-L20"]["native_prepared"]) == (
+                "pet", "native_summon_unsupported", True)
+    assert result["native_paid_request_axis_breadth_by_level"]["20"][
+        "verified_native_paid_requests"] == 1
+    assert result["native_paid_request_axis_breadth_by_level"]["20"][
+        "uncompared_axes"] == ["talents", "gear", "apl", "pet"]
+
+
+def test_guide_discloses_refused_axes_without_promoting_to_measured():
+    """A source-native refusal is an attempted axis, not a paid alternative."""
+    paid = _paid(20, "a", "100-0-0", 1)
+    refused_gear = {
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "candidate_id": "refused-gear", "level": 20,
+        "proposal_axis": "gear", "native_prepared": False,
+        "native_refusal_code": "native_item_not_eligible",
+    }
+    refused_pet = {
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "candidate_id": "refused-pet", "level": 20,
+        "proposal_axis": "pet", "native_prepared": True,
+        "native_refusal_code": "native_summon_unsupported",
+    }
+    refused_without_code = {
+        "status": "NATIVE_API_CANDIDATE_REFUSED",
+        "candidate_id": "refused-apl", "level": 20,
+        "proposal_axis": "apl", "native_prepared": False,
+    }
+    result = optimize(
+        20, 20, 1, 2, 8,
+        evaluate=lambda **kwargs: [
+            paid, refused_gear, refused_pet, refused_without_code
+        ],
+        mode="compatible",
+    )
+    assert result["status"] == "SAMPLED_COMPATIBLE_PATH_PROVISIONAL"
+    guide = render_sampled_build_guide(result)
+    assert "- Native-paid candidate breadth: 1; talent allocations 1, gear sets 1, APLs 1, pet values 1." in guide
+    assert ("- Refused native proposals (not paid or ranked): "
+            "apl: 1 (no structured code), "
+            "gear: 1 (native_item_not_eligible), "
+            "pet: 1 (native_summon_unsupported)." in guide)
+    assert "Only one compatible native-paid path retained" in guide
+    assert result["native_paid_request_axis_breadth_by_level"]["20"][
+        "verified_native_paid_requests"] == 1
