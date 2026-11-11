@@ -58,7 +58,7 @@ def test_live_root_asks_native_options_and_prepares_distinct_proposals(tmp_path)
         original = json.loads(source.read_text())
         assert original["raid"]["parties"][0]["players"][0]["level"] == 20
         prepared.write_text(json.dumps({
-            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "request_sha256": "f" * 64,  # deterministic protobuf SHA, not JSON bytes
             "player": {"class": "ClassWarlock", "level": 20,
                        "stats": {"Health": 100, "Mana": 200}},
         }))
@@ -69,6 +69,9 @@ def test_live_root_asks_native_options_and_prepares_distinct_proposals(tmp_path)
     assert len(found["entries"]) == 3
     assert len(calls) == 4  # One source-options call, three real native prepares
     assert found["refusals"] == []
+    assert all(json.loads(Path(r["prepared"]).read_text())["request_sha256"]
+               != hashlib.sha256(Path(r["source_request"]).read_bytes()).hexdigest()
+               for r in found["entries"])
     proposals = [json.loads(Path(r["source_request"]).read_text())
                  ["raid"]["parties"][0]["players"][0]["talentsString"]
                  for r in found["entries"]]
