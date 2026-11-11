@@ -260,7 +260,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 41038145c97c11665b80e93529c1cf59b2259b6e
+          ref: 9f390a0f3f7397572316402f7b839de260280984
           path: native-engine
       - uses: actions/setup-python@v5
         with:
@@ -271,7 +271,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C native-engine rev-parse HEAD)" = "41038145c97c11665b80e93529c1cf59b2259b6e"
+          test "$(git -C native-engine rev-parse HEAD)" = "9f390a0f3f7397572316402f7b839de260280984"
           grep -q 'fn run_native_api' native-engine/src/main.rs
           echo "FOREVER_HEAD=$(git rev-parse HEAD)"
           echo "SELECTED_RUST_SHA=$(git -C native-engine rev-parse HEAD)"
