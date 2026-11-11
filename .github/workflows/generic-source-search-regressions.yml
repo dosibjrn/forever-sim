@@ -6,6 +6,8 @@ on:
       - 'tests/generic/search/**'
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
+      - 'tests/test_p75_axis_ablation.py'
+      - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
       - 'tests/gates/test_wf_gate_p7_5_live.py'
       - 'tests/gates/test_wf_gate_p7_5_native_unrestricted.py'
       - 'tests/gates/test_wf_gate_p7_5_prior.py'
@@ -150,6 +152,7 @@ jobs:
           tests/generic/runtime/test_source_ir_assembly_order.py
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
+          tests/test_p75_axis_ablation.py
           tests/gates/test_wf_gate_p7_5_live.py
           tests/gates/test_wf_gate_p7_5_native_unrestricted.py
           tests/gates/test_wf_gate_p7_5_prior.py
