@@ -345,7 +345,11 @@ def _level_aware_apl_variants(source: dict, prepared: dict, options: dict):
 
 
 def _described_build(source: dict, options: dict) -> dict:
-    """Human-readable native *proposal* labels, never gameplay certificates."""
+    """Project explicit native option IDs into display labels, not mechanics.
+
+    No spell-ID lookup by name and no Classic metadata guessing. Metadata
+    only enhances the report; simulated state still comes from source actor.
+    """
     actor = source["raid"]["parties"][0]["players"][0]
     item_by_id = {row["item_id"]: row for row in options.get("items", [])
                   if isinstance(row, dict) and type(row.get("item_id")) is int}
@@ -356,17 +360,36 @@ def _described_build(source: dict, options: dict) -> dict:
         item_id = row.get("id") if isinstance(row, dict) else None
         item = item_by_id.get(item_id, {})
         metadata = item.get("native") or item.get("legacy_wowhead") or {}
-        gear.append({"position": pos, "item_id": item_id,
-                     "name": metadata.get("name"),
-                     "native_slot": (item.get("native") or {}).get("slot")})
+        record = {"position": pos, "item_id": item_id,
+                  "name": metadata.get("name"),
+                  "native_slot": (item.get("native") or {}).get("slot")}
+        # Only explicit IDs from the prepared source actor are accepted for
+        # enchant tooltip parameters. The source can use a direct id or
+        # the protobuf-shaped enchant.effectId, never a free-text name.
+        enchant = row.get("enchant_id") if isinstance(row, dict) else None
+        if enchant is None and isinstance(row, dict):
+            v = row.get("enchant")
+            if isinstance(v, dict):
+                enchant = v.get("effectId")
+        if type(enchant) is int and enchant > 0:
+            record["enchant_id"] = enchant
+        for field in ("item_level", "ilvl", "icon", "icon_filename",
+                      "source", "wowhead_edition"):
+            if metadata.get(field) is not None:
+                record[field] = metadata[field]
+        gear.append(record)
     spells = []
     for pos, row in enumerate(actor.get("rotation", {}).get("priorityList", [])):
         action = row.get("action", {}) if isinstance(row, dict) else {}
         spell_id = action.get("castSpell", {}).get("spellId", {}).get("spellId")
         native = spell_by_id.get(spell_id, {})
-        spells.append({"priority": pos + 1, "spell_id": spell_id,
-                       "name": native.get("name"), "rank": native.get("rank"),
-                       "condition": action.get("condition")})
+        record = {"priority": pos + 1, "spell_id": spell_id,
+                  "name": native.get("name"), "rank": native.get("rank"),
+                  "condition": action.get("condition")}
+        for key in ("icon", "icon_filename"):
+            if native.get(key) is not None:
+                record[key] = native[key]
+        spells.append(record)
     talents = []
     encoded = actor.get("talentsString", "").split("-")
     for tree_index, tree in enumerate(options.get("talents", {}).get("trees", [])):
@@ -376,8 +399,23 @@ def _described_build(source: dict, options: dict) -> dict:
             rank = int(digits[index]) if type(index) is int and index < len(
                 digits) else 0
             if rank:
-                talents.append({"tree": tree.get("name"), "name": row.get("name"),
-                                "rank": rank, "max_rank": row.get("max_rank")})
+                record = {"tree": tree.get("name"), "name": row.get("name"),
+                          "rank": rank, "max_rank": row.get("max_rank")}
+                # Native metadata may carry a selected rank spell ID, or
+                # a rank-indexed list. Never synthesize one from a name.
+                spell_id = row.get("spell_id")
+                if type(spell_id) is not int or spell_id <= 0:
+                    for key in ("rank_spell_ids", "spell_ids"):
+                        rank_ids = row.get(key)
+                        if isinstance(rank_ids, list) and len(rank_ids) >= rank:
+                            spell_id = rank_ids[rank - 1]
+                            break
+                if type(spell_id) is int and spell_id > 0:
+                    record["spell_id"] = spell_id
+                for key in ("row", "col", "icon", "icon_filename"):
+                    if row.get(key) is not None:
+                        record[key] = row[key]
+                talents.append(record)
     return {"talent_names": talents, "equipped_item_names_ids": gear,
             "ordered_apl_spells": spells}
 
