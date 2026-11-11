@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
+      - 'src/game/runtime/go_world_range_feed.py'
       - 'integrations/mythicsim-rust/live_two_world_pulls.py'
       - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'

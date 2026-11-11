@@ -508,3 +508,24 @@ def test_paid_range_dispatch_preflight_executes_before_native_checkout():
         ({**continuation, "RESUME_ROOT_ARTIFACT_ID": "123"}, "only valid for an L10 root"),
     ):
         check(bad, accepted=False, expected=error)
+
+
+def test_manual_native_joint_sweep_preserves_inflight_paid_receipts():
+    """A second manual dispatch must not cancel a native sweep mid-evaluation.
+
+    The queued request may still be replaced before starting; no already-paid
+    source/world work should be discarded solely by workflow concurrency.
+    """
+    workflow = (ROOT / ".github/workflows/native-joint-28-sweep.yml").read_text(
+        encoding="utf-8")
+    head = workflow.split("\njobs:", 1)[0]
+    assert "  workflow_dispatch:\n" in head
+    for automatic in ("  pull_request:", "  push:", "  schedule:"):
+        assert automatic not in head
+    assert "  group: native-joint-28-stage5-${{ github.ref }}" in head
+    assert "  cancel-in-progress: false" in head
+    assert "  cancel-in-progress: true" not in head
+    assert "Run balanced native 5s × 28 profile sweep" in workflow
+    assert "if: always()" in workflow
+    assert "retention-days: 3" in workflow
+    assert "retention-days: 7" in workflow
