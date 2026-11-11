@@ -87,3 +87,23 @@ def test_superseded_pr_native_world_smoke_is_cancelled_without_skipping_checks()
     assert "Two distinct sourced-HP native↔2D world kills" in steps
     assert "--require-native-zero-health-damage" in steps
     assert "--require-native-health-damage" in steps
+
+def test_superseded_pr_clock_ack_runs_cancel_only_same_pr():
+    """New head replaces queued ACK checks; it still executes live transport tests."""
+    root = Path(__file__).resolve().parents[2]
+    ack = (root / ".github/workflows/native-session-ack-regressions.yml"
+           ).read_text(encoding="utf-8")
+    policy, steps = ack.split("jobs:", 1)
+    assert "  pull_request:\n" in policy
+    assert ("group: native-clock-ack-pr-"
+            "${{ github.event.pull_request.number }}") in policy
+    assert "  cancel-in-progress: true" in policy
+    assert "      - 'tests/maintenance/test_native_session_ack_execution_boundary.py'\n" in policy
+    assert "  clock-ack:" in steps
+    assert "python -m pytest -q " in steps
+    assert "tests/integration/backend/test_wf_go_native_world_damage_ack.py" in steps
+    assert "tests/test_work2_native_world_clock_ack.py" in steps
+    # A source change must still schedule the latest real 2D/Rust smoke.
+    smoke = WORKFLOW.read_text(encoding="utf-8")
+    assert "  source-health-world:" in smoke
+    assert "cargo build --locked --manifest-path" in smoke
