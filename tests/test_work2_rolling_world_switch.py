@@ -7,7 +7,8 @@ import runpy
 
 import pytest
 
-from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
+from src.game.model import ActorDefinition, ResourceDefinition
+from src.game.runtime import ActorState, CombatRuntime, TargetState
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +19,17 @@ new_kills = _bridge["_new_source_acked_world_kills"]
 
 
 def two_live_world():
-    world = diagnostic_gsim_world()
+    # Mirror the live runner: A starts in range; B is an initially idle mob
+    # outside ambient aggro (the generic range probe puts m0 at player feet).
+    player = ActorState.from_ir(
+        ActorDefinition("hero", "player", base_stats={}),
+        (ResourceDefinition("health", "Health", "hero",
+                            initial_amount=500, capacity=500),), ())
+    world = CombatRuntime(
+        actor=player, target=TargetState.with_health("m0", 10_000_000),
+        other_targets=(TargetState.with_health("m1", 10_000_000),),
+        spatial_positions_yards={"m1": (12., 0.), "m0": (32., 0.)},
+        enemy_move_speed_yards_s=0., melee_radius_yards=5.)
     world.engage_target("m1")
     world.select_target("m1")
     world.targets["m1"].health = world.targets["m1"].max_health * 0.45
