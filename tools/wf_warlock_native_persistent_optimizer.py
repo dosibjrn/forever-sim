@@ -183,6 +183,16 @@ class PersistentNativeEvaluator:
             from live_two_world_pulls import run as run_world
         self.run_world = run_world
         self.engine_sha = _file_digest(binary)
+        # A single pinned Rust binary and clean Forever checkout are used for
+        # the whole optimizer request. The cache identity helper hashes that
+        # binary and runs two Git subprocesses; doing so per paid candidate
+        # wastes work on every sampled level and on backward-seeded probes.
+        # Only scenario fields vary; retain their exact values per receipt.
+        seed_level = int(self.template["raid"]["parties"][0]["players"][0]["level"])
+        self._paid_cache_identity_seed = _exact_paid_cache_identity(
+            binary, actor_level=seed_level, mob_count=2,
+            target_hp=(float(representative_hp(seed_level))
+                       if target_hp is None else float(target_hp)))
         self.options: dict[int, dict] = {}
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -218,8 +228,11 @@ class PersistentNativeEvaluator:
         # raw-JSON SHA wrongly equated to Rust's protobuf request digest.
         prepared_digest = _digest(json.dumps(
             prepared, sort_keys=True, separators=(",", ":")).encode())
-        identity = _exact_paid_cache_identity(
-            self.binary, actor_level=level, mob_count=mobs, target_hp=target_hp)
+        identity = (
+            dict(self._paid_cache_identity_seed, actor_level=level,
+                 mob_count=mobs, target_hp=float(target_hp))
+            if self._paid_cache_identity_seed is not None else None
+        )
         if identity is not None:
             identity = dict(identity, source_sha256=native_sha,
                             prepared_sha256=prepared_digest)
