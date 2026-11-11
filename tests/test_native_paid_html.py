@@ -73,7 +73,7 @@ def _sample(*, level=20, seconds=35.525, pet="Succubus", label="a",
     return row
 
 
-def _result(rows, level=20):
+def _result(rows, level=20, class_name="warlock"):
     return {
         "status": "SAMPLED_COMPATIBLE_PATH_RANKED",
         "sampled_levels_requested": [level],
@@ -81,7 +81,7 @@ def _result(rows, level=20):
         "mob_count": 2,
         "rng_mode": "balanced",
         "iterations": 1,
-        "class": "warlock",
+        "class": class_name,
     }
 
 
@@ -157,3 +157,48 @@ def test_generic_optimizer_saves_html_automatically_with_paid_receipt(tmp_path):
     ], evaluate=evaluator)
     assert code == 0
     assert (tmp_path / "html" / "warlock-l20-best-tested.html").is_file()
+
+def test_paid_html_class_label_and_filename_come_from_measured_result(tmp_path):
+    # These are synthetic receipt-transport fixtures, not real Mage/Druid sims.
+    for character_class in ("mage", "druid", "hunter", "priest"):
+        result = _result([_sample(pet=None)], class_name=character_class)
+        report = render_native_paid_html(result, level=20)
+        assert f"<h1>{character_class.title()} · Level 20</h1>" in report
+        assert f"WoW Forever {character_class.title()} L20" in report
+        assert "<h1>Warlock" not in report
+        pages = write_native_paid_html_reports(
+            result, tmp_path / character_class)
+        assert [p.name for p in pages] == [
+            f"{character_class}-l20-best-tested.html"]
+        assert pages[0].read_text() == report
+
+
+def test_html_refuses_missing_or_unknown_class_instead_of_guessing_warlock(tmp_path):
+    result = _result([_sample()])
+    del result["class"]
+    with pytest.raises(ValueError, match="native optimizer class"):
+        render_native_paid_html(result, level=20)
+    with pytest.raises(ValueError, match="native optimizer class"):
+        write_native_paid_html_reports(result, tmp_path / "missing-class")
+
+
+def test_shared_optimizer_accepts_injected_mage_evaluator_without_warlock_module(tmp_path):
+    from src.v2.native_range_optimizer import main as optimize_main
+
+    candidate = _sample(pet=None)
+    def evaluator(*, level, parent, mob_count, **kwargs):
+        assert level == 20 and parent is None and mob_count == 2
+        return [candidate["receipt"]]
+
+    result_file = tmp_path / "mage.json"
+    code = optimize_main([
+        "--class", "mage", "--start-level", "20", "--end-level", "20",
+        "--budget", "2", "--beam-width", "1", "--n-mobs", "2",
+        "--out", str(result_file),
+    ], evaluate=evaluator)
+    assert code == 0
+    result = json.loads(result_file.read_text())
+    assert result["class"] == "mage"
+    html = (tmp_path / "html" / "mage-l20-best-tested.html").read_text()
+    assert "<h1>Mage · Level 20</h1>" in html
+    assert "<h1>Warlock" not in html

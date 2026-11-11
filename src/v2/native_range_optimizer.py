@@ -637,7 +637,7 @@ def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
     ranked = result.get("independent_level_rankings", {})
     rejected = result.get("rejected_native_attempts", [])
     lines = [
-        "# Native Warlock — best tested level snapshots",
+        f"# Native {str(result.get('class') or 'Unspecified class').title()} — best tested level snapshots",
         "",
         "**Scope:** independently native-prepared and fully recovered world "
         "observations; these are NOT a global optimum, compatible equipment "
@@ -928,7 +928,7 @@ def optimize(
     evaluate: Callable[..., Sequence[Mapping[str, Any]]],
     beam_width: int = 3, rng_mode: str = "balanced", iterations: int = 1,
     recover_to_full: bool = True, mode: str = "independent",
-    class_name: str = "warlock", talent_tree: str = "unconstrained",
+    class_name: str = "unspecified", talent_tree: str = "unconstrained",
     backend: str = "native",
 ) -> dict[str, Any]:
     """Rank real native candidates in a continuing path or independent samples.
@@ -1107,6 +1107,7 @@ def optimize(
                    else "SAMPLED_NATIVE_PREFIX_ONLY" if covered
                    else "NO_COMPARABLE_NATIVE_PATH"),
         "search_mode": mode,
+        "class": class_name,
         "continuity_unverified": mode == "independent",
         "independent_level_rankings": independent_rankings,
         "independent_sample_winner_elapsed_sum_seconds": (
@@ -1156,8 +1157,8 @@ def guide_main(argv: list[str] | None = None) -> int:
 def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     """Generic optimizer CLI. Class and search density are runtime settings.
 
-    Native Warlock is the first available adapter, not a different optimizer.
-    Its source fixture is only an initial request, never a hardcoded route.
+    Class-specific native evaluators are selected by a plugin registry.
+    The optimizer, paid receipt scorer and HTML publisher are shared.
     """
     import argparse
     import json
@@ -1182,8 +1183,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     ap.add_argument("--native-binary", type=Path,
                     default=Path("integrations/mythicsim-rust/target/release/forever-engine"))
     ap.add_argument("--source", type=Path,
-                    default=Path("fixtures/warlock-l20-native-paid-30s.request.json"),
-                    help="Initial native source request (not a route or fixed winner)")
+                    help="Initial class-native source request; defaults to the "
+                         "selected class adapter fixture when available")
     ap.add_argument("--target-hp", type=float,
                     help="Optional fixed enemy HP override; default uses the "
                          "ordinary-mob scenario HP at each sampled level")
@@ -1207,9 +1208,11 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                     help="Output folder for offline standalone BiS-style native-paid HTML pages; "
                          "default is <JSON output parent>/html")
     args = ap.parse_args(argv)
-    cls = args.class_name.lower()
-    if cls != "warlock":
-        ap.error(f"no source-native adapter registered yet for class {cls!r}")
+    from .native_class_adapters import normalize_class_name
+    try:
+        cls = normalize_class_name(args.class_name)
+    except ValueError as exc:
+        ap.error(str(exc))
     if args.tree != "unconstrained":
         ap.error("the current native adapter supports --tree unconstrained only")
     if args.backend != "rust" or args.rng != "balanced" or args.iterations != 1:
@@ -1246,13 +1249,22 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         if args.n_mobs < 2:
             ap.error("native world bridge requires at least two hostile targets")
     if evaluate is None:
-        if not args.native_binary.is_file() or not args.source.is_file():
-            ap.error("native engine and initial source request must exist")
-        from tools.wf_warlock_native_persistent_optimizer import PersistentNativeEvaluator
-        # One Rust session and one stable paid cache survive every sampled
-        # level and reverse-seeded pass; no per-candidate JSON/prepared shuttle.
-        native = PersistentNativeEvaluator(
-            args.native_binary, args.source, Path("runs/native-api-paid-cache"),
+        from .native_class_adapters import (
+            NativeAdapterUnavailable, resolve_native_class_adapter,
+        )
+        try:
+            adapter = resolve_native_class_adapter(cls)
+        except NativeAdapterUnavailable as exc:
+            ap.error(str(exc))
+        source = args.source or adapter.default_source
+        if source is None:
+            ap.error(f"native {cls} adapter needs an explicit --source request")
+        if not args.native_binary.is_file() or not source.is_file():
+            ap.error("native engine and selected class source request must exist")
+        # Every class adapter supplies a source-native evaluator with this
+        # protocol; no Warcraft legality or search algorithm is duplicated.
+        native = adapter.evaluator_factory(
+            args.native_binary, source, Path("runs/native-api-paid-cache"),
             target_hp=args.target_hp,
             **({"compare_world_rest_30": True}
                if args.compare_world_rest_30 else {}),
@@ -1302,7 +1314,7 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if not args.probe_native_continuity:
         from tools.wf_native_paid_html import write_native_paid_html_reports
         html_dir = args.html_out_dir or (output.parent / "html")
-        write_native_paid_html_reports(result, html_dir, class_name=cls)
+        write_native_paid_html_reports(result, html_dir)
     if args.probe_native_continuity:
         print(f"Native same-session L{args.start_level}->L{args.end_level} "
               f"continuity: {result['status']}; "
