@@ -76,6 +76,10 @@ on:
         type: choice
         options: [none, '10', '5', '1']
         default: none
+      m05_cache_run_id:
+        description: "Prior stride-10/5 run ID for compatible native paid cache reuse (empty selects M0.4)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -253,7 +257,7 @@ jobs:
   # Work2 capability PR. Do not rerun the now-merged stride-20 milestone.
   # PR initially pays stride 10; manual dispatch selects 5 or 1 after evidence.
   sparse-optimizer-real:
-    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/m05-native-stride-density-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'opened' && github.event.pull_request.head.ref == 'feature/m05-native-stride-density-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
@@ -286,8 +290,8 @@ jobs:
         uses: actions/download-artifact@v4
         continue-on-error: true  # Artifact retention expiry must not veto a new native run.
         with:
-          name: requested-sparse-optimize-42980239306
-          run-id: 42980239306
+          name: ${{ inputs.m05_cache_run_id && format('requested-m05-optimize-{0}', inputs.m05_cache_run_id) || 'requested-sparse-optimize-42980239306' }}
+          run-id: ${{ inputs.m05_cache_run_id || '42980239306' }}
           github-token: ${{ github.token }}
           path: project/runs
       - name: Run actual M0.5 sampled compatible optimizer (Rust ACK and paid dual restoration)
