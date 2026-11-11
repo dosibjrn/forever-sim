@@ -520,10 +520,12 @@ class PersistentNativeEvaluator:
                  session_factory: Callable = NativeApiSession,
                  run_world: Callable | None = None,
                  compare_world_rest_30: bool = False,
-                 compare_world_rolling_50: bool = False):
+                 compare_world_rolling_50: bool = False,
+                 explore_world_policies: bool = False):
         self.binary = binary
         self.compare_world_rest_30 = compare_world_rest_30
         self.compare_world_rolling_50 = compare_world_rolling_50
+        self.explore_world_policies = explore_world_policies
         self.template = json.loads(source.read_text())
         self.artifact_dir = artifact_dir
         self.target_hp = target_hp
@@ -841,14 +843,35 @@ class PersistentNativeEvaluator:
         # A small paid budget must compare builds, not just one build's
         # rotations. Rust prepare still decides whether the family is legal.
         early_talent = sources.pop(0) if sources and axis_sources else None
-        sources = [(first, "talent"), *(
-                       [(copy.deepcopy(first), "world_rest_30pct", 0.3, 0.3)]
-                       if self.compare_world_rest_30 else []), *(
-                       [(copy.deepcopy(first), "world_rolling_50pct",
-                         1.0, 1.0, copy.deepcopy(ROLLING_WORLD_APL_50))]
-                       if self.compare_world_rolling_50 else []),
+        # Diagnostic one-level policy comparisons retain their paired ordering.
+        # In the ordinary generic search, first reserve source-native build
+        # diversity, then offer independently paid rest and two-hostile rolling
+        # challengers before repeated same-build APL attempts.
+        policy_sources = [
+            *([(copy.deepcopy(first), "world_rest_30pct", 0.3, 0.3)]
+              if self.compare_world_rest_30 or self.explore_world_policies else []),
+            *([(copy.deepcopy(first), "world_rolling_50pct", 1.0, 1.0,
+                copy.deepcopy(ROLLING_WORLD_APL_50))]
+              if self.compare_world_rolling_50
+              or (self.explore_world_policies and mob_count == 2) else []),
+        ]
+        # The first visit protects gear/pet/talent diversity. A range
+        # coordinator's adaptive revisit carries the exact paid source+policy
+        # exclusions from that visit: move still-unpaid world policies ahead
+        # of further gear/APL exploration so a one- or two-attempt follow-up
+        # can actually compare recovery/pull behavior. The identical source
+        # with a DIFFERENT policy is still a new Rust-paid experiment.
+        adaptive_policy_revisit = (
+            self.explore_world_policies
+            and excluded_paid_source_policies is not None
+        )
+        sources = [(first, "talent"),
+                   *(policy_sources if not self.explore_world_policies
+                      or adaptive_policy_revisit else []),
                    *axis_sources[:2],
                    *([(early_talent, "talent")] if early_talent is not None else []),
+                   *(policy_sources if self.explore_world_policies
+                      and not adaptive_policy_revisit else []),
                    *axis_sources[2:],
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
@@ -910,6 +933,14 @@ class PersistentNativeEvaluator:
                             if sources[pos][1] == "talent"), None)
                         if first_family is not None:
                             insert_at = max(insert_at, first_family + 1)
+                    if self.explore_world_policies:
+                        last_policy = max((
+                            pos for pos in range(index, len(sources))
+                            if sources[pos][1] in (
+                                "world_rest_30pct", "world_rolling_50pct")
+                        ), default=-1)
+                        if last_policy >= 0:
+                            insert_at = max(insert_at, last_policy + 1)
                     if self.compare_world_rest_30 or self.compare_world_rolling_50:
                         # The opt-in world-policy challenger gets a bounded
                         # native attempt before APL variants spend the budget.
