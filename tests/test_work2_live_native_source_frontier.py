@@ -534,6 +534,24 @@ def test_source_parent_mismatch_never_asks_native_for_an_edge(tmp_path):
     assert result["refusals"][0]["native_prepared"] is False
 
 
+def test_tampered_paid_parent_receipt_bytes_refuse_before_native_calls(tmp_path):
+    """Do not re-author signed-off world evidence into a fresh lineage."""
+    seed, binary, parent = _scored_parent(tmp_path)
+    original = Path(parent["native_raw_receipt_file"])
+    parent["native_raw_receipt_sha256"] = hashlib.sha256(original.read_bytes()).hexdigest()
+    # Still valid JSON with the same gameplay values, but no longer the
+    # original immutable native receipt named by the paid scorer.
+    original.write_text(original.read_text() + "\n")
+    result = produce_frontier(
+        _request(level=30, parent=parent), binary=binary,
+        seed_source=seed, out=tmp_path / "unpaid",
+        runner=lambda *args, **kwargs: 1 / 0,
+    )
+    assert result["entries"] == []
+    assert result["refusals"][0]["status"] == "NATIVE_CONTINUITY_NOT_ATTESTED"
+    assert "original paid receipt bytes mismatch" in result["refusals"][0]["native_refusal"]
+
+
 def test_scored_child_rechecks_paid_parent_digest_before_any_native_payment(tmp_path):
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
 
