@@ -15,9 +15,12 @@ on:
 permissions:
   contents: read
 
+# Every dispatch explicitly pays a real native 28-profile sweep. Replacing an
+# in-flight run discards paid evidence and burns CI time; serialize requests
+# instead of cancelling the one already doing real native work.
 concurrency:
   group: native-joint-28-stage5-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   native-joint-stage5:
