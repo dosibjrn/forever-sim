@@ -119,6 +119,76 @@ def _world_breakdown(sidecar: Mapping[str, Any]) -> str:
     return ''.join(pieces)
 
 
+
+def _acked_effects(sidecar: Mapping[str, Any]) -> str:
+    """Show exact source-native 2D-ACK damage effects, never inferred casts/DPS.
+
+    Source action IDs are NOT necessarily Wowhead spell IDs; we intentionally
+    avoid attaching a spell tooltip without a separate verified spell ID.
+    """
+    events = sidecar.get('native_acked_damage_effect_timeline')
+    if not isinstance(events, list) or not events:
+        counts = sidecar.get('native_source_damage_effects_by_caster')
+        if isinstance(counts, Mapping) and counts:
+            lines = []
+            for caster, actions in sorted(counts.items()):
+                if not isinstance(caster, str) or not isinstance(actions, Mapping):
+                    return _missing('Source action ledger invalid', 'No damage/cast values are inferred.')
+                for action, count in sorted(actions.items()):
+                    if not isinstance(action, str) or type(count) is not int or count < 0:
+                        return _missing('Source action ledger invalid', 'No damage/cast values are inferred.')
+                    lines.append('<tr><td>' + h(caster) + '</td><td>' + h(action) +
+                                 '</td><td>' + str(count) + '</td></tr>')
+            return ('<div class="table-scroll"><table class="comparison sim-table">'
+                    '<thead><tr><th>Native caster</th><th>Source action</th>'
+                    '<th>2D-ACKed damage effects</th></tr></thead><tbody>' +
+                    ''.join(lines) + '</tbody></table></div>'
+                    '<p class="section-desc">These are native damage-effect event counts, not spell casts, DPS or per-spell damage.</p>')
+        return _missing('Per-spell damage not recorded',
+                        'Neither a source-native event-level ACK trace nor a per-spell cast/damage ledger was saved.')
+    seen: set[str] = set()
+    previous = -1
+    rows = []
+    by_action: dict[tuple[str, str], tuple[int, float]] = {}
+    for event in events:
+        if not isinstance(event, Mapping):
+            return _missing('Invalid damage-effect timeline', 'Rejecting malformed source-native telemetry.')
+        clock, eid = event.get('clock_ns'), event.get('event_id')
+        caster, action = event.get('native_caster_type'), event.get('source_action_id')
+        damage = num(event.get('source_damage'))
+        if (type(clock) is not int or clock < previous or clock < 0
+                or not isinstance(eid, (int, str)) or str(eid) in seen
+                or not isinstance(caster, str) or not caster
+                or not isinstance(action, str) or not action
+                or damage is None or damage < 0):
+            return _missing('Invalid damage-effect timeline', 'Rejecting malformed source-native telemetry.')
+        seen.add(str(eid))
+        previous = clock
+        key = (caster, action)
+        count, total = by_action.get(key, (0, 0.))
+        by_action[key] = (count + 1, total + damage)
+        rows.append('<tr><td>' + h(fmt(clock / 1e9, ' s', 3)) +
+                    '</td><td>' + h(caster) + '</td><td>' + h(action) +
+                    '</td><td>' + h(fmt(damage)) + '</td><td>' +
+                    ('Periodic' if event.get('periodic') is True else 'Direct') +
+                    '</td><td>' + h(event.get('native_target_index')) + '</td></tr>')
+    sums = ''.join('<tr><td>' + h(caster) + '</td><td>' + h(action) +
+                   '</td><td>' + str(count) + '</td><td>' + h(fmt(total)) +
+                   '</td></tr>' for (caster, action), (count, total) in sorted(by_action.items()))
+    return ('<div class="table-scroll"><table class="comparison sim-table">'
+            '<thead><tr><th>Native caster</th><th>Source action</th>'
+            '<th>ACKed effects</th><th>Native source damage*</th></tr></thead><tbody>' +
+            sums + '</tbody></table></div>'
+            '<details><summary>Actual source-native damage-effect timeline (' + str(len(rows)) +
+            ' events)</summary><div class="inside table-scroll"><table class="comparison sim-table">'
+            '<thead><tr><th>ACK time</th><th>Caster</th><th>Source action</th>'
+            '<th>Native source damage*</th><th>Type</th><th>Native target index</th>'
+            '</tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div></details>'
+            '<p class="section-desc">*Values are source-native damage attached to actual'
+            ' 2D-ACKed effects, not inferred casts, not 2D target HP lost after overkill,'
+            ' and not a per-spell DPS distribution. Every row retains its ACK clock.</p>')
+
+
 def _resource_rows(sidecar: Mapping[str, Any], row: Mapping[str, Any]) -> str:
     raw = row.get('receipt') or {}
     term = sidecar.get('native_terminal_recovery')
@@ -198,8 +268,8 @@ def render_paid_simulation(result: Mapping[str, Any], row: Mapping[str, Any],
         '<section class="content" id="resources"><h2>Resources and recovery</h2>'
         '<p class="section-desc">Actual measured resource fields. Values marked Not recorded are absent in the exact native receipt, not zero.</p>' + resbody + '</section>'
         '<section class="content" id="damage"><h2>Ability damage, casts, buffs and debuffs</h2>'
-        '<div class="sim-panels"><div class="panel"><h3>Ability damage / pet damage</h3>'
-        + _missing('Per-spell damage not recorded', 'These native-paid 2D receipts do not contain a per-spell damage distribution, pet DPS or crit/miss breakdown. APL priorities are build instructions, not measured casts.') + '</div>'
+        '<div class="sim-panels"><div class="panel"><h3>Source-native damage effects (ACKed)</h3>'
+        + (_acked_effects(raw) if has_raw else _missing('Per-spell damage not recorded', 'The exact source-native 2D ACK sidecar is unavailable; no cast or damage is inferred.')) + '</div>'
         '<div class="panel"><h3>Cast timeline and buff/debuff uptime</h3>'
         + _missing('Actual casts and aura uptimes not recorded', 'The result does not include per-cast timestamps, proc activations or aura uptime intervals. No artificial timeline is generated.') + '</div></div>'
         '<p class="section-desc">DPS distributions / confidence intervals are unavailable for the single balanced native candidate evaluation; do not compare this report with 10,000-iteration raid DPS.</p></section>'
