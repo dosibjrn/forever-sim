@@ -299,6 +299,41 @@ jobs:
           run-id: ${{ github.event_name == 'pull_request' && '42981742152' || inputs.m05_cache_run_id || '42980239306' }}
           github-token: ${{ github.token }}
           path: project/runs
+      - name: Resolve old paid-run merge commits for safe source-object cache matching
+        working-directory: project
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+          from pathlib import Path
+
+          # Old Actions pull_request receipts can record a temporary merge
+          # commit not reachable from normal branch history, even with a full
+          # checkout. Fetch only authentic artifact metadata's exact SHA.
+          commits = set()
+          for path in Path("runs/native-api-paid-cache").glob("*.native.cache.json"):
+              try:
+                  record = json.loads(path.read_text())
+                  rev = record.get("forever_commit")
+                  if (record.get("cache_schema") == 1
+                          and isinstance(rev, str)
+                          and re.fullmatch(r"[0-9a-f]{40}", rev)):
+                      commits.add(rev)
+              except (OSError, ValueError, TypeError):
+                  continue
+          for rev in sorted(commits):
+              present = subprocess.run(
+                  ["git", "cat-file", "-e", rev + "^{commit}"],
+                  capture_output=True, check=False)
+              if present.returncode != 0:
+                  fetched = subprocess.run(
+                      ["git", "fetch", "--quiet", "--no-tags", "origin", rev],
+                      capture_output=True, check=False)
+                  if fetched.returncode != 0:
+                      print("Original source commit unavailable; exact cache "
+                            "verification will refuse reuse:", rev)
+          PY
       - name: Run actual M0.5 sampled compatible optimizer (Rust ACK and paid dual restoration)
         working-directory: project
         env:
