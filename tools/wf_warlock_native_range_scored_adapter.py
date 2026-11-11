@@ -157,7 +157,7 @@ def evaluate_request(
             prepared = json.loads(prepared_path.read_text())
             native_source_sha = _sha(source_path)
             actor = prepared["player"]
-            if (prepared.get("request_sha256") != native_source_sha
+            if (not _valid_sha(prepared.get("request_sha256"))
                     or actor.get("class") != "ClassWarlock"
                     or actor.get("level") != level):
                 raise ValueError("NATIVE_PREPARED_SOURCE_IDENTITY_MISMATCH")
@@ -197,8 +197,7 @@ def evaluate_request(
                             raise ValueError("NATIVE_SOURCE_CHAIN_FILE_IDENTITY_MISMATCH")
                         prepared_step = json.loads(prepared_step_path.read_text())
                         source_step = json.loads(request_path.read_text())
-                        if (prepared_step.get("request_sha256")
-                                != step["source_request_sha256"]
+                        if (not _valid_sha(prepared_step.get("request_sha256"))
                                 or prepared_step["player"].get("class") != "ClassWarlock"
                                 or prepared_step["player"].get("level") != step["level"]
                                 or source_step["raid"]["parties"][0]["players"][0].get("level")
@@ -282,7 +281,7 @@ def evaluate_request(
                 raise ValueError("NATIVE_SCORER_STATUS:"
                                  + str(comparison.get("status", "NOT_RECORDED")))
             if (comparison.get("prepared_sha256") != _sha(path)
-                    or comparison.get("source_sha256") != src
+                    or comparison.get("source_sha256") != prepared["request_sha256"]
                     or comparison.get("mob_count") != mobs
                     or comparison.get("rng_mode") != "balanced"
                     or comparison.get("iterations") != 1):
@@ -313,7 +312,7 @@ def evaluate_request(
                     or end_ns < start_ns or not isinstance(elapsed, (int, float))
                     or not math.isfinite(elapsed)
                     or not math.isclose(elapsed, end_ns / 1e9, abs_tol=1e-6)
-                    or raw.get("source_sha256") != src):
+                    or raw.get("source_sha256") != prepared["request_sha256"]):
                 raise ValueError("NATIVE_RECOVERY_SOURCE_OR_CLOCK_MISMATCH")
             if (any(type(n) not in (int, float) or not math.isfinite(n)
                     or n <= 0 for n in (max_hp, max_mana))
