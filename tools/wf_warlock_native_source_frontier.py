@@ -240,6 +240,14 @@ def _paid_parent_source(parent: dict, binary: Path) -> tuple[dict, str]:
     source_path = Path(parent["source_request_file"])
     prepared_path = Path(parent["prepared_file"])
     raw_path = Path(parent["native_raw_receipt_file"])
+    # Reusing a paid parent must not silently re-author its original receipt.
+    # Legacy receipts without a recorded digest remain supported, but when
+    # the scorer supplied one we must preserve those exact paid bytes.
+    original_raw_sha = parent.get("native_raw_receipt_sha256")
+    if original_raw_sha is not None and (
+            not _valid_native_digest(original_raw_sha)
+            or _sha256(raw_path) != original_raw_sha):
+        raise ValueError("native parent original paid receipt bytes mismatch")
     if _sha256(source_path) != source_sha:
         raise ValueError("native parent source bytes mismatch")
     source = json.loads(source_path.read_text())
