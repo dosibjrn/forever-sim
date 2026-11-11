@@ -1098,6 +1098,28 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         assert offline.read_text() == guide
         assert seen == [20, 21]
 
+        # A copied/modified JSON cannot be presented as the original paid
+        # measurements, even if its level list remains complete.
+        from copy import deepcopy
+        from src.v2.native_range_optimizer import render_sampled_build_guide
+        bad = deepcopy(result)
+        bad["ranked_alternatives"][0]["steps"][0]["receipt"]["native_full_recovery_paid"] = False
+        with pytest.raises(ValueError, match="unpaid or refused native receipt"):
+            render_sampled_build_guide(bad)
+        bad = deepcopy(result)
+        bad["ranked_alternatives"][0]["steps"][0]["native_elapsed_seconds"] += 10
+        with pytest.raises(ValueError, match="elapsed/recovery disagrees"):
+            render_sampled_build_guide(bad)
+        bad = deepcopy(result)
+        bad["ranked_alternatives"][1]["sampled_cumulative_seconds"] += 1
+        with pytest.raises(ValueError, match="cumulative score disagrees"):
+            render_sampled_build_guide(bad)
+        bad = deepcopy(result)
+        del bad["ranked_alternatives"][0]["steps"][0]["receipt"]
+        with pytest.raises(ValueError, match="original native paid receipts"):
+            render_sampled_build_guide(bad)
+        assert seen == [20, 21]  # validation never starts new native work
+
 
 def test_sampled_guide_refuses_unmeasured_or_partial_path():
     from src.v2.native_range_optimizer import render_sampled_build_guide
