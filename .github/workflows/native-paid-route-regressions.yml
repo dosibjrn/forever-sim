@@ -255,9 +255,11 @@ jobs:
 
   # Real M0.5 densification of the SAME production optimizer, on a single
   # Work2 capability PR. Do not rerun the now-merged stride-20 milestone.
-  # PR pays next unmeasured stride 1 after verified stride 5; manual dispatch is parameterized.
+  # The initial PR-open event starts one paid density; later source/test syncs
+  # run focused tests only, avoiding an automatic repeat of the paid 41-level
+  # job. Explicit workflow_dispatch still runs any requested new density.
   sparse-optimizer-real:
-    if: ${{ (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened') && github.event.pull_request.head.ref == 'feature/work2-m05-stride5-executable-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
+    if: ${{ (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened') && github.event.pull_request.head.ref == 'feature/work2-m05-stride5-executable-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
