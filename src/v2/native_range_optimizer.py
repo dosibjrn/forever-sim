@@ -724,8 +724,11 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if args.backend != "rust" or args.rng != "balanced" or args.iterations != 1:
         ap.error("the current native adapter supports rust/balanced/one iteration")
     output = args.out or Path("runs") / (
-        f"optimize_{cls}_L{args.start_level}-{args.end_level}"
-        f"_stride{args.level_stride}_mobs{args.n_mobs}.json"
+        (f"native_continuity_{cls}_L{args.start_level}-{args.end_level}"
+         f"_mobs{args.n_mobs}.json")
+        if args.probe_native_continuity else
+        (f"optimize_{cls}_L{args.start_level}-{args.end_level}"
+         f"_stride{args.level_stride}_mobs{args.n_mobs}.json")
     )
     if args.guide_out and args.guide_out.resolve() == output.resolve():
         ap.error("--guide-out must differ from --out")
@@ -755,7 +758,7 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                 result = optimize(
                     args.start_level, args.end_level, args.level_stride,
                     args.n_mobs, args.budget, evaluate=native,
-                beam_width=args.beam_width, rng_mode=args.rng,
+                    beam_width=args.beam_width, rng_mode=args.rng,
                     iterations=args.iterations, mode="compatible",
                     class_name=cls, talent_tree=args.tree, backend=args.backend,
                 )
@@ -772,7 +775,7 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
             result = optimize(
                 args.start_level, args.end_level, args.level_stride,
                 args.n_mobs, args.budget, evaluate=evaluate,
-            beam_width=args.beam_width, rng_mode=args.rng,
+                beam_width=args.beam_width, rng_mode=args.rng,
                 iterations=args.iterations, mode="compatible",
                 class_name=cls, talent_tree=args.tree, backend=args.backend,
             )
