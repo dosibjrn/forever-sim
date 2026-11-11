@@ -31,6 +31,12 @@ on:
 permissions:
   contents: read
 
+# New commits supersede old fast PR-only Python forwarding checks. This
+# workflow has no original native-paid job or M1 acceptance recorder.
+concurrency:
+  group: warlock-native-optimizer-fast-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   optimizer-forwarding:
     runs-on: ubuntu-latest
