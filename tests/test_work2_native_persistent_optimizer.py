@@ -1177,6 +1177,8 @@ def test_rolling_native_world_apl_request_is_forwarded_and_ack_checked():
     observed = {
         "max_concurrent_alive_targets": 2,
         "simultaneously_alive_world_target_ids": ["m1", "m0"],
+        "native_target_to_world_id": {"0": "m1", "1": "m0"},
+        "old_target_dot_ticks_after_switch_acked": 1,
     }
     assert _verify_native_rolling_world_apl({
         "applied_world_apl": policy, "world_overlap": observed,
