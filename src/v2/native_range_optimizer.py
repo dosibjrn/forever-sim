@@ -369,7 +369,7 @@ def optimize(
     levels = sampled_levels(start_level, end_level, level_stride)
     if (type(mob_count) is not int or mob_count < 1
             or type(budget) is not int or budget < 1
-            or type(beam_width) is not int or beam_width < 2
+            or type(beam_width) is not int or beam_width < 1
             or type(iterations) is not int or iterations < 1
             or not isinstance(rng_mode, str) or not rng_mode
             or recover_to_full is not True or mode not in ("continuing", "independent")):
