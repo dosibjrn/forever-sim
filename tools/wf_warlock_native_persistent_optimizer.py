@@ -613,22 +613,38 @@ class PersistentNativeEvaluator:
         deferred_unmodified = []
         axis_gear = []
         axis_pets = []
+        equipped_anchor = None
         for variant in variants:
             proposal = self._source(level, variant)
             item_variants = list(islice(_source_item_alternatives(
                 proposal, options), 28))
             cleaned = item_variants[0] if item_variants else proposal
-            if not sources:
-                # Only true native-equipped changes get gear-axis budget;
-                # the old zero-item cleanup is still the common baseline.
+            if equipped_anchor is None:
+                # The original gear can contain legacy IDs absent from Rust
+                # options. A sanitized, possibly naked actor must not be the
+                # *only* reference used to judge pets, APLs or talent families.
+                # Select one Rust-advertised equipped proposal as a common
+                # search reference. Only native prepare validates it.
+                equipped = item_variants[1] if len(item_variants) > 1 else cleaned
+                equipped_anchor = copy.deepcopy(
+                    equipped["raid"]["parties"][0]["players"][0]["equipment"])
                 axis_gear = [row for row in item_variants[1:]
                              if row["raid"]["parties"][0]["players"][0][
-                                 "equipment"] != cleaned["raid"]["parties"][0][
-                                     "players"][0]["equipment"]][:8]
+                                 "equipment"] != equipped_anchor][:8]
                 axis_pets = list(islice(
-                    _source_pet_alternatives(cleaned, options), 4))
-            sources.append(cleaned)
-            if cleaned != proposal:
+                    _source_pet_alternatives(equipped, options), 4))
+                if equipped["raid"]["parties"][0]["players"][0][
+                        "equipment"] != cleaned["raid"]["parties"][0][
+                            "players"][0]["equipment"]:
+                    # Preserve the sanitized baseline as an explicit later
+                    # candidate, without spending the first paid attempts
+                    # on an avoidably under-equipped pet or APL.
+                    deferred_unmodified.append(cleaned)
+            source = copy.deepcopy(cleaned)
+            source["raid"]["parties"][0]["players"][0][
+                "equipment"] = copy.deepcopy(equipped_anchor)
+            sources.append(source)
+            if source != proposal:
                 deferred_unmodified.append(proposal)
         # Reserve early native prepare/paid attempts for *each* source axis.
         # Talent-family probes remain, but cannot monopolize a small budget.
