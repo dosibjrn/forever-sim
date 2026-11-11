@@ -876,6 +876,10 @@ class PersistentNativeEvaluator:
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
         seen: set[str] = set()
+        # Multiple distinct JSON proposals can normalize to the same Rust
+        # prepared source. A repeated source+world policy is not another
+        # independent paid contender and must not consume the bounded budget.
+        seen_prepared_policies: set[tuple[str, str]] = set()
         results: list[dict] = []
         apl_expanded = False
         bootstrap_attempted = False
@@ -947,12 +951,19 @@ class PersistentNativeEvaluator:
                         insert_at = max(insert_at, index + 1)
                     sources[insert_at:insert_at] = [
                         (row, "apl") for row in apl_choices]
+                if paid_identity in seen_prepared_policies:
+                    # Native preparation, not superficial source JSON shape,
+                    # defines a distinct experiment within this invocation.
+                    # Preserve the first measurement/refusal and keep looking
+                    # for a different source or world policy.
+                    continue
                 if (excluded_paid_source_policies is not None
                         and paid_identity in excluded_paid_source_policies):
                     # Do not spend an adaptive attempt on an existing native
                     # source+policy score. A different rolling/rest policy for
                     # the same prepared source remains a legitimate challenger.
                     continue
+                seen_prepared_policies.add(paid_identity)
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
                     target_hp=target_hp, cid=cid,
