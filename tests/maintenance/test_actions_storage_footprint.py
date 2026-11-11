@@ -570,4 +570,4 @@ def test_storage_guard_source_changes_trigger_maintenance_ci():
         ".github/workflows/actions-storage-preventive-gc.yml",
         "tests/maintenance/**",
     ):
-        assert f"      - '{file}'\\n".replace("\\n", "\n") in pr_paths, file
+        assert ("      - '%s'" % file) in pr_paths.splitlines(), file
