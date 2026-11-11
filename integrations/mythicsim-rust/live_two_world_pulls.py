@@ -642,8 +642,9 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
             or abs(float(maximum) - float(old.max_health)) > 1e-6
             or source.get("health_fraction_at_most") != 0.5
             or health / maximum > 0.5
-            or not old.alive or not new.alive or not old.engaged
-            or new.engaged):
+            or not old.alive or not new.alive
+            or not snapshot_gsim_world(world)["enemies"][old_id]["engaged"]
+            or snapshot_gsim_world(world)["enemies"][new_id]["engaged"]):
         raise AssertionError("RUST_WORLD_OVERLAP_SOURCE_SWITCH_UNACKED")
     return dict(source)
 
