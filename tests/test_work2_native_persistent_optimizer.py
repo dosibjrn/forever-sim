@@ -716,3 +716,337 @@ def test_native_continuity_cli_refusal_is_nonzero_and_never_a_sampled_guide(tmp_
               evaluate=Probe())
     assert rc == 2
     assert json.loads(out.read_text())["status"] == "NATIVE_LEVEL_TRANSITION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("level", [20, 40])
+def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch):
+    """Actual producer attempts gear, pet and registered ranks on each level.
+
+    This fake transport exercises proposal breadth and paid-score forwarding;
+    it is not evidence that the real Rust actor accepts or kills these builds.
+    """
+    class NativeAxisSession(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "options":
+                result = super().request(payload)
+                learned_rank = 80004 if payload["level"] == 40 else 80003
+                result.update({
+                    "schema_version": 1,
+                    "summons": ["NoSummon", "Imp", "Voidwalker"],
+                    "items": [
+                        {"item_id": 8001, "eligibility": "native_eligible",
+                         "native": {"item_id": 8001, "slot": "head",
+                                    "name": "Test source hat A"}},
+                        {"item_id": 8002, "eligibility": "native_eligible",
+                         "native": {"item_id": 8002, "slot": "head",
+                                    "name": "Test source hat B"}},
+                    ],
+                    "spells": [
+                        {"spell_id": 1088, "name": "Shadow Bolt", "rank": "Rank 2"},
+                        {"spell_id": learned_rank, "name": "Shadow Bolt",
+                         "rank": "Rank 6" if payload["level"] == 40 else "Rank 4"},
+                    ],
+                })
+                return result
+            result = super().request(payload)
+            learned_rank = 80004 if payload["actor_level"] == 40 else 80003
+            result["player"]["spells"] = [{
+                "flags": ["SpellFlagAPL"],
+                "action_id": {"spell_id": learned_rank},
+            }]
+            return result
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-axis-test")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity",
+                        lambda *args, **kwargs: None)
+    paid = []
+    def counted_world(*args, **kwargs):
+        paid.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(*args, **kwargs)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=NativeAxisSession,
+        run_world=counted_world)
+    try:
+        rows = native(level=level, parent=None, mob_count=2, budget=10,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+
+    prepared = [payload["request"] for payload in NativeAxisSession.instances[-1].calls
+                if payload["op"] == "prepare"]
+    def actor(source):
+        return source["raid"]["parties"][0]["players"][0]
+    gear_ids = {actor(request)["equipment"]["items"][0].get("id")
+                for request in prepared}
+    summons = {actor(request).get("warlock", {}).get("options", {})
+               .get("classOptions", {}).get("summon") for request in prepared}
+    pet_preparations = [request for request in prepared if actor(request).get(
+        "warlock", {}).get("options", {}).get("classOptions", {}).get(
+            "summon") in {"Imp", "Voidwalker"}]
+    # Native-advertised equipment is the reference for pet comparisons,
+    # not the legacy fixture after unsupported items have been zeroed out.
+    assert actor(prepared[0])["equipment"]["items"][0]["id"] == 8001
+    assert pet_preparations and all(
+        actor(request)["equipment"]["items"][0]["id"] == 8001
+        for request in pet_preparations)
+    requested_spells = {priority["action"]["castSpell"]["spellId"]["spellId"]
+                        for request in prepared
+                        for priority in actor(request)["rotation"]["priorityList"]
+                        if "castSpell" in priority.get("action", {})}
+    assert {8001, 8002} <= gear_ids
+    assert {"Imp", "Voidwalker"} & summons
+    assert (80004 if level == 40 else 80003) in requested_spells
+    assert (80003 if level == 40 else 80004) not in requested_spells
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED" for row in rows)
+    assert len(paid) == len(rows) == 10
+    assert {"gear", "pet", "apl"} <= {row["proposal_axis"] for row in rows}
+    assert all(row["native_named_build"]["ordered_apl_spells"]
+               and row["native_raw_receipt_sha256"]
+               for row in rows)
+    assert any(any(item["name"] == "Test source hat B"
+                   for item in row["native_named_build"]["equipped_item_names_ids"])
+               for row in rows)
+
+
+def test_unadvertised_source_pet_and_item_axes_remain_explicitly_unpaid(
+        tmp_path, monkeypatch):
+    """No synthetic pet/item options become pretend executable alternatives."""
+    native = make_evaluator(tmp_path, monkeypatch)
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=3,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert rows
+    assert not any(row.get("proposal_axis") in ("gear", "pet") for row in rows)
+
+
+def test_human_readable_top_three_cli_retains_exact_paid_receipts(
+        tmp_path, monkeypatch):
+    from src.v2.native_range_optimizer import main
+    native = make_evaluator(tmp_path, monkeypatch)
+    shortlist = tmp_path / "paid-shortlist.md"
+    result = tmp_path / "native.json"
+    try:
+        status = main([
+            "--class", "warlock", "--tree", "unconstrained",
+            "--start-level", "20", "--end-level", "20",
+            "--level-stride", "1", "--n-mobs", "2",
+            "--recover-at-end", "true", "--rng", "balanced",
+            "--backend", "rust", "--budget", "6",
+            "--shortlist-out", str(shortlist), "--out", str(result),
+        ], evaluate=native)
+    finally:
+        native.close()
+    assert status == 0
+    report = shortlist.read_text()
+    paid = json.loads(result.read_text())
+    assert paid["ranked_alternatives"]
+    assert "## Level 20" in report
+    assert "### #1" in report and "### #2" in report and "### #3" in report
+    assert "Source protobuf SHA256" in report
+    assert "Native paid qualified" in report
+    # Candidate-axis proposal counts are not the number of distinct *paid*
+    # gear, pet, APL and talent values. Never call one value optimized.
+    assert "Distinct verified native-paid choices" in report
+    assert "gear sets=1; pet values=1;" in report
+    assert "One observed paid value, not optimized" in report
+    assert "NoSummon / unspecified" in report
+    assert "NOT a global optimum" in report
+    assert paid["independent_level_rankings"]["20"][0][
+        "receipt"]["source_request_sha256"] in report
+
+
+def test_paid_world_failure_preserves_prepare_phase_and_axis(tmp_path, monkeypatch):
+    def unpaid(*args, **kwargs):
+        result = paid_world(*args, **kwargs)
+        result["native_terminal_recovery"]["mana_after"] = 80.0
+        return result
+    native = make_evaluator(tmp_path, monkeypatch, world=unpaid)
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=2,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert rows and all(row["native_prepared"] is True
+                        and row["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+                        and row["proposal_axis"] in ("talent", "apl") for row in rows)
+    assert all("NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL" in row["native_refusal"]
+               for row in rows)
+
+
+@pytest.mark.parametrize("level", [20, 40])
+def test_refused_legacy_apl_bootstraps_registered_ranks_without_paid_blank_world(
+        level, tmp_path, monkeypatch):
+    """A native registered spell can be paid even if every legacy APL refuses.
+
+    The initial legacy-APL refusal is real transport evidence; no blank APL is
+    evaluated or treated as a successful gameplay candidate.
+    """
+    class RejectOldRank(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "options":
+                options = super().request(payload)
+                options["spells"] = [
+                    {"spell_id": 93011 if level == 20 else 94011,
+                     "name": "Registered Corruption", "rank": "Rank 1"},
+                    {"spell_id": 93012 if level == 20 else 94012,
+                     "name": "Registered Shadow Bolt", "rank": "Rank 2"},
+                ]
+                return options
+            if payload["op"] != "prepare":
+                return super().request(payload)
+            source = payload["request"]
+            priorities = source["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"]
+            ids = [
+                action["action"]["castSpell"]["spellId"]["spellId"]
+                for action in priorities if "castSpell" in action.get("action", {})
+            ]
+            if any(spell in (1014, 442226, 6222, 1088) for spell in ids):
+                self.calls.append(payload)
+                raise api.NativeApiRefusal({
+                    "code": "native_unregistered_spell",
+                    "reason": "source-native actor refuses inherited spell rank",
+                })
+            prepared = super().request(payload)
+            prepared["player"]["spells"] = [
+                {"flags": ["SpellFlagAPL"],
+                 "action_id": {"spell_id": 93011 if level == 20 else 94011},
+                 "dot": {"native": True}},
+                {"flags": ["SpellFlagAPL"],
+                 "action_id": {"spell_id": 93012 if level == 20 else 94012},
+                 "damage_effect": {"native": True}},
+            ]
+            return prepared
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-level-rank-bootstrap")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity",
+                        lambda *args, **kwargs: None)
+    world_paid = []
+    def counted(*args, **kwargs):
+        world_paid.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(*args, **kwargs)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=RejectOldRank,
+        run_world=counted)
+    try:
+        rows = native(level=level, parent=None, mob_count=2, budget=5,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert rows[0]["native_refusal_code"] == "native_unregistered_spell"
+    assert rows[0]["native_prepared"] is False
+    paid = [row for row in rows
+            if row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"]
+    assert paid and all(row["proposal_axis"] == "native_apl_bootstrap"
+                        for row in paid)
+    assert len(world_paid) == len(paid)
+    assert all(row["native_full_recovery_paid"] is True for row in paid)
+    session = RejectOldRank.instances[-1]
+    blank = [call for call in session.calls if call["op"] == "prepare"
+             and not call["request"]["raid"]["parties"][0]["players"][0][
+                 "rotation"]["priorityList"]]
+    assert len(blank) == 1
+    paid_spells = {
+        action["action"]["castSpell"]["spellId"]["spellId"]
+        for call in session.calls if call["op"] == "prepare"
+        for action in call["request"]["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"]
+        if call["request"]["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"] and
+        "castSpell" in action.get("action", {})
+        and action["action"]["castSpell"]["spellId"]["spellId"] not in (
+            1014, 442226, 6222, 1088)
+    }
+    expected = {93011, 93012} if level == 20 else {94011, 94012}
+    assert paid_spells <= expected and paid_spells
+    assert any("Registered Corruption" == spell["name"]
+               for row in paid for spell in row[
+                   "native_named_build"]["ordered_apl_spells"])
+
+
+def test_native_apl_bootstrap_refusal_is_explicit_not_a_paid_candidate(
+        tmp_path, monkeypatch):
+    class RefusingEveryPrepare(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "prepare":
+                self.calls.append(payload)
+                raise api.NativeApiRefusal({
+                    "code": "native_actor_unavailable",
+                    "reason": "native source actor unavailable",
+                })
+            return super().request(payload)
+
+    native = make_evaluator(tmp_path, monkeypatch)
+    native.close()
+    native = api.PersistentNativeEvaluator(
+        native.binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "failed", session_factory=RefusingEveryPrepare,
+        run_world=lambda *a, **k: pytest.fail("not paid without native prepare"))
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=3,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert len(rows) == 3
+    assert all(row["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+               and row["native_refusal_code"] == "native_actor_unavailable"
+               for row in rows)
+    assert any(row["proposal_axis"] == "native_apl_bootstrap" for row in rows)
+    assert not list((tmp_path / "failed").glob("*.native.json"))
+
+
+def test_native_paid_world_ndjson_refusal_keeps_rust_code_and_no_fake_kills():
+    """Real Rust wire shape survives the gsim ACK bridge without a paid PASS."""
+    from live_two_world_pulls import NativeWorldChainFailure, run as native_world
+
+    class RefusingApiProcess:
+        pid = 32101
+        def __init__(self, frame):
+            self.stdin = io.StringIO()
+            self.stdout = io.StringIO(json.dumps(frame) + "\n")
+        def poll(self):
+            return None
+
+    frame = {
+        "ok": False, "error": "prepared input rejected",
+        "refusal": {
+            "code": "native_world_refused",
+            "reason": "prepared input rejected: Warlock spell 11668 is not registered",
+        },
+    }
+    process = RefusingApiProcess(frame)
+    with pytest.raises(NativeWorldChainFailure) as failure:
+        native_world(
+            Path("no-standalone-process"), None, mob_health=100,
+            target_count=2, rng_mode="balanced",
+            recovery_policy="decisions", health_threshold=1.0,
+            mana_threshold=1.0, api_process=process,
+            prepared_payload={"request_sha256": "a" * 64})
+    assert failure.value.code == "native_world_refused"
+    assert failure.value.killed == 0
+    assert failure.value.native_damage_events == 0
+    assert "spell 11668 is not registered" in failure.value.reason
+    # Preserve the established five-part failure tuple for old callers.
+    assert len(failure.value.args[0]) == 5
+    assert json.loads(process.stdin.getvalue()) == {
+        "op": "evaluate", "targets": 2, "rng_mode": "balanced",
+        "recover_at_end": True}
+
+    legacy = RefusingApiProcess({"ok": False, "error": "legacy refusal"})
+    with pytest.raises(NativeWorldChainFailure) as old:
+        native_world(
+            Path("no-standalone-process"), None, mob_health=100,
+            target_count=2, rng_mode="balanced",
+            recovery_policy="decisions", health_threshold=1.0,
+            mana_threshold=1.0, api_process=legacy,
+            prepared_payload={"request_sha256": "b" * 64})
+    assert old.value.code is None
+    assert old.value.reason == "legacy refusal"

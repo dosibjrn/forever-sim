@@ -2,7 +2,7 @@ name: Native-paid route continuity regressions
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     branches: [main]
     paths:
       - src/v2/path_dp.py
@@ -240,5 +240,143 @@ jobs:
           path: |
             predecessor-staged/
             cross-tree/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Explicitly opt in with the PR label. This is a bounded changed-candidate
+  # native measurement, NOT an M1 gate or a replay of the 41-level M0.5 run.
+  # The generic optimize command remains the production entrypoint.
+  work2-native-paid-l20-l40:
+    env:
+      WORK2_RUST_SHA: b272ec60b6f83bf6a6cd15899cf8bcedc5a9ae49
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'work2-native-paid-l20-l40' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact Work2 HEAD
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Checkout native API + source-level summon and spell-rank authority
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: ${{ env.WORK2_RUST_SHA }}
+          path: native-engine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install required native world Python dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Verify pinned native API source and build real executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C native-engine rev-parse HEAD)" = "$WORK2_RUST_SHA"
+          grep -q 'fn run_native_api' native-engine/src/main.rs
+          echo "FOREVER_HEAD=$(git rev-parse HEAD)"
+          echo "SELECTED_RUST_SHA=$WORK2_RUST_SHA"
+          cargo build --locked --manifest-path native-engine/Cargo.toml --bin forever-engine
+          sha256sum native-engine/target/debug/forever-engine
+      - name: Prove exact native API supplies L20 and L40 gear slots and summon alternatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from tools.wf_warlock_native_persistent_optimizer import NativeApiSession
+
+          session = NativeApiSession(
+              Path("native-engine/target/debug/forever-engine"))
+          try:
+              for level in (20, 40):
+                  options = session.request({
+                      "op": "options", "class": "warlock", "level": level})
+                  items = [
+                      item for item in options.get("items", [])
+                      if isinstance(item, dict)
+                      and item.get("eligibility") == "native_eligible"
+                      and isinstance(item.get("native"), dict)
+                      and isinstance(item["native"].get("slot"), str)
+                  ]
+                  summons = options.get("summons")
+                  print("NATIVE_SOURCE_AXIS_OPTIONS", {
+                      "level": level,
+                      "source_revision": options.get("source_revision"),
+                      "native_slot_items": len(items),
+                      "native_slot_variants": len({
+                          (item["native"]["slot"], item["item_id"])
+                          for item in items}),
+                      "native_summons": summons,
+                      "spells": len(options.get("spells", [])),
+                  }, flush=True)
+                  # This checks transport/source availability, NOT actual legal
+                  # builds or a paid win. Rust prepare and world are authoritative.
+                  if not items or not isinstance(summons, list) or not any(
+                          pet != "NoSummon" for pet in summons):
+                      raise RuntimeError(
+                          f"L{level}: source-native Warlock gear/summon options unavailable")
+          finally:
+              session.close()
+          PY
+      - name: Pay real independent L20 and L40 native gear, pet and APL candidates
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          # GitHub runs bash with -e by default. Disable it explicitly
+          # so an L20 refusal cannot suppress the independent L40 attempt.
+          set +e  # Default Actions shell invokes bash -e; still attempt L40 on L20 refusal.
+          set -uo pipefail
+          mkdir -p evidence/work2-native-paid-l20-l40
+          failed=0
+          for level in 20 40; do
+            echo "::group::Genuine paid native Warlock level $level"
+            python -m src.v2.runner optimize \
+              --class warlock --tree unconstrained \
+              --start-level "$level" --end-level "$level" --level-stride 1 \
+              --n-mobs 2 --recover-at-end true --rng balanced --backend rust \
+              --budget 48 --beam-width 3 \
+              --native-binary native-engine/target/debug/forever-engine \
+              --out "evidence/work2-native-paid-l20-l40/l${level}.json" \
+              --shortlist-out "evidence/work2-native-paid-l20-l40/l${level}-top-3.md"
+            code=$?
+            echo "L${level} native optimize exit code: $code"
+            # Surface actual Rust refusal reasons without artifact downloads.
+            LEVEL="$level" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          level = int(os.environ["LEVEL"])
+          path = Path(f"evidence/work2-native-paid-l20-l40/l{level}.json")
+          if path.exists():
+              data = json.loads(path.read_text())
+              refused = data.get("rejected_native_attempts") or []
+              print("NATIVE_L%d_RESULT" % level, json.dumps({
+                  "status": data.get("status"),
+                  "native_attempts": data.get("native_attempts_by_level", {}).get(str(level)),
+                  "paid_ranked": len(data.get("independent_level_rankings", {}).get(str(level), [])),
+                  "refused": len(refused),
+              }, sort_keys=True), flush=True)
+              for row in refused[:12]:
+                  print("NATIVE_SOURCE_REFUSAL", level, json.dumps({
+                      "axis": row.get("proposal_axis"),
+                      "prepared": row.get("native_prepared"),
+                      "code": (row.get("native_refusal") or {}).get("code")
+                          if isinstance(row.get("native_refusal"), dict) else None,
+                      "reason": str(row.get("native_refusal") or row.get("reason"))[-650:],
+                  }, sort_keys=True), flush=True)
+          PY
+            if [ "$code" -ne 0 ]; then failed=$((failed+1)); fi
+            echo '::endgroup::'
+          done
+          exit "$failed"
+      - name: Preserve genuine paid receipts, ranking and native refusals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-native-paid-l20-l40-${{ github.run_id }}
+          path: |
+            evidence/work2-native-paid-l20-l40/
+            runs/native-api-paid-cache/
           if-no-files-found: warn
           retention-days: 14

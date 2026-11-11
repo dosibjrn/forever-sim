@@ -35,7 +35,12 @@ class NativeWorldChainFailure(AssertionError):
 
     def __init__(self, reason: str, exit_code: int, detail: str,
                  killed: int, native_damage_events: int,
-                 native_source_damage_effects_by_caster: dict | None = None):
+                 native_source_damage_effects_by_caster: dict | None = None,
+                 *, native_refusal_code: str | None = None):
+        # Preserve the authoritative Rust NDJSON refusal code for callers.
+        # The historical five-element exception tuple stays unchanged.
+        self.code = native_refusal_code
+        self.reason = detail
         self.exit_code = exit_code
         self.killed = killed
         self.native_damage_events = native_damage_events
@@ -638,10 +643,22 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             native = json.loads(line)
             if api_process is not None and "ok" in native:
                 if native.get("ok") is not True:
+                    # Rust sends both a structured refusal and legacy human
+                    # error string. Never discard the native code at this
+                    # world/ACK boundary (previously every result was None).
+                    refusal = native.get("refusal")
+                    native_code = (refusal.get("code")
+                                   if isinstance(refusal, dict) else None)
+                    native_reason = (refusal.get("reason")
+                                     if isinstance(refusal, dict) else None)
                     raise NativeWorldChainFailure(
                         "RUST_NATIVE_API_EVALUATE_REFUSED", -1,
-                        str(native.get("error"))[-3000:], len(kills), events,
-                        native_source_damage_effects_by_caster)
+                        str(native_reason if isinstance(native_reason, str)
+                            else native.get("error"))[-3000:],
+                        len(kills), events,
+                        native_source_damage_effects_by_caster,
+                        native_refusal_code=native_code
+                            if isinstance(native_code, str) else None)
                 native_report = native.get("result")
                 break
             if native.get("type") != "native_rust_world_boundary_request":
