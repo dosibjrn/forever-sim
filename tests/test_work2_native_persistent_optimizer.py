@@ -1182,6 +1182,7 @@ def test_rolling_native_world_apl_request_is_forwarded_and_ack_checked():
             "prior_world_target_id": "m1", "to_native_target_index": 1,
         },
         "old_target_dot_ticks": 1,
+        "first_b_hit_while_a_live": True,
         "first_world_id": "m1",
         "second_world_id": "m0",
     }
@@ -1207,10 +1208,16 @@ def test_rolling_native_world_apl_request_is_forwarded_and_ack_checked():
         "max_concurrent_alive_targets": 2,
         "simultaneously_alive_world_target_ids": ["m1", "m0"],
         "old_target_dot_ticks_after_switch_acked": 1,
+        "first_b_source_hit_while_old_a_alive": True,
     }
     assert _verify_native_rolling_world_apl({
         "applied_world_apl": policy, "world_overlap": observed,
     }, requested=policy, kills=kills, **evidence) == expected
+    with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
+        _verify_native_rolling_world_apl({
+            "applied_world_apl": policy, "world_overlap": observed,
+        }, requested=policy, kills=kills,
+            **{**evidence, "first_b_hit_while_a_live": False})
     with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
         _verify_native_rolling_world_apl({
             "applied_world_apl": policy, "world_overlap": observed,
@@ -1280,6 +1287,7 @@ def test_source_echoed_rolling_policy_never_shares_serial_native_paid_cache(
                 "simultaneously_alive_world_target_ids": ["m1", "m0"],
                 "native_target_to_world_id": {"0": "m1", "1": "m0"},
                 "old_target_dot_ticks_after_switch_acked": 1,
+                "first_b_source_hit_while_old_a_alive": True,
             }
             receipt["world_kills"] = [
                 {"target_id": "m1", "ack_sha256": "ack-1"},

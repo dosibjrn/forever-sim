@@ -648,6 +648,7 @@ def _verify_native_recovery_thresholds(result: dict, *,
 def _verify_native_rolling_world_apl(
         result: dict, *, requested: dict, kills: list[dict],
         source_switch: dict, old_target_dot_ticks: int,
+        first_b_hit_while_a_live: bool,
         first_world_id: str, second_world_id: str) -> dict:
     """Require native two-live-target telemetry plus real distinct world ACKs.
 
@@ -672,6 +673,7 @@ def _verify_native_rolling_world_apl(
             or source_switch.get("to_native_target_index") != 1
             or type(old_target_dot_ticks) is not int
             or old_target_dot_ticks < 1
+            or first_b_hit_while_a_live is not True
             or len(kill_ids) != 2 or set(kill_ids) != {first_world_id, second_world_id}
             or len(set(kill_acks)) != 2
             or any(not isinstance(ack, str) or len(ack) != 64 for ack in kill_acks)):
@@ -685,6 +687,7 @@ def _verify_native_rolling_world_apl(
         "max_concurrent_alive_targets": 2,
         "simultaneously_alive_world_target_ids": [first_world_id, second_world_id],
         "old_target_dot_ticks_after_switch_acked": old_target_dot_ticks,
+        "first_b_source_hit_while_old_a_alive": True,
     }
 
 
@@ -783,6 +786,34 @@ def _acked_old_target_live_dot_ticks(*, health_before: float, ack: dict,
             count += 1
         health = max(0., health - float(amount))
     return count
+
+
+def _acked_first_b_hit_with_live_a(*, before: dict[str, float],
+                                   world: CombatRuntime, ack: dict,
+                                   old_id: str, new_id: str) -> bool:
+    """Require first B damage to be a real native event while A survives its ACK.
+
+    A can die in the same source batch as B's first hit. In that ambiguous
+    ordering we refuse overlap evidence rather than infer simultaneous damage.
+    The 2D world supplies actual health/engagement; only ACKed native effects
+    supply damage. This does not model any Warcraft damage in Python.
+    """
+    old = world.targets[old_id]
+    new = world.targets[new_id]
+    if (before.get(old_id, 0) <= 0 or not old.alive
+            or before.get(new_id, 0) <= 0
+            or not 0 <= new.health < before[new_id]
+            or snapshot_gsim_world(world)["enemies"][old_id]["engaged"] is not True):
+        return False
+    applied = set(ack.get("applied_event_ids", ()))
+    return any(
+        isinstance(effect, dict)
+        and effect.get("native_target_index") == 1
+        and effect.get("event_id") in applied
+        and type(effect.get("damage")) in (int, float)
+        and isfinite(effect["damage"]) and effect["damage"] > 0
+        for effect in ack.get("applied_events", ())
+    )
 
 
 def _new_source_acked_world_kills(*, world: CombatRuntime,
@@ -914,6 +945,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     walks = []
     rolling_switch = None
     old_target_dot_ticks_after_switch = 0
+    first_b_world_hit_seen = False
+    first_b_world_hit_while_old_a_live = False
     events = 0
     # Source-action IDs are emitted by the selected Rust combat boundary.
     # Retain only damage events actually applied/ACKed by the 2D world;
@@ -1066,6 +1099,14 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             before_health = {target_id: float(world.targets[target_id].health)
                              for target_id in targets}
             ack = applier.apply(tick, receipt)
+            # Record B's first source-hit while old A is *still* live.
+            # A later B hit cannot retroactively repair a failed first hit.
+            if (rolling_switch is not None and not first_b_world_hit_seen
+                    and before_health[targets[1]] > world.targets[targets[1]].health):
+                first_b_world_hit_seen = True
+                first_b_world_hit_while_old_a_live = _acked_first_b_hit_with_live_a(
+                    before=before_health, world=world, ack=ack,
+                    old_id=targets[0], new_id=targets[1])
             ack["iteration_index"] = iteration
             events += len(ack["applied_event_ids"])
             if corrupt_ack and events:
@@ -1159,6 +1200,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 result, requested=world_apl, kills=kills,
                 source_switch=rolling_switch,
                 old_target_dot_ticks=old_target_dot_ticks_after_switch,
+                first_b_hit_while_a_live=first_b_world_hit_while_old_a_live,
                 first_world_id=targets[0], second_world_id=targets[1])
             if world_apl is not None else None
         )

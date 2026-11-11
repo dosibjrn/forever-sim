@@ -189,6 +189,7 @@ def rolling_paid_row(*, elapsed=38.0, acknowledged=True):
                 "simultaneously_alive_world_target_ids": ["m1", "m0"],
                 "native_target_to_world_id": {"0": "m1", "1": "m0"},
                 "old_target_dot_ticks_after_switch_acked": 1,
+                "first_b_source_hit_while_old_a_alive": True,
             },
             "native_world_kills": [
                 {"target_id": "m1", "ack_sha256": "first"},
@@ -295,6 +296,7 @@ def test_rolling_paid_overlap_rejects_unjoined_native_and_world_target_ids():
         {k: v for k, v in overlap.items()
          if k != "native_target_to_world_id"},
         dict(overlap, native_target_to_world_id={"0": "m1", "1": "m1"}),
+        dict(overlap, first_b_source_hit_while_old_a_alive=False),
         dict(overlap, native_target_to_world_id={"zero": "m1", "1": "m0"}),
         dict(overlap, native_target_to_world_id={"2": "m1", "3": "m0"}),
         dict(overlap, native_target_to_world_id={"00": "m1", "01": "m0"}),
