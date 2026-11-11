@@ -230,6 +230,12 @@ nav{display:none}.candidate{break-inside:avoid}body{font-size:12px}}
 """
 
 
+def _report_class(result: Mapping[str, Any]) -> str:
+    """Class is part of the paid optimizer result, never guessed from the filename."""
+    from src.v2.native_class_adapters import normalize_class_name
+    return normalize_class_name(result.get("class"))
+
+
 def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
     """HTML with all styles embedded, no external assets or JavaScript.
 
@@ -237,6 +243,7 @@ def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
     """
     if type(level) is not int:
         raise ValueError("level must be an integer")
+    character_class = _report_class(result)
     rows = _valid_rows(result, level)
     if not rows:
         raise ValueError("NO_VERIFIED_NATIVE_PAID_WINNER_FOR_HTML_LEVEL_" + str(level))
@@ -260,11 +267,11 @@ def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-        "<title>WoW Forever Warlock L" + str(level)
+        "<title>WoW Forever " + _h(character_class.title()) + " L" + str(level)
         + " — Best Tested Native Builds</title><style>" + _CSS + "</style>"
         "</head><body><main class='wrap'>"
         "<header class='hero'><div class='eyebrow'>WoW Forever / Native optimization / "
-        "Best tested · Offline report</div><h1>Warlock · Level " + str(level)
+        "Best tested · Offline report</div><h1>" + _h(character_class.title()) + " · Level " + str(level)
         + "</h1><p>Best measured leveling builds from the actual Rust / 2D world "
         "simulator. Gear, talents, summoned pet and APL are shown exactly as "
         "prepared and measured, with fully clock-paid end recovery.</p></header>"
@@ -277,7 +284,7 @@ def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
         "A fixed or absent axis is not an optimized axis.</div>"
         "<p class='muted'>Fastest measured build: <strong>"
         + f"{top['native_elapsed_seconds']:.3f} s" + "</strong>. "
-        "Only original native-paid, two-target ACK and full-HP/mana receipt "
+        "Only original native-paid, world ACK and full-HP/mana receipt "
         "records are eligible for ranking.</p><nav aria-label='Top three builds'>"
         + nav + "</nav>" + cards
         + "<footer>Reproducibility: see each build's exact source SHA, engine "
@@ -289,8 +296,11 @@ def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
 
 
 def write_native_paid_html_reports(
-    result: Mapping[str, Any], out_dir: Path, *, class_name: str = "warlock",
+    result: Mapping[str, Any], out_dir: Path,
 ) -> list[Path]:
+    # Derive filenames and page headings from the measured result metadata.
+    # Never silently label a Mage/Druid paid receipt as Warlock.
+    class_name = _report_class(result)
     out_dir = Path(out_dir)
     pages = []
     for level in result.get("sampled_levels_requested", []):
@@ -311,7 +321,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     result = json.loads(args.source.read_text(encoding="utf-8"))
     pages = write_native_paid_html_reports(
-        result, args.out_dir, class_name=result.get("class") or "warlock")
+        result, args.out_dir)
     for page in pages:
         print("WROTE_NATIVE_PAID_HTML", page)
     return 0 if pages else 2
