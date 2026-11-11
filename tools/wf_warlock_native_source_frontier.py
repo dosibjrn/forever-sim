@@ -202,6 +202,45 @@ def _native_apl_variants(seed: dict, prepared: dict):
 
 
 
+
+def _backward_ancestor_variants(hints: Any, *, points_available: int | None):
+    """Propose native-option-budget ancestors of paid later talent strings.
+
+    The rank removal order is a search mutation, not Warcraft legality.
+    Native Rust prepare must accept any candidate before world evaluation.
+    """
+    if not isinstance(hints, list) or type(points_available) is not int:
+        return
+    seen: set[str] = set()
+    for hint in hints[:8]:
+        if not isinstance(hint, dict) or not isinstance(hint.get("talents"), str):
+            continue
+        fields = hint["talents"].split("-")
+        if len(fields) != 3 or not all(s.isascii() and s.isdigit() for s in fields):
+            continue
+        for backwards in (True, False):
+            parts = [[int(rank) for rank in field] for field in fields]
+            excess = sum(sum(tree) for tree in parts) - points_available
+            if excess < 0:
+                continue
+            slots = [(tree, index)
+                     for tree in range(3) for index in range(len(parts[tree]))]
+            if backwards:
+                slots.reverse()
+            for tree, index in slots:
+                if excess == 0:
+                    break
+                removal = min(excess, parts[tree][index])
+                parts[tree][index] -= removal
+                excess -= removal
+            if excess:
+                continue
+            proposal = "-".join("".join(str(rank) for rank in tree) for tree in parts)
+            if proposal not in seen:
+                seen.add(proposal)
+                yield proposal
+
+
 def _continuing_variants(seed: str, trees: list[dict]):
     """Add only source-listed ranks, never silently replace a paid talent tree."""
     parts = seed.split("-")
@@ -387,6 +426,13 @@ def produce_frontier(
 
     def proposals():
         seen_talents: set[str] = set()
+        if parent is None:
+            for variant in _backward_ancestor_variants(
+                    request.get("candidate_hints"),
+                    points_available=talents.get("points_available")):
+                if variant not in seen_talents:
+                    seen_talents.add(variant)
+                    yield variant, None
         for _ in range(3):
             variant = next(talent_variants, None)
             if variant is None:

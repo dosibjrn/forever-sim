@@ -124,67 +124,174 @@ def _optimize_compatible_samples(
     prepared at their sampled levels; no infill simulations, historical route
     JSON, free respec, or unsupported intermediate-world claim is introduced.
     """
+    levels = sampled_levels(start_level, end_level, level_stride)
+    # Reserve part of a normal paid budget for later-level winner ancestry.
+    # With tiny budgets, preserve at least two root probes per sampled level.
+    # Native attempts (including refusals) are still charged exactly once.
+    initial_budget = (
+        budget if budget <= 2 * len(levels)
+        else max(2 * len(levels), int(budget * 0.6))
+    )
     measured = optimize(
-        start_level, end_level, level_stride, mob_count, budget,
+        start_level, end_level, level_stride, mob_count, initial_budget,
         evaluate=evaluate, beam_width=beam_width, rng_mode=rng_mode,
         iterations=iterations, recover_to_full=True, mode="independent",
     )
-    levels = measured["sampled_levels_requested"]
-    # One best predecessor per exact current source is sufficient: future
-    # no-respec compatibility depends on that allocation, not on path history.
-    frontier: list[tuple[float, list[dict[str, Any]]]] = [(0.0, [])]
-    matched_levels: list[int] = []
-    for level in levels:
-        candidates = measured["independent_level_rankings"].get(str(level), [])
-        next_frontier: dict[str, tuple[float, list[dict[str, Any]]]] = {}
-        for row in candidates:
-            if _talent_ranks(row.get("talents")) is None:
-                continue
-            for cost, steps in frontier:
-                if steps and not _no_respec_successor(
-                        steps[-1]["talents"], row["talents"]):
+
+    def compatible_frontier():
+        # Score all source-prepared samples, not just the locally fastest
+        # candidate. A slow early ancestor can win the cumulative route.
+        # These sampled rank extensions are NOT simulated skipped-level play.
+        frontier: list[tuple[float, list[dict[str, Any]]]] = [(0.0, [])]
+        matched: list[int] = []
+        for level in levels:
+            candidates = measured["independent_level_rankings"].get(str(level), [])
+            next_frontier: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+            for row in candidates:
+                if _talent_ranks(row.get("talents")) is None:
                     continue
-                step = {
-                    "level": level, "talents": row["talents"],
-                    "apl": row.get("apl"), "gear": row.get("gear"),
-                    "pet": row.get("pet"),
-                    "native_elapsed_seconds": row["native_elapsed_seconds"],
-                    "terminal_recovery_seconds": row["terminal_recovery_seconds"],
-                    "source_request_sha256": row["source_request_sha256"],
-                    "engine_binary_sha256": row["engine_binary_sha256"],
-                    "receipt": row["receipt"],
-                }
-                total = cost + float(row["native_elapsed_seconds"])
-                identity = row["source_request_sha256"]
-                old = next_frontier.get(identity)
-                if old is None or total < old[0]:
-                    next_frontier[identity] = (total, [*steps, step])
-        if not next_frontier:
-            break
-        frontier = sorted(next_frontier.values(), key=lambda pair: (
-            pair[0], pair[1][-1]["source_request_sha256"]))
-        matched_levels.append(level)
-    complete = matched_levels == levels
-    ranked = [
-        {"sampled_cumulative_seconds": score, "steps": steps,
-         "terminal_source_request_sha256": steps[-1]["source_request_sha256"]}
-        for score, steps in frontier[:beam_width]
-    ] if complete else []
+                for cost, steps in frontier:
+                    if steps and (row["engine_binary_sha256"]
+                                  != steps[-1]["engine_binary_sha256"]
+                                  or not _no_respec_successor(
+                                      steps[-1]["talents"], row["talents"])):
+                        continue
+                    step = {
+                        "level": level, "talents": row["talents"],
+                        "apl": row.get("apl"), "gear": row.get("gear"),
+                        "pet": row.get("pet"),
+                        "native_elapsed_seconds": row["native_elapsed_seconds"],
+                        "terminal_recovery_seconds": row["terminal_recovery_seconds"],
+                        "source_request_sha256": row["source_request_sha256"],
+                        "engine_binary_sha256": row["engine_binary_sha256"],
+                        "receipt": row["receipt"],
+                    }
+                    total = cost + float(row["native_elapsed_seconds"])
+                    identity = row["source_request_sha256"]
+                    previous = next_frontier.get(identity)
+                    if previous is None or total < previous[0]:
+                        next_frontier[identity] = (total, [*steps, step])
+            if not next_frontier:
+                break
+            frontier = sorted(next_frontier.values(), key=lambda pair: (
+                pair[0], pair[1][-1]["source_request_sha256"]))
+            matched.append(level)
+        ranked = [
+            {"sampled_cumulative_seconds": score, "steps": steps,
+             "terminal_source_request_sha256": steps[-1]["source_request_sha256"]}
+            for score, steps in frontier[:beam_width]
+        ] if matched == list(levels) else []
+        return matched, ranked
+
+    matched_levels, ranked = compatible_frontier()
+    final_rankings = measured["independent_level_rankings"].get(str(levels[-1]), [])
+    ranked_terminal_sources = {
+        path["terminal_source_request_sha256"] for path in ranked
+    }
+    # A late strong family absent from the compatible frontier deserves a
+    # bounded backward proposal. A locally fast L20 build is not an excuse to
+    # discard a globally superior Demonology/other-tree ancestor.
+    missed_late_family = any(
+        row["source_request_sha256"] not in ranked_terminal_sources
+        for row in final_rankings[:beam_width]
+    )
+    seeded_levels: list[int] = []
+    seeded_attempts = 0
+    if (len(levels) > 1 and (not ranked or missed_late_family)
+            and measured["native_candidates_examined"] < budget):
+        # Feed exact talents from *paid, source-prepared* later samples to
+        # the native producer. It uses Rust options to propose earlier ranks
+        # and Rust prepare/ACK to accept/refuse them; no Python talent legality,
+        # inferred transition, free respec, or unmeasured elapsed is created.
+        for index in range(len(levels) - 2, -1, -1):
+            remaining = budget - measured["native_candidates_examined"]
+            if remaining <= 0:
+                break
+            level = levels[index]
+            hints: list[dict[str, Any]] = []
+            seen: set[str] = set()
+            for later in reversed(levels[index + 1:]):
+                for row in measured["independent_level_rankings"].get(str(later), [])[
+                        :max(beam_width * 2, 6)]:
+                    talents = row.get("talents")
+                    if _talent_ranks(talents) is None or talents in seen:
+                        continue
+                    seen.add(talents)
+                    hints.append({
+                        "talents": talents, "from_level": later,
+                        "source_request_sha256": row["source_request_sha256"],
+                    })
+            if not hints:
+                continue
+            # Reserve one native attempt for each still-unvisited ancestor;
+            # never overspend the top-level budget or replay already-paid
+            # equivalent candidates outside the scorer's exact-input cache.
+            level_budget = max(1, remaining // (index + 1))
+            def seeded_evaluator(**request):
+                return evaluate(**request, candidate_hints=hints)
+            attempt = optimize(
+                level, level, 1, mob_count, level_budget,
+                evaluate=seeded_evaluator, beam_width=beam_width,
+                rng_mode=rng_mode, iterations=iterations,
+                recover_to_full=True, mode="independent",
+            )
+            consumed = attempt["native_candidates_examined"]
+            measured["native_candidates_examined"] += consumed
+            seeded_attempts += consumed
+            seeded_levels.append(level)
+            key = str(level)
+            measured["native_attempts_by_level"][key] = (
+                measured["native_attempts_by_level"].get(key, 0) + consumed
+            )
+            measured["rejected_native_attempts"].extend(
+                attempt["rejected_native_attempts"]
+            )
+            original = measured["independent_level_rankings"].setdefault(key, [])
+            existing = {row["source_request_sha256"] for row in original}
+            selected_engine = measured["native_engine_binary_sha256"]
+            for row in attempt["independent_level_rankings"].get(key, []):
+                if selected_engine is not None and (
+                        row["engine_binary_sha256"] != selected_engine):
+                    measured["rejected_native_attempts"].append({
+                        "level": level, "candidate_id": row["receipt"].get("candidate_id"),
+                        "source_request_sha256": row["source_request_sha256"],
+                        "reason": "native engine binary differs within optimization request",
+                    })
+                    continue
+                if row["source_request_sha256"] in existing:
+                    continue
+                if selected_engine is None:
+                    selected_engine = row["engine_binary_sha256"]
+                    measured["native_engine_binary_sha256"] = selected_engine
+                existing.add(row["source_request_sha256"])
+                original.append(row)
+            original.sort(key=lambda row: (
+                row["native_elapsed_seconds"], row["source_request_sha256"]))
+            measured["competing_qualified_paths_by_level"][key] = len(original)
+        measured["sampled_levels_completed"] = [
+            level for level in levels
+            if measured["independent_level_rankings"].get(str(level))
+        ]
+        matched_levels, ranked = compatible_frontier()
+
     measured.update({
         "status": ("SAMPLED_COMPATIBLE_PATH_RANKED" if len(ranked) >= 2
                    else "SAMPLED_COMPATIBLE_PATH_PROVISIONAL" if ranked
                    else "NO_COMPLETE_COMPATIBLE_SAMPLED_PATH"),
+        "candidate_budget": budget,
+        "backward_seeded_native_attempts": seeded_attempts,
+        "backward_seeded_levels": seeded_levels,
         "search_mode": "compatible",
         "class": class_name, "tree": talent_tree, "backend": backend,
         "sampled_levels_compatible": matched_levels,
         "ranked_alternatives": ranked,
-        "no_respec_within_sampled_path": complete and bool(ranked),
+        "no_respec_within_sampled_path": bool(ranked),
         "intermediate_level_simulations_run": False,
         "intermediate_talent_legality_proven": False,
         "full_10_60_continuous_leveling_route_proven": False,
         "independent_sample_sum_is_route_time": False,
-        "scope": "source-native sampled builds with nondecreasing talent ranks; "
-                 "not XP/travel/training or proof of intermediate gameplay",
+        "scope": "native-prepared sampled allocations with nondecreasing ranks; "
+                 "not proof of skipped-level gameplay, XP, travel or training",
     })
     return measured
 
