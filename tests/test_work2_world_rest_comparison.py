@@ -101,6 +101,21 @@ def test_ranked_clocks_must_equal_original_native_paid_receipt():
         assert comparison["thirty_percent_paid_candidates"] == 0
 
 
+def test_native_refusal_without_applied_policy_object_is_preserved():
+    # Rust can refuse before it can acknowledge any applied thresholds.
+    # Do not drop the proposal-axis refusal or crash on a null policy.
+    refusal = {
+        "level": 20, "proposal_axis": "world_rest_30pct",
+        "native_world_policy": None, "native_refusal_code": "NATIVE_POLICY_REFUSED",
+        "native_refusal": "source-native evaluator declined threshold",
+    }
+    comparison = measured_world_rest_head_to_head(
+        result_for([paid_row(1.0, 43)], rejected=[refusal]), level=20)
+    assert comparison["status"] == "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE"
+    assert comparison["winner"] is None
+    assert comparison["thirty_percent_refusals"] == [refusal]
+
+
 def test_exact_cli_records_refusal_and_exits_nonzero_for_one_sided_paid_result(
         tmp_path):
     baseline = paid_row(1.0, 42)
