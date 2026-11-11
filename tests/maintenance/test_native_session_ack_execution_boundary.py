@@ -6,7 +6,7 @@ implementation details and its CLI/world outcomes remain the authority.
 from pathlib import Path
 
 WORKFLOW = (Path(__file__).resolve().parents[2]
-            / ".github/workflows/native-session-ack-regressions.yml")
+            / ".github/workflows/native-source-world-smoke.yml")
 
 
 def test_selected_native_world_job_reaches_executable_checks_without_source_greps():
@@ -24,6 +24,11 @@ def test_selected_native_world_job_reaches_executable_checks_without_source_grep
     assert 'if "$binary" sim --infile "$fixture"' in setup
     assert 'if "$binary" sim --rng-mode bogus --infile "$fixture"' in setup
 
+    # Source changes still exercise native + 2D behavior, but test-only
+    # edits must not schedule a redundant Rust build or native-paid worlds.
+    trigger = text.split("jobs:", 1)[0]
+    assert "tests/test_" not in trigger
+    assert "- 'integrations/mythicsim-rust/engine'" in trigger
     # The downstream scenario checks still exercise native + 2D behavior.
     assert "native_source_control(binary, request, 5, rng_mode=mode)" in text
     assert "probe.run(binary, request, distance=15.0" in text
