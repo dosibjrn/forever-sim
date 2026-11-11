@@ -92,6 +92,11 @@ permissions:
 jobs:
   native-paid-route:
     if: github.event_name == 'pull_request'
+    # Only obsolete fast PR checks are superseded; manual Rust-paid evidence
+    # jobs below must NEVER be cancelled by a new PR commit or dispatch.
+    concurrency:
+      group: native-paid-route-fast-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
