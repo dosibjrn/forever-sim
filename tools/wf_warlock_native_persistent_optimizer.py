@@ -189,6 +189,10 @@ class PersistentNativeEvaluator:
         # A session with only native prepare refusals pays no cache setup.
         self._paid_cache_identity_seed: dict | None = None
         self._paid_cache_identity_initialized = False
+        # Reuse identical paid worlds within this immutable native API session
+        # even when a dirty/unavailable Git checkout disables disk cache reuse.
+        # Never persist this unverified identity across sessions.
+        self._session_paid: dict[tuple, tuple[dict, float, Path, str]] = {}
         self.options: dict[int, dict] = {}
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -224,6 +228,29 @@ class PersistentNativeEvaluator:
         # raw-JSON SHA wrongly equated to Rust's protobuf request digest.
         prepared_digest = _digest(json.dumps(
             prepared, sort_keys=True, separators=(",", ":")).encode())
+        # The native source/actor and paid world configuration must match
+        # exactly. A fresh actor is prepared for every independent sample;
+        # this memo never substitutes for a retained-state/XP transition.
+        session_key = (native_sha, prepared_digest, level, mobs, float(target_hp))
+        previous = self._session_paid.get(session_key)
+        if previous is not None:
+            old_receipt, old_elapsed, old_path, old_digest = previous
+            try:
+                if (_file_digest(old_path) == old_digest
+                        and score_native_chain(
+                            old_receipt, prepared, mob_count=mobs,
+                            expected_target_hp=target_hp
+                        ) == (old_elapsed, "MEASURED_NATIVE_FULLY_RECOVERED")):
+                    return old_receipt, old_elapsed, True, old_path
+            except (ValueError, TypeError, OSError, KeyError):
+                pass
+            self._session_paid.pop(session_key, None)
+
+        def retain(receipt: dict, elapsed: float, reused: bool, path: Path):
+            self._session_paid[session_key] = (
+                receipt, elapsed, path, _file_digest(path))
+            return receipt, elapsed, reused, path
+
         if not self._paid_cache_identity_initialized:
             # The helper hashes the pinned binary and checks the clean Git
             # checkout only once; target-specific fields are overwritten for
@@ -254,7 +281,7 @@ class PersistentNativeEvaluator:
                     elapsed, verdict = score_native_chain(
                         receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
                     if elapsed is not None and verdict == "MEASURED_NATIVE_FULLY_RECOVERED":
-                        return receipt, elapsed, True, path
+                        return retain(receipt, elapsed, True, path)
             except (ValueError, TypeError, OSError, KeyError):
                 pass
         # Earlier density runs wrote schema-1 records with a whole-commit
@@ -281,7 +308,7 @@ class PersistentNativeEvaluator:
                         expected_target_hp=target_hp)
                     if (old_elapsed is not None
                             and old_verdict == "MEASURED_NATIVE_FULLY_RECOVERED"):
-                        return old_receipt, old_elapsed, True, old_path
+                        return retain(old_receipt, old_elapsed, True, old_path)
                 except (ValueError, TypeError, OSError, KeyError):
                     continue
         receipt = self.run_world(
@@ -319,7 +346,7 @@ class PersistentNativeEvaluator:
                 except FileExistsError:
                     suffix += 1
             path = other
-        return receipt, elapsed, cached, path
+        return retain(receipt, elapsed, cached, path)
 
     def __call__(self, *, level: int, parent: dict | None, mob_count: int,
                  budget: int, rng_mode: str, iterations: int,
