@@ -989,3 +989,21 @@ def test_sparse_paid_parent_ack_does_not_require_unmeasured_intermediate_levels(
         child, level=40, parent=parent, mob_count=2,
         rng_mode="balanced", iterations=1,
     ) == "native continuing talent/actor edge unproved"
+
+
+def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
+    """The live density runner must not turn PR updates into repeated paid work."""
+    from pathlib import Path
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
+                / "native-paid-route-regressions.yml").read_text()
+    m05 = workflow.split("  sparse-optimizer-real:\n", 1)[1]
+    assert "github.event.action == 'opened'" in m05
+    assert "m05_stride:" in workflow and "m05_cache_run_id:" in workflow
+    assert '--start-level 20 --end-level 60 --level-stride "$M05_STRIDE"' in m05
+    assert '--n-mobs 2 --recover-at-end true --rng balanced' in m05
+    assert '--backend rust --budget 60' in m05
+    assert "requested-sparse-optimize-42980239306" in m05
+    assert "requested-m05-optimize-{0}" in m05
+    assert "inputs.m05_cache_run_id || '42980239306'" in m05
+    assert "if: always()" in m05 and "path: project/runs/" in m05
+    assert "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9" in m05

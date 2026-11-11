@@ -302,7 +302,7 @@ def test_native_cross_tree_workflow_manual_only_and_evidence_preservation():
                 / "native-paid-route-regressions.yml").read_text()
     assert "  workflow_dispatch:\n" in workflow
     assert "labeled" not in workflow
-    assert "    if: github.event_name == 'workflow_dispatch'" in workflow
+    assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}" in workflow
     assert "PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}" in workflow
     assert "FROM_LEVEL: ${{ inputs.from_level }}" in workflow
     assert "wf_warlock_next_level_source.py" in workflow
