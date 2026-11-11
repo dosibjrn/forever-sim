@@ -1,5 +1,12 @@
 # Prio — minimize cycles to the owner-selected runnable product capability
 
+## Owner P0 for today's five-agent rotation (2026-11-11)
+
+Act as release-critical-path coordinator for **M0.3 (direct Rust API) → M0.4 (exact real 20/40/60, 2-mob optimize) → M0.5 (same optimizer, stride 10→5→1, start L20 permitted)**. Before prioritizing any work, inspect latest main, Rust fork PR #49/#50, latest exact-HEAD Actions, and the previous real `42895483716` native refusals. Do not allocate serial P3/P7/100-mob or unrelated maintenance while a reproducible M0.3/M0.4 blocker remains. If no valid complete native L20/L40/L60 result exists, M0.4 is NOT DONE, irrespective of test counts.
+
+Assign **Work1** precise Rust API + source-native rating exclusion + L40 prep defect, **Work2** generic direct-API scorer/search/cross-seeding/output + actual exact CLI invocation, **Clean** redundant source-JSON vs protobuf SHA check, fake required skipped-level infill and wasteful CI workflows, **Merge** expedite dependencies/pin and verify the real output. Keep the same ongoing feature PRs, avoid branch-conflict churn and perform small changed-code tests instead of unrelated full Rust class replays. On actual measured M0.4 PASS, dispatch M0.5 progressive stride `10`, `5`, `1` in exactly the same production entrypoint with budget scaling and paid-result reuse. Make executable changes to the live queue only when required; do not create a new milestone gate or reopen accepted M1 PASSes.
+
+
 Read [COMMON](COMMON.md), this file, the latest [WORK_PRIORITY](../WORK_PRIORITY.md), actual Merge-owned M1 ledger and relevant source/PR/Actions. Only read a gate contract when that gate is under consideration.
 
 ## Mandatory performance-and-cost check before setting a task
