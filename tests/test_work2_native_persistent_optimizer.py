@@ -1053,7 +1053,7 @@ def test_native_paid_world_ndjson_refusal_keeps_rust_code_and_no_fake_kills():
 
 
 def test_world_apl_30pct_evaluate_frame_requires_native_applied_threshold_echo():
-    """Current Rust ignores extra API fields: it must never score as 30% rest."""
+    """Match Rust #53 nested schema and require native receipt before scoring."""
     from live_two_world_pulls import (
         _persistent_api_evaluate_request, _verify_native_recovery_thresholds,
     )
@@ -1069,7 +1069,11 @@ def test_world_apl_30pct_evaluate_frame_requires_native_applied_threshold_echo()
         targets=2, rng_mode="balanced", health_threshold=0.3,
         mana_threshold=0.3)
     assert thirty == dict(
-        baseline, health_threshold=0.3, mana_threshold=0.3)
+        baseline, between_pulls={
+            "health_fraction": 0.3, "mana_fraction": 0.3,
+        })
+    assert "health_threshold" not in thirty
+    assert "mana_threshold" not in thirty
     with pytest.raises(AssertionError, match="THRESHOLDS_NOT_APPLIED"):
         _verify_native_recovery_thresholds(
             {"thresholds": {"health_fraction": 1.0, "mana_fraction": 1.0}},
