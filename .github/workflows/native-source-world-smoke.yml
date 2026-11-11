@@ -2,7 +2,8 @@ name: Native source-world smoke (selected Rust and real 2D)
 on:
   pull_request:
     # Avoid building Rust and paying unrelated Priest/Feral worlds for test-only
-    # edits. The lightweight clock/ACK regressions stay on the broader paths.
+    # edits or workflow-only cost-policy changes. Cheap clock/ACK regressions
+    # cover this workflow's dispatch boundary on their own PR path.
     paths:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
@@ -13,7 +14,6 @@ on:
       - 'integrations/mythicsim-rust/engine'
       - 'integrations/mythicsim-rust/live_world_probe.py'
       - 'tools/wf_gsim_go_live_range_probe.py'
-      - '.github/workflows/native-source-world-smoke.yml'
   # Explicit cross-class paid diagnostics remain available on demand. Do not
   # run unrelated Priest/Feral builds as prerequisites for rolling World-APL.
   workflow_dispatch:
@@ -107,35 +107,6 @@ jobs:
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
             --classic-mob-level 60 --targets 2 --require-native-moving --require-native-zero-health-damage
-      # Run the original bounded source-paid P0 pair on this Work2 branch
-      # only. Reuse generic optimize and the exact submodule; never re-pay
-      # historical M0.5 samples or start unrelated 100-mob runs.
-      - name: P0 1091 original paid serial versus 50%-rolling World-APL
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'work2/p0-original-paid-overlap-first-hit-clock' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p runs
-          python -m src.v2.runner optimize \
-            --class warlock --tree unconstrained \
-            --start-level 20 --end-level 20 --level-stride 1 \
-            --n-mobs 2 --budget 2 --recover-at-end true \
-            --rng balanced --backend rust \
-            --native-binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
-            --compare-world-rolling-50 \
-            --out runs/rolling-50-original-paid.json \
-            2>&1 | tee runs/rolling-50-original-paid.log
-      - name: Retain original paid world receipts or exact source refusal
-        if: ${{ always() && github.event_name == 'pull_request' && github.head_ref == 'work2/p0-original-paid-overlap-first-hit-clock' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: work2-p0-1091-original-world-rolling-${{ github.sha }}
-          path: |
-            runs/rolling-50-original-paid.json
-            runs/rolling-50-original-paid.log
-            runs/native-api-paid-cache/
-          if-no-files-found: warn
-          retention-days: 7
       - name: Real source-native incoming health damage on retained gsim 2D actor (not gate)
         if: ${{ github.event_name == 'pull_request' || inputs.diagnostic == 'world-core' }}
         run: |

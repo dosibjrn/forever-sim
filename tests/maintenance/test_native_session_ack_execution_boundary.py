@@ -187,3 +187,22 @@ def test_rolling_world_pr_smoke_keeps_paid_cross_class_checks_manual_only():
         )
     assert "PRIEST_L20_REAL_PAID_RUST_GSIM2D_ACK_PASS_NOT_100MOB_NOT_GATE" in jobs
     assert "python tools/wf_native_feral_l60_world.py" in jobs
+
+
+def test_original_p0_1091_paid_pair_is_not_auto_replayed_on_pr_updates():
+    """The #1479 measured pair is retained as evidence, not a paid PR check."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    trigger, jobs = text.split("jobs:", 1)
+    assert "  pull_request:" in trigger
+    # Changing CI-only policy must not compile Rust and pay unrelated worlds.
+    # Source/world bridge changes still launch the real selected-Rust smoke.
+    assert "- '.github/workflows/native-source-world-smoke.yml'" not in trigger
+    assert "- 'integrations/mythicsim-rust/live_two_world_pulls.py'" in trigger
+    assert "work2/p0-original-paid-overlap-first-hit-clock" not in jobs
+    assert "--compare-world-rolling-50" not in jobs
+    assert "rolling-50-original-paid.json" not in jobs
+    assert "work2-p0-1091-original-world-rolling-" not in jobs
+    # Keep selected Rust, two sourced world kills and native incoming ACK.
+    assert "cargo build --locked --manifest-path" in jobs
+    assert "--require-native-zero-health-damage" in jobs
+    assert "--require-native-health-damage" in jobs
