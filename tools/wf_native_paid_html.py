@@ -6,6 +6,7 @@ No game legality, item stats, provenance, or route continuity is inferred.
 from __future__ import annotations
 
 import argparse
+import hashlib
 from collections import defaultdict
 from collections.abc import Mapping
 from html import escape
@@ -236,7 +237,42 @@ def _report_class(result: Mapping[str, Any]) -> str:
     return normalize_class_name(result.get("class"))
 
 
-def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
+def read_verified_native_raw(row: Mapping[str, Any], *, receipt_root: Path | None = None) -> Mapping[str, Any] | None:
+    """Read an optional source-native sidecar only if exact digest and source match.
+
+    A missing, different, stale or untrusted raw file never supplies a timeline.
+    The accepted scored result itself remains unchanged.
+    """
+    source = row.get("receipt") or {}
+    raw_name, expected = source.get("native_raw_receipt_file"), source.get("native_raw_receipt_sha256")
+    if not isinstance(raw_name, str) or not raw_name.endswith(".native.json"):
+        return None
+    if not isinstance(expected, str) or len(expected) != 64:
+        return None
+    path = Path(raw_name)
+    candidates = [path]
+    if receipt_root is not None and not path.is_absolute() and ".." not in path.parts:
+        candidates.insert(0, Path(receipt_root) / path)
+    for candidate in candidates:
+        try:
+            data = candidate.read_bytes()
+            if hashlib.sha256(data).hexdigest() != expected:
+                continue
+            document = json.loads(data)
+            if (isinstance(document, Mapping)
+                    and document.get("source_sha256") == row.get("source_request_sha256")
+                    and document.get("actual_2d_ack") is True
+                    and document.get("world_targets_killed") == source.get("targets_killed")
+                    and document.get("paid_recovery") is True
+                    and document.get("native_recovery_clock_accounted") is True):
+                return document
+        except (OSError, ValueError, TypeError):
+            continue
+    return None
+
+
+def render_native_paid_html(result: Mapping[str, Any], *, level: int,
+                            native_raw: Mapping[str, Any] | None = None) -> str:
     """Reference-structured offline guide from genuine paid native rows.
 
     This shared publisher owns receipt gating; the class-neutral layout owns
@@ -249,10 +285,10 @@ def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
     if not rows:
         raise ValueError("NO_VERIFIED_NATIVE_PAID_WINNER_FOR_HTML_LEVEL_" + str(level))
     from tools.wf_native_paid_reference_layout import render_reference_page
-    return render_reference_page(result, level, rows, character_class)
+    return render_reference_page(result, level, rows, character_class, native_raw=native_raw)
 
 def write_native_paid_html_reports(
-    result: Mapping[str, Any], out_dir: Path,
+    result: Mapping[str, Any], out_dir: Path, *, receipt_root: Path | None = None,
 ) -> list[Path]:
     # Derive filenames and page headings from the measured result metadata.
     # Never silently label a Mage/Druid paid receipt as Warlock.
@@ -262,7 +298,8 @@ def write_native_paid_html_reports(
     for level in result.get("sampled_levels_requested", []):
         if not _valid_rows(result, level):
             continue
-        page = render_native_paid_html(result, level=level)
+        raw = read_verified_native_raw(_valid_rows(result, level)[0], receipt_root=receipt_root)
+        page = render_native_paid_html(result, level=level, native_raw=raw)
         out_dir.mkdir(parents=True, exist_ok=True)
         dest = out_dir / (class_name.lower() + "-l" + str(level) + "-best-tested.html")
         dest.write_text(page, encoding="utf-8")
@@ -274,10 +311,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Publish independent offline HTML from saved native-paid JSON (no Rust run)")
     parser.add_argument("--in", dest="source", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument("--receipt-root", type=Path,
+                        help="Optional extraction root containing the original runs/native-api-paid-cache/*.native.json")
     args = parser.parse_args(argv)
     result = json.loads(args.source.read_text(encoding="utf-8"))
     pages = write_native_paid_html_reports(
-        result, args.out_dir)
+        result, args.out_dir, receipt_root=args.receipt_root)
     for page in pages:
         print("WROTE_NATIVE_PAID_HTML", page)
     return 0 if pages else 2
