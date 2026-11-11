@@ -431,6 +431,39 @@ class NativeApiSession:
         self.process.stderr.close()
 
 
+ROLLING_WORLD_APL_50 = {
+    "pull_mode": "rolling",
+    "switch_trigger": {
+        "type": "current_target_hp_fraction_at_most",
+        "fraction": 0.5,
+    },
+    "max_live_targets": 2,
+}
+
+
+def _native_world_policy(rest_health: float, rest_mana: float,
+                         world_apl: dict | None = None) -> dict:
+    return {
+        "pull_mode": "rolling" if world_apl is not None else "serial",
+        "rest_when_health_below": rest_health,
+        "rest_when_mana_below": rest_mana,
+        "rest_until": "full_when_triggered",
+        "terminal_full_hp_and_mana": True,
+        **({"world_apl": copy.deepcopy(world_apl)}
+           if world_apl is not None else {}),
+    }
+
+
+def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> bool:
+    return (world_apl is None or (
+        receipt.get("native_world_apl") == world_apl
+        and receipt.get("native_world_overlap_verified") is True
+        and isinstance(receipt.get("native_world_overlap"), dict)
+        and len({row.get("target_id") for row in receipt.get("world_kills", [])}) == 2
+        and len({row.get("ack_sha256") for row in receipt.get("world_kills", [])}) == 2
+    ))
+
+
 class PersistentNativeEvaluator:
     """Callable native candidate evaluator shared by stride 20/10/5/1.
 
@@ -442,9 +475,11 @@ class PersistentNativeEvaluator:
                  target_hp: float | None = None,
                  session_factory: Callable = NativeApiSession,
                  run_world: Callable | None = None,
-                 compare_world_rest_30: bool = False):
+                 compare_world_rest_30: bool = False,
+                 compare_world_rolling_50: bool = False):
         self.binary = binary
         self.compare_world_rest_30 = compare_world_rest_30
+        self.compare_world_rolling_50 = compare_world_rolling_50
         self.template = json.loads(source.read_text())
         self.artifact_dir = artifact_dir
         self.target_hp = target_hp
@@ -494,7 +529,8 @@ class PersistentNativeEvaluator:
     def _paid(self, source: dict, prepared: dict, *, level: int, mobs: int,
               target_hp: float, cid: str, fresh_world: bool = False,
               health_threshold: float = 1.0,
-              mana_threshold: float = 1.0) -> tuple[dict, float, bool, Path]:
+              mana_threshold: float = 1.0,
+              world_apl: dict | None = None) -> tuple[dict, float, bool, Path]:
         native_sha = prepared["request_sha256"]
         rest_policy = (float(health_threshold), float(mana_threshold))
         # Cache includes the exact source-produced prepared actor, not a
@@ -504,13 +540,16 @@ class PersistentNativeEvaluator:
         # The native source/actor and paid world configuration must match
         # exactly. A fresh actor is prepared for every independent sample;
         # this memo never substitutes for a retained-state/XP transition.
+        policy_key = (json.dumps(world_apl, sort_keys=True)
+                      if world_apl is not None else None)
         session_key = (native_sha, prepared_digest, level, mobs,
-                       float(target_hp), rest_policy)
+                       float(target_hp), rest_policy, policy_key)
         previous = None if fresh_world else self._session_paid.get(session_key)
         if previous is not None:
             old_receipt, old_elapsed, old_path, old_digest = previous
             try:
                 if (_file_digest(old_path) == old_digest
+                        and _native_rolling_receipt_verified(old_receipt, world_apl)
                         and score_native_chain(
                             old_receipt, prepared, mob_count=mobs,
                             expected_target_hp=target_hp
@@ -548,9 +587,12 @@ class PersistentNativeEvaluator:
                     "health_fraction": rest_policy[0],
                     "mana_fraction": rest_policy[1],
                 }
+            if world_apl is not None:
+                identity["native_world_apl"] = world_apl
             key = _digest(json.dumps(identity, sort_keys=True).encode())
         else:
-            key = _digest((native_sha + cid + repr(rest_policy)).encode())
+            key = _digest((native_sha + cid + repr(rest_policy)
+                           + repr(policy_key)).encode())
         path = self.artifact_dir / (key + ".native.json")
         meta = self.artifact_dir / (key + ".native.cache.json")
         cached = False
@@ -561,7 +603,9 @@ class PersistentNativeEvaluator:
                     receipt = json.loads(path.read_text())
                     elapsed, verdict = score_native_chain(
                         receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
-                    if elapsed is not None and verdict == "MEASURED_NATIVE_FULLY_RECOVERED":
+                    if (elapsed is not None
+                            and verdict == "MEASURED_NATIVE_FULLY_RECOVERED"
+                            and _native_rolling_receipt_verified(receipt, world_apl)):
                         return retain(receipt, elapsed, True, path)
             except (ValueError, TypeError, OSError, KeyError):
                 pass
@@ -570,7 +614,7 @@ class PersistentNativeEvaluator:
         # verify historical source-world Git objects plus the complete native
         # identity, original raw digest and CURRENT strict recovery scorer.
         # Never rewrite the historical receipt or metadata.
-        if not fresh_world and identity is not None:
+        if not fresh_world and identity is not None and world_apl is None:
             for legacy_meta in sorted(self.artifact_dir.glob("*.native.cache.json")):
                 if legacy_meta == meta:
                     continue
@@ -598,7 +642,10 @@ class PersistentNativeEvaluator:
             health_threshold=rest_policy[0], mana_threshold=rest_policy[1],
             api_process=self.session.process, prepared_payload=prepared,
             require_native_health_damage=False,
+            **({"world_apl": world_apl} if world_apl is not None else {}),
         )
+        if not _native_rolling_receipt_verified(receipt, world_apl):
+            raise ValueError("RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN")
         elapsed, verdict = score_native_chain(
             receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
         if elapsed is None or verdict != "MEASURED_NATIVE_FULLY_RECOVERED":
@@ -724,7 +771,10 @@ class PersistentNativeEvaluator:
         first = sources.pop(0)
         sources = [(first, "talent"), *(
                        [(copy.deepcopy(first), "world_rest_30pct", 0.3, 0.3)]
-                       if self.compare_world_rest_30 else []),
+                       if self.compare_world_rest_30 else []), *(
+                       [(copy.deepcopy(first), "world_rolling_50pct",
+                         1.0, 1.0, copy.deepcopy(ROLLING_WORLD_APL_50))]
+                       if self.compare_world_rolling_50 else []),
                    *axis_sources,
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
@@ -739,10 +789,11 @@ class PersistentNativeEvaluator:
             candidate = sources[index]
             source, proposal_axis = candidate[:2]
             rest_health, rest_mana = (
-                candidate[2:] if len(candidate) == 4 else (1.0, 1.0))
+                candidate[2:4] if len(candidate) >= 4 else (1.0, 1.0))
+            world_apl = candidate[4] if len(candidate) == 5 else None
             index += 1
             identity = json.dumps(
-                [source, rest_health, rest_mana], sort_keys=True)
+                [source, rest_health, rest_mana, world_apl], sort_keys=True)
             if identity in seen:
                 continue
             seen.add(identity)
@@ -772,9 +823,9 @@ class PersistentNativeEvaluator:
                     # Under the normal budget, first gear and pet attempts
                     # precede APL; with no source axes, APL follows the seed.
                     insert_at = min(len(sources), index + min(2, len(axis_sources)))
-                    if self.compare_world_rest_30:
-                        # The opt-in rest challenger must be evaluated before
-                        # the APL expansion consumes the remaining two slots.
+                    if self.compare_world_rest_30 or self.compare_world_rolling_50:
+                        # The opt-in world-policy challenger gets a bounded
+                        # native attempt before APL variants spend the budget.
                         insert_at = max(insert_at, index + 1)
                     sources[insert_at:insert_at] = [
                         (row, "apl") for row in apl_choices]
@@ -783,7 +834,7 @@ class PersistentNativeEvaluator:
                     target_hp=target_hp, cid=cid,
                     fresh_world=fresh_paid_world,
                     health_threshold=rest_health,
-                    mana_threshold=rest_mana)
+                    mana_threshold=rest_mana, world_apl=world_apl)
                 terminal = receipt["native_terminal_recovery"]
                 actor = source["raid"]["parties"][0]["players"][0]
                 cls_options = actor.get("warlock", {}).get(
@@ -809,18 +860,19 @@ class PersistentNativeEvaluator:
                         (terminal["end_clock_ns"] - terminal["start_clock_ns"]) / 1e9,
                     "talents": actor["talentsString"],
                     "proposal_axis": proposal_axis,
-                    "native_world_policy": {
-                        "pull_mode": "serial",
-                        "rest_when_health_below": rest_health,
-                        "rest_when_mana_below": rest_mana,
-                        "rest_until": "full_when_triggered",
-                        "terminal_full_hp_and_mana": True,
-                    },
+                    "native_world_policy": _native_world_policy(
+                        rest_health, rest_mana, world_apl),
                     "native_named_build": _described_build(source, options),
                     "native_options_coverage": options.get("coverage"),
                     "gear": actor.get("equipment"),
                     "apl": actor.get("rotation"),
                     "pet": cls_options.get("summon"),
+                    "native_world_apl": receipt.get("native_world_apl"),
+                    "native_world_overlap_verified":
+                        receipt.get("native_world_overlap_verified") is True,
+                    "native_world_overlap": receipt.get("native_world_overlap"),
+                    "native_world_kills": receipt.get("world_kills")
+                        if world_apl is not None else None,
                     "native_raw_receipt_file": str(raw_path),
                     "native_raw_receipt_sha256": _file_digest(raw_path),
                     "reused_exact_native_paid_receipt": cached,
@@ -834,13 +886,8 @@ class PersistentNativeEvaluator:
                     "candidate_id": cid, "level": level,
                     "native_prepared": prepared_ok,
                     "proposal_axis": proposal_axis,
-                    "native_world_policy": {
-                        "pull_mode": "serial",
-                        "rest_when_health_below": rest_health,
-                        "rest_when_mana_below": rest_mana,
-                        "rest_until": "full_when_triggered",
-                        "terminal_full_hp_and_mana": True,
-                    },
+                    "native_world_policy": _native_world_policy(
+                        rest_health, rest_mana, world_apl),
                     "native_refusal_code": getattr(exc, "code", None),
                     "native_refusal": str(exc)[-1500:],
                 })
