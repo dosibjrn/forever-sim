@@ -113,6 +113,10 @@ def test_superseded_pr_clock_ack_runs_cancel_only_same_pr():
     assert "  clock-ack:" in steps
     assert "python -m pytest -q " in steps
     assert "tests/integration/backend/test_wf_go_native_world_damage_ack.py" in steps
+    # This existing range-only contract must run on the same cheap PR check:
+    # rolling B target updates rely on its dead-selected and spatial ticks.
+    assert "      - 'tests/integration/backend/test_wf_gsim_go_world_range_feed.py'\n" in policy
+    assert "tests/integration/backend/test_wf_gsim_go_world_range_feed.py" in steps
     assert "tests/test_work2_native_world_clock_ack.py" in steps
     # A source change must still schedule the latest real 2D/Rust smoke.
     smoke = WORKFLOW.read_text(encoding="utf-8")
