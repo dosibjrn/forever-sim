@@ -393,8 +393,10 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
     levels = result["sampled_levels_requested"]
     if [step["level"] for step in steps] != levels:
         raise ValueError("cannot publish an incomplete sampled path as a full guide")
-    if (result.get("status") != "SAMPLED_COMPATIBLE_PATH_RANKED"
-            or result.get("sampled_levels_compatible") != levels):
+    if (result.get("status") not in (
+            "SAMPLED_COMPATIBLE_PATH_RANKED",
+            "SAMPLED_COMPATIBLE_PATH_PROVISIONAL",
+        ) or result.get("sampled_levels_compatible") != levels):
         raise ValueError("cannot publish a guide without completed compatible native samples")
     # These original paid receipts are the reason the guide can call the
     # displayed numbers measured.  Reject edited/mixed JSON rather than
@@ -431,6 +433,8 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
                             rel_tol=1e-9, abs_tol=1e-6):
             raise ValueError("native guide cumulative score disagrees with paid receipts")
     title = str(result.get("class", "character")).capitalize()
+    score_label = ("Best compatible sampled score" if len(ranked) > 1
+                   else "Only measured compatible sampled score")
     lines = [
         f"# {title} — source-native sampled build guide",
         "",
@@ -450,7 +454,12 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
         "pet optimum. A single paid value for an axis means no comparison "
         "on that axis.",
         "",
-        f"**Best compatible sampled score:** "
+        ("**Competition:** Only one compatible native-paid path retained; "
+         "this is a provisional measured baseline, not an optimized winner."
+         if len(ranked) == 1 else
+         f"**Competition:** {len(ranked)} compatible measured paths retained."),
+        "",
+        f"**{score_label}:** "
         f"{best['sampled_cumulative_seconds']:.3f} s "
         f"(among {len(ranked)} retained compatible path(s)).",
         "",
