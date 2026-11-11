@@ -459,7 +459,8 @@ def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
             ]
             items = labels.get("equipped_item_names_ids", [])
             lines += [
-                f"  - Slot {item.get('position')}: "
+                f"  - Native slot {item.get('native_slot') or 'unreported'} "
+                f"(request index {item.get('position')}): "
                 f"{item.get('name') or 'source name unavailable'} "
                 f"(ID {item.get('item_id')})"
                 for item in items if item.get("item_id") not in (None, 0)
