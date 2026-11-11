@@ -45,7 +45,12 @@ class GsimNativeDamageWorldApplier:
         self._last_native_time_ns = -1
         self._last_world_tick_ns = -1
         self._target_id = None
-        self._native_target_identity = None
+        # Native enemy slots stay bound to distinct real world IDs across
+        # overlapping ACKs. A serial handoff can reuse slot zero only after
+        # a source-native lethal ACK.
+        self._native_target_ids: dict[int, str] = {}
+        self._native_identities: dict[int, tuple] = {}
+        self._native_handoff_ns: dict[int, int] = {}
         # A dead gsim mob alone is not evidence that the native actor killed it.
         self._last_native_lethal_target_id = None
         # Damage for a later mob must not be dated before its live world handoff.
@@ -64,6 +69,12 @@ class GsimNativeDamageWorldApplier:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_READY")
         if self._last_native_lethal_target_id != self._target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_NATIVE_LETHAL")
+        # After an overlapping switch, killing only the selected mob does
+        # not retire old-target DoTs or authorize reuse of its native slot.
+        if any(self._runtime.targets[world_id].alive
+               for world_id in self._native_target_ids.values()):
+            raise NativeDamageWorldApplicationError(
+                "WORLD_DAMAGE_ACK_PREVIOUS_NATIVE_TARGET_STILL_LIVE")
         world = snapshot_gsim_world(self._runtime)
         if world["selected_target_id"] != next_target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_SELECTED")
@@ -71,8 +82,40 @@ class GsimNativeDamageWorldApplier:
         if handoff_ns < self._last_world_tick_ns:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_CLOCK_REWIND")
         self._target_id = next_target_id
-        self._target_handoff_ns = handoff_ns
+        self._native_target_ids = {0: next_target_id}
+        self._native_identities.clear()
+        self._native_handoff_ns = {0: handoff_ns}
         self._last_native_lethal_target_id = None
+
+    def begin_overlapping_world_target(self, next_target_id: str,
+                                       *, native_target_index: int = 1) -> None:
+        """Bind a second engaged living mob after a real prior native/world ACK.
+
+        This permits subsequent old-target DoTs to retain native slot zero.
+        Caller must acquire/select the second gsim target from a source-native
+        switch request; this method does not decide when to pull or certify a
+        rolling World-APL policy on its own.
+        """
+        if (type(native_target_index) is not int or native_target_index != 1
+                or self._next_seq == 0 or self._target_id is None
+                or self._native_target_ids != {0: self._target_id}
+                or next_target_id in self._native_target_ids.values()
+                or next_target_id not in self._runtime.targets):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_OVERLAP_SLOT_INVALID")
+        world = snapshot_gsim_world(self._runtime)
+        old = self._target_id
+        if (world["selected_target_id"] != next_target_id
+                or not world["enemies"][old]["alive"]
+                or not world["enemies"][old]["engaged"]
+                or not world["enemies"][next_target_id]["alive"]
+                or not world["enemies"][next_target_id]["engaged"]):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_OVERLAP_NOT_TWO_LIVE")
+        handoff_ns = world["clock_ms"] * 1_000_000
+        if handoff_ns < self._last_world_tick_ns:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_OVERLAP_CLOCK_REWIND")
+        self._native_target_ids[1] = next_target_id
+        self._native_handoff_ns[1] = handoff_ns
+        self._target_id = next_target_id
 
     def apply(self, tick: Mapping, response: Mapping) -> dict:
         if not isinstance(tick, Mapping) or not isinstance(response, Mapping):
@@ -102,6 +145,9 @@ class GsimNativeDamageWorldApplier:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_NOT_SELECTED")
         if self._target_id is not None and target_id != self._target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_GSIM_TARGET_SWITCH")
+        target_by_index = self._native_target_ids or {0: target_id}
+        if target_id not in target_by_index.values():
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_TARGET_UNBOUND")
         target = self._runtime.targets[target_id]
         if not target.alive:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD")
@@ -147,11 +193,16 @@ class GsimNativeDamageWorldApplier:
                 ordered.append((ordinal, kind, event))
         ordered.sort(key=lambda item: item[0])
 
-        health_at_event = old_health
-        target_identity = self._native_target_identity
+        health_before_by_index = {
+            index: float(self._runtime.targets[world_id].health)
+            for index, world_id in target_by_index.items()
+        }
+        health_at_event = dict(health_before_by_index)
+        target_identity = dict(self._native_identities)
         ids = []
         damage_ids = []
         damage = 0.0
+        damage_by_index: dict[int, float] = {}
         validated = []
         for ordinal, kind, event in ordered:
             if ordinal != last_event_id + 1:
@@ -176,7 +227,7 @@ class GsimNativeDamageWorldApplier:
                     or timestamp > clock_ns
                     or effect_kind != kind
                     or type(event.get("native_target_index")) is not int
-                    or event["native_target_index"] != 0
+                    or event["native_target_index"] not in target_by_index
                     or type(event.get("native_target_unit_index")) is not int
                     or event["native_target_unit_index"] < 0
                     or not isinstance(event.get("native_target_label"), str)
@@ -191,11 +242,14 @@ class GsimNativeDamageWorldApplier:
                         type(caster_index) is not int or caster_index < 0
                         or not isinstance(caster_label, str) or not caster_label))
                     or (caster_type == "" and (caster_index != 0 or caster_label != ""))
-                    or (target_identity is not None and current_native_target != target_identity)):
+                    or (event["native_target_index"] in target_identity
+                        and current_native_target !=
+                        target_identity[event["native_target_index"]])):
                 raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SOURCE_EVENT_INVALID")
 
-            if (self._target_handoff_ns is not None
-                    and timestamp < self._target_handoff_ns):
+            native_index = event["native_target_index"]
+            handoff_ns = self._native_handoff_ns.get(native_index)
+            if handoff_ns is not None and timestamp < handoff_ns:
                 raise NativeDamageWorldApplicationError(
                     "WORLD_DAMAGE_ACK_EVENT_BEFORE_TARGET_HANDOFF")
             if kind == "damage":
@@ -204,9 +258,12 @@ class GsimNativeDamageWorldApplier:
                         or event.get("duration_ns") is not None
                         or event.get("break_semantics_status") is not None):
                     raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SOURCE_EVENT_INVALID")
-                world_effect_allowed = health_at_event > 0.0
-                health_at_event = max(0.0, health_at_event - float(value))
+                world_effect_allowed = health_at_event[native_index] > 0.0
+                health_at_event[native_index] = max(
+                    0.0, health_at_event[native_index] - float(value))
                 damage += float(value)
+                damage_by_index[native_index] = (
+                    damage_by_index.get(native_index, 0.0) + float(value))
                 damage_ids.append(event_id)
             else:
                 duration_ns = event.get("duration_ns")
@@ -221,12 +278,13 @@ class GsimNativeDamageWorldApplier:
                         or caster_type != "" or caster_index != 0 or caster_label != ""
                         or not _roots_action_matches_rank(source_action_id, event["rank"])):
                     raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_CONTROL_EVENT_INVALID")
-                world_effect_allowed = health_at_event > 0.0
+                world_effect_allowed = health_at_event[native_index] > 0.0
             ids.append(event_id)
-            validated.append((kind, event, world_effect_allowed))
+            validated.append((
+                kind, event, world_effect_allowed, target_by_index[native_index]))
             last_event_id = ordinal
             last_native_time = timestamp
-            target_identity = current_native_target
+            target_identity[native_index] = current_native_target
 
         if not isfinite(damage):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_DAMAGE_INVALID")
@@ -235,12 +293,13 @@ class GsimNativeDamageWorldApplier:
         acknowledged_control_events = []
         applied_control_ids = []
         applied_control_events = []
-        for kind, event, world_effect_allowed in validated:
+        for kind, event, world_effect_allowed, event_world_id in validated:
+            event_target = self._runtime.targets[event_world_id]
             if kind == "damage":
                 # A buffered overkill event is still consumed in native
                 # ordinal order, but cannot mutate the already-dead world mob.
                 if world_effect_allowed:
-                    target.apply_damage(float(event["damage"]))
+                    event_target.apply_damage(float(event["damage"]))
                 continue
             # ACK every valid source event, but preserve its absolute source
             # expiry. If a pre-pull root has already expired before the first
@@ -261,7 +320,7 @@ class GsimNativeDamageWorldApplier:
                 time_s=world_time_s,
                 kind="ControlApplied",
                 actor_id=self._runtime.actor.id,
-                target_id=target_id,
+                target_id=event_world_id,
                 action_id=str(event["source_action_id"]),
                 payload={
                     "control_id": "root",
@@ -285,24 +344,57 @@ class GsimNativeDamageWorldApplier:
             acknowledged_control_events.append(acknowledged)
             applied_control_events.append(dict(event))
 
-        applied = old_health - float(target.health)
-        if abs(applied - min(damage, old_health)) > 1e-6:
-            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_HEALTH_DELTA_MISMATCH")
+        for native_index, world_id in target_by_index.items():
+            applied = health_before_by_index[native_index] - float(
+                self._runtime.targets[world_id].health)
+            amount = damage_by_index.get(native_index, 0.0)
+            if abs(applied - min(amount, health_before_by_index[native_index])) > 1e-6:
+                raise NativeDamageWorldApplicationError(
+                    "WORLD_DAMAGE_ACK_HEALTH_DELTA_MISMATCH")
         after_hash = state_hash(snapshot_gsim_world(self._runtime))
-        world_changed = damage > 0.0 or bool(applied_control_ids)
+        world_changed = any(
+            self._runtime.targets[world_id].health != health_before_by_index[index]
+            for index, world_id in target_by_index.items()
+        ) or bool(applied_control_ids)
         if (world_changed and after_hash == digest) or (not world_changed and after_hash != digest):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_NOT_CHANGED_AS_EXPECTED")
         self._target_id = target_id
         self._last_native_lethal_target_id = (
-            target_id if damage > 0.0 and not target.alive else None
+            target_id if damage_by_index.get(next(
+                index for index, world_id in target_by_index.items()
+                if world_id == target_id), 0.0) > 0.0 and not target.alive else None
         )
-        self._native_target_identity = target_identity
+        self._native_target_ids = dict(target_by_index)
+        self._native_identities = target_identity
         self._next_seq += 1
         self._previous_event_id = last_event_id
         self._native_process_id = pid
         self._last_native_time_ns = last_native_time
         self._last_world_tick_ns = clock_ns
+        # Per-target committed health rows are necessary only for overlap.
+        # The legacy serial scalar ACK remains byte-shape compatible.
+        multi_target_ack = {}
+        if len(target_by_index) > 1:
+            selected_index = next(
+                index for index, world_id in target_by_index.items()
+                if world_id == target_id)
+            multi_target_ack = {
+                "selected_native_target_index": selected_index,
+                "native_target_health_acks": [
+                    {
+                        "native_target_index": index,
+                        "world_target_id": target_by_index[index],
+                        "world_target_health_before": health_before_by_index[index],
+                        "world_target_health_after": float(
+                            self._runtime.targets[target_by_index[index]].health),
+                        "world_target_max_health": float(
+                            self._runtime.targets[target_by_index[index]].max_health),
+                    }
+                    for index in sorted(damage_by_index)
+                ],
+            }
         return {
+            **multi_target_ack,
             "type": "gsim_native_damage_applied_ack",
             "sequence": seq,
             "native_process_id": pid,
@@ -313,7 +405,7 @@ class GsimNativeDamageWorldApplier:
             "acknowledged_control_event_ids": acknowledged_control_ids,
             "acknowledged_control_events": acknowledged_control_events,
             "applied_control_event_ids": applied_control_ids,
-            "applied_events": [dict(event) for _, event, _ in validated],
+            "applied_events": [dict(event) for _, event, _, _ in validated],
             "applied_control_events": applied_control_events,
             "applied_native_damage": damage,
             "world_target_health_before": old_health,
