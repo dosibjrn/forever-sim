@@ -972,6 +972,7 @@ def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
     assert "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9" in m05
 
 
+@pytest.mark.parametrize("mode", ["independent", "continuing", "compatible"])
 def test_single_beam_pays_real_samples_without_inventing_competition(mode):
     """A one-slot beam is a valid search limit, not a native refusal.
 
