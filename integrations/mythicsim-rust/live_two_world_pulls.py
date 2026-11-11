@@ -624,6 +624,9 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
     health = source.get("prior_world_target_health")
     maximum = source.get("prior_world_target_max_health")
     switch_ns = source.get("switch_native_clock_ns")
+    # Source-ACK refusal keeps the observed 2D identities available for
+    # diagnosing a real nonlethal switch without certifying a fabricated one.
+    enemy_state = snapshot_gsim_world(world)["enemies"]
     if (type(source.get("from_native_target_index")) is not int
             or source["from_native_target_index"] != 0
             or type(source.get("to_native_target_index")) is not int
@@ -644,9 +647,15 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
             or source.get("health_fraction_at_most") != 0.5
             or health / maximum > 0.5
             or not old.alive or not new.alive
-            or not snapshot_gsim_world(world)["enemies"][old_id]["engaged"]
-            or snapshot_gsim_world(world)["enemies"][new_id]["engaged"]):
-        raise AssertionError("RUST_WORLD_OVERLAP_SOURCE_SWITCH_UNACKED")
+            or not enemy_state[old_id]["engaged"]
+            or enemy_state[new_id]["engaged"]):
+        raise AssertionError(
+            "RUST_WORLD_OVERLAP_SOURCE_SWITCH_UNACKED:"
+            f" old_engaged={enemy_state[old_id]['engaged']}"
+            f" new_engaged={enemy_state[new_id]['engaged']}"
+            f" old_alive={old.alive} new_alive={new.alive}"
+            f" source_hp_fraction={health / maximum if type(health) in (int, float) and type(maximum) in (int, float) and maximum else None}"
+            f" world_hp_fraction={old.health / old.max_health}")
     return dict(source)
 
 
