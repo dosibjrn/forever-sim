@@ -308,7 +308,7 @@ def test_native_cross_tree_workflow_manual_only_and_evidence_preservation():
     cross_tree = workflow.split("  cross-tree-native-world:", 1)[1]
     assert "github.event.action" not in cross_tree
     assert "github.event_name == 'workflow_dispatch'" in cross_tree
-    assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}" in workflow
+    assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' && inputs.run_m06_original != true }}" in workflow
     assert "PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}" in workflow
     assert "FROM_LEVEL: ${{ inputs.from_level }}" in workflow
     assert "wf_warlock_next_level_source.py" in workflow
