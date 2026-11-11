@@ -143,7 +143,8 @@ def test_p3_native_equipped_pair_does_not_overrun_shared_paid_budget(monkeypatch
 
 def test_p3_direct_native_rogue_uses_full_44_paid_budget_when_requested(monkeypatch):
     monkeypatch.delenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", raising=False)
-    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 0
+    # Repo-shipped Rogue L20 fixture now supports a Rust-item-seeded baseline.
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 44
     monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/native-rogue-source.json")
     assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 44
     assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", None) == 0
