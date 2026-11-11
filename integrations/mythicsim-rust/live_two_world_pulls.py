@@ -524,7 +524,7 @@ def _persistent_api_evaluate_request(*, targets: int, rng_mode: str,
                                      mana_threshold: float) -> dict:
     """Forward only source-native Decisions rest inputs to the Rust API.
 
-    Existing API pins ignore these optional thresholds and execute 1.0/1.0.
+    Rust's native evaluate schema uses a nested between_pulls policy.
     The returned native thresholds MUST independently acknowledge any changed
     request before Forever considers its paid time a policy measurement.
     """
@@ -533,8 +533,10 @@ def _persistent_api_evaluate_request(*, targets: int, rng_mode: str,
         "rng_mode": rng_mode, "recover_at_end": True,
     }
     if (health_threshold, mana_threshold) != (1.0, 1.0):
-        request["health_threshold"] = health_threshold
-        request["mana_threshold"] = mana_threshold
+        request["between_pulls"] = {
+            "health_fraction": health_threshold,
+            "mana_fraction": mana_threshold,
+        }
     return request
 
 
