@@ -287,10 +287,14 @@ def _paid_parent_source(parent: dict, binary: Path) -> tuple[dict, str]:
             not _valid_native_digest(original_raw_sha)
             or _sha256(raw_path) != original_raw_sha):
         raise ValueError("native parent original paid receipt bytes mismatch")
-    if _sha256(source_path) != source_sha:
-        raise ValueError("native parent source bytes mismatch")
     source = json.loads(source_path.read_text())
     prepared = json.loads(prepared_path.read_text())
+    # A native prepare receipt hashes its deterministic protobuf request, not
+    # necessarily the source JSON bytes.  Historical file-hash parent IDs are
+    # also supported; neither domain is a Python legality/Warcraft proof.
+    if (source_sha != _sha256(source_path)
+            and source_sha != prepared.get("request_sha256")):
+        raise ValueError("native parent source identity mismatch")
     raw = json.loads(raw_path.read_text())
     actor = source["raid"]["parties"][0]["players"][0]
     terminal = raw["native_terminal_recovery"]
