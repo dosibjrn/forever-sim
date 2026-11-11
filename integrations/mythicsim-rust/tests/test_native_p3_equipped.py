@@ -827,3 +827,56 @@ def test_naked_rogue_refused_source_seeds_preserve_no_paid_provenance():
         {"item_id": 411, "status": "NATIVE_PREPARE_REFUSED",
          "reason": "item 411 rejected"},
     ]
+
+
+def test_native_p3_shared_cap_covers_occupied_slots_before_third_refusal_retries():
+    """44 attempts must reach all 17 source-occupied slots despite early refusals."""
+    from native_p3_equipped import NATIVE_SLOT_POSITIONS
+
+    reference = _reference()
+    original = copy.deepcopy(reference)
+    selection = {
+        slot: {"selected_ids": [
+            100 + index, 5000 + index * 10,
+            5001 + index * 10, 5002 + index * 10]}
+        for slot, index in NATIVE_SLOT_POSITIONS
+    }
+    paid = []
+
+    def source_paid(_binary, request, _iterations, _seed, mode, _deadline, **_kwargs):
+        assert mode == "balanced"
+        ids = [item["id"] for item in
+               request["raid"]["parties"][0]["players"][0]["equipment"]["items"]]
+        changed = [(index, item_id) for index, item_id in enumerate(ids)
+                   if item_id != 100 + index]
+        if not changed:
+            return 100.0, {}, 0.01, "baseline"
+        assert len(changed) == 1
+        index, item_id = changed[0]
+        paid.append((index, item_id))
+        if item_id % 10 in (0, 1):
+            raise NativeCandidateRefusal(
+                "UNSUPPORTED", reason="source rejected swap",
+                request_sha256=f"refused-{index}-{item_id}", raw_response={})
+        return 101.0 + index, {}, 0.01, f"paid-{index}-{item_id}"
+
+    receipt = compare_equipped_native(
+        "selected-native", reference, selection,
+        evaluator=source_paid, preparer=_prepared_actor, max_paid_attempts=44)
+
+    expected_slots = [slot for slot, _index in NATIVE_SLOT_POSITIONS]
+    # First two source alternatives for every slot are paid before any third.
+    assert [row["swap"]["slot"] for row in
+            receipt["native_slot_evaluations"][:34]] == [
+                slot for slot in expected_slots for _ in range(2)]
+    assert [row["status"] for row in
+            receipt["native_slot_evaluations"][:34]] == ["UNSUPPORTED"] * 34
+    assert [row["swap"]["slot"] for row in
+            receipt["native_slot_evaluations"][34:]] == expected_slots[:9]
+    assert receipt["paid_attempts"] == 44
+    assert receipt["native_slots_requested"] == 17
+    assert receipt["native_slots_unattempted"] == []
+    assert receipt["native_slots_verified"] == 9
+    assert receipt["native_slots_unscored"] == expected_slots[9:]
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert reference == original
