@@ -37,6 +37,12 @@ def test_selected_native_world_job_reaches_executable_checks_without_source_grep
     assert "tools/wf_gate_p4_p5_partial.py" not in trigger
     assert "tools/wf_warlock_l20_100mob.py" not in trigger
     assert "- 'integrations/mythicsim-rust/engine'" in trigger
+    # Rolling World-APL depends on this native range receiver just as much
+    # as the ACK applier: changes must reach the selected Rust/gsim 2D smoke.
+    for bridge in ("src/game/runtime/go_native_world_damage_ack.py",
+                   "src/game/runtime/go_world_range_feed.py",
+                   "integrations/mythicsim-rust/live_two_world_pulls.py"):
+        assert f"- '{bridge}'" in trigger, bridge
     # The downstream scenario checks still exercise native + 2D behavior.
     assert "native_source_control(binary, request, 5, rng_mode=mode)" in text
     assert "probe.run(binary, request, distance=15.0" in text
