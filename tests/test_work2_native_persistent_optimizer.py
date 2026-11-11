@@ -1283,16 +1283,32 @@ def test_source_echoed_rolling_policy_never_shares_serial_native_paid_cache(
             receipt["native_world_apl"] = copy.deepcopy(policy)
             receipt["native_world_overlap_verified"] = True
             receipt["native_world_overlap"] = {
+                "combined_native_fight_window": True,
+                "source_apl_selected_b": True,
+                "both_world_targets_lethal_ack": True,
                 "max_concurrent_alive_targets": 2,
                 "simultaneously_alive_world_target_ids": ["m1", "m0"],
                 "native_target_to_world_id": {"0": "m1", "1": "m0"},
                 "old_target_dot_ticks_after_switch_acked": 1,
                 "first_b_source_hit_while_old_a_alive": True,
             }
+            # A genuine joint Fight has ONE terminal Fight window/mana
+            # observation, while both world hostiles have separate ACKs.
+            # Keep this synthetic contract fixture consistent with the real
+            # paid #1091 receipt; it is NOT itself overlap gameplay evidence.
+            last = receipt["native_windows"][-1].copy()
+            last["index"] = 0
+            receipt["native_windows"] = [last]
+            receipt["native_actor_mana_after_joint_overlap_fight"] = (
+                receipt.pop("native_actor_mana_after_world_kills")[-1])
+            receipt["native_joint_window_end_ns"] = last["native_kill_ns"]
             receipt["world_kills"] = [
-                {"target_id": "m1", "ack_sha256": "ack-1"},
-                {"target_id": "m0", "ack_sha256": "ack-2"},
+                {"target_id": "m1", "ack_sha256": "a" * 64,
+                 "world_kill_clock_ns": 1_000_000_000},
+                {"target_id": "m0", "ack_sha256": "b" * 64,
+                 "world_kill_clock_ns": last["native_kill_ns"]},
             ]
+            receipt["world_kill_order"] = ["m1", "m0"]
         return receipt
 
     native = make_evaluator(tmp_path, monkeypatch, synthetic_native_world)
