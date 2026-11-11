@@ -8,6 +8,8 @@ on:
       - src/v2/path_dp.py
       - src/v2/native_range_optimizer.py
       - tools/wf_warlock_native_range_optimize.py
+      - tools/wf_warlock_native_persistent_optimizer.py
+      - tests/test_work2_native_persistent_optimizer.py
       - tools/wf_warlock_native_range_scored_adapter.py
       - tools/wf_warlock_native_source_frontier.py
       - tests/test_work2_live_native_source_frontier.py
@@ -86,7 +88,7 @@ jobs:
       - name: Install focused test runner
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
       - name: Test native paid receipt continuity and no-respec safety
-        run: python -m pytest -q tests/test_prio_native_frontier_binary_identity.py tests/test_prio_native_range_receipt_status.py tests/test_work1_native_candidate_scoring.py tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_range_optimizer.py tests/test_work2_independent_native_anchors.py tests/test_work2_live_native_source_frontier.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work2_warlock_native_start_source.py tests/test_work1_warlock_shortlist_world.py tests/test_work1_full_family_shortlist.py tests/test_work1_paid_family_guide.py
+        run: python -m pytest -q tests/test_prio_native_frontier_binary_identity.py tests/test_prio_native_range_receipt_status.py tests/test_work1_native_candidate_scoring.py tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_range_optimizer.py tests/test_work2_native_persistent_optimizer.py tests/test_work2_independent_native_anchors.py tests/test_work2_live_native_source_frontier.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work2_warlock_native_start_source.py tests/test_work1_warlock_shortlist_world.py tests/test_work1_full_family_shortlist.py tests/test_work1_paid_family_guide.py
 
   # The real native 100/100 comparison is deliberately opt-in, never an
   # automatic response to every source push or a rerun of paid L20–L60 routes.
@@ -244,7 +246,7 @@ jobs:
   # One requested real sparse optimizer run. This stays on the feature PR
   # branch and never launches a historical 100-mob validation replay.
   sparse-optimizer-real:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/generic-optimizer-before-legacy-registry-20261110' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/run-generic-sparse-optimize-20261110' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
@@ -258,10 +260,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 18832d58ac763253102243fc7b6fbe13e2119cc4
+          ref: dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9
           path: engine
       - name: Confirm exact Rust revision
-        run: test "$(git -C engine rev-parse HEAD)" = "18832d58ac763253102243fc7b6fbe13e2119cc4"
+        run: test "$(git -C engine rev-parse HEAD)" = "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

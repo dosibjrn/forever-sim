@@ -544,7 +544,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         recovery_policy: str | None = None,
         recovery_seconds: int | None = None,
         health_threshold: float = 0.5,
-        mana_threshold: float = 0.1) -> dict:
+        mana_threshold: float = 0.1,
+        api_process: subprocess.Popen | None = None,
+        prepared_payload: dict | None = None) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage.
 
     No policy means the existing native default. Explicit fixed/Decisions
@@ -560,7 +562,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
-    request = json.loads(prepared.read_text())
+    request = (prepared_payload if prepared_payload is not None
+               else json.loads(prepared.read_text()))
+    if api_process is not None and (not isinstance(request, dict)
+                                    or api_process.poll() is not None):
+        raise ValueError("NATIVE_API_SESSION_OR_PREPARED_ACTOR_INVALID")
     # PreparedV2 has a native "target" attack actor, not an "enemy" key.
     # Never pre-veto its real source-health probe using a Python shape guess.
     # The actual native per-window damage receipt must still be observed and
@@ -612,16 +618,32 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_moving_receipts = 0
     native_report = None
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1")
-    proc = subprocess.Popen(
+    proc = api_process or subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
          str(prepared.resolve()), "--targets", str(target_count),
          "--rng-mode", rng_mode, *native_recovery_args],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
+    if api_process is not None:
+        if requested_mode != "decisions" or health_threshold != 1.0 or mana_threshold != 1.0:
+            raise ValueError("NATIVE_API_REQUIRES_TERMINAL_FULL_DECISIONS_RECOVERY")
+        proc.stdin.write(json.dumps({
+            "op": "evaluate", "targets": target_count,
+            "rng_mode": rng_mode, "recover_at_end": True,
+        }, sort_keys=True) + "\n")
+        proc.stdin.flush()
     try:
         for line in proc.stdout:
             native = json.loads(line)
+            if api_process is not None and "ok" in native:
+                if native.get("ok") is not True:
+                    raise NativeWorldChainFailure(
+                        "RUST_NATIVE_API_EVALUATE_REFUSED", -1,
+                        str(native.get("error"))[-3000:], len(kills), events,
+                        native_source_damage_effects_by_caster)
+                native_report = native.get("result")
+                break
             if native.get("type") != "native_rust_world_boundary_request":
                 if native.get("engine") == "forever-engine":
                     if native_report is not None:
@@ -714,9 +736,14 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                         approach_radius_yards=approach_radius_yards))
             if corrupt_ack and events:
                 break
-        proc.stdin.close()
-        stderr = proc.stderr.read()
-        status = proc.wait(timeout=20)
+        if api_process is None:
+            proc.stdin.close()
+            stderr = proc.stderr.read()
+            status = proc.wait(timeout=20)
+        else:
+            # The persistent API process is reused for the next candidate.
+            # Its stdout is terminated by an API response, not by process EOF.
+            stderr, status = "", 0
         if corrupt_ack:
             if not events or status == 0 or "RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH" not in stderr:
                 raise AssertionError(("RUST_TWO_WORLD_FORGED_ACK_NOT_REJECTED", status, stderr[-2000:]))
@@ -832,7 +859,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "checkpoint_certified": False,
         }
     finally:
-        if proc.poll() is None:
+        if api_process is None and proc.poll() is None:
             proc.kill()
             proc.wait(timeout=5)
 

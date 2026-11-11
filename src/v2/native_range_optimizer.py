@@ -79,6 +79,9 @@ def _receipt_error(
                 or row.get("native_continuity_ack") is not True
                 or row.get("native_continuity_from_level") != parent["level"]):
             return "native continuing talent/actor edge unproved"
+        if (level > parent["level"] + 1
+                and row.get("native_intermediate_levels_verified") is not True):
+            return "sparse-level ancestry unproved"
     return None
 
 
@@ -542,36 +545,23 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if evaluate is None:
         if not args.native_binary.is_file() or not args.source.is_file():
             ap.error("native engine and initial source request must exist")
-        from tools.wf_warlock_native_range_optimize import live_native_frontier_evaluator
-        from src.scenarios.leveling_targets import representative_hp
-        base = output.parent / (output.stem + ".native-receipts")
-        base.mkdir(parents=True, exist_ok=True)
-        producer = [
-            sys.executable, "tools/wf_warlock_native_source_frontier.py",
-            "--binary", str(args.native_binary.resolve()),
-            "--seed-source", str(args.source.resolve()),
-            "--out", str((base / "source").resolve()),
-        ]
-        def evaluator(**request):
-            # Score every independently sampled level against its own scenario,
-            # not a fixed L20/L60 enemy HP. Explicit --target-hp still gives an
-            # exact fixed-target replay. The existing Rust scorer remains the
-            # sole combat/recovery authority; this chooses only scenario input.
-            hp = (float(representative_hp(request["level"]))
-                  if args.target_hp is None else args.target_hp)
-            return live_native_frontier_evaluator(
-                producer, binary=args.native_binary, target_hp=hp,
-                scorer_command=[sys.executable,
-                                "tools/wf_warlock_native_candidate_scoring.py"],
-                artifact_dir=base,
-            )(**request)
-        result = optimize(
-            args.start_level, args.end_level, args.level_stride,
-            args.n_mobs, args.budget, evaluate=evaluator,
-            beam_width=args.beam_width, rng_mode=args.rng,
-            iterations=args.iterations, mode="compatible",
-            class_name=cls, talent_tree=args.tree, backend=args.backend,
+        from tools.wf_warlock_native_persistent_optimizer import PersistentNativeEvaluator
+        # One Rust session and one stable paid cache survive every sampled
+        # level and reverse-seeded pass; no per-candidate JSON/prepared shuttle.
+        native = PersistentNativeEvaluator(
+            args.native_binary, args.source, Path("runs/native-api-paid-cache"),
+            target_hp=args.target_hp,
         )
+        try:
+            result = optimize(
+                args.start_level, args.end_level, args.level_stride,
+                args.n_mobs, args.budget, evaluate=native,
+                beam_width=args.beam_width, rng_mode=args.rng,
+                iterations=args.iterations, mode="compatible",
+                class_name=cls, talent_tree=args.tree, backend=args.backend,
+            )
+        finally:
+            native.close()
     else:
         result = optimize(
             args.start_level, args.end_level, args.level_stride,
