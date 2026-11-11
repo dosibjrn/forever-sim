@@ -301,7 +301,17 @@ def test_native_cross_tree_workflow_manual_only_and_evidence_preservation():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
     assert "  workflow_dispatch:\n" in workflow
-    assert "labeled" not in workflow
+    # The established 100-mob cross-tree job stays manual-only. The new
+    # independently bounded L20/L40 optimizer can run on an explicitly
+    # labeled PR synchronize event, without launching the legacy replay.
+    cross_tree = workflow.split("  cross-tree-native-world:", 1)[1].split(
+        "  work2-native-paid-l20-l40:", 1)[0]
+    assert "github.event.action" not in cross_tree
+    assert "work2-native-paid-l20-l40" not in cross_tree
+    assert "github.event_name == 'workflow_dispatch'" in cross_tree
+    paid_l20_l40 = workflow.split("  work2-native-paid-l20-l40:", 1)[1]
+    assert "github.event.action == 'synchronize'" in paid_l20_l40
+    assert "contains(github.event.pull_request.labels.*.name, 'work2-native-paid-l20-l40')" in paid_l20_l40
     assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}" in workflow
     assert "PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}" in workflow
     assert "FROM_LEVEL: ${{ inputs.from_level }}" in workflow
