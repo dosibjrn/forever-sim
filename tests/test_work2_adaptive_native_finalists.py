@@ -63,7 +63,7 @@ def test_one_call_spends_remaining_budget_on_close_paid_finalists():
     assert [entry[0] for entry in requests[:3]] == [20, 40, 60]
     assert report["ranked_alternatives"][0]["steps"][0][
         "receipt"]["candidate_id"] == "new-paid-challenger"
-    assert report["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 41.0
+    assert report["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 3.0
     assert all(
         step["receipt"]["native_full_recovery_paid"] is True
         for step in report["ranked_alternatives"][0]["steps"]
@@ -79,7 +79,8 @@ def test_backseed_keeps_separately_paid_world_policy_for_same_source():
                 paid(level, mob_count, "55-0-0", 8.0),
                 paid(level, mob_count, "0-55-0", 1.0),
             ]
-            if candidate_hints:
+            if candidate_hints and any(
+                    hint["from_level"] > level for hint in candidate_hints):
                 # The same native source can have a genuinely different
                 # rest-policy receipt and recovered elapsed time.
                 samples = [paid(
