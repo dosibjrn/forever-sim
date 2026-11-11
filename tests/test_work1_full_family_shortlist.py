@@ -176,7 +176,7 @@ def test_workflow_requires_manual_dispatch_for_paid_cross_tree_comparison():
     assert "github.event.action" not in cross_tree
     assert "github.event.label" not in cross_tree
     assert "github.event_name == 'workflow_dispatch'" in cross_tree
-    assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}" in workflow
+    assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' && inputs.run_m06_original != true }}" in workflow
     assert "PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}" in workflow
     assert "SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha }}" in workflow
     assert "actions/upload-artifact@v4" in workflow
