@@ -78,8 +78,13 @@ def test_superseded_pr_native_world_smoke_is_cancelled_without_skipping_checks()
     trigger_and_policy = text.split("jobs:", 1)[0]
     assert "  pull_request:" in trigger_and_policy
     assert ("group: native-source-world-smoke-pr-"
-            "${{ github.event.pull_request.number }}") in trigger_and_policy
-    assert "  cancel-in-progress: true" in trigger_and_policy
+            "${{ github.event.pull_request.number || github.run_id }}") in trigger_and_policy
+    assert ("  cancel-in-progress: "
+            "${{ github.event_name == 'pull_request' }}") in trigger_and_policy
+    # On workflow_dispatch there is no PR number; the unique run ID keeps
+    # manually requested paid class diagnostics from displacing each other.
+    assert "github.run_id" in trigger_and_policy
+    assert "github.event_name == 'pull_request'" in trigger_and_policy
     # Cancellation replaces only obsolete runs; the newest PR head must
     # still build exact selected Rust and run both native/2D world scenarios.
     steps = text.split("jobs:", 1)[1]
@@ -131,3 +136,44 @@ def test_p75_ablation_belongs_to_source_search_not_native_ack():
     assert "integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py" in source_jobs
     # Unrelated source edits still exercise the actual clock/ACK transport.
     assert "tests/integration/backend/test_wf_go_native_world_damage_ack.py" in ack_jobs
+
+def test_rolling_world_pr_smoke_keeps_paid_cross_class_checks_manual_only():
+    """World-APL PRs must not pay unrelated Priest/Feral diagnostics."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    trigger, jobs = text.split("jobs:", 1)
+    assert "  pull_request:" in trigger
+    assert "  workflow_dispatch:" in trigger
+    # Manual paid sessions choose just one diagnostic: the old dispatch
+    # ran both class experiments plus the unrelated core checks every time.
+    for option in ("world-core", "priest-l20", "feral-l60"):
+        assert f"          - {option}" in trigger
+    assert "        type: choice" in trigger
+    assert "        default: world-core" in trigger
+    for path in ("tools/wf_native_priest_l20_paid.py",
+                 "tools/wf_native_feral_l60_world.py",
+                 "src/game/native_p3_item_options.py"):
+        assert f"- '{path}'" not in trigger
+    # Keep the real P0 source-world/ACK checks automatic on changed bridge.
+    assert "- 'integrations/mythicsim-rust/live_two_world_pulls.py'" in trigger
+    assert "Two distinct sourced-HP native↔2D world kills" in jobs
+    assert "--require-native-zero-health-damage" in jobs
+    assert "Real source-native incoming health damage" in jobs
+    # Preserve the historic class diagnostics for explicit manual execution.
+    for step, diagnostic in (("Paid Priest L20 candidate through exact native Rust", "priest-l20"),
+                             ("Feral L60 source build through two consecutive native/world", "feral-l60")):
+        fragment = jobs.split("      - name: " + step, 1)[1]
+        assert fragment.split("\n", 1)[1].startswith(
+            "        if: ${{ github.event_name == 'workflow_dispatch' && "
+            f"inputs.diagnostic == '{diagnostic}' }}}}\n"
+        )
+    # PR source/world checks cannot be silently skipped by a dispatch selector.
+    for step in ("Verify explicit Balanced and Stochastic modes in real native",
+                 "Two distinct sourced-HP native↔2D world kills",
+                 "Real source-native incoming health damage"):
+        fragment = jobs.split("      - name: " + step, 1)[1]
+        assert fragment.split("\n", 1)[1].startswith(
+            "        if: ${{ github.event_name == 'pull_request' || "
+            "inputs.diagnostic == 'world-core' }}\n"
+        )
+    assert "PRIEST_L20_REAL_PAID_RUST_GSIM2D_ACK_PASS_NOT_100MOB_NOT_GATE" in jobs
+    assert "python tools/wf_native_feral_l60_world.py" in jobs

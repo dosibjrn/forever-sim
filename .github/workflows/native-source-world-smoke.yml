@@ -11,17 +11,29 @@ on:
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
       - 'integrations/mythicsim-rust/live_world_probe.py'
-      - 'tools/wf_native_priest_l20_paid.py'
-      - 'tools/wf_native_feral_l60_world.py'
       - 'tools/wf_gsim_go_live_range_probe.py'
-      - 'src/game/native_p3_item_options.py'
       - '.github/workflows/native-source-world-smoke.yml'
+  # Explicit cross-class paid diagnostics remain available on demand. Do not
+  # run unrelated Priest/Feral builds as prerequisites for rolling World-APL.
+  workflow_dispatch:
+    inputs:
+      diagnostic:
+        description: 'Run one selected native/world diagnostic; PRs always run core checks'
+        required: true
+        type: choice
+        default: world-core
+        options:
+          - world-core
+          - priest-l20
+          - feral-l60
 # This is a diagnostic smoke, not an M1 acceptance run or irreplaceable
 # paid evidence. A later commit to the same PR supersedes its Rust build and
 # serial world probes; do not spend runner time finishing the stale HEAD.
 concurrency:
-  group: native-source-world-smoke-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # PR updates supersede stale native builds; separate manual diagnostics
+  # must not cancel each other when they lack a pull_request number.
+  group: native-source-world-smoke-pr-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -63,6 +75,7 @@ jobs:
           fi
           echo "RUST_NATIVE_CLI_REJECTS_MISSING_AND_INVALID_RNG_MODE"
       - name: Verify explicit Balanced and Stochastic modes in real native and gsim 2D combat (not gate)
+        if: ${{ github.event_name == 'pull_request' || inputs.diagnostic == 'world-core' }}
         run: |
           python3 - <<'PY'
           import importlib.util
@@ -87,18 +100,21 @@ jobs:
           print("REAL_SELECTED_RUST_BALANCED_STOCHASTIC_NATIVE_2D_SMOKE_GREEN_NOT_GATE", flush=True)
           PY
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
+        if: ${{ github.event_name == 'pull_request' || inputs.diagnostic == 'world-core' }}
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
             --classic-mob-level 60 --targets 2 --require-native-moving --require-native-zero-health-damage
       - name: Real source-native incoming health damage on retained gsim 2D actor (not gate)
+        if: ${{ github.event_name == 'pull_request' || inputs.diagnostic == 'world-core' }}
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
             --mob-health 1200 --targets 2 --require-native-health-damage
       - name: Paid Priest L20 candidate through exact native Rust and gsim 2D ACK (not P4/P5 acceptance)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostic == 'priest-l20' }}
         run: |
           python3 - <<'PY'
           import json
@@ -140,6 +156,7 @@ jobs:
                 flush=True)
           PY
       - name: Feral L60 source build through two consecutive native/world targets (not P4-P6)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostic == 'feral-l60' }}
         run: |
           python tools/wf_native_feral_l60_world.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
