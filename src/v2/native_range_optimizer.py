@@ -559,6 +559,35 @@ def _optimize_compatible_samples(
         row["source_request_sha256"] not in ranked_terminal_sources
         for row in final_rankings[:beam_width]
     )
+    def attempted_source_policies(level: int) -> set[tuple[str, str]]:
+        """Exclude exact source+world-policy attempts already paid or refused.
+
+        This is a native receipt identity, not a Python build-legality rule.
+        An alternative rest/rolling policy for one source stays eligible.
+        """
+        previous = measured["independent_level_rankings"].get(str(level), [])
+        excluded = {
+            (row["source_request_sha256"],
+             json.dumps(row.get("native_world_policy"), sort_keys=True))
+            for row in previous
+        }
+        # A prepared world/ACK/recovery refusal is also an original
+        # attempted policy. Do not repay it on a backward or adaptive revisit.
+        # Pre-prepare refusals have no authoritative source identity.
+        excluded.update(
+            (row["source_request_sha256"],
+             json.dumps(row["native_world_policy"], sort_keys=True))
+            for row in measured["rejected_native_attempts"]
+            if row.get("level") == level
+            and row.get("native_status") == "NATIVE_API_CANDIDATE_REFUSED"
+            and row.get("native_prepared") is True
+            and row.get("engine_binary_sha256")
+                == measured["native_engine_binary_sha256"]
+            and _sha(row.get("source_request_sha256"))
+            and isinstance(row.get("native_world_policy"), Mapping)
+        )
+        return excluded
+
     seeded_levels: list[int] = []
     seeded_attempts = 0
     # The backseed pass is optional; without native hint support it would
@@ -596,8 +625,16 @@ def _optimize_compatible_samples(
             # never overspend the top-level budget or replay already-paid
             # equivalent candidates outside the scorer's exact-input cache.
             level_budget = max(1, remaining // (index + 1))
+            # A backwards ancestor is worth paying only if its Rust-prepared
+            # source+world-policy is distinct from previous original attempts.
+            # Preserve the prior behavior for evaluators without this API.
+            excluded = attempted_source_policies(level) if supports_exclusion else None
             def seeded_evaluator(**request):
-                return evaluate(**request, candidate_hints=hints)
+                return evaluate(
+                    **request, candidate_hints=hints,
+                    **({"excluded_paid_source_policies": excluded}
+                       if supports_exclusion else {}),
+                )
             attempt = optimize(
                 level, level, 1, mob_count, level_budget,
                 evaluate=seeded_evaluator, beam_width=beam_width,
@@ -714,28 +751,7 @@ def _optimize_compatible_samples(
                      if count < 2] if breadth_before is not None
                     else ["talents", "gear", "apl", "pet"]),
             })
-            excluded = {
-                (row["source_request_sha256"],
-                 json.dumps(row.get("native_world_policy"), sort_keys=True))
-                for row in current
-            }
-            # A prepared native source+policy that already refused world/ACK
-            # or recovery is an attempted challenge too. Do not repay the
-            # identical refusal during adaptive allocation; leave the refusal
-            # recorded and allow distinct source or policy candidates through.
-            # Pre-prepare failures have no authoritative source identity.
-            excluded.update(
-                (row["source_request_sha256"],
-                 json.dumps(row["native_world_policy"], sort_keys=True))
-                for row in measured["rejected_native_attempts"]
-                if row.get("level") == level
-                and row.get("native_status") == "NATIVE_API_CANDIDATE_REFUSED"
-                and row.get("native_prepared") is True
-                and row.get("engine_binary_sha256")
-                    == measured["native_engine_binary_sha256"]
-                and _sha(row.get("source_request_sha256"))
-                and isinstance(row.get("native_world_policy"), Mapping)
-            )
+            excluded = attempted_source_policies(level)
             # Existing measured survivors are hints, not claimed legal
             # successors. Native options/prepare decides every new proposal.
             hints = [{
