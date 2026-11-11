@@ -87,12 +87,31 @@ def _receipt_error(
                 or overlap["old_target_dot_ticks_after_switch_acked"] < 1):
             return "native old-target DoT ACK after rolling switch missing"
         if (not isinstance(kills, list) or len(kills) != 2
-                or any(not isinstance(kill, Mapping) for kill in kills)
-                or len({kill.get("target_id") for kill in kills}) != 2
-                or len({kill.get("ack_sha256") for kill in kills}) != 2
-                or any(not isinstance(kill.get("ack_sha256"), str)
-                       or not kill["ack_sha256"] for kill in kills)):
+                or any(not isinstance(kill, Mapping) for kill in kills)):
             return "rolling World-APL distinct world kills/ACK IDs missing"
+        target_ids = [kill.get("target_id") for kill in kills]
+        ack_ids = [kill.get("ack_sha256") for kill in kills]
+        if (any(not isinstance(value, str) or not value
+                for value in (*target_ids, *ack_ids))
+                or len(set(target_ids)) != 2 or len(set(ack_ids)) != 2):
+            return "rolling World-APL distinct world kills/ACK IDs missing"
+        # Two deaths and an aggregate DoT-tick count do not establish that
+        # native damage was routed to the same two gsim world targets.
+        # Require the exact source-emitted live IDs and causal ID map before
+        # charging a rolling-policy result or ranking it as measured overlap.
+        live_ids = overlap.get("simultaneously_alive_world_target_ids")
+        mapping = overlap.get("native_target_to_world_id")
+        if (not isinstance(live_ids, list) or len(live_ids) != 2
+                or any(not isinstance(value, str) or not value
+                       for value in live_ids)
+                or set(live_ids) != set(target_ids)
+                or not isinstance(mapping, Mapping) or len(mapping) != 2
+                or any(not isinstance(index, str) or not index.isdigit()
+                       for index in mapping)
+                or any(not isinstance(value, str) or not value
+                       for value in mapping.values())
+                or set(mapping.values()) != set(target_ids)):
+            return "rolling World-APL native/world causal ID map missing"
     if parent is not None:
         if row.get("engine_binary_sha256") != parent["engine_binary_sha256"]:
             return "cross-engine path is not comparable"
