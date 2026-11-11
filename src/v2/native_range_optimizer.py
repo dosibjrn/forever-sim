@@ -256,6 +256,14 @@ def measured_world_rolling_head_to_head(
                        for field in ("source_request_sha256", "engine_binary_sha256",
                                      "talents", "gear", "apl", "pet"))):
             continue
+        # Isolate pull scheduling: do not compare a rolling 30%-rest result
+        # against the full-rest serial control and attribute the gap to DoTs.
+        rest_matched = (
+            policy.get("rest_when_health_below") == 1.0
+            and policy.get("rest_when_mana_below") == 1.0
+            and policy.get("rest_until") == "full_when_triggered"
+            and policy.get("terminal_full_hp_and_mana") is True
+        )
         mode = policy.get("pull_mode")
         if mode == "serial" and rest_matched and "world_apl" not in policy:
             accepted["serial"].append(row)
