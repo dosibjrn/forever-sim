@@ -460,7 +460,11 @@ def _native_world_policy(rest_health: float, rest_mana: float,
 def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> bool:
     """Never reuse an overlap receipt without its source/gsim target-ID join."""
     if world_apl is None:
-        return True
+        # An omitted policy is the serial control only when native Rust
+        # did not independently report applying a rolling World-APL.
+        return (receipt.get("native_world_apl") is None
+                and receipt.get("native_world_overlap_verified") is not True
+                and receipt.get("native_world_overlap") is None)
     overlap = receipt.get("native_world_overlap")
     kills = receipt.get("world_kills")
     if (receipt.get("native_world_apl") != world_apl
@@ -890,6 +894,7 @@ class PersistentNativeEvaluator:
                     "proposal_axis": proposal_axis,
                     "native_world_policy": _native_world_policy(
                         rest_health, rest_mana, world_apl),
+                    "native_world_target_hp": receipt["world_target_hp"],
                     "native_named_build": _described_build(source, options),
                     "native_options_coverage": options.get("coverage"),
                     "gear": actor.get("equipment"),
