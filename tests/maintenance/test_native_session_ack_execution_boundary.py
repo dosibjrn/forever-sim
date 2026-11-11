@@ -107,3 +107,27 @@ def test_superseded_pr_clock_ack_runs_cancel_only_same_pr():
     smoke = WORKFLOW.read_text(encoding="utf-8")
     assert "  source-health-world:" in smoke
     assert "cargo build --locked --manifest-path" in smoke
+
+
+def test_p75_ablation_belongs_to_source_search_not_native_ack():
+    """Historical P7.5 APL tests must not veto live world/clock regressions."""
+    root = Path(__file__).resolve().parents[2]
+    ack = (root / ".github/workflows/native-session-ack-regressions.yml"
+           ).read_text(encoding="utf-8")
+    source = (root / ".github/workflows/generic-source-search-regressions.yml"
+              ).read_text(encoding="utf-8")
+    historic = "docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json"
+    ablation = "tests/test_p75_axis_ablation.py"
+    ack_triggers, ack_jobs = ack.split("jobs:", 1)
+    source_triggers, source_jobs = source.split("jobs:", 1)
+    assert historic not in ack_triggers
+    assert ablation not in ack_triggers
+    assert ablation not in ack_jobs
+    # Keep both the real historical-evidence consumer and the P7.5 ablation
+    # regression in the preexisting source-search suite, not in world ACK CI.
+    assert historic in source_triggers
+    assert ablation in source_triggers
+    assert ablation in source_jobs
+    assert "integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py" in source_jobs
+    # Unrelated source edits still exercise the actual clock/ACK transport.
+    assert "tests/integration/backend/test_wf_go_native_world_damage_ack.py" in ack_jobs
