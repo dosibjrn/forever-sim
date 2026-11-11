@@ -1029,3 +1029,70 @@ def test_compatible_optimizer_does_not_require_optional_native_hint_api():
     assert result["native_candidates_examined"] == 2
     assert result["backward_seeded_native_attempts"] == 0
     assert called == [20, 40]
+
+
+def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim():
+    import hashlib
+    import json
+    from src.v2.native_range_optimizer import main
+
+    seen = []
+
+    def evaluator(*, level, parent, mob_count, budget, rng_mode,
+                  iterations, recover_to_full, **kwargs):
+        assert parent is None and mob_count == 2
+        assert rng_mode == "balanced" and iterations == 1
+        assert recover_to_full is True
+        seen.append(level)
+        out = []
+        for talent, score in (("1-0-0", 5.0), ("2-0-0", 6.0)):
+            row = receipt(level, mob_count, "A", score)
+            row["source_request_sha256"] = hashlib.sha256(
+                f"{level}/{talent}".encode()).hexdigest()
+            row["talents"] = (talent if level == 20
+                              else ("11-0-0" if talent == "1-0-0" else "21-0-0"))
+            row["gear"] = {"items": [{"id": 1234}]}
+            row["apl"] = {"priorityList": [{"action": {"castSpell": {"spellId": 42}}}]}
+            row["pet"] = "Imp"
+            out.append(row)
+        return out
+
+    # Temporary native-world stand-ins only test serialization and guide
+    # presentation. They are not published as genuine measured gameplay.
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        result_path = root / "result.json"
+        guide_path = root / "nested" / "GUIDE.md"
+        code = main([
+            "--class", "warlock", "--tree", "unconstrained",
+            "--start-level", "20", "--end-level", "21",
+            "--level-stride", "1", "--n-mobs", "2",
+            "--budget", "10", "--out", str(result_path),
+            "--guide-out", str(guide_path),
+        ], evaluate=evaluator)
+        assert code == 0
+        assert seen == [20, 21]  # one request, no additional paid guide calls
+        result = json.loads(result_path.read_text())
+        assert result["sampled_levels_compatible"] == [20, 21]
+        guide = guide_path.read_text()
+        assert "Level 20" in guide and "Level 21" in guide
+        assert "tree 1, slot 2: +1" in guide
+        assert "1234" in guide and "Imp" in guide
+        assert "Native APL" in guide
+        assert "2 hostile mob(s)" in guide
+        assert "Not a continuous leveling route" in guide
+        assert f"{result['ranked_alternatives'][0]['sampled_cumulative_seconds']:.3f} s" in guide
+        assert result["full_10_60_continuous_leveling_route_proven"] is False
+
+
+def test_sampled_guide_refuses_unmeasured_or_partial_path():
+    from src.v2.native_range_optimizer import render_sampled_build_guide
+    with pytest.raises(ValueError, match="without a measured compatible path"):
+        render_sampled_build_guide({"ranked_alternatives": []})
+    with pytest.raises(ValueError, match="incomplete sampled path"):
+        render_sampled_build_guide({
+            "ranked_alternatives": [{"steps": [{"level": 20}]}],
+            "sampled_levels_requested": [20, 21],
+        })
