@@ -1329,3 +1329,33 @@ def test_source_echoed_rolling_policy_never_shares_serial_native_paid_cache(
     assert calls == [None, api.ROLLING_WORLD_APL_50]
     assert serial[2] is False and rolling[2] is False and repeat[2] is True
     assert serial[3] != rolling[3] == repeat[3]
+
+
+def test_adaptive_exclusion_skips_exact_paid_source_and_rest_policy(
+        tmp_path, monkeypatch):
+    world_calls = []
+
+    def observed_world(binary, prepared_path, **kwargs):
+        world_calls.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(binary, prepared_path, **kwargs)
+
+    native = make_evaluator(tmp_path, monkeypatch, world=observed_world)
+    request = dict(level=20, parent=None, mob_count=2, budget=1,
+                   rng_mode="balanced", iterations=1, recover_to_full=True)
+    try:
+        original = native(**request)[0]
+        old_key = (
+            original["source_request_sha256"],
+            json.dumps(original["native_world_policy"], sort_keys=True),
+        )
+        next_rows = native(
+            **request, excluded_paid_source_policies={old_key})
+        assert len(next_rows) == 1
+        assert next_rows[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+        assert (next_rows[0]["source_request_sha256"],
+                json.dumps(next_rows[0]["native_world_policy"],
+                           sort_keys=True)) != old_key
+        assert len(world_calls) == 2  # no paid replay of the first build
+        assert next_rows[0]["reused_exact_native_paid_receipt"] is False
+    finally:
+        native.close()
