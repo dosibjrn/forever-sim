@@ -772,6 +772,10 @@ class PersistentNativeEvaluator:
                     # Under the normal budget, first gear and pet attempts
                     # precede APL; with no source axes, APL follows the seed.
                     insert_at = min(len(sources), index + min(2, len(axis_sources)))
+                    if self.compare_world_rest_30:
+                        # The opt-in rest challenger must be evaluated before
+                        # the APL expansion consumes the remaining two slots.
+                        insert_at = max(insert_at, index + 1)
                     sources[insert_at:insert_at] = [
                         (row, "apl") for row in apl_choices]
                 receipt, elapsed, cached, raw_path = self._paid(
