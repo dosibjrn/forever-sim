@@ -614,6 +614,30 @@ def optimize(
     }
 
 
+
+def guide_main(argv: list[str] | None = None) -> int:
+    """Render an already measured optimizer result without opening Rust/payments."""
+    import argparse
+    import json
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(prog="native-guide",
+        description="Publish a prior native-paid sampled result without replay")
+    parser.add_argument("--in", dest="source", type=Path, required=True,
+                        help="Saved --out JSON from the existing optimizer")
+    parser.add_argument("--out", dest="output", type=Path, required=True,
+                        help="Human-readable Markdown destination")
+    args = parser.parse_args(argv)
+    if args.source.resolve() == args.output.resolve():
+        parser.error("--out cannot overwrite the original native receipt result")
+    result = json.loads(args.source.read_text())
+    guide = render_sampled_build_guide(result)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(guide)
+    print(f"Published existing sampled build decisions to {args.output}")
+    return 0
+
+
 def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     """Generic optimizer CLI. Class and search density are runtime settings.
 
