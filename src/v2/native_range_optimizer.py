@@ -371,6 +371,29 @@ def _optimize_compatible_samples(
         "scope": "native-prepared sampled allocations with nondecreasing ranks; "
                  "not proof of skipped-level gameplay, XP, travel or training",
     })
+    # A search can have many paid candidates while never varying a source
+    # request's gear, pet or APL. Expose verified request-axis diversity to
+    # downstream consumers without introducing a new acceptance gate or
+    # mistaking requested choices for effective trained/native actor ranks.
+    paid_axis_breadth: dict[str, dict[str, Any]] = {}
+    for level in levels:
+        observed = _retained_native_paid_axis_breadth(measured, level)
+        paid_count, distinct = (
+            observed if observed is not None
+            else (0, {axis: 0 for axis in ("talents", "gear", "apl", "pet")})
+        )
+        paid_axis_breadth[str(level)] = {
+            "verified_native_paid_requests": paid_count,
+            "distinct_requested_talent_allocations": distinct["talents"],
+            "distinct_requested_gear_sets": distinct["gear"],
+            "distinct_requested_apls": distinct["apl"],
+            "distinct_requested_pet_values": distinct["pet"],
+            "uncompared_axes": [
+                axis for axis in ("talents", "gear", "apl", "pet")
+                if distinct[axis] < 2
+            ],
+        }
+    measured["native_paid_request_axis_breadth_by_level"] = paid_axis_breadth
     return measured
 
 
