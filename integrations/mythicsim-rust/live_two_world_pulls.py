@@ -571,10 +571,18 @@ def _verify_native_rolling_world_apl(
     overlap = result.get("world_overlap")
     kill_ids = [row["target_id"] for row in kills]
     kill_acks = [row["ack_sha256"] for row in kills]
+    mapping = (overlap.get("native_target_to_world_id")
+               if isinstance(overlap, dict) else None)
     if (applied != requested or not isinstance(overlap, dict)
             or overlap.get("max_concurrent_alive_targets") != 2
             or set(overlap.get("simultaneously_alive_world_target_ids", []))
                != set(kill_ids)
+            or not isinstance(mapping, dict) or len(mapping) != 2
+            or set(mapping.values()) != set(kill_ids)
+            or any(not isinstance(k, str) or not k.isdigit() for k in mapping)
+            or type(overlap.get("old_target_dot_ticks_after_switch_acked"))
+               is not int
+            or overlap["old_target_dot_ticks_after_switch_acked"] < 1
             or len(kill_ids) != 2 or len(set(kill_ids)) != 2
             or len(set(kill_acks)) != 2
             or any(not isinstance(ack, str) or not ack for ack in kill_acks)):
