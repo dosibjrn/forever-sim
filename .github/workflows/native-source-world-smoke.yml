@@ -13,9 +13,7 @@ on:
       - 'integrations/mythicsim-rust/live_world_probe.py'
       - 'tools/wf_native_priest_l20_paid.py'
       - 'tools/wf_native_feral_l60_world.py'
-      - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gsim_go_live_range_probe.py'
-      - 'tools/wf_warlock_l20_100mob.py'
       - 'src/game/native_p3_item_options.py'
       - '.github/workflows/native-source-world-smoke.yml'
 permissions:
