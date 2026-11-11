@@ -1302,7 +1302,7 @@ def test_native_named_build_preserves_real_wowhead_ids_for_hover_overlays():
         "talents": {"trees": [
             {"name": "Affliction", "talents": [
                 {"index": 0, "name": "Improved Corruption", "max_rank": 5,
-                 "rank_spell_ids": [17810, 17811], "row": 0, "col": 0},
+                 "spell_id": 17810, "rank_spell_ids": [17810, 17811], "row": 0, "col": 0},
                 {"index": 1, "name": "Unselected", "max_rank": 5,
                  "rank_spell_ids": [99999]},
             ]},
