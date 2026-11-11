@@ -629,6 +629,37 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
                     + ", ".join(fixed)
                     + ". No joint-axis optimum is established."
                 )
+        # A limited paid axis can mean it was never tried or that Rust
+        # refused the actual proposed alternative. Disclose that distinction
+        # without ever counting refusals as native-paid measurements.
+        refused = result.get("rejected_native_attempts")
+        refused_by_axis: dict[tuple[str, str | None], int] = {}
+        if isinstance(refused, list):
+            for rejected in refused:
+                if (not isinstance(rejected, Mapping)
+                        or rejected.get("level") != level
+                        or rejected.get("native_status")
+                        != "NATIVE_API_CANDIDATE_REFUSED"):
+                    continue
+                axis = rejected.get("proposal_axis")
+                if not isinstance(axis, str) or not axis:
+                    continue
+                code = rejected.get("native_refusal_code")
+                code = code if isinstance(code, str) and code else None
+                key = (axis, code)
+                refused_by_axis[key] = refused_by_axis.get(key, 0) + 1
+        if refused_by_axis:
+            lines.append(
+                "- Refused native proposals (not paid or ranked): "
+                + ", ".join(
+                    f"{axis}: {count} ({code or 'no structured code'})"
+                    for (axis, code), count in sorted(
+                        refused_by_axis.items(),
+                        key=lambda item: (item[0][0], item[0][1] or ""),
+                    )
+                )
+                + "."
+            )
         before = _talent_ranks(previous["talents"]) if previous else None
         after = _talent_ranks(step["talents"])
         if before is not None and after is not None:
