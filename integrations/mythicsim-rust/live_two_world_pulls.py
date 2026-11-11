@@ -519,6 +519,41 @@ def _native_recovery_cli_args(recovery_policy: str | None,
     return requested_mode, native_recovery_args
 
 
+def _persistent_api_evaluate_request(*, targets: int, rng_mode: str,
+                                     health_threshold: float,
+                                     mana_threshold: float) -> dict:
+    """Forward only source-native Decisions rest inputs to the Rust API.
+
+    Rust's native evaluate schema uses a nested between_pulls policy.
+    The returned native thresholds MUST independently acknowledge any changed
+    request before Forever considers its paid time a policy measurement.
+    """
+    request = {
+        "op": "evaluate", "targets": targets,
+        "rng_mode": rng_mode, "recover_at_end": True,
+    }
+    if (health_threshold, mana_threshold) != (1.0, 1.0):
+        request["between_pulls"] = {
+            "health_fraction": health_threshold,
+            "mana_fraction": mana_threshold,
+        }
+    return request
+
+
+def _verify_native_recovery_thresholds(result: dict, *,
+                                       health_threshold: float,
+                                       mana_threshold: float) -> None:
+    """Never score Rust's unchanged full-rest policy as a 30% World-APL."""
+    applied = result.get("thresholds")
+    if (not isinstance(applied, dict)
+            or applied.get("health_fraction") != health_threshold
+            or applied.get("mana_fraction") != mana_threshold):
+        raise AssertionError(
+            "RUST_WORLD_NATIVE_RECOVERY_THRESHOLDS_NOT_APPLIED:"
+            f" requested=({health_threshold},{mana_threshold})"
+            f" observed={applied!r}")
+
+
 def accumulate_acked_native_source_effects(
         counts: dict, native_receipt: dict, world_ack: dict) -> None:
     """Forward only Rust damage effects that the 2D world actually ACKed.
@@ -631,12 +666,12 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         text=True, bufsize=1, env=env,
     )
     if api_process is not None:
-        if requested_mode != "decisions" or health_threshold != 1.0 or mana_threshold != 1.0:
-            raise ValueError("NATIVE_API_REQUIRES_TERMINAL_FULL_DECISIONS_RECOVERY")
-        proc.stdin.write(json.dumps({
-            "op": "evaluate", "targets": target_count,
-            "rng_mode": rng_mode, "recover_at_end": True,
-        }, sort_keys=True) + "\n")
+        if requested_mode != "decisions":
+            raise ValueError("NATIVE_API_REQUIRES_DECISIONS_RECOVERY")
+        proc.stdin.write(json.dumps(_persistent_api_evaluate_request(
+            targets=target_count, rng_mode=rng_mode,
+            health_threshold=health_threshold, mana_threshold=mana_threshold,
+        ), sort_keys=True) + "\n")
         proc.stdin.flush()
     try:
         for line in proc.stdout:
@@ -780,6 +815,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                                           len(kills), events,
                                           native_source_damage_effects_by_caster)
         result = native_report["result"]
+        if (api_process is not None and requested_mode == "decisions"
+                and (health_threshold, mana_threshold) != (1.0, 1.0)):
+            _verify_native_recovery_thresholds(
+                result, health_threshold=health_threshold,
+                mana_threshold=mana_threshold)
         if (native_report["source_sha256"] != source_hash
                 or result["world_targets_killed"] != target_count
                 or not result["continuous_native_actor"]

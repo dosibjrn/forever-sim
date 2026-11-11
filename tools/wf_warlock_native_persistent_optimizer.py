@@ -441,8 +441,10 @@ class PersistentNativeEvaluator:
     def __init__(self, binary: Path, source: Path, artifact_dir: Path, *,
                  target_hp: float | None = None,
                  session_factory: Callable = NativeApiSession,
-                 run_world: Callable | None = None):
+                 run_world: Callable | None = None,
+                 compare_world_rest_30: bool = False):
         self.binary = binary
+        self.compare_world_rest_30 = compare_world_rest_30
         self.template = json.loads(source.read_text())
         self.artifact_dir = artifact_dir
         self.target_hp = target_hp
@@ -490,8 +492,11 @@ class PersistentNativeEvaluator:
         return source
 
     def _paid(self, source: dict, prepared: dict, *, level: int, mobs: int,
-              target_hp: float, cid: str, fresh_world: bool = False) -> tuple[dict, float, bool, Path]:
+              target_hp: float, cid: str, fresh_world: bool = False,
+              health_threshold: float = 1.0,
+              mana_threshold: float = 1.0) -> tuple[dict, float, bool, Path]:
         native_sha = prepared["request_sha256"]
+        rest_policy = (float(health_threshold), float(mana_threshold))
         # Cache includes the exact source-produced prepared actor, not a
         # raw-JSON SHA wrongly equated to Rust's protobuf request digest.
         prepared_digest = _digest(json.dumps(
@@ -499,7 +504,8 @@ class PersistentNativeEvaluator:
         # The native source/actor and paid world configuration must match
         # exactly. A fresh actor is prepared for every independent sample;
         # this memo never substitutes for a retained-state/XP transition.
-        session_key = (native_sha, prepared_digest, level, mobs, float(target_hp))
+        session_key = (native_sha, prepared_digest, level, mobs,
+                       float(target_hp), rest_policy)
         previous = None if fresh_world else self._session_paid.get(session_key)
         if previous is not None:
             old_receipt, old_elapsed, old_path, old_digest = previous
@@ -535,9 +541,16 @@ class PersistentNativeEvaluator:
         if identity is not None:
             identity = dict(identity, source_sha256=native_sha,
                             prepared_sha256=prepared_digest)
+            if rest_policy != (1.0, 1.0):
+                # Historical full-rest cache keys remain unchanged.
+                # Changed policies cannot borrow the serial paid evidence.
+                identity["native_world_rest_thresholds"] = {
+                    "health_fraction": rest_policy[0],
+                    "mana_fraction": rest_policy[1],
+                }
             key = _digest(json.dumps(identity, sort_keys=True).encode())
         else:
-            key = _digest((native_sha + cid).encode())
+            key = _digest((native_sha + cid + repr(rest_policy)).encode())
         path = self.artifact_dir / (key + ".native.json")
         meta = self.artifact_dir / (key + ".native.cache.json")
         cached = False
@@ -582,7 +595,7 @@ class PersistentNativeEvaluator:
         receipt = self.run_world(
             self.binary, None, target_count=mobs, mob_health=target_hp,
             rng_mode="balanced", recovery_policy="decisions",
-            health_threshold=1.0, mana_threshold=1.0,
+            health_threshold=rest_policy[0], mana_threshold=rest_policy[1],
             api_process=self.session.process, prepared_payload=prepared,
             require_native_health_damage=False,
         )
@@ -709,7 +722,10 @@ class PersistentNativeEvaluator:
             if pet is not None:
                 axis_sources.append((pet, "pet"))
         first = sources.pop(0)
-        sources = [(first, "talent"), *axis_sources,
+        sources = [(first, "talent"), *(
+                       [(copy.deepcopy(first), "world_rest_30pct", 0.3, 0.3)]
+                       if self.compare_world_rest_30 else []),
+                   *axis_sources,
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
         seen: set[str] = set()
@@ -720,9 +736,13 @@ class PersistentNativeEvaluator:
                      if self.target_hp is None else self.target_hp)
         index = 0
         while index < len(sources) and len(results) < budget:
-            source, proposal_axis = sources[index]
+            candidate = sources[index]
+            source, proposal_axis = candidate[:2]
+            rest_health, rest_mana = (
+                candidate[2:] if len(candidate) == 4 else (1.0, 1.0))
             index += 1
-            identity = json.dumps(source, sort_keys=True)
+            identity = json.dumps(
+                [source, rest_health, rest_mana], sort_keys=True)
             if identity in seen:
                 continue
             seen.add(identity)
@@ -752,12 +772,18 @@ class PersistentNativeEvaluator:
                     # Under the normal budget, first gear and pet attempts
                     # precede APL; with no source axes, APL follows the seed.
                     insert_at = min(len(sources), index + min(2, len(axis_sources)))
+                    if self.compare_world_rest_30:
+                        # The opt-in rest challenger must be evaluated before
+                        # the APL expansion consumes the remaining two slots.
+                        insert_at = max(insert_at, index + 1)
                     sources[insert_at:insert_at] = [
                         (row, "apl") for row in apl_choices]
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
                     target_hp=target_hp, cid=cid,
-                    fresh_world=fresh_paid_world)
+                    fresh_world=fresh_paid_world,
+                    health_threshold=rest_health,
+                    mana_threshold=rest_mana)
                 terminal = receipt["native_terminal_recovery"]
                 actor = source["raid"]["parties"][0]["players"][0]
                 cls_options = actor.get("warlock", {}).get(
@@ -783,6 +809,13 @@ class PersistentNativeEvaluator:
                         (terminal["end_clock_ns"] - terminal["start_clock_ns"]) / 1e9,
                     "talents": actor["talentsString"],
                     "proposal_axis": proposal_axis,
+                    "native_world_policy": {
+                        "pull_mode": "serial",
+                        "rest_when_health_below": rest_health,
+                        "rest_when_mana_below": rest_mana,
+                        "rest_until": "full_when_triggered",
+                        "terminal_full_hp_and_mana": True,
+                    },
                     "native_named_build": _described_build(source, options),
                     "native_options_coverage": options.get("coverage"),
                     "gear": actor.get("equipment"),
@@ -801,6 +834,13 @@ class PersistentNativeEvaluator:
                     "candidate_id": cid, "level": level,
                     "native_prepared": prepared_ok,
                     "proposal_axis": proposal_axis,
+                    "native_world_policy": {
+                        "pull_mode": "serial",
+                        "rest_when_health_below": rest_health,
+                        "rest_when_mana_below": rest_mana,
+                        "rest_until": "full_when_triggered",
+                        "terminal_full_hp_and_mana": True,
+                    },
                     "native_refusal_code": getattr(exc, "code", None),
                     "native_refusal": str(exc)[-1500:],
                 })

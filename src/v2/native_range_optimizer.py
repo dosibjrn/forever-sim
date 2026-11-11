@@ -9,6 +9,7 @@ Sparse checkpoints are samples of an objective, NOT a complete leveling route.
 """
 from __future__ import annotations
 
+import json
 import math
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
@@ -235,6 +236,7 @@ def _optimize_compatible_samples(
                         "level": level, "talents": row["talents"],
                         "apl": row.get("apl"), "gear": row.get("gear"),
                         "pet": row.get("pet"),
+                        "native_world_policy": row.get("native_world_policy"),
                         "native_elapsed_seconds": row["native_elapsed_seconds"],
                         "terminal_recovery_seconds": row["terminal_recovery_seconds"],
                         "source_request_sha256": row["source_request_sha256"],
@@ -242,7 +244,9 @@ def _optimize_compatible_samples(
                         "receipt": row["receipt"],
                     }
                     total = cost + float(row["native_elapsed_seconds"])
-                    identity = row["source_request_sha256"]
+                    identity = (row["source_request_sha256"],
+                                json.dumps(row.get("native_world_policy"),
+                                           sort_keys=True))
                     previous = next_frontier.get(identity)
                     if previous is None or total < previous[0]:
                         next_frontier[identity] = (total, [*steps, step])
@@ -471,6 +475,8 @@ def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
                 f"### #{rank} — {row['native_elapsed_seconds']:.3f} s",
                 f"- Recovery: {row['terminal_recovery_seconds']:.3f} s "
                 "(already included in elapsed)",
+                f"- World pull/rest policy (native measured): "
+                f"{json.dumps(receipt.get('native_world_policy') or {'pull_mode': 'serial', 'rest_when_health_below': 1.0, 'rest_when_mana_below': 1.0}, sort_keys=True)}",
                 f"- Summon: {row.get('pet') or 'NoSummon / unspecified'} "
                 f"(axis {receipt.get('proposal_axis', 'unknown')})",
                 f"- Talents: {row.get('talents')} — "
@@ -808,6 +814,7 @@ def optimize(
                         "native_refusal_code": row.get("native_refusal_code"),
                         "native_prepared": row.get("native_prepared"),
                         "proposal_axis": row.get("proposal_axis"),
+                        "native_world_policy": row.get("native_world_policy"),
                     })
                     continue
                 if selected_engine_sha is None:
@@ -822,9 +829,12 @@ def optimize(
                     "native_parent_source_sha256": row.get("native_parent_source_sha256"),
                     "talents": row.get("talents"), "pet": row.get("pet"),
                     "gear": row.get("gear"), "apl": row.get("apl"),
+                    "native_world_policy": row.get("native_world_policy"),
                     "receipt": dict(row),
                 }
-                key = (row["engine_binary_sha256"], row["source_request_sha256"])
+                key = (row["engine_binary_sha256"],
+                       row["source_request_sha256"] + ":" +
+                       json.dumps(row.get("native_world_policy"), sort_keys=True))
                 old = next_paths.get(key)
                 if old is None or cost < old[0]:
                     next_paths[key] = (cost, row, [*history, step])
@@ -847,6 +857,7 @@ def optimize(
                  "terminal_recovery_seconds": row["terminal_recovery_seconds"],
                  "talents": row.get("talents"), "pet": row.get("pet"),
                  "gear": row.get("gear"), "apl": row.get("apl"),
+                 "native_world_policy": row.get("native_world_policy"),
                  "receipt": dict(row), "continuity_unverified": True}
                 for cost, row, _ in last_frontier
             ]
@@ -954,6 +965,10 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     ap.add_argument("--target-hp", type=float,
                     help="Optional fixed enemy HP override; default uses the "
                          "ordinary-mob scenario HP at each sampled level")
+    ap.add_argument("--compare-world-rest-30", action="store_true",
+                    help="Compare native serial full-rest baseline against "
+                         "HP<30%% OR mana<30%% rest-until-full; refuse unless "
+                         "Rust explicitly acknowledges applied thresholds")
     ap.add_argument("--probe-native-continuity", action="store_true",
                     help="Probe one fresh paid native first-world and same-session "
                          "XP/level transition; never reuse sampled-world cache")
@@ -1001,6 +1016,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         native = PersistentNativeEvaluator(
             args.native_binary, args.source, Path("runs/native-api-paid-cache"),
             target_hp=args.target_hp,
+            **({"compare_world_rest_30": True}
+               if args.compare_world_rest_30 else {}),
         )
         try:
             if args.probe_native_continuity:
