@@ -902,3 +902,30 @@ def test_high_level_independent_baseline_not_starved_by_native_apl_budget(tmp_pa
     assert len(found["entries"]) == 4
     assert found["refusals"] == []
     assert all(entry["parent_source_sha256"] is None for entry in found["entries"])
+
+def test_paid_parent_accepts_native_protobuf_sha_distinct_from_json_bytes(tmp_path):
+    """A genuine native-prepared parent is not refused by a raw-JSON SHA veto."""
+    from tools.wf_warlock_native_source_frontier import _paid_parent_source
+
+    seed, binary, parent = _scored_parent(tmp_path)
+    native_sha = "e" * 64
+    assert hashlib.sha256(seed.read_bytes()).hexdigest() != native_sha
+    parent["source_request_sha256"] = native_sha
+    prepared_file = Path(parent["prepared_file"])
+    prepared = json.loads(prepared_file.read_text())
+    prepared["request_sha256"] = native_sha
+    prepared_file.write_text(json.dumps(prepared))
+    raw_file = Path(parent["native_raw_receipt_file"])
+    raw = json.loads(raw_file.read_text())
+    raw["source_sha256"] = native_sha
+    raw_file.write_text(json.dumps(raw))
+
+    original, original_receipt_sha = _paid_parent_source(parent, binary)
+    assert original == json.loads(seed.read_text())
+    assert original_receipt_sha == hashlib.sha256(raw_file.read_bytes()).hexdigest()
+
+    # Neither recorded native identity nor historical byte identity agrees:
+    # refuse before new proposals, even if the source file is present.
+    parent["source_request_sha256"] = "d" * 64
+    with pytest.raises(ValueError, match="native parent source identity mismatch"):
+        _paid_parent_source(parent, binary)
