@@ -41,7 +41,13 @@ def test_native_paid_pr_regressions_remain_fast_and_not_paid():
     assert "    if: github.event_name == 'pull_request'\n" in fast_job
     assert "python -m pytest -q" in fast_job
     assert "cargo build" not in fast_job
-    assert "python -m src.v2.runner optimize" not in fast_job
+    # Only parser/help is permitted on PRs; native-paid optimize remains
+    # guarded by the explicit manual run_m06_original dispatch input.
+    direct_optimize_commands = re.findall(
+        r"^\\s+run:\\s*(python -m src\\.v2\\.runner optimize[^\\n]*)$",
+        fast_job, flags=re.MULTILINE,
+    )
+    assert direct_optimize_commands == ["python -m src.v2.runner optimize --help"]
 
 def test_only_superseded_fast_pr_runs_are_cancelled():
     text = WORKFLOW.read_text(encoding="utf-8")
