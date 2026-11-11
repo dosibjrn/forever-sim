@@ -957,17 +957,25 @@ def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
     m05 = workflow.split("  sparse-optimizer-real:\n", 1)[1]
-    assert "github.event.action == 'reopened'" in m05
-    assert "github.event.action == 'opened'" in m05
+    # The Work2 M0.5 feature PR is merged and all three native-paid
+    # densities were measured. Only explicit manual dispatch may pay again.
+    assert "github.event_name == 'workflow_dispatch'" in m05.splitlines()[0]
+    assert "github.event.action" not in m05
+    assert "github.event_name == 'pull_request'" not in m05
+    assert "if: github.event_name == 'pull_request'" in workflow  # fast checks remain
     assert "m05_stride:" in workflow and "m05_cache_run_id:" in workflow
     assert '--start-level 20 --end-level 60 --level-stride "$M05_STRIDE"' in m05
     assert '--n-mobs 2 --recover-at-end true --rng balanced' in m05
     assert '--backend rust --budget "$M05_BUDGET"' in m05
     assert "inputs.m05_stride == '1' && '450'" in m05
     assert "inputs.m05_stride == '5' && '110'" in m05
-    assert "requested-sparse-optimize-42980239306" in m05
     assert "requested-m05-optimize-{0}" in m05
-    assert "inputs.m05_cache_run_id || '42980239306'" in m05
+    # A manual dispatch should reuse compatible paid observations at its
+    # requested density by default, not retry the original sparse baseline.
+    for run_id in ("42981742152", "42984895024", "42985475032"):
+        assert f"requested-m05-optimize-{run_id}" in m05
+        assert f"'{run_id}'" in m05
+    assert "inputs.m05_cache_run_id ||" in m05
     assert "if: always()" in m05 and "path: project/runs/" in m05
     assert "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9" in m05
 
