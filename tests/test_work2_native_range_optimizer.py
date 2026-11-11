@@ -1086,6 +1086,18 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         assert f"{result['ranked_alternatives'][0]['sampled_cumulative_seconds']:.3f} s" in guide
         assert result["full_10_60_continuous_leveling_route_proven"] is False
 
+        # No-Rust, no-new-paid-work consumption of the existing --out JSON.
+        import subprocess
+        import sys
+        offline = root / "offline" / "GUIDE.md"
+        executed = subprocess.run([
+            sys.executable, "-m", "src.v2.runner", "native-guide",
+            "--in", str(result_path), "--out", str(offline),
+        ], capture_output=True, text=True, check=False)
+        assert executed.returncode == 0, executed.stderr
+        assert offline.read_text() == guide
+        assert seen == [20, 21]
+
 
 def test_sampled_guide_refuses_unmeasured_or_partial_path():
     from src.v2.native_range_optimizer import render_sampled_build_guide
