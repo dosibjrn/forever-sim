@@ -676,8 +676,9 @@ def test_scored_adapter_malformed_source_prevents_paid_native_invocation(tmp_pat
     binary.write_bytes(b"native-binary-test")
     manifest = _prepared_manifest(tmp_path)
     root = json.loads(manifest.read_text())
-    request_file = tmp_path / root["entries"][0]["source_request"]
-    request_file.write_text(request_file.read_text() + "new native source bytes")
+    for entry in root["entries"]:
+        request_file = tmp_path / entry["source_request"]
+        request_file.write_text(request_file.read_text() + "new native source bytes")
     calls = []
     result = evaluate_request(
         {"level": 20, "parent": None, "mob_count": 3, "budget": 2,
@@ -689,9 +690,7 @@ def test_scored_adapter_malformed_source_prevents_paid_native_invocation(tmp_pat
     assert len(result) == 2
     # Invalid JSON must still refuse before native combat; it must not be
     # mislabeled as a comparison of protobuf and JSON-file SHA digests.
-    assert any("NATIVE_PREPARED_OR_CONTINUITY_REFUSAL" in r["status"]
-               for r in result)
-    assert any("NATIVE_SCORER_RECEIPT_REFUSAL" in r["status"]
+    assert all("NATIVE_PREPARED_OR_CONTINUITY_REFUSAL" in r["status"]
                for r in result)
 
 
