@@ -168,8 +168,14 @@ def test_workflow_requires_manual_dispatch_for_paid_cross_tree_comparison():
     assert "wf_warlock_full_family_shortlist.py" in workflow
     assert "wf_warlock_shortlist_world.py" in workflow
     assert "  workflow_dispatch:\n" in workflow
-    assert "types: [opened, synchronize, reopened]" in workflow
-    assert "labeled" not in workflow
+    # The expensive historical 100-mob comparison must remain dispatch-only.
+    # An independently bounded L20/L40 paid job may explicitly opt in via a
+    # PR label without accidentally launching the legacy cross-tree replay.
+    cross_tree = workflow.split("  cross-tree-native-world:", 1)[1].split(
+        "  work2-native-paid-l20-l40:", 1)[0]
+    assert "github.event.action" not in cross_tree
+    assert "github.event.label" not in cross_tree
+    assert "github.event_name == 'workflow_dispatch'" in cross_tree
     assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}" in workflow
     assert "PREDECESSOR_ARTIFACT_ID: ${{ inputs.predecessor_artifact_id }}" in workflow
     assert "SELECTED_RUST_SHA: ${{ inputs.selected_rust_sha }}" in workflow
