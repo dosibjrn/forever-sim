@@ -957,6 +957,7 @@ def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
     m05 = workflow.split("  sparse-optimizer-real:\n", 1)[1]
+    assert "github.event.action == 'reopened'" in m05
     assert "github.event.action == 'opened'" in m05
     assert "m05_stride:" in workflow and "m05_cache_run_id:" in workflow
     assert '--start-level 20 --end-level 60 --level-stride "$M05_STRIDE"' in m05
