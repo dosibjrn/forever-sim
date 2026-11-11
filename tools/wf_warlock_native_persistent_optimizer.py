@@ -154,7 +154,12 @@ class NativeApiSession:
             raise RuntimeError("RUST_NATIVE_API_NO_RESPONSE")
         response = json.loads(line)
         if response.get("ok") is not True:
-            raise NativeApiRefusal(response.get("error"))
+            # Rust emits a human-readable error beside a structured refusal.
+            # Forward the native code/reason when supplied; older engine pins
+            # only carry the legacy string error.
+            refusal = response.get("refusal")
+            raise NativeApiRefusal(
+                refusal if isinstance(refusal, dict) else response.get("error"))
         if not isinstance(response.get("result"), dict):
             raise ValueError("RUST_NATIVE_API_RESULT_INVALID")
         return response["result"]
