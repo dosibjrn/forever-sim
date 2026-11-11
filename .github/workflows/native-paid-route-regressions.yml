@@ -290,7 +290,7 @@ jobs:
               --class warlock --tree unconstrained \
               --start-level "$level" --end-level "$level" --level-stride 1 \
               --n-mobs 2 --recover-at-end true --rng balanced --backend rust \
-              --budget 36 --beam-width 3 \
+              --budget 48 --beam-width 3 \
               --native-binary native-engine/target/debug/forever-engine \
               --out "evidence/work2-native-paid-l20-l40/l${level}.json" \
               --shortlist-out "evidence/work2-native-paid-l20-l40/l${level}-top-3.md"
