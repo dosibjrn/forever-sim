@@ -22,6 +22,7 @@ on:
       - tests/test_work2_native_range_optimizer.py
       - tests/test_work2_world_rest_comparison.py
       - tools/wf_native_paid_html.py
+      - tools/wf_native_paid_reference_layout.py
       - tests/test_native_paid_html.py
       - tests/test_work2_independent_native_anchors.py
       - src/v2/native_paid_route.py

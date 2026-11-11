@@ -110,7 +110,7 @@ def test_refused_and_tampered_receipts_never_become_html_winners():
     page = render_native_paid_html(result, level=20)
     assert "35.525" in page
     assert "1.000" not in page
-    assert "1</strong><span>Measured" in page
+    assert "1</b><small>Measured gear sets" in page
     with pytest.raises(ValueError, match="NO_VERIFIED_NATIVE_PAID_WINNER"):
         render_native_paid_html(_result([invalid]), level=20)
     assert write_native_paid_html_reports(_result([invalid]), Path("/missing/path")) == []
@@ -163,8 +163,8 @@ def test_paid_html_class_label_and_filename_come_from_measured_result(tmp_path):
     for character_class in ("mage", "druid", "hunter", "priest"):
         result = _result([_sample(pet=None)], class_name=character_class)
         report = render_native_paid_html(result, level=20)
-        assert f"<h1>{character_class.title()} · Level 20</h1>" in report
-        assert f"WoW Forever {character_class.title()} L20" in report
+        assert f"{character_class.title()} · Level 20</h1>" in report
+        assert f"{character_class.title()} L20 | Best tested native build" in report
         assert "<h1>Warlock" not in report
         pages = write_native_paid_html_reports(
             result, tmp_path / character_class)
@@ -200,5 +200,40 @@ def test_shared_optimizer_accepts_injected_mage_evaluator_without_warlock_module
     result = json.loads(result_file.read_text())
     assert result["class"] == "mage"
     html = (tmp_path / "html" / "mage-l20-best-tested.html").read_text()
-    assert "<h1>Mage · Level 20</h1>" in html
+    assert "Mage · Level 20</h1>" in html
     assert "<h1>Warlock" not in html
+
+
+def test_reference_page_has_all_main_bis_guide_sections_and_offline_content():
+    page = render_native_paid_html(_result([_sample()]), level=20)
+    for heading in (
+        "Best tested gear", "Talents", "Rotation and world policy",
+        "Top three measured candidates", "How this list is made",
+        "Frequently asked questions", "Where to get it",
+        "Source not in receipt", "Item level unavailable",
+        "No. It is the fastest among the actually measured candidates",
+    ):
+        assert heading.lower() in page.lower()
+    assert 'target="_blank" rel="noopener noreferrer"' in page
+    # Optional clickable item lookups do not load scripts, icons or styles.
+    assert "<script" not in page and "<link rel=" not in page
+
+
+def test_duplicate_native_slot_labels_are_flagged_not_proclaimed_bis():
+    row = _sample()
+    row["receipt"]["native_named_build"]["equipped_item_names_ids"] = [
+        {"position": 0, "item_id": 12345, "name": "Two hand",
+         "native_slot": "two_hand"},
+        {"position": 1, "item_id": 12346, "name": "Off hand",
+         "native_slot": "off_hand"},
+        {"position": 2, "item_id": 12347, "name": "Hand A",
+         "native_slot": "hands"},
+        {"position": 3, "item_id": 12348, "name": "Hand B",
+         "native_slot": "hands"},
+    ]
+    page = render_native_paid_html(_result([row]), level=20)
+    assert "Gear verification needed" in page
+    assert "Two-hand and other weapon slot labels coexist" in page
+    assert "Hands" in page
+    assert "17 source item positions" not in page
+    assert "4 source item positions" in page

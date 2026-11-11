@@ -237,9 +237,10 @@ def _report_class(result: Mapping[str, Any]) -> str:
 
 
 def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
-    """HTML with all styles embedded, no external assets or JavaScript.
+    """Reference-structured offline guide from genuine paid native rows.
 
-    Refuse to invent a winner when no original fully paid receipt qualifies.
+    This shared publisher owns receipt gating; the class-neutral layout owns
+    presentation. Neither one infers BiS/item drops/unsupported metadata.
     """
     if type(level) is not int:
         raise ValueError("level must be an integer")
@@ -247,53 +248,8 @@ def render_native_paid_html(result: Mapping[str, Any], *, level: int) -> str:
     rows = _valid_rows(result, level)
     if not rows:
         raise ValueError("NO_VERIFIED_NATIVE_PAID_WINNER_FOR_HTML_LEVEL_" + str(level))
-    breadth = _axis_counts(rows)
-    top = rows[0]
-    m = result.get("mob_count")
-    cards = "".join(_candidate_card(row, i) for i, row in enumerate(rows[:3], 1))
-    summary = "".join(
-        "<div class='stat'><strong>" + str(breadth[axis]) +
-        "</strong><span>Measured " + label + "</span></div>"
-        for axis, label in (
-            ("gear", "gear sets"), ("pet", "pet choices"),
-            ("apl", "APL policies"), ("talents", "talent allocations")
-        )
-    )
-    nav = "".join(
-        "<a href='#build-" + str(i) + "'>#" + str(i) + " · "
-        + f"{row['native_elapsed_seconds']:.3f}" + " s</a>"
-        for i, row in enumerate(rows[:3], 1)
-    )
-    return (
-        "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
-        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-        "<title>WoW Forever " + _h(character_class.title()) + " L" + str(level)
-        + " — Best Tested Native Builds</title><style>" + _CSS + "</style>"
-        "</head><body><main class='wrap'>"
-        "<header class='hero'><div class='eyebrow'>WoW Forever / Native optimization / "
-        "Best tested · Offline report</div><h1>" + _h(character_class.title()) + " · Level " + str(level)
-        + "</h1><p>Best measured leveling builds from the actual Rust / 2D world "
-        "simulator. Gear, talents, summoned pet and APL are shown exactly as "
-        "prepared and measured, with fully clock-paid end recovery.</p></header>"
-        "<div class='stats'>" + summary + "</div>"
-        "<div class='note'><strong>Best tested, not guaranteed BiS.</strong> "
-        + str(len(rows)) + " fully paid candidate(s); "
-        + _h(m) + " native hostile kill(s) per candidate. "
-        "These are independent level snapshots—not a continuous leveling route, "
-        "a global item search, or proof of PvP performance. "
-        "A fixed or absent axis is not an optimized axis.</div>"
-        "<p class='muted'>Fastest measured build: <strong>"
-        + f"{top['native_elapsed_seconds']:.3f} s" + "</strong>. "
-        "Only original native-paid, world ACK and full-HP/mana receipt "
-        "records are eligible for ranking.</p><nav aria-label='Top three builds'>"
-        + nav + "</nav>" + cards
-        + "<footer>Reproducibility: see each build's exact source SHA, engine "
-        "SHA, raw receipt digest and policy. Generated from existing optimizer "
-        "JSON without any new simulation, external dependencies, or browser "
-        "network requests. Not affiliated with Blizzard Entertainment or MythicSim."
-        "</footer></main></body></html>\n"
-    )
-
+    from tools.wf_native_paid_reference_layout import render_reference_page
+    return render_reference_page(result, level, rows, character_class)
 
 def write_native_paid_html_reports(
     result: Mapping[str, Any], out_dir: Path,
