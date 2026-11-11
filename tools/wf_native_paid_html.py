@@ -5,6 +5,7 @@ No game legality, item stats, provenance, or route continuity is inferred.
 """
 from __future__ import annotations
 
+import argparse
 from collections import defaultdict
 from collections.abc import Mapping
 from html import escape
