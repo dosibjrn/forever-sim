@@ -1008,3 +1008,24 @@ def test_single_beam_pays_real_samples_without_inventing_competition(mode):
         assert result["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 14.0
         assert all(step["receipt"]["native_full_recovery_paid"] is True
                    for step in result["ranked_alternatives"][0]["steps"])
+
+
+def test_compatible_optimizer_does_not_require_optional_native_hint_api():
+    """A no-hint native scorer must not crash or pay fake backseed searches."""
+    called = []
+
+    def evaluate(*, level, parent, mob_count, budget, rng_mode, iterations,
+                 recover_to_full, search_mode):
+        assert parent is None and search_mode == "independent"
+        called.append(level)
+        row = receipt(level, mob_count, "A" if level == 20 else "B", 9.0)
+        row["talents"] = "100-0-0" if level == 20 else "010-0-0"
+        return [row]
+
+    result = optimize(20, 40, 20, 2, 12, evaluate=evaluate, mode="compatible")
+    assert result["status"] == "NO_COMPLETE_COMPATIBLE_SAMPLED_PATH"
+    assert result["sampled_levels_completed"] == [20, 40]
+    assert result["sampled_levels_compatible"] == [20]
+    assert result["native_candidates_examined"] == 2
+    assert result["backward_seeded_native_attempts"] == 0
+    assert called == [20, 40]
