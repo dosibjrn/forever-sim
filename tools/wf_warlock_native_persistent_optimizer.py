@@ -444,6 +444,15 @@ ROLLING_WORLD_APL_50 = {
 }
 
 
+class UnverifiedNativeWorldReceipt(ValueError):
+    """The native world ran but its returned receipt cannot certify overlap."""
+
+    def __init__(self, receipt_path: Path, receipt_sha256: str):
+        super().__init__("RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN")
+        self.receipt_path = str(receipt_path)
+        self.receipt_sha256 = receipt_sha256
+
+
 def _native_world_policy(rest_health: float, rest_mana: float,
                          world_apl: dict | None = None) -> dict:
     return {
@@ -678,7 +687,25 @@ class PersistentNativeEvaluator:
             **({"world_apl": world_apl} if world_apl is not None else {}),
         )
         if not _native_rolling_receipt_verified(receipt, world_apl):
-            raise ValueError("RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN")
+            # A complete native/2D response for an ignored or unproved rolling
+            # policy is still original execution evidence. Never cache/rank it
+            # as a paid success, and never overwrite an earlier refused run.
+            # Keep a distinct extension so the successful .native.json cache
+            # and its legacy lookup cannot ingest this observation.
+            raw = json.dumps(receipt, indent=2, allow_nan=False) + "\n"
+            attempt = 0
+            while True:
+                suffix = f"-{attempt}" if attempt else ""
+                refused_path = self.artifact_dir / (
+                    f"{key}-{cid}{suffix}.native.unverified.json")
+                try:
+                    with refused_path.open("x", encoding="utf-8") as handle:
+                        handle.write(raw)
+                    break
+                except FileExistsError:
+                    attempt += 1
+            raise UnverifiedNativeWorldReceipt(
+                refused_path, _file_digest(refused_path))
         elapsed, verdict = score_native_chain(
             receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
         if elapsed is None or verdict != "MEASURED_NATIVE_FULLY_RECOVERED":
@@ -924,6 +951,9 @@ class PersistentNativeEvaluator:
                         rest_health, rest_mana, world_apl),
                     "native_refusal_code": getattr(exc, "code", None),
                     "native_refusal": str(exc)[-1500:],
+                    **({"native_unverified_receipt_file": exc.receipt_path,
+                        "native_unverified_receipt_sha256": exc.receipt_sha256}
+                       if isinstance(exc, UnverifiedNativeWorldReceipt) else {}),
                 })
                 # A genuinely refused legacy rotation must not eliminate
                 # every registered level-rank candidate. Ask the SAME Rust
