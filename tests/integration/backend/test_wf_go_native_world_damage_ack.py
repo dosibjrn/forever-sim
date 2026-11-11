@@ -583,6 +583,9 @@ def test_overlapping_world_handoff_refuses_unacked_or_unengaged_second_mob():
         applier.begin_overlapping_world_target("m0")
     rt.select_target("m1")
     applier.apply(tick, reply)
+    # The legacy diagnostic world starts BOTH mobs engaged, so explicitly
+    # remove the second mob's engagement for this negative world-state test.
+    rt._engaged_targets.discard("m0")
     rt.select_target("m0")
     with pytest.raises(NativeDamageWorldApplicationError, match="OVERLAP_NOT_TWO_LIVE"):
         applier.begin_overlapping_world_target("m0")
