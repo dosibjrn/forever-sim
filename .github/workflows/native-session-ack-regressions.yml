@@ -24,7 +24,14 @@ on:
       - 'tests/test_work2_gsim_world_walk.py'
       - 'tests/test_work2_native_world_clock_ack.py'
       - 'tests/integration/backend/test_wf_go_native_world_damage_ack.py'
+      - 'tests/maintenance/test_native_session_ack_execution_boundary.py'
       - '.github/workflows/native-session-ack-regressions.yml'
+
+# New PR commits supersede only this cheap, head-specific ACK check; never
+# cancel an unrelated PR or the selected-Rust/2D smoke's separate job.
+concurrency:
+  group: native-clock-ack-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
