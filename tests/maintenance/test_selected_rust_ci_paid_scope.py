@@ -10,7 +10,7 @@ WORKFLOW = (Path(__file__).resolve().parents[2] /
             ".github/workflows/rust-submodule-verify.yml")
 
 
-def test_selected_rust_paid_probes_only_run_when_pin_changes():
+def test_selected_rust_paid_probes_only_run_on_pin_or_opt_in():
     text = WORKFLOW.read_text(encoding="utf-8")
     cheap = "      - name: Run focused Forever-owned native P3 adapter regressions"
     detector = "      - name: Detect selected Rust pin change"
@@ -21,20 +21,31 @@ def test_selected_rust_paid_probes_only_run_when_pin_changes():
             'integrations/mythicsim-rust/engine') in text
     assert "echo 'changed=false' >> \"$GITHUB_OUTPUT\"" in text
 
-    # A Python-only or gate-runner PR still executes the focused tests, but
-    # none of the expensive Rust build, no-record probes or uploads.
+    # Ordinary Python-only pushes never build native or repay probes. An
+    # explicitly labeled P3 producer PR may build and run paid no-record once.
     tail = text[text.index(paid):]
     steps = re.split(r"(?=^      - (?:name:|uses:))", tail, flags=re.MULTILINE)
     steps = [step for step in steps if step.startswith("      - ")]
     assert steps, "selected Rust native verification steps must remain guarded"
-    condition = "steps.selected_rust_change.outputs.changed == 'true'"
+    pin = "steps.selected_rust_change.outputs.changed == 'true'"
+    opt_in = ("github.event.action == 'labeled' && "
+              "github.event.label.name == 'p3-native-paid-no-record'")
     for step in steps:
         headline = step.splitlines()[0]
         guard = re.search(r"^        if: (.+)$", step, flags=re.MULTILINE)
         assert guard is not None, headline
-        assert condition in guard.group(1), headline
+        condition = guard.group(1)
+        if ("Build the exact selected engine" in headline
+                or "Probe unified get_options JSON" in headline):
+            # Pin changes get cheap native transport smoke; explicit labels
+            # get the binary even if Forever's P3-only code changed.
+            assert pin in condition and opt_in in condition, headline
+        else:
+            # No-record paid executions and their artifact upload require an
+            # explicit label even on a gitlink-changing PR.
+            assert opt_in in condition and pin not in condition, headline
         if "actions/upload-artifact@v4" in headline:
-            assert "always()" in guard.group(1), headline
+            assert "always()" in condition, headline
 
 
 def test_unaccepted_p3_probes_require_fresh_opt_in_label():
@@ -63,23 +74,23 @@ def test_unaccepted_p3_probes_require_fresh_opt_in_label():
         "Run no-record Mage L30 P3 with native item options",
     ):
         guard = step_guard(name)
-        assert pin in guard and label in guard, name
+        assert label in guard and pin not in guard, name
 
-    # A selected-engine pin change still compiles and checks native options,
-    # even when no explicit paid diagnostic has been requested.
+    # Rust pin changes still get native transport smoke, while a labeled
+    # Forever-only P3 source change also receives the native binary it needs.
     for name in (
         "Build the exact selected engine",
         "Probe unified get_options JSON on two class/level pairs",
     ):
         guard = step_guard(name)
-        assert pin in guard and label not in guard, name
+        assert pin in guard and label in guard, name
 
     upload = workflow.split("      - name: Upload no-record native P3 reports", 1)
     assert len(upload) == 2
     guard = re.search(r"^        if: (.+)$", upload[1], flags=re.MULTILINE)
     assert guard is not None
     assert "always()" in guard.group(1)
-    assert pin in guard.group(1) and label in guard.group(1)
+    assert label in guard.group(1) and pin not in guard.group(1)
 
 
 def test_warlock_shoot_cargo_regression_is_explicitly_requested():
