@@ -26,7 +26,7 @@ def names(row: Mapping[str, Any]) -> Mapping[str, Any]:
 
 def trees(row: Mapping[str, Any]) -> dict[str, list[Mapping[str, Any]]]:
     obj: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
-    for t in names(row).get('talent_names', []):
+    for t in names(row).get('talent_names') or []:
         if isinstance(t, Mapping):
             obj[str(t.get('tree') or 'Unknown tree')].append(t)
     return obj
@@ -42,7 +42,7 @@ def spec(row: Mapping[str, Any]) -> str:
 
 
 def gear_rows(row: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    return [x for x in names(row).get('equipped_item_names_ids', [])
+    return [x for x in names(row).get('equipped_item_names_ids') or []
             if isinstance(x, Mapping) and type(x.get('item_id')) is int and x['item_id'] > 0]
 
 
@@ -258,7 +258,8 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
     policy=raw.get('native_world_policy') or best.get('native_world_policy')
     recovery=best['terminal_recovery_seconds']
     mobs=raw.get('targets_killed')
-    devnotes='; '.join(raw.get('native_options_coverage',{}).get('notes',[]) or [])
+    coverage = raw.get('native_options_coverage') or {}
+    devnotes = '; '.join(str(v) for v in (coverage.get('notes') or [])) if isinstance(coverage, Mapping) else ''
     alternatives=''.join('<details id="alternative-'+str(i)+'"><summary>#'+str(i)
         +' '+h(spec(row))+' · '+h(row.get('pet') or 'No pet')+' · '
         +f'{row["native_elapsed_seconds"]:.3f}'+' s — expand exact build</summary><div class="inside">'
