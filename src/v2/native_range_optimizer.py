@@ -333,6 +333,88 @@ def _optimize_compatible_samples(
     return measured
 
 
+
+def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
+    """Explain a measured sampled path without inventing continuous leveling.
+
+    This presents already-scored native receipts: no candidate selection,
+    game-rule validation, extrapolation or paid replay is performed.
+    """
+    import json
+
+    ranked = result.get("ranked_alternatives")
+    if not isinstance(ranked, list) or not ranked:
+        raise ValueError("cannot publish a guide without a measured compatible path")
+    best = ranked[0]
+    steps = best["steps"]
+    levels = result["sampled_levels_requested"]
+    if [step["level"] for step in steps] != levels:
+        raise ValueError("cannot publish an incomplete sampled path as a full guide")
+    title = str(result.get("class", "character")).capitalize()
+    lines = [
+        f"# {title} — source-native sampled build guide",
+        "",
+        f"**Measured scope:** {len(steps)} sampled level(s), "
+        f"L{levels[0]}–L{levels[-1]}; {result['mob_count']} hostile mob(s) "
+        f"per level; {result['rng_mode']} RNG, {result['iterations']} iteration(s).",
+        "",
+        "**Not a continuous leveling route.** Scores include actual native "
+        "combat, movement and paid terminal recovery to full HP and mana "
+        "at each sample. XP, travel between levels, training, acquisition "
+        "and intervening gameplay are not measured. Talent rank deltas below "
+        "are comparisons of native-prepared snapshots, not prescribed "
+        "intermediate training decisions.",
+        "",
+        f"**Best compatible sampled score:** "
+        f"{best['sampled_cumulative_seconds']:.3f} s "
+        f"(among {len(ranked)} retained compatible path(s)).",
+        "",
+        "## Source-native level decisions",
+    ]
+    previous = None
+    for step in steps:
+        level = step["level"]
+        lines += [
+            "",
+            f"### Level {level}",
+            f"- Native talents: {step['talents']}",
+            f"- Measured elapsed: {step['native_elapsed_seconds']:.3f} s "
+            f"(terminal recovery: {step['terminal_recovery_seconds']:.3f} s)",
+        ]
+        before = _talent_ranks(previous["talents"]) if previous else None
+        after = _talent_ranks(step["talents"])
+        if before is not None and after is not None:
+            deltas = [
+                f"tree {tree_index}, slot {slot+1}: +{new-old}"
+                for tree_index, (old_tree, new_tree) in enumerate(
+                    zip(before, after), 1)
+                for slot in range(max(len(old_tree), len(new_tree)))
+                for old, new in [(
+                    old_tree[slot] if slot < len(old_tree) else 0,
+                    new_tree[slot] if slot < len(new_tree) else 0)]
+                if new > old
+            ]
+            lines.append("- Ranks added since previous sample: "
+                         + (", ".join(deltas) if deltas else "none"))
+        for field, label in (("gear", "Native item IDs"),
+                             ("pet", "Native summon"),
+                             ("apl", "Native APL")):
+            if previous is None or step.get(field) != previous.get(field):
+                lines.append(f"- {label}: "
+                             + json.dumps(step.get(field), sort_keys=True,
+                                          separators=(",", ":")))
+        lines.append("- Source request SHA256: "
+                     + str(step["source_request_sha256"]))
+        previous = step
+    if len(ranked) > 1:
+        lines += ["", "## Measured alternative sampled scores"]
+        lines += [
+            f"- Alternative {n}: {path['sampled_cumulative_seconds']:.3f} s"
+            for n, path in enumerate(ranked[1:], 2)
+        ]
+    return "\n".join(lines) + "\n"
+
+
 def optimize(
     start_level: int, end_level: int, level_stride: int, mob_count: int,
     budget: int, *,
@@ -532,6 +614,30 @@ def optimize(
     }
 
 
+
+def guide_main(argv: list[str] | None = None) -> int:
+    """Render an already measured optimizer result without opening Rust/payments."""
+    import argparse
+    import json
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(prog="native-guide",
+        description="Publish a prior native-paid sampled result without replay")
+    parser.add_argument("--in", dest="source", type=Path, required=True,
+                        help="Saved --out JSON from the existing optimizer")
+    parser.add_argument("--out", dest="output", type=Path, required=True,
+                        help="Human-readable Markdown destination")
+    args = parser.parse_args(argv)
+    if args.source.resolve() == args.output.resolve():
+        parser.error("--out cannot overwrite the original native receipt result")
+    result = json.loads(args.source.read_text())
+    guide = render_sampled_build_guide(result)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(guide)
+    print(f"Published existing sampled build decisions to {args.output}")
+    return 0
+
+
 def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     """Generic optimizer CLI. Class and search density are runtime settings.
 
@@ -567,6 +673,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                     help="Optional fixed enemy HP override; default uses the "
                          "ordinary-mob scenario HP at each sampled level")
     ap.add_argument("--out", type=Path, help="Optional machine-readable result path")
+    ap.add_argument("--guide-out", type=Path,
+                    help="Optional player-facing guide for native-paid sampled decisions")
     args = ap.parse_args(argv)
     cls = args.class_name.lower()
     if cls != "warlock":
@@ -579,6 +687,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         f"optimize_{cls}_L{args.start_level}-{args.end_level}"
         f"_stride{args.level_stride}_mobs{args.n_mobs}.json"
     )
+    if args.guide_out and args.guide_out.resolve() == output.resolve():
+        ap.error("--guide-out must differ from --out")
     if evaluate is None:
         if not args.native_binary.is_file() or not args.source.is_file():
             ap.error("native engine and initial source request must exist")
@@ -609,6 +719,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
+    if args.guide_out and result["ranked_alternatives"]:
+        args.guide_out.parent.mkdir(parents=True, exist_ok=True)
+        args.guide_out.write_text(render_sampled_build_guide(result))
     if result["ranked_alternatives"]:
         best = result["ranked_alternatives"][0]
         print(f"{cls}: sampled compatible build path, "

@@ -5,9 +5,11 @@ from __future__ import annotations
 # registry and rejects Warlock before the generic optimizer can see the CLI.
 import sys
 
-if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "optimize":
-    from .native_range_optimizer import main as _native_optimize_main
-
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] in ("optimize", "native-guide"):
+    if sys.argv[1] == "optimize":
+        from .native_range_optimizer import main as _native_optimize_main
+    else:
+        from .native_range_optimizer import guide_main as _native_optimize_main
     raise SystemExit(_native_optimize_main(sys.argv[2:]))
 
 import argparse
