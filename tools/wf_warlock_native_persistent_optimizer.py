@@ -855,11 +855,23 @@ class PersistentNativeEvaluator:
               if self.compare_world_rolling_50
               or (self.explore_world_policies and mob_count == 2) else []),
         ]
+        # The first visit protects gear/pet/talent diversity. A range
+        # coordinator's adaptive revisit carries the exact paid source+policy
+        # exclusions from that visit: move still-unpaid world policies ahead
+        # of further gear/APL exploration so a one- or two-attempt follow-up
+        # can actually compare recovery/pull behavior. The identical source
+        # with a DIFFERENT policy is still a new Rust-paid experiment.
+        adaptive_policy_revisit = (
+            self.explore_world_policies
+            and excluded_paid_source_policies is not None
+        )
         sources = [(first, "talent"),
-                   *(policy_sources if not self.explore_world_policies else []),
+                   *(policy_sources if not self.explore_world_policies
+                      or adaptive_policy_revisit else []),
                    *axis_sources[:2],
                    *([(early_talent, "talent")] if early_talent is not None else []),
-                   *(policy_sources if self.explore_world_policies else []),
+                   *(policy_sources if self.explore_world_policies
+                      and not adaptive_policy_revisit else []),
                    *axis_sources[2:],
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
