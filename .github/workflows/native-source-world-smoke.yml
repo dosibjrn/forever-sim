@@ -17,7 +17,6 @@ on:
       - 'tools/wf_gsim_go_live_range_probe.py'
       - 'tools/wf_warlock_l20_100mob.py'
       - 'src/game/native_p3_item_options.py'
-      - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
       - '.github/workflows/native-source-world-smoke.yml'
 permissions:
   contents: read
