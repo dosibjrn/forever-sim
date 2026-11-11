@@ -656,6 +656,28 @@ def test_acknowledged_dead_selected_b_does_not_block_old_a_dot_continuation():
     assert rt.targets["m0"].health == 0
     assert rt.targets["m1"].alive
 
+    # Real B lethal ACK authorizes the next source-world range tick while
+    # selected B is dead. Both tick and pending receipt recheck must use
+    # the same native slot -> real 2D target ancestry; old A remains alive.
+    from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
+    feed = GsimGoRangeFeed(rt, native_player_index=0)
+    rt.advance_to(0.2)
+    assert applier.is_native_acked_dead_selected_overlap("m0")
+    range_tick = feed.next_tick(native_world_applier=applier)
+    assert range_tick["selected_target_id"] == "m0"
+    assert range_tick["world_target_health_before"] == 0
+    assert range_tick["world_target_max_health"] == rt.targets["m0"].max_health
+    range_receipt = {
+        "sequence": range_tick["sequence"],
+        "native_clock_ns": range_tick["native_clock_ns"],
+        "player_index": range_tick["native_player_index"],
+        "applied_yards": range_tick["distance_yards"],
+        "native_encounter_damage": 0.,
+        "facing_applied": range_tick["facing_applied"],
+        "in_front_of_target": range_tick.get("in_front_of_target", False),
+    }
+    assert feed.accept_range_receipt(range_receipt)["checkpoint_certified"] is False
+
     # Rust still selects B, but the authentic source DoT is bound to A/slot 0.
     remaining = rt.targets["m1"].health
     tick2, reply2 = _native_second_tick(rt, reply0, sequence=2, native_events=[
@@ -698,6 +720,11 @@ def test_predead_selected_b_cannot_admit_old_a_dot_without_native_b_ack():
          "periodic": True},
     ])
     before = rt.targets["m1"].health
+    from src.game.runtime.go_world_range_feed import GsimGoRangeFeed, GoWorldRangeError
+    feed = GsimGoRangeFeed(rt, native_player_index=0)
+    assert not applier.is_native_acked_dead_selected_overlap("m0")
+    with pytest.raises(GoWorldRangeError, match="WORLD_SELECTED_TARGET_NOT_ALIVE"):
+        feed.next_tick(native_world_applier=applier)
     with pytest.raises(NativeDamageWorldApplicationError,
                        match="WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD"):
         applier.apply(tick1, reply1)
