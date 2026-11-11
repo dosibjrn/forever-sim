@@ -257,7 +257,7 @@ def _native_equipped_p3_reservation(
     """Reserve one baseline and up to 17 native slot alternatives for Rogue L20."""
     return (44 if native_binary and str(class_key).lower() == "rogue"
             and int(level) == 20 and str(spec).lower() == "unrestricted"
-            and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
+            and _rogue_l20_native_request(Path(__file__).resolve().parents[1]) else 0)
 
 
 def _native_p3_equipped_slot_proposals(native_options: dict) -> dict:
@@ -388,6 +388,21 @@ def _query_native_unified_p3_items(root: Path, native_binary: str,
     }
 
 
+def _rogue_l20_native_request(root: Path) -> str | None:
+    """Use an explicit Rogue source request or the checked-in L20 native fixture.
+
+    The shipped fixture is naked; the native equipped comparator seeds a
+    two-item pair only from selected Rust item-options and verifies the real
+    prepared L20 actor. Never substitute a level-60 proxy or Python game facts.
+    """
+    explicit = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
+    if explicit:
+        return explicit
+    fixture = (root / "integrations/mythicsim-rust/fixtures"
+               / "rogue-l20-p3-native.request.json")
+    return str(fixture) if fixture.is_file() else None
+
+
 def _warlock_l20_native_request(root: Path) -> str | None:
     """Use the selected Rust revision's genuinely paid equipped L20 source.
 
@@ -436,7 +451,7 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                                / "validation/2026-10-06-multi-target-paladin-druid-references"
                                / f"{paladin_spec}-paladin-2-targets.request.json")
     else:
-        request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
+        request_path = _rogue_l20_native_request(root)
     if not request_path:
         return None
     if remaining < 2:
@@ -663,7 +678,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
 
     # Native P3 scores the source actor directly; no GameIR or policy fallback.
     if native_options is not None:
-        if is_rogue_native and not os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST"):
+        if is_rogue_native and not _rogue_l20_native_request(root):
             return {"status": "BLOCKED",
                     "reasons": ["P3_NATIVE_ROGUE_REQUEST_REQUIRED"],
                     "production_component": "integrations/mythicsim-rust/native_p3_equipped.py"}
