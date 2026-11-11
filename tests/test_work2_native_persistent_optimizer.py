@@ -127,6 +127,69 @@ def test_one_session_scores_all_three_samples_with_actual_paid_clock_contract(
     assert native.session.closed
 
 
+
+def test_same_session_identical_paid_world_reused_without_git_identity(
+        tmp_path, monkeypatch):
+    """Unverifiable cross-run cache never justifies repeating this session's ACK."""
+    paid_calls = []
+
+    def counted_world(binary, prepared_path, **kwargs):
+        paid_calls.append(kwargs["mob_health"])
+        return paid_world(binary, prepared_path, **kwargs)
+
+    # This fixture explicitly disables the Git-backed reusable disk identity.
+    native = make_evaluator(tmp_path, monkeypatch, world=counted_world)
+
+    def sample():
+        return native(level=20, parent=None, mob_count=2, budget=2,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+
+    try:
+        first = sample()
+        assert len(first) == 2
+        assert len(paid_calls) == 2
+        assert all(not row["reused_exact_native_paid_receipt"] for row in first)
+        again = sample()
+        assert len(paid_calls) == 2
+        assert all(row["reused_exact_native_paid_receipt"] for row in again)
+        assert [row["native_raw_receipt_sha256"] for row in again] == [
+            row["native_raw_receipt_sha256"] for row in first]
+        # The same native actor against a different hostile HP is NOT a hit.
+        native.target_hp = float(api.representative_hp(20)) + 1
+        changed_world = sample()
+        assert len(changed_world) == 2
+        assert len(paid_calls) == 4
+        assert all(not row["reused_exact_native_paid_receipt"]
+                   for row in changed_world)
+    finally:
+        native.close()
+
+
+def test_session_paid_memo_refuses_modified_raw_receipt(tmp_path, monkeypatch):
+    paid_calls = []
+
+    def counted_world(binary, prepared_path, **kwargs):
+        paid_calls.append(True)
+        return paid_world(binary, prepared_path, **kwargs)
+
+    native = make_evaluator(tmp_path, monkeypatch, world=counted_world)
+    try:
+        request = dict(level=20, parent=None, mob_count=2, budget=1,
+                       rng_mode="balanced", iterations=1,
+                       recover_to_full=True)
+        first = native(**request)
+        assert len(paid_calls) == 1
+        original = Path(first[0]["native_raw_receipt_file"])
+        original.write_text("{}\\n")
+        second = native(**request)
+        assert len(paid_calls) == 2
+        assert second[0]["reused_exact_native_paid_receipt"] is False
+        assert Path(second[0]["native_raw_receipt_file"]) != original
+        assert Path(second[0]["native_raw_receipt_file"]).is_file()
+    finally:
+        native.close()
+
+
 def test_exact_paid_cache_identity_is_session_scoped_and_level_specific(
         tmp_path, monkeypatch):
     """One binary/Git identity read serves every paid candidate and level.
@@ -474,7 +537,6 @@ def test_orphaned_cache_metadata_preserves_new_paid_receipts(
     assert second_fallback.is_file() and second_fallback != fallback
     assert fallback.read_bytes() == previous_bytes
     assert metadata[0].read_bytes() == untouched_metadata
-
 
 def test_native_same_session_probe_pays_new_world_and_retains_refusal(tmp_path, monkeypatch):
     """M0.6 must use a NEW world in one Rust session, not cached M0.5 samples."""
