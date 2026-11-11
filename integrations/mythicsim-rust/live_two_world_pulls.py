@@ -521,7 +521,8 @@ def _native_recovery_cli_args(recovery_policy: str | None,
 
 def _persistent_api_evaluate_request(*, targets: int, rng_mode: str,
                                      health_threshold: float,
-                                     mana_threshold: float) -> dict:
+                                     mana_threshold: float,
+                                     world_apl: dict | None = None) -> dict:
     """Forward only source-native Decisions rest inputs to the Rust API.
 
     Rust's native evaluate schema uses a nested between_pulls policy.
@@ -537,6 +538,10 @@ def _persistent_api_evaluate_request(*, targets: int, rng_mode: str,
             "health_fraction": health_threshold,
             "mana_fraction": mana_threshold,
         }
+    if world_apl is not None:
+        # Send the requested World-APL to Rust; never pretend that merely
+        # including a request means the native world actually executed it.
+        request["world_apl"] = world_apl
     return request
 
 
@@ -552,6 +557,31 @@ def _verify_native_recovery_thresholds(result: dict, *,
             "RUST_WORLD_NATIVE_RECOVERY_THRESHOLDS_NOT_APPLIED:"
             f" requested=({health_threshold},{mana_threshold})"
             f" observed={applied!r}")
+
+
+def _verify_native_rolling_world_apl(
+        result: dict, *, requested: dict, kills: list[dict]) -> dict:
+    """Require native two-live-target telemetry plus real distinct world ACKs.
+
+    The current serial Rust scheduler cannot supply this evidence. An
+    unrecognized/ignored World-APL field therefore fails closed instead of
+    recycling the successful serial paid world as an overlap measurement.
+    """
+    applied = result.get("applied_world_apl")
+    overlap = result.get("world_overlap")
+    kill_ids = [row["target_id"] for row in kills]
+    kill_acks = [row["ack_sha256"] for row in kills]
+    if (applied != requested or not isinstance(overlap, dict)
+            or overlap.get("max_concurrent_alive_targets") != 2
+            or set(overlap.get("simultaneously_alive_world_target_ids", []))
+               != set(kill_ids)
+            or len(kill_ids) != 2 or len(set(kill_ids)) != 2
+            or len(set(kill_acks)) != 2
+            or any(not isinstance(ack, str) or not ack for ack in kill_acks)):
+        raise AssertionError(
+            "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN:"
+            f" applied={applied!r} overlap={overlap!r} kills={kill_ids!r}")
+    return overlap
 
 
 def accumulate_acked_native_source_effects(
@@ -585,6 +615,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         recovery_seconds: int | None = None,
         health_threshold: float = 0.5,
         mana_threshold: float = 0.1,
+        world_apl: dict | None = None,
         api_process: subprocess.Popen | None = None,
         prepared_payload: dict | None = None) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage.
@@ -604,6 +635,16 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
     request = (prepared_payload if prepared_payload is not None
                else json.loads(prepared.read_text()))
+    if world_apl is not None and (
+            api_process is None or world_apl != {
+                "pull_mode": "rolling",
+                "switch_trigger": {
+                    "type": "current_target_hp_fraction_at_most",
+                    "fraction": 0.5,
+                },
+                "max_live_targets": 2,
+            }):
+        raise ValueError("RUST_WORLD_APL_NATIVE_API_OR_POLICY_UNSUPPORTED")
     if api_process is not None and (not isinstance(request, dict)
                                     or api_process.poll() is not None):
         raise ValueError("NATIVE_API_SESSION_OR_PREPARED_ACTOR_INVALID")
@@ -671,6 +712,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         proc.stdin.write(json.dumps(_persistent_api_evaluate_request(
             targets=target_count, rng_mode=rng_mode,
             health_threshold=health_threshold, mana_threshold=mana_threshold,
+            world_apl=world_apl,
         ), sort_keys=True) + "\n")
         proc.stdin.flush()
     try:
@@ -832,6 +874,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
         if [k["target_id"] for k in kills] != list(targets):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
+        native_world_overlap = (
+            _verify_native_rolling_world_apl(
+                result, requested=world_apl, kills=kills)
+            if world_apl is not None else None
+        )
         # Rust is the health authority; no invented gsim player damage.
         # A completed native-damage world kill must not hide a dead actor.
         elapsed = _verified_world_elapsed(result["windows"], kills)
@@ -887,6 +934,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "native_terminal_recovery": result.get("terminal_recovery"),
             "native_recovery_seconds_per_gap": result.get("recovery_seconds_per_gap"),
             "native_recovery_thresholds": result.get("thresholds"),
+            "native_world_apl": result.get("applied_world_apl"),
+            "native_world_overlap": native_world_overlap,
+            "native_world_overlap_verified": native_world_overlap is not None,
             "native_passive_recovery_elapsed_seconds": (
                 sum(recovery["native_passive_recovery_ns_by_target"]) / 1e9
                 if recovery["native_passive_recovery_observed"] else None),
