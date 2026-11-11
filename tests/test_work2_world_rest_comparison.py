@@ -85,6 +85,22 @@ def test_missing_original_native_receipt_is_not_paid_evidence():
     assert comparison["status"] == "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE"
 
 
+def test_ranked_clocks_must_equal_original_native_paid_receipt():
+    # Rankings are mutable projections; neither the winning clock nor
+    # terminal recovery may disagree with the raw native evaluator result.
+    # A stale fast ranking must never turn a slower native policy into a win.
+    for projection, bad_value in (
+        ("native_elapsed_seconds", 1.0),
+        ("terminal_recovery_seconds", 0.0),
+    ):
+        report = result_for([paid_row(1.0, 43), paid_row(0.3, 49)])
+        report["independent_level_rankings"]["20"][1][projection] = bad_value
+        comparison = measured_world_rest_head_to_head(report, level=20)
+        assert comparison["status"] == "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE"
+        assert comparison["winner"] is None
+        assert comparison["thirty_percent_paid_candidates"] == 0
+
+
 def test_exact_cli_records_refusal_and_exits_nonzero_for_one_sided_paid_result(
         tmp_path):
     baseline = paid_row(1.0, 42)
