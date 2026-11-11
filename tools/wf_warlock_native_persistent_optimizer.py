@@ -303,10 +303,21 @@ class PersistentNativeEvaluator:
                 meta.write_text(json.dumps(
                     dict(identity, native_raw_receipt_sha256=_file_digest(path)),
                     sort_keys=True, indent=2) + "\n")
-        elif path.exists():
-            # A collision/tampered record cannot become a mismatched receipt.
-            other = self.artifact_dir / (key + "-" + cid + ".native.json")
-            other.write_text(json.dumps(receipt, indent=2, allow_nan=False) + "\n")
+        else:
+            # An orphaned metadata sidecar must not silently discard a new
+            # paid result. Preserve both old metadata and any conflicting
+            # raw receipt, including earlier collision fallback files.
+            suffix = 0
+            while True:
+                name = key + "-" + cid + (f"-{suffix}" if suffix else "")
+                other = self.artifact_dir / (name + ".native.json")
+                try:
+                    with other.open("x") as handle:
+                        handle.write(json.dumps(
+                            receipt, indent=2, allow_nan=False) + "\n")
+                    break
+                except FileExistsError:
+                    suffix += 1
             path = other
         return receipt, elapsed, cached, path
 

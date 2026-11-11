@@ -410,3 +410,67 @@ def test_schema1_paid_cache_is_reused_only_after_verified_world_identity(
         changed.close()
     assert len(different) == 1
     assert different[0]["reused_exact_native_paid_receipt"] is False
+
+
+def test_orphaned_cache_metadata_preserves_new_paid_receipts(
+        tmp_path, monkeypatch):
+    """An orphaned cache sidecar must not discard freshly paid native bytes.
+
+    Fake paid-world transport verifies storage integrity only, not gameplay.
+    """
+    FakeSession.instances.clear()
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"pinned native binary")
+    fixture = Path("fixtures/warlock-l20-native-paid-30s.request.json")
+    paid_dir = tmp_path / "paid"
+
+    def identity(path, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 2,
+            "forever_paid_runtime_sha256": "a" * 64,
+            "native_binary_sha256": api._file_digest(path),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced",
+            "iterations": 1, "recovery_policy": "decisions",
+            "health_threshold": 1.0, "mana_threshold": 1.0,
+            "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(api, "_exact_paid_cache_identity", identity)
+
+    def paid_once():
+        evaluator = api.PersistentNativeEvaluator(
+            binary, fixture, paid_dir, session_factory=FakeSession,
+            run_world=paid_world)
+        try:
+            result = evaluator(
+                level=20, parent=None, mob_count=2, budget=1,
+                rng_mode="balanced", iterations=1, recover_to_full=True)
+            assert len(result) == 1
+            assert result[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+            return result[0]
+        finally:
+            evaluator.close()
+
+    original = paid_once()
+    original_path = Path(original["native_raw_receipt_file"])
+    metadata = list(paid_dir.glob("*.native.cache.json"))
+    assert original_path.is_file() and len(metadata) == 1
+    untouched_metadata = metadata[0].read_bytes()
+    original_path.unlink()  # Simulate interrupted/corrupted artifact copy.
+
+    replacement = paid_once()
+    fallback = Path(replacement["native_raw_receipt_file"])
+    assert replacement["reused_exact_native_paid_receipt"] is False
+    assert fallback != original_path and fallback.is_file()
+    assert hashlib.sha256(fallback.read_bytes()).hexdigest() == (
+        replacement["native_raw_receipt_sha256"])
+    assert metadata[0].read_bytes() == untouched_metadata
+
+    previous_bytes = fallback.read_bytes()
+    repeated = paid_once()
+    second_fallback = Path(repeated["native_raw_receipt_file"])
+    assert repeated["reused_exact_native_paid_receipt"] is False
+    assert second_fallback.is_file() and second_fallback != fallback
+    assert fallback.read_bytes() == previous_bytes
+    assert metadata[0].read_bytes() == untouched_metadata
