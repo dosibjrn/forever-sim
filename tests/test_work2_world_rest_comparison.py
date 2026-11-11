@@ -217,6 +217,45 @@ def test_rolling_head_to_head_requires_original_paid_overlap_and_build_identity(
     assert comparison["rolling"]["native_world_kills"][0]["ack_sha256"] == "first"
 
 
+def test_rolling_comparison_holds_recovery_and_switch_policy_constant():
+    """A faster mixed-policy result is not a measured rolling-only win."""
+    baseline = paid_row(1.0, 45)
+    for altered in ("rest_health", "rest_mana", "rest_until",
+                    "switch_fraction", "max_live_targets"):
+        challenger = rolling_paid_row(elapsed=30)
+        policy = challenger["native_world_policy"]
+        if altered == "rest_health":
+            policy["rest_when_health_below"] = 0.3
+        elif altered == "rest_mana":
+            policy["rest_when_mana_below"] = 0.3
+        elif altered == "rest_until":
+            policy["rest_until"] = "other"
+        else:
+            import copy
+            apl = copy.deepcopy(challenger["native_world_apl"])
+            if altered == "switch_fraction":
+                apl["switch_trigger"]["fraction"] = 0.6
+            else:
+                apl["max_live_targets"] = 3
+            policy["world_apl"] = apl
+            challenger["native_world_apl"] = apl
+        comparison = measured_world_rolling_head_to_head(
+            result_for([baseline, challenger]), level=20)
+        assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+        assert comparison["winner"] is None
+
+
+def test_rolling_paid_comparison_reports_real_terminal_recovery_cost():
+    comparison = measured_world_rolling_head_to_head(
+        result_for([paid_row(1.0, 45), rolling_paid_row(elapsed=38)]),
+        level=20,
+    )
+    assert comparison["status"] == "MEASURED_NATIVE_ROLLING_WORLD_APL_HEAD_TO_HEAD"
+    assert comparison["baseline"]["terminal_recovery_seconds"] == 4.0
+    assert comparison["rolling"]["terminal_recovery_seconds"] == 4.0
+    assert comparison["rolling"]["reused_exact_native_paid_receipt"] is False
+
+
 def test_rolling_cli_refuses_unacknowledged_native_overlap_even_with_serial_win(
         tmp_path):
     refusal = {
