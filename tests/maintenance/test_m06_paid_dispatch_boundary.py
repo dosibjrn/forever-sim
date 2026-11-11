@@ -42,3 +42,21 @@ def test_native_paid_pr_regressions_remain_fast_and_not_paid():
     assert "python -m pytest -q" in fast_job
     assert "cargo build" not in fast_job
     assert "python -m src.v2.runner optimize" not in fast_job
+
+def test_only_superseded_fast_pr_runs_are_cancelled():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    header = text.split("\njobs:\n", 1)[0]
+    fast_job = _job("native-paid-route", text)
+    assert "concurrency:" not in header
+    assert (
+        "    concurrency:\n"
+        "      group: native-paid-route-fast-pr-"
+        "${{ github.event.pull_request.number }}\n"
+        "      cancel-in-progress: true\n"
+    ) in fast_job
+    # Separate manual original/native 100-mob comparisons must retain their
+    # paid receipts even when a faster PR update lands.
+    for name in ("work2-m06-original-native", "cross-tree-native-world"):
+        manual_job = _job(name, text)
+        assert "cancel-in-progress:" not in manual_job
+        assert "    if: ${{ github.event_name == 'workflow_dispatch'" in manual_job
