@@ -790,8 +790,9 @@ def _acked_old_target_live_dot_ticks(*, health_before: float, ack: dict,
 
 def _acked_first_b_hit_with_live_a(*, before: dict[str, float],
                                    world: CombatRuntime, ack: dict,
-                                   old_id: str, new_id: str) -> bool:
-    """Require first B damage to be a real native event while A survives its ACK.
+                                   old_id: str, new_id: str,
+                                   switch_native_clock_ns: int) -> bool:
+    """Require first B damage after source A→B while A survives its ACK.
 
     A can die in the same source batch as B's first hit. In that ambiguous
     ordering we refuse overlap evidence rather than infer simultaneous damage.
@@ -800,16 +801,22 @@ def _acked_first_b_hit_with_live_a(*, before: dict[str, float],
     """
     old = world.targets[old_id]
     new = world.targets[new_id]
-    if (before.get(old_id, 0) <= 0 or not old.alive
+    enemies = snapshot_gsim_world(world)["enemies"]
+    if (type(switch_native_clock_ns) is not int
+            or before.get(old_id, 0) <= 0 or not old.alive
             or before.get(new_id, 0) <= 0
             or not 0 <= new.health < before[new_id]
-            or snapshot_gsim_world(world)["enemies"][old_id]["engaged"] is not True):
+            or enemies[old_id]["engaged"] is not True
+            or enemies[new_id]["engaged"] is not True):
         return False
     applied = set(ack.get("applied_event_ids", ()))
     return any(
         isinstance(effect, dict)
         and effect.get("native_target_index") == 1
-        and effect.get("event_id") in applied
+        and isinstance(effect.get("event_id"), str)
+        and effect["event_id"] in applied
+        and type(effect.get("native_time_ns")) is int
+        and effect["native_time_ns"] >= switch_native_clock_ns
         and type(effect.get("damage")) in (int, float)
         and isfinite(effect["damage"]) and effect["damage"] > 0
         for effect in ack.get("applied_events", ())
@@ -1106,7 +1113,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 first_b_world_hit_seen = True
                 first_b_world_hit_while_old_a_live = _acked_first_b_hit_with_live_a(
                     before=before_health, world=world, ack=ack,
-                    old_id=targets[0], new_id=targets[1])
+                    old_id=targets[0], new_id=targets[1],
+                    switch_native_clock_ns=rolling_switch["switch_native_clock_ns"])
             ack["iteration_index"] = iteration
             events += len(ack["applied_event_ids"])
             if corrupt_ack and events:
