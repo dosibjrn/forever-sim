@@ -186,16 +186,13 @@ def evaluate_request(
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refused.append(_refusal(entry, "NATIVE_PREPARED_OR_CONTINUITY_REFUSAL:"
                                     + str(exc)[-180:], None))
-    # Independent anchors may have only one Rust-preparable build after
-    # alternative native refusals. Score that bounded anchor, but leave it
-    # noncompetitive/provisional instead of silently losing its measurement.
-    # Continuing root bootstrap still requires genuine alternatives.
-    if not candidates or (len(candidates) == 1 and parent is None
-                          and request.get("search_mode") != "independent"):
-        return refused + [
-            _refusal({"id": cid}, "NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER", src)
-            for cid, (_, _, src, _) in candidates.items()
-        ]
+    # A sole Rust-prepared candidate still deserves actual paid combat,
+    # including in continuing mode. Native refusals of other proposals do
+    # not justify an early optimizer veto: the route ranker distinguishes a
+    # measured single-path baseline from a genuinely competitive winner.
+    # Never synthesize another candidate or credit a rejected native build.
+    if not candidates:
+        return refused
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
     # Never reuse files from another invocation: a stale native JSON file must
