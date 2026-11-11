@@ -69,6 +69,12 @@ class GsimNativeDamageWorldApplier:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_READY")
         if self._last_native_lethal_target_id != self._target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_NATIVE_LETHAL")
+        # After an overlapping switch, killing only the selected mob does
+        # not retire old-target DoTs or authorize reuse of its native slot.
+        if any(self._runtime.targets[world_id].alive
+               for world_id in self._native_target_ids.values()):
+            raise NativeDamageWorldApplicationError(
+                "WORLD_DAMAGE_ACK_PREVIOUS_NATIVE_TARGET_STILL_LIVE")
         world = snapshot_gsim_world(self._runtime)
         if world["selected_target_id"] != next_target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_SELECTED")
