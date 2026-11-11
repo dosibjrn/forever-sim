@@ -961,7 +961,9 @@ def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
     assert "m05_stride:" in workflow and "m05_cache_run_id:" in workflow
     assert '--start-level 20 --end-level 60 --level-stride "$M05_STRIDE"' in m05
     assert '--n-mobs 2 --recover-at-end true --rng balanced' in m05
-    assert '--backend rust --budget 60' in m05
+    assert '--backend rust --budget "$M05_BUDGET"' in m05
+    assert "inputs.m05_stride == '1' && '450'" in m05
+    assert "inputs.m05_stride == '5' && '110'" in m05
     assert "requested-sparse-optimize-42980239306" in m05
     assert "requested-m05-optimize-{0}" in m05
     assert "inputs.m05_cache_run_id || '42980239306'" in m05
