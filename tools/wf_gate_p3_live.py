@@ -512,6 +512,7 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     is_mage_l60 = checkpoint in ("mage_l60", "mage_fire_l60", "mage_frost_l60")
     is_paladin_l60 = checkpoint in ("paladin_retribution_l60", "paladin_protection_l60", "paladin_holy_l60")
     is_warlock_l20 = checkpoint == "warlock_l20"
+    is_rogue_l20 = checkpoint == "rogue_l20"
     occupied = receipt.get("source_occupied_slots")
     occupancy_verified = (
         isinstance(occupied, list) and bool(occupied)
@@ -519,8 +520,14 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
         and len(set(occupied)) == len(occupied)
         and len(occupied) <= 17
     )
+    # Rust scores only source-occupied slots. Its Rogue L20 producer also
+    # supplies these positions, including when it seeds a naked source with
+    # a genuine baseline item. Do not require a paid result for unrelated
+    # unoccupied slots merely because ItemSparse offers alternatives there.
+    # Keep the historical fallback if an older receipt lacks this field.
     statuses = ({slot: [] for slot in occupied}
-                if (is_mage_l60 or is_paladin_l60 or is_warlock_l20) and occupancy_verified
+                if (is_mage_l60 or is_paladin_l60 or is_warlock_l20
+                    or is_rogue_l20) and occupancy_verified
                 else {slot: [] for slot in proposals})
     for row in alternatives:
         if isinstance(row, dict):
