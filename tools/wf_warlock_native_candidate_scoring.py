@@ -54,8 +54,14 @@ def _exact_paid_cache_identity(binary: Path, *, actor_level: int,
         return None
     root = Path(__file__).resolve().parents[1]
     try:
+        # A docs/workflow-only working-tree edit cannot change a paid native
+        # receipt. Check exactly the same runtime paths as the fingerprint,
+        # including untracked files that might shadow a tracked Python module.
+        # Native executable, prepared request and raw ACK remain separately
+        # checked before an old receipt is reused.
         dirty = subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"], cwd=root,
+            ["git", "status", "--porcelain", "--untracked-files=all",
+             "--", *_PAID_RUNTIME_GIT_PATHS], cwd=root,
             capture_output=True, text=True, check=True, timeout=10)
         objects = subprocess.run(
             ["git", "rev-parse", *(f"HEAD:{path}" for path in _PAID_RUNTIME_GIT_PATHS)],
