@@ -1233,6 +1233,8 @@ def test_source_echoed_rolling_policy_never_shares_serial_native_paid_cache(
             receipt["native_world_overlap"] = {
                 "max_concurrent_alive_targets": 2,
                 "simultaneously_alive_world_target_ids": ["m1", "m0"],
+                "native_target_to_world_id": {"0": "m1", "1": "m0"},
+                "old_target_dot_ticks_after_switch_acked": 1,
             }
             receipt["world_kills"] = [
                 {"target_id": "m1", "ack_sha256": "ack-1"},
