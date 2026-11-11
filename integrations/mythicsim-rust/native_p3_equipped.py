@@ -454,13 +454,14 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                        request_sha256=getattr(exc, "request_sha256", None))
         return row
 
-    # One shared native baseline. Try the second Rust-supplied item when
-    # the first is refused, unscored, or has exactly the same measured score
-    # as the baseline. If both source alternatives refuse, attempt the third
-    # source-proposed item before leaving an occupied slot unscored. All
-    # evaluations, including refusals, debit the same paid budget.
+    # One shared native baseline. Give each source-occupied slot up to two
+    # distinct native comparisons before spending leftover paid budget on
+    # third-choice retries. Previously early slots could consume three calls
+    # each, starving later occupied slots under the same 44-attempt cap.
+    # Native refusals and unsuccessful comparisons remain paid attempts.
     rows = [score_request("baseline", reference)]
     requested_slots = []
+    deferred_unscored = []
     # A refused/failed native baseline has no comparable objective. Preserve
     # its authoritative status and debit exactly that paid call; trying gear
     # swaps cannot establish P3 sensitivity without a valid baseline.
@@ -486,11 +487,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             continue
         requested_slots.append(slot)
         valid_slot_score = False
-        for candidate_index, (alternative, item_swap) in enumerate(alternatives):
-            # A third paid probe is warranted only when the first two native
-            # outcomes have not scored this occupied slot at all.
-            if candidate_index >= 2 and valid_slot_score:
-                break
+        for alternative, item_swap in alternatives[:2]:
             if len(rows) >= max_paid_attempts:
                 break
             row = score_request("equipped", alternative, item_swap)
@@ -499,6 +496,14 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                 valid_slot_score = True
                 if row["score"] != rows[0]["score"]:
                     break
+        # A third source-proposed item is worthwhile only when neither of
+        # the first two attempts produced a valid native slot score.
+        if not valid_slot_score and len(alternatives) == 3:
+            deferred_unscored.append(alternatives[2])
+    for alternative, item_swap in deferred_unscored:
+        if len(rows) >= max_paid_attempts:
+            break
+        rows.append(score_request("equipped", alternative, item_swap))
     if reference != original:
         raise AssertionError("Native evaluation modified source reference")
     baseline_valid = rows[0]["status"] == "VALID"
