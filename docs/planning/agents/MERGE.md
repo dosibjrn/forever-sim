@@ -1,5 +1,12 @@
 # Merge — integration, affected-gate verification and sole M1 writer
 
+## Owner priority: integrate M0.3 → real M0.4 → M0.5 today (2026-11-11)
+
+At the start of each cycle, look at actual latest main and current work PRs, including Rust `dosibjrn/mythicsim-forever-engine` #49/#50 and Forever `#1409` (already merged) / `#1412` (historical dirty branch, do not blindly retry). Help integrate verified M0.3 API changes and the *single* generic Forever optimizer source safely; update pinned Rust SHA when the integrated API/recovery behavior is tested. Require focused changed-code behavior, not unrelated existing 12 Rust class failures or new SHA/provenance certificates. Do not wait for M1 acceptance, re-run immutable PASSes or spawn a new PR every hour.
+
+**True integration target:** exact `python -m src.v2.runner optimize --class warlock --tree unconstrained --start-level 20 --end-level 60 --level-stride 20 --n-mobs 2 --recover-at-end true --rng balanced --backend rust` on a pinned real engine yields a complete ranked compatible L20/L40/L60 two-mob native-paid path, with full HP+mana recovery and gear/talents/APL/pet. Merge and verify *actual measured output*, not a successful workflow with missing winners. Then integrate same-code stride 10 → 5 → 1 measured refinements (start L20 permitted). Work1 owns Rust engine operations; Work2 owns optimizer; Clean handles removals. Expedite targeted conflict resolution and keep the critical path runnable for the next fresh agent conversation.
+
+
 Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and only the relevant PRs, issues, PROCESS and gate sections. Read [P7 notes](P7.md) when a merged PR or dispatch request affects P7.
 
 ## Authority
