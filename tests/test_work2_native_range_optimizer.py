@@ -970,3 +970,40 @@ def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
     assert "inputs.m05_cache_run_id || '42980239306'" in m05
     assert "if: always()" in m05 and "path: project/runs/" in m05
     assert "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9" in m05
+
+
+def test_single_beam_pays_real_samples_without_inventing_competition(mode):
+    """A one-slot beam is a valid search limit, not a native refusal.
+
+    One authentic sampled path is provisional; it must not be called a
+    performance-ranked competition or a continuously simulated journey.
+    """
+    calls = []
+
+    def evaluator(*, level, parent, mob_count, **kwargs):
+        calls.append((level, parent is not None))
+        row = receipt(level, mob_count, "A", 7.0, parent, recovery=2.0)
+        row["talents"] = "100-0-0"  # source-prepared allocation, opaque to this test
+        return [row]
+
+    result = optimize(20, 40, 20, 2, 2, evaluate=evaluator,
+                      beam_width=1, mode=mode)
+    assert result["status"] == {
+        "independent": "INDEPENDENT_NATIVE_ANCHORS_PARTIAL",
+        "continuing": "SAMPLED_NATIVE_PREFIX_ONLY",
+        "compatible": "SAMPLED_COMPATIBLE_PATH_PROVISIONAL",
+    }[mode]
+    assert result["native_candidates_examined"] == 2
+    assert result["sampled_levels_completed"] == [20, 40]
+    assert result["rejected_native_attempts"] == []
+    assert calls == ([(20, False), (40, True)] if mode == "continuing"
+                     else [(20, False), (40, False)])
+    if mode == "independent":
+        assert result["ranked_alternatives"] == []
+        assert all(len(result["independent_level_rankings"][str(level)]) == 1
+                   for level in (20, 40))
+    else:
+        assert len(result["ranked_alternatives"]) == 1
+        assert result["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 14.0
+        assert all(step["receipt"]["native_full_recovery_paid"] is True
+                   for step in result["ranked_alternatives"][0]["steps"])
