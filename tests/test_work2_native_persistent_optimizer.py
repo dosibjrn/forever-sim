@@ -485,6 +485,10 @@ def test_generic_native_search_pays_rest_and_refuses_unverified_rolling(
     assert rest[0]["native_world_policy"]["rest_when_health_below"] == 0.3
     assert rolling[0]["status"] == "NATIVE_API_CANDIDATE_REFUSED"
     assert "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN" in rolling[0]["native_refusal"]
+    # Refused native worlds retain exact prepared source and engine identity.
+    assert rolling[0]["source_request_sha256"] == rest[0]["source_request_sha256"]
+    assert rolling[0]["engine_binary_sha256"] == rest[0]["engine_binary_sha256"]
+    assert rolling[0]["native_prepared"] is True
     assert Path(rolling[0]["native_unverified_receipt_file"]).is_file()
     assert any(h == m == 0.3 and apl is None for h, m, apl in called)
     assert any(apl is not None for _, _, apl in called)
@@ -548,6 +552,8 @@ def test_adaptive_revisit_pays_uncompared_native_rest_and_rolling_before_gear(
     assert follow_up[0]["source_request_sha256"] == initial[0]["source_request_sha256"]
     assert follow_up[1]["status"] == "NATIVE_API_CANDIDATE_REFUSED"
     assert "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN" in follow_up[1]["native_refusal"]
+    assert follow_up[1]["source_request_sha256"] == initial[0]["source_request_sha256"]
+    assert follow_up[1]["engine_binary_sha256"] == initial[0]["engine_binary_sha256"]
     assert Path(follow_up[1]["native_unverified_receipt_file"]).is_file()
     assert len(world_calls) == 6  # No bootstrap replay on the adaptive pass
     assert world_calls[-2][:2] == (0.3, 0.3)
@@ -1033,6 +1039,8 @@ def test_paid_world_failure_preserves_prepare_phase_and_axis(tmp_path, monkeypat
                         and row["proposal_axis"] in ("talent", "apl") for row in rows)
     assert all("NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL" in row["native_refusal"]
                for row in rows)
+    assert all(len(row["source_request_sha256"]) == 64
+               and len(row["engine_binary_sha256"]) == 64 for row in rows)
 
 
 @pytest.mark.parametrize("level", [20, 40])
