@@ -251,42 +251,55 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
-      - name: Checkout exact Work2 HEAD and source engine pin
+      - name: Checkout exact Work2 HEAD
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          submodules: recursive
-          lfs: true
+          fetch-depth: 0
+      - name: Checkout native API + source-level summon and spell-rank authority
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mythicsim-forever-engine
+          ref: 81b764fc8faa7cc46e384b7f90f395ac590b6c08
+          path: native-engine
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install required native world Python dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Verify exact source gitlink and build callable Rust API
+      - name: Verify pinned native API source and build real executable
         shell: bash
         run: |
           set -euo pipefail
-          selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
-          actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
-          test "$selected" = "$actual"
+          test "$(git -C native-engine rev-parse HEAD)" = "81b764fc8faa7cc46e384b7f90f395ac590b6c08"
+          grep -q 'fn run_native_api' native-engine/src/main.rs
           echo "FOREVER_HEAD=$(git rev-parse HEAD)"
-          echo "SELECTED_RUST_SHA=$selected"
-          cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
-          sha256sum integrations/mythicsim-rust/engine/target/debug/forever-engine
-      - name: Pay new L20 and L40 native gear, pet and APL candidates
+          echo "SELECTED_RUST_SHA=$(git -C native-engine rev-parse HEAD)"
+          cargo build --locked --manifest-path native-engine/Cargo.toml --bin forever-engine
+          sha256sum native-engine/target/debug/forever-engine
+      - name: Pay real independent L20 and L40 native gear, pet and APL candidates
         env:
           PYTHONUNBUFFERED: '1'
         run: |
-          set -euo pipefail
+          set -uo pipefail
           mkdir -p evidence/work2-native-paid-l20-l40
-          python -m src.v2.runner optimize \
-            --class warlock --tree unconstrained \
-            --start-level 20 --end-level 40 --level-stride 20 \
-            --n-mobs 2 --recover-at-end true --rng balanced --backend rust \
-            --budget 10 --beam-width 3 \
-            --native-binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
-            --out evidence/work2-native-paid-l20-l40/result.json \
-            --shortlist-out evidence/work2-native-paid-l20-l40/top-3.md
+          failed=0
+          for level in 20 40; do
+            echo "::group::Genuine paid native Warlock level $level"
+            python -m src.v2.runner optimize \
+              --class warlock --tree unconstrained \
+              --start-level "$level" --end-level "$level" --level-stride 1 \
+              --n-mobs 2 --recover-at-end true --rng balanced --backend rust \
+              --budget 36 --beam-width 3 \
+              --native-binary native-engine/target/debug/forever-engine \
+              --out "evidence/work2-native-paid-l20-l40/l${level}.json" \
+              --shortlist-out "evidence/work2-native-paid-l20-l40/l${level}-top-3.md"
+            code=$?
+            echo "L${level} native optimize exit code: $code"
+            if [ "$code" -ne 0 ]; then failed=$((failed+1)); fi
+            echo '::endgroup::'
+          done
+          exit "$failed"
       - name: Preserve genuine paid receipts, ranking and native refusals
         if: always()
         uses: actions/upload-artifact@v4
