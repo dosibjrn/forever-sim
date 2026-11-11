@@ -13,7 +13,7 @@ WORKFLOW = (Path(__file__).resolve().parents[2]
 
 def _job(name: str, text: str) -> str:
     match = re.search(
-        rf"(?ms)^  {re.escape(name)}:\n(.*?)(?=^  [a-zA-Z][a-zA-Z0-9_-]*:|\\Z)",
+        rf"(?ms)^  {re.escape(name)}:\n(.*?)(?=^  [a-zA-Z][a-zA-Z0-9_-]*:|\Z)",
         text,
     )
     assert match, f"missing workflow job: {name}"
