@@ -114,6 +114,12 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
                 row.get(field) != receipt.get(field)
                 for field in ("source_request_sha256", "engine_binary_sha256",
                               "talents", "gear", "apl", "pet")
+            ) or any(
+                row.get(projection) != receipt.get(original)
+                for projection, original in (
+                    ("native_elapsed_seconds", "elapsed_seconds"),
+                    ("terminal_recovery_seconds", "terminal_recovery_seconds"),
+                )
             ) or not _sha(receipt.get("native_raw_receipt_sha256"))
                 or not receipt.get("native_raw_receipt_file")):
             continue
@@ -156,8 +162,8 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
             "engine_binary_sha256": row["engine_binary_sha256"],
             "native_raw_receipt_sha256": paid["native_raw_receipt_sha256"],
             "native_raw_receipt_file": paid["native_raw_receipt_file"],
-            "charged_elapsed_seconds": row["native_elapsed_seconds"],
-            "terminal_recovery_seconds": row["terminal_recovery_seconds"],
+            "charged_elapsed_seconds": paid["elapsed_seconds"],
+            "terminal_recovery_seconds": paid["terminal_recovery_seconds"],
             "terminal_hp": paid["terminal_hp"],
             "terminal_max_hp": paid["terminal_max_hp"],
             "terminal_mana": paid["terminal_mana"],
