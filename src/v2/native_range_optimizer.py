@@ -362,13 +362,20 @@ def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
         refused = [row for row in rejected if row.get("level") == level]
         axes = Counter(row.get("receipt", {}).get("proposal_axis", "unknown")
                        for row in receipts)
+        attempted_axes = axes + Counter(row.get("proposal_axis") or "unknown"
+                                        for row in refused)
+        prepared_axes = axes + Counter(row.get("proposal_axis") or "unknown"
+                                       for row in refused
+                                       if row.get("native_prepared") is True)
         lines += [f"## Level {level}", "",
                   f"**Native paid qualified:** {len(receipts)}; "
                   f"**refused/unscored:** {len(refused)}; "
                   f"**attempts:** {result.get('native_attempts_by_level', {}).get(str(level), 0)}.",
-                  "**Paid proposal axes:** "
-                  + (", ".join(f"{axis}={count}" for axis, count in sorted(axes.items()))
-                     if axes else "none"),
+                  "**Observed axis counts, proposed/prepared/paid:** "
+                  + (", ".join(f"{axis}={attempted_axes[axis]}/"
+                               f"{prepared_axes[axis]}/{axes[axis]}"
+                               for axis in sorted(attempted_axes))
+                     if attempted_axes else "none"),
                   ""]
         if not receipts:
             lines += ["No paid, fully recovered candidate at this level.", ""]
@@ -412,7 +419,8 @@ def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
             ]
         for attempt in refused[:8]:
             lines.append(f"- Native refusal ({attempt.get('proposal_axis') or 'unknown'}; "
-                         f"prepared={attempt.get('native_prepared')}): "
+                         f"prepared={attempt.get('native_prepared')}; "
+                         f"code={attempt.get('native_refusal_code')}): "
                          f"{attempt.get('native_refusal') or attempt.get('reason')}")
         if refused:
             lines.append("")
@@ -648,6 +656,7 @@ def optimize(
                         "candidate_id": row.get("candidate_id"),
                         "reason": error, "native_status": row.get("status"),
                         "native_refusal": row.get("native_refusal"),
+                        "native_refusal_code": row.get("native_refusal_code"),
                         "native_prepared": row.get("native_prepared"),
                         "proposal_axis": row.get("proposal_axis"),
                     })
