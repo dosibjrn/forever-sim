@@ -99,6 +99,59 @@ jobs:
       - name: Test native paid receipt continuity and no-respec safety
         run: python -m pytest -q tests/test_prio_native_frontier_binary_identity.py tests/test_prio_native_range_receipt_status.py tests/test_work1_native_candidate_scoring.py tests/test_work2_warlock_next_level_source.py tests/test_work2_native_paid_banked_path_dp.py tests/test_work2_native_range_optimizer.py tests/test_work2_adaptive_native_finalists.py tests/test_work2_world_rest_comparison.py tests/test_native_paid_html.py tests/test_native_paid_sim_report.py tests/test_native_class_adapters.py tests/test_clean_native_paid_axis_breadth.py tests/test_work2_native_persistent_optimizer.py tests/test_work2_independent_native_anchors.py tests/test_work2_live_native_source_frontier.py tests/test_work2_native_paid_route_publisher.py tests/test_warlock_paid_artifact.py tests/test_work2_warlock_paid_range.py tests/test_work2_warlock_l10_root.py tests/test_work2_warlock_native_start_source.py tests/test_work1_warlock_shortlist_world.py tests/test_work1_full_family_shortlist.py tests/test_work1_paid_family_guide.py
 
+  # One branch-scoped M0.6 original native-paid sample comparison.
+  # This compiles only the selected Rust gitlink and runs one bounded generic
+  # optimize request. It neither replays 41-level M0.5 nor runs an M1 gate.
+  work2-m06-original-native:
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'work2/m06-adaptive-paid-finalists-20261111' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install current native world transport dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Compile exact selected MythicSim engine for paid M0.6
+        run: |
+          set -euo pipefail
+          selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
+          actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
+          test "$selected" = "$actual"
+          echo "M06_EXACT_SELECTED_RUST_SHA=$actual"
+          cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+      - name: Original two-level adaptive native-paid optimize and ranked guide
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runs
+          python -m src.v2.runner optimize \
+            --class warlock --tree unconstrained \
+            --start-level 20 --end-level 40 --level-stride 20 \
+            --n-mobs 2 --budget 12 --recover-at-end true \
+            --rng balanced --backend rust \
+            --native-binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --out runs/m06-adaptive-original.json \
+            --guide-out runs/m06-adaptive-original.md \
+            --shortlist-out runs/m06-adaptive-shortlist.md \
+            2>&1 | tee runs/m06-adaptive-original.log
+      - name: Keep original source-native receipts or precise refusal
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-m06-adaptive-original-${{ github.sha }}
+          path: |
+            runs/m06-adaptive-original.json
+            runs/m06-adaptive-original.md
+            runs/m06-adaptive-shortlist.md
+            runs/m06-adaptive-original.log
+            runs/native-api-paid-cache/
+          if-no-files-found: warn
+          retention-days: 3
+
   # The real native 100/100 comparison is deliberately opt-in, never an
   # automatic response to every source push or a rerun of paid L20–L60 routes.
   # The old PR label launcher replayed the already-measured L46→L47
