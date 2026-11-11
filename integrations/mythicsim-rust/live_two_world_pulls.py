@@ -754,13 +754,17 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
     return dict(source)
 
 
-def _acked_old_target_live_dot_ticks(*, health_before: float, ack: dict) -> int:
+def _acked_old_target_live_dot_ticks(*, health_before: float, ack: dict,
+                                      switch_native_clock_ns: int) -> int:
     """Only count a native periodic tick while A still has positive world HP.
 
     Source effects may be emitted in the same batch AFTER the lethal A event.
     Such overkill events are ACK-consumed but cannot prove a live rolling DoT.
-    Replay their validated native event order against the actual gsim pre-ACK
-    health. No Python Warcraft damage calculation or source legality decision.
+    Likewise a DoT tick buffered before the source A→B switch is not evidence
+    of post-switch damage merely because it arrives in the next ACK batch.
+    Replay native event order against actual gsim pre-ACK health and require
+    an authentic source event timestamp strictly after the switch. No Python
+    Warcraft damage calculation or source legality decision.
     """
     health = float(health_before)
     applied = set(ack["applied_event_ids"])
@@ -773,7 +777,9 @@ def _acked_old_target_live_dot_ticks(*, health_before: float, ack: dict) -> int:
         amount = effect.get("damage", 0)
         if type(amount) not in (int, float) or not isfinite(amount) or amount <= 0:
             continue
-        if health > 0 and effect.get("periodic") is True:
+        if (health > 0 and effect.get("periodic") is True
+                and type(effect.get("native_time_ns")) is int
+                and effect["native_time_ns"] > switch_native_clock_ns):
             count += 1
         health = max(0., health - float(amount))
     return count
@@ -1069,7 +1075,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             if (rolling_switch is not None
                     and before_health[targets[0]] > world.targets[targets[0]].health):
                 old_target_dot_ticks_after_switch += _acked_old_target_live_dot_ticks(
-                    health_before=before_health[targets[0]], ack=ack)
+                    health_before=before_health[targets[0]], ack=ack,
+                    switch_native_clock_ns=rolling_switch["switch_native_clock_ns"])
             newly_dead = _new_source_acked_world_kills(
                 world=world, before=before_health, ack=ack,
                 clock_ns=clock_ns, overlap=rolling_switch is not None,

@@ -331,19 +331,47 @@ def test_old_a_dot_counts_only_actual_predeath_world_damage():
             "native-effect-1", "native-effect-2", "native-effect-3"],
         "applied_events": [
             {"event_id": "native-effect-1", "native_target_index": 1,
-             "damage": 40., "periodic": False},
+             "damage": 40., "periodic": False, "native_time_ns": 120_000_000},
             {"event_id": "native-effect-2", "native_target_index": 0,
-             "damage": 12., "periodic": True},
+             "damage": 12., "periodic": True, "native_time_ns": 121_000_000},
             {"event_id": "native-effect-3", "native_target_index": 0,
-             "damage": 25., "periodic": True},
+             "damage": 25., "periodic": True, "native_time_ns": 122_000_000},
         ],
     }
-    assert count(health_before=10., ack=ack) == 1
-    assert count(health_before=0., ack=ack) == 0
+    assert count(health_before=10., ack=ack, switch_native_clock_ns=100_000_000) == 1
+    assert count(health_before=0., ack=ack, switch_native_clock_ns=100_000_000) == 0
     # A real nonperiodic lethal preceding a periodic event cannot turn
     # subsequent overkill into a rolling DoT witness.
     ack["applied_events"][1]["periodic"] = False
-    assert count(health_before=10., ack=ack) == 0
+    assert count(health_before=10., ack=ack, switch_native_clock_ns=100_000_000) == 0
+
+
+
+def test_post_switch_tick_requires_original_source_timestamp_not_late_ack():
+    count = _bridge["_acked_old_target_live_dot_ticks"]
+    ack = {
+        "applied_event_ids": ["native-effect-1", "native-effect-2"],
+        "applied_events": [
+            {"event_id": "native-effect-1", "native_target_index": 0,
+             "damage": 4., "periodic": True, "native_time_ns": 90_000_000},
+            {"event_id": "native-effect-2", "native_target_index": 0,
+             "damage": 6., "periodic": True, "native_time_ns": 110_000_000},
+        ],
+    }
+    # First effect reaches gsim in the later source batch, but happened
+    # BEFORE the acknowledged 100ms A→B handoff. Only the second proves
+    # that DoTs were still damaging the living old A after B selection.
+    kwargs = {"health_before": 10., "ack": ack,
+              "switch_native_clock_ns": 100_000_000}
+    assert count(**kwargs) == 1
+    ack["applied_events"][1]["native_time_ns"] = 100_000_000
+    assert count(**kwargs) == 0  # same instant is not strictly after switch
+    ack["applied_events"][1]["native_time_ns"] = 110_000_000
+    ack["applied_events"][0]["damage"] = 10.
+    assert count(**kwargs) == 0  # killed A before switch: late overkill
+    ack["applied_events"][0]["damage"] = 4.
+    del ack["applied_events"][1]["native_time_ns"]
+    assert count(**kwargs) == 0  # missing timestamp is not evidence
 
 
 def test_unacked_selected_dead_world_is_not_range_credential():
