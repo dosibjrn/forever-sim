@@ -56,7 +56,11 @@ def test_clock_ack_job_ignores_unrelated_gate_helper_and_priest_unit_test_edits(
                  "tests/test_wf_native_priest_l20_paid.py"):
         assert path not in ack_paths
         assert path in source_paths
-        assert path in source.split("jobs:", 1)[1]
+    # The generic source suite invokes the Priest test directly, and its
+    # P4/P5 cold-snapshot regression imports the helper under test.
+    source_job = source.split("jobs:", 1)[1]
+    assert "tests/test_wf_native_priest_l20_paid.py" in source_job
+    assert "tests/test_work1_p4_p5_single_cold_snapshot.py" in source_job
 
     # Keep real clock, native world and the legacy Warlock driver exercised:
     # the ACK suite actually imports this driver through its paid-chain tests.
