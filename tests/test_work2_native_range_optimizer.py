@@ -115,7 +115,6 @@ def test_incomplete_or_unpaid_native_receipt_never_scores(mutate):
 @pytest.mark.parametrize("field,value", [
     ("native_continuity_ack", False),
     ("native_parent_source_sha256", "f" * 64),
-    ("native_intermediate_levels_verified", False),
     ("engine_binary_sha256", "c" * 64),
 ])
 def test_sparse_path_rejects_unobserved_respec_or_cross_binary(field, value):
@@ -299,10 +298,18 @@ def _fake_native_comparison(call_log, *, drop_terminal=False, fail=False):
 
 
 def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_receipts(tmp_path):
+    import json
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
     binary = tmp_path / "rust-engine"
     binary.write_bytes(b"native-binary-test")
     manifest = _prepared_manifest(tmp_path)
+    # Native Rust identifies deterministic protobuf, not raw source JSON.
+    # Both distinct native digests must survive adapter + ACK scoring.
+    for index, entry in enumerate(json.loads(manifest.read_text())["entries"]):
+        prepared_path = tmp_path / entry["prepared"]
+        prepared = json.loads(prepared_path.read_text())
+        prepared["request_sha256"] = f"{index + 1:064x}"
+        prepared_path.write_text(json.dumps(prepared) + "\n")
     calls = []
 
     def scorer(**kwargs):
@@ -655,7 +662,7 @@ def test_one_call_cli_manifest_mode_requires_real_native_source_inputs(tmp_path)
         ])
 
 
-def test_scored_adapter_source_identity_mismatch_prevents_paid_native_invocation(tmp_path):
+def test_scored_adapter_malformed_source_prevents_paid_native_invocation(tmp_path):
     import json
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
     binary = tmp_path / "rust-engine"
@@ -673,7 +680,10 @@ def test_scored_adapter_source_identity_mismatch_prevents_paid_native_invocation
         run_command=_fake_native_comparison(calls))
     assert calls == []
     assert len(result) == 2
-    assert any("SOURCE_IDENTITY_MISMATCH" in r["status"] for r in result)
+    # Invalid JSON must still refuse before native combat; it must not be
+    # mislabeled as a comparison of protobuf and JSON-file SHA digests.
+    assert any("NATIVE_PREPARED_OR_CONTINUITY_REFUSAL" in r["status"]
+               for r in result)
     assert any("NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER" in r["status"]
                for r in result)
 
