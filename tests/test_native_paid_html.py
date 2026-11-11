@@ -93,7 +93,8 @@ def test_offline_html_contains_bis_style_gear_talents_apl_pet_provenance():
     page = render_native_paid_html(result, level=20)
     assert page.startswith("<!doctype html>")
     assert "<style>" in page and "<html" in page
-    assert "<script" not in page and "<link rel=" not in page
+    assert '<script async src="https://wow.zamimg.com/js/tooltips.js"></script>' in page
+    assert "Equipped Wand" in page and "<link rel=" not in page
     assert page.index("35.525") < page.index("50.000")
     for expected in ("Equipped Wand", "Improved Corruption", "Bane of Agony",
                      "Succubus", "Native verification and traceability",
@@ -215,8 +216,9 @@ def test_reference_page_has_all_main_bis_guide_sections_and_offline_content():
     ):
         assert heading.lower() in page.lower()
     assert 'target="_blank" rel="noopener noreferrer"' in page
-    # Optional clickable item lookups do not load scripts, icons or styles.
-    assert "<script" not in page and "<link rel=" not in page
+    # Original content is present offline; optional Wowhead overlays load online.
+    assert '<script async src="https://wow.zamimg.com/js/tooltips.js"></script>' in page
+    assert "Equipped Wand" in page and "<link rel=" not in page
 
 
 def test_duplicate_native_slot_labels_are_flagged_not_proclaimed_bis():
