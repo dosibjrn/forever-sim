@@ -836,13 +836,20 @@ class PersistentNativeEvaluator:
             if pet is not None:
                 axis_sources.append((pet, "pet"))
         first = sources.pop(0)
+        # With source-native gear/pet options, reserve a slot for a real
+        # alternative talent family before the first burst of APL mutations.
+        # A small paid budget must compare builds, not just one build's
+        # rotations. Rust prepare still decides whether the family is legal.
+        early_talent = sources.pop(0) if sources and axis_sources else None
         sources = [(first, "talent"), *(
                        [(copy.deepcopy(first), "world_rest_30pct", 0.3, 0.3)]
                        if self.compare_world_rest_30 else []), *(
                        [(copy.deepcopy(first), "world_rolling_50pct",
                          1.0, 1.0, copy.deepcopy(ROLLING_WORLD_APL_50))]
                        if self.compare_world_rolling_50 else []),
-                   *axis_sources,
+                   *axis_sources[:2],
+                   *([(early_talent, "talent")] if early_talent is not None else []),
+                   *axis_sources[2:],
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
         seen: set[str] = set()
@@ -895,6 +902,14 @@ class PersistentNativeEvaluator:
                     # Under the normal budget, first gear and pet attempts
                     # precede APL; with no source axes, APL follows the seed.
                     insert_at = min(len(sources), index + min(2, len(axis_sources)))
+                    if early_talent is not None:
+                        # Do not let several APL variants consume the paid
+                        # budget before another sourced talent allocation.
+                        first_family = next((
+                            pos for pos in range(index, len(sources))
+                            if sources[pos][1] == "talent"), None)
+                        if first_family is not None:
+                            insert_at = max(insert_at, first_family + 1)
                     if self.compare_world_rest_30 or self.compare_world_rolling_50:
                         # The opt-in world-policy challenger gets a bounded
                         # native attempt before APL variants spend the budget.

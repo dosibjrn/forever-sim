@@ -407,6 +407,50 @@ def test_native_prepared_apl_proposals_are_scored_before_more_talent_families(
         "raid"]["parties"][0]["players"][0]["equipment"]["items"])
                for request in requests)
 
+def test_bounded_native_search_pays_alternative_talent_before_apl_burst(
+        tmp_path, monkeypatch):
+    """Gear/pet/rotation variation must not consume every small paid slot.
+
+    Synthetic Rust options and receipts test candidate order only. Each
+    alternative still goes through native prepare and actual-world execution.
+    """
+    def source_items(source, options):
+        for item_id in (0, 8001, 8002):
+            proposal = copy.deepcopy(source)
+            proposal["raid"]["parties"][0]["players"][0][
+                "equipment"]["items"][0] = {"id": item_id}
+            yield proposal
+
+    def source_pets(source, options):
+        proposal = copy.deepcopy(source)
+        proposal["raid"]["parties"][0]["players"][0].setdefault(
+            "warlock", {}).setdefault("options", {}).setdefault(
+            "classOptions", {})["summon"] = "Voidwalker"
+        yield proposal
+
+    def source_apls(source, prepared, options):
+        for spell_id in (70001, 70002, 70003):
+            proposal = copy.deepcopy(source)
+            proposal["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"][-1] = {
+                    "action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+            yield proposal
+
+    monkeypatch.setattr(api, "_source_item_alternatives", source_items)
+    monkeypatch.setattr(api, "_source_pet_alternatives", source_pets)
+    monkeypatch.setattr(api, "_level_aware_apl_variants", source_apls)
+    native = make_evaluator(tmp_path, monkeypatch)
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=4,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert [row["proposal_axis"] for row in rows] == [
+        "talent", "gear", "pet", "talent"]
+    assert len({row["talents"] for row in rows}) >= 2
+    assert all(row["native_full_recovery_paid"] for row in rows)
+
+
 def test_forward_talent_proposals_preserve_earlier_paid_ancestry_without_respec():
     from tools.wf_warlock_native_persistent_optimizer import _forward_native_talent_hints
     trees = [{"talents": [{"index": idx, "max_rank": 5}
