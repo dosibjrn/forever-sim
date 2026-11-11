@@ -409,7 +409,9 @@ def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch
     seen = []
 
     class FakePersistentNativeEvaluator:
-        def __init__(self, binary, source, artifact_dir, *, target_hp=None):
+        def __init__(self, binary, source, artifact_dir, *, target_hp=None,
+                     explore_world_policies=False):
+            assert explore_world_policies is True  # ordinary Warlock CLI
             self.target_hp = target_hp
 
         def __call__(self, **request):
