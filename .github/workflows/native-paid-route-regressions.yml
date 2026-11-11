@@ -260,7 +260,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9
+          ref: 41038145c97c11665b80e93529c1cf59b2259b6e
           path: native-engine
       - uses: actions/setup-python@v5
         with:
@@ -271,12 +271,53 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C native-engine rev-parse HEAD)" = "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9"
+          test "$(git -C native-engine rev-parse HEAD)" = "41038145c97c11665b80e93529c1cf59b2259b6e"
           grep -q 'fn run_native_api' native-engine/src/main.rs
           echo "FOREVER_HEAD=$(git rev-parse HEAD)"
           echo "SELECTED_RUST_SHA=$(git -C native-engine rev-parse HEAD)"
           cargo build --locked --manifest-path native-engine/Cargo.toml --bin forever-engine
           sha256sum native-engine/target/debug/forever-engine
+      - name: Prove exact native API supplies L20 and L40 gear slots and summon alternatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from tools.wf_warlock_native_persistent_optimizer import NativeApiSession
+
+          session = NativeApiSession(
+              Path("native-engine/target/debug/forever-engine"))
+          try:
+              for level in (20, 40):
+                  options = session.request({
+                      "op": "options", "class": "warlock", "level": level})
+                  items = [
+                      item for item in options.get("items", [])
+                      if isinstance(item, dict)
+                      and item.get("eligibility") == "native_eligible"
+                      and isinstance(item.get("native"), dict)
+                      and isinstance(item["native"].get("slot"), str)
+                  ]
+                  summons = options.get("summons")
+                  print("NATIVE_SOURCE_AXIS_OPTIONS", {
+                      "level": level,
+                      "source_revision": options.get("source_revision"),
+                      "native_slot_items": len(items),
+                      "native_slot_variants": len({
+                          (item["native"]["slot"], item["item_id"])
+                          for item in items}),
+                      "native_summons": summons,
+                      "spells": len(options.get("spells", [])),
+                  }, flush=True)
+                  # This checks transport/source availability, NOT actual legal
+                  # builds or a paid win. Rust prepare and world are authoritative.
+                  if not items or not isinstance(summons, list) or not any(
+                          pet != "NoSummon" for pet in summons):
+                      raise RuntimeError(
+                          f"L{level}: source-native Warlock gear/summon options unavailable")
+          finally:
+              session.close()
+          PY
       - name: Pay real independent L20 and L40 native gear, pet and APL candidates
         env:
           PYTHONUNBUFFERED: '1'
