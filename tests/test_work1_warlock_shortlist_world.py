@@ -312,6 +312,9 @@ def test_native_cross_tree_workflow_manual_only_and_evidence_preservation():
     paid_l20_l40 = workflow.split("  work2-native-paid-l20-l40:", 1)[1]
     assert "github.event.action == 'synchronize'" in paid_l20_l40
     assert "contains(github.event.pull_request.labels.*.name, 'work2-native-paid-l20-l40')" in paid_l20_l40
+    assert "--start-level 20 --end-level 40 --level-stride 20" in paid_l20_l40
+    assert "--n-mobs 2 --recover-at-end true --rng balanced --backend rust" in paid_l20_l40
+    assert "--shortlist-out evidence/work2-native-paid-l20-l40/top-3.md" in paid_l20_l40
     assert "    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}" in workflow
     assert "PREDECESSOR_BINARY_SHA256: ${{ inputs.predecessor_binary_sha256 }}" in workflow
     assert "FROM_LEVEL: ${{ inputs.from_level }}" in workflow
