@@ -1155,3 +1155,53 @@ def test_sampled_guide_refuses_unmeasured_or_partial_path():
             "ranked_alternatives": [{"steps": [{"level": 20}]}],
             "sampled_levels_requested": [20, 21],
         })
+
+
+def test_single_compatible_native_paid_path_publishes_provisional_guide(
+        tmp_path):
+    """One genuine paid compatible path must not be a false publication veto.
+
+    No native gameplay is mocked as proof here: this verifies the optimizer's
+    receipt transport and player-facing presentation without extra payment.
+    """
+    import json
+    from copy import deepcopy
+    from src.v2.native_range_optimizer import main, render_sampled_build_guide
+
+    calls = []
+
+    def evaluator(*, level, parent, mob_count, **kwargs):
+        calls.append(level)
+        row = receipt(level, mob_count, "A", 7.0, recovery=2.0)
+        row["talents"] = "100-0-0"
+        row["gear"] = {"items": [{"id": 1234}]}
+        row["apl"] = {"priorityList": []}
+        row["pet"] = None
+        return [row]
+
+    result_file = tmp_path / "result.json"
+    guide_file = tmp_path / "GUIDE.md"
+    rc = main([
+        "--class", "warlock", "--start-level", "20",
+        "--end-level", "40", "--level-stride", "20",
+        "--n-mobs", "2", "--budget", "2", "--beam-width", "1",
+        "--out", str(result_file), "--guide-out", str(guide_file),
+    ], evaluate=evaluator)
+    result = json.loads(result_file.read_text())
+    assert rc == 0
+    assert calls == [20, 40]
+    assert result["status"] == "SAMPLED_COMPATIBLE_PATH_PROVISIONAL"
+    assert len(result["ranked_alternatives"]) == 1
+    guide = guide_file.read_text()
+    assert "Only measured compatible sampled score" in guide
+    assert "provisional measured baseline, not an optimized winner" in guide
+    assert "Not a continuous leveling route" in guide
+    assert guide == render_sampled_build_guide(result)
+
+    # The real native payment and both-full terminal-resource requirements
+    # remain obligatory even when only one compatible path exists.
+    unpaid = deepcopy(result)
+    unpaid["ranked_alternatives"][0]["steps"][0]["receipt"][
+        "native_full_recovery_paid"] = False
+    with pytest.raises(ValueError, match="unpaid or refused native receipt"):
+        render_sampled_build_guide(unpaid)
