@@ -488,8 +488,9 @@ def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> b
         and all(isinstance(value, str) and value for value in live_ids)
         and set(live_ids) == set(target_ids)
         and isinstance(mapping, dict) and len(mapping) == 2
-        and all(isinstance(index, str) and index.isdigit()
-                for index in mapping)
+        # Native slots are 0 and 1 for this exact two-world-target API.
+        # Arbitrary numeric keys would permit a mismapped paid cache hit.
+        and set(mapping) == {"0", "1"}
         and all(isinstance(value, str) and value
                 for value in mapping.values())
         and set(mapping.values()) == set(target_ids)

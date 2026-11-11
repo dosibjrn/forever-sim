@@ -296,6 +296,8 @@ def test_rolling_paid_overlap_rejects_unjoined_native_and_world_target_ids():
          if k != "native_target_to_world_id"},
         dict(overlap, native_target_to_world_id={"0": "m1", "1": "m1"}),
         dict(overlap, native_target_to_world_id={"zero": "m1", "1": "m0"}),
+        dict(overlap, native_target_to_world_id={"2": "m1", "3": "m0"}),
+        dict(overlap, native_target_to_world_id={"00": "m1", "01": "m0"}),
         dict(overlap, simultaneously_alive_world_target_ids=["m1", "m1"]),
         dict(overlap, simultaneously_alive_world_target_ids=["m1", "other"]),
     ):
@@ -321,6 +323,11 @@ def test_rolling_paid_cache_rejects_missing_native_world_join():
             "0": "m1", "1": "not-killed"})
     assert not _native_rolling_receipt_verified(
         broken, ROLLING_WORLD_APL_50)
+    assert not _native_rolling_receipt_verified(
+        dict(source, native_world_overlap=dict(
+            source["native_world_overlap"],
+            native_target_to_world_id={"2": "m1", "3": "m0"})),
+        ROLLING_WORLD_APL_50)
     assert not _native_rolling_receipt_verified(
         dict(source, world_kills=[{"target_id": {}, "ack_sha256": "first"},
                                   {"target_id": "m0", "ack_sha256": "second"}]),
@@ -359,3 +366,14 @@ def test_serial_paid_cache_rejects_native_applied_rolling_world_apl():
         {"native_world_apl": ROLLING_WORLD_APL_50}, None)
     assert not _native_rolling_receipt_verified(
         {"native_world_overlap_verified": True}, None)
+
+
+def test_serial_comparison_rejects_native_overlap_even_without_verified_flag():
+    """A receipt containing unclaimed native overlap cannot be a serial control."""
+    baseline = paid_row(1.0, 45)
+    baseline["native_world_overlap"] = {"max_concurrent_alive_targets": 1}
+    comparison = measured_world_rolling_head_to_head(
+        result_for([baseline, rolling_paid_row()]), level=20)
+    assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+    assert comparison["serial_paid_candidates"] == 0
+    assert comparison["winner"] is None

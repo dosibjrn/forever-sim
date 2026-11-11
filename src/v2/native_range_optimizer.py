@@ -106,8 +106,9 @@ def _receipt_error(
                        for value in live_ids)
                 or set(live_ids) != set(target_ids)
                 or not isinstance(mapping, Mapping) or len(mapping) != 2
-                or any(not isinstance(index, str) or not index.isdigit()
-                       for index in mapping)
+                # Only the two requested native 0/1 slots can be bound to
+                # the two living gsim targets, not arbitrary numeric keys.
+                or set(mapping) != {"0", "1"}
                 or any(not isinstance(value, str) or not value
                        for value in mapping.values())
                 or set(mapping.values()) != set(target_ids)):
@@ -268,7 +269,8 @@ def measured_world_rolling_head_to_head(
         mode = policy.get("pull_mode")
         if (mode == "serial" and rest_matched and "world_apl" not in policy
                 and paid.get("native_world_apl") is None
-                and paid.get("native_world_overlap_verified") is not True):
+                and paid.get("native_world_overlap_verified") is not True
+                and paid.get("native_world_overlap") is None):
             accepted["serial"].append(row)
         elif (mode == "rolling" and rest_matched
                 and policy.get("world_apl") == {
