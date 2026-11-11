@@ -1224,9 +1224,16 @@ def test_rolling_world_apl_unacknowledged_serial_receipt_is_unranked(
         rows = native(
             level=20, parent=None, mob_count=2, budget=2,
             rng_mode="balanced", iterations=1, recover_to_full=True)
+        # Even if the native policy was ignored, preserve the original
+        # response and refuse the same policy again instead of laundering it
+        # through a successful serial paid-cache hit.
+        repeated = native(
+            level=20, parent=None, mob_count=2, budget=2,
+            rng_mode="balanced", iterations=1, recover_to_full=True)
     finally:
         native.close()
-    assert observed == [None, api.ROLLING_WORLD_APL_50]
+    assert observed == [None, api.ROLLING_WORLD_APL_50,
+                        api.ROLLING_WORLD_APL_50]
     assert [row["status"] for row in rows] == [
         "MEASURED_NATIVE_FULLY_RECOVERED", "NATIVE_API_CANDIDATE_REFUSED",
     ]
@@ -1234,6 +1241,16 @@ def test_rolling_world_apl_unacknowledged_serial_receipt_is_unranked(
     assert rows[1]["native_world_policy"]["world_apl"] == (
         api.ROLLING_WORLD_APL_50)
     assert "ROLLING_APL_NOT_PROVEN" in rows[1]["native_refusal"]
+    first_path = Path(rows[1]["native_unverified_receipt_file"])
+    second_path = Path(repeated[1]["native_unverified_receipt_file"])
+    assert first_path.is_file() and second_path.is_file()
+    assert first_path != second_path
+    assert json.loads(first_path.read_text())["actual_2d_ack"] is True
+    assert hashlib.sha256(first_path.read_bytes()).hexdigest() == (
+        rows[1]["native_unverified_receipt_sha256"])
+    assert hashlib.sha256(second_path.read_bytes()).hexdigest() == (
+        repeated[1]["native_unverified_receipt_sha256"])
+    assert len(list((tmp_path / "paid").glob("*.native.unverified.json"))) == 2
     assert len(list((tmp_path / "paid").glob("*.native.json"))) == 1
 
 
