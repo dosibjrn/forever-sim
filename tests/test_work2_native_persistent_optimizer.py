@@ -729,6 +729,7 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
         def request(self, payload):
             if payload["op"] == "options":
                 result = super().request(payload)
+                learned_rank = 80004 if payload["level"] == 40 else 80003
                 result.update({
                     "schema_version": 1,
                     "summons": ["NoSummon", "Imp", "Voidwalker"],
@@ -742,14 +743,16 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
                     ],
                     "spells": [
                         {"spell_id": 1088, "name": "Shadow Bolt", "rank": "Rank 2"},
-                        {"spell_id": 80003, "name": "Shadow Bolt", "rank": "Rank 4"},
+                        {"spell_id": learned_rank, "name": "Shadow Bolt",
+                         "rank": "Rank 6" if payload["level"] == 40 else "Rank 4"},
                     ],
                 })
                 return result
             result = super().request(payload)
+            learned_rank = 80004 if payload["actor_level"] == 40 else 80003
             result["player"]["spells"] = [{
                 "flags": ["SpellFlagAPL"],
-                "action_id": {"spell_id": 80003},
+                "action_id": {"spell_id": learned_rank},
             }]
             return result
 
@@ -786,7 +789,8 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
                         if "castSpell" in priority.get("action", {})}
     assert {8001, 8002} <= gear_ids
     assert {"Imp", "Voidwalker"} & summons
-    assert 80003 in requested_spells
+    assert (80004 if level == 40 else 80003) in requested_spells
+    assert (80003 if level == 40 else 80004) not in requested_spells
     assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED" for row in rows)
     assert len(paid) == len(rows) == 10
     assert {"gear", "pet", "apl"} <= {row["proposal_axis"] for row in rows}
