@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
+from src.game.runtime.native_step_protocol import snapshot_gsim_world
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from src.game.model import ActorDefinition, ResourceDefinition
 from src.game.runtime import ActorState, CombatRuntime, TargetState
