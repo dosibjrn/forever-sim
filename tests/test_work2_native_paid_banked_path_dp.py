@@ -101,7 +101,8 @@ def test_native_mode_does_not_launder_analytic_nodes_or_second_guess_rust():
 
     native_paid = paid_node(20, build + ("z",), 18.0)
     path = solve_path_dp(
-        {20: [native_paid]}, model=ReceiptOnlyModel(), native_paid=True)
+        {20: [native_paid]}, weights={20: 1.0},
+        model=ReceiptOnlyModel(), native_paid=True)
     assert [step.node for step in path.steps] == [native_paid]
     assert path.cumulative_s == 18.0
 
