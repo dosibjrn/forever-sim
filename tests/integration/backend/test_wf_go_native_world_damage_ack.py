@@ -605,3 +605,30 @@ def test_unbound_native_second_target_rejected_atomically_before_old_dot_applies
     with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
         GsimNativeDamageWorldApplier(rt).apply(tick, response)
     assert {key: mob.health for key, mob in rt.targets.items()} == before
+
+
+
+def test_serial_handoff_cannot_erase_still_live_old_dot_target():
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)  # m1 remains alive.
+    rt.engage_target("m0")
+    rt.select_target("m0")
+    applier.begin_overlapping_world_target("m0")
+    # The selected new target dies, while the original target still has
+    # its own native DoTs and distinct world identity.
+    source_event = reply0["native_damage_events"][0]
+    tick1, reply1 = _native_second_tick(rt, reply0, sequence=1, native_events=[
+        {**source_event, "event_id": "native-effect-2",
+         "native_time_ns": 100_000_000, "native_target_index": 1,
+         "native_target_unit_index": 2, "native_target_label": "second-mob",
+         "damage": rt.targets["m0"].health + 1.0},
+    ])
+    ack = applier.apply(tick1, reply1)
+    assert not rt.targets["m0"].alive and rt.targets["m1"].alive
+    assert ack["native_target_health_acks"][0]["world_target_id"] == "m0"
+    rt.select_target("m1")
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="PREVIOUS_NATIVE_TARGET_STILL_LIVE"):
+        applier.begin_next_world_target("m1")
+    assert applier._native_target_ids == {0: "m1", 1: "m0"}
