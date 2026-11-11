@@ -757,15 +757,24 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
 def _new_source_acked_world_kills(*, world: CombatRuntime,
                                   before: dict[str, float],
                                   ack: dict, clock_ns: int,
-                                  overlap: bool) -> list[dict]:
-    """Record actual 2D kills by world identity, not selected target."""
+                                  overlap: bool,
+                                  native_target_ids: tuple[str, str] | None = None) -> list[dict]:
+    """Record actual 2D kills using the explicit native slot/world ID binding."""
     rows = ack.get("native_target_health_acks") if overlap else None
-    # Ordered native 0=A, 1=B world identities: a lethal world ID must be
-    # acknowledged from the same native slot, not just a matching HP value.
-    if overlap and len(before) != 2:
-        raise AssertionError("RUST_TWO_WORLD_KILL_SLOT_MAP_INVALID")
+    # In a joint Fight slot 0 is original A and slot 1 is acquired B.
+    # Do not derive those bindings from snapshot dictionary insertion order.
+    if overlap:
+        if (not isinstance(native_target_ids, tuple)
+                or len(native_target_ids) != 2
+                or any(not isinstance(value, str) or not value
+                       for value in native_target_ids)
+                or len(set(native_target_ids)) != 2
+                or set(native_target_ids) != set(before)):
+            raise AssertionError("RUST_TWO_WORLD_KILL_SLOT_MAP_INVALID")
+        slot_by_id = {world_id: index
+                      for index, world_id in enumerate(native_target_ids)}
     deaths = []
-    for native_slot, (target_id, previous_hp) in enumerate(before.items()):
+    for target_id, previous_hp in before.items():
         after_hp = float(world.targets[target_id].health)
         if previous_hp <= 0 or after_hp != 0:
             continue
@@ -773,7 +782,7 @@ def _new_source_acked_world_kills(*, world: CombatRuntime,
             matched = [row for row in (rows if isinstance(rows, list) else [])
                        if isinstance(row, dict)
                        and type(row.get("native_target_index")) is int
-                       and row["native_target_index"] == native_slot
+                       and row["native_target_index"] == slot_by_id[target_id]
                        and row.get("world_target_id") == target_id
                        and row.get("world_target_health_before") == previous_hp
                        and row.get("world_target_health_after") == 0]
@@ -1044,7 +1053,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     for effect in ack["applied_events"])
             newly_dead = _new_source_acked_world_kills(
                 world=world, before=before_health, ack=ack,
-                clock_ns=clock_ns, overlap=rolling_switch is not None)
+                clock_ns=clock_ns, overlap=rolling_switch is not None,
+                native_target_ids=targets[:2] if rolling_switch is not None else None)
             for death in newly_dead:
                 if death["target_id"] in {k["target_id"] for k in kills}:
                     raise AssertionError("RUST_TWO_WORLD_DUPLICATE_KILL")
