@@ -5,6 +5,7 @@ M0.4 results. Native world mechanics and original ACKs are owned by Rust.
 """
 import copy
 import hashlib
+import io
 import json
 from pathlib import Path
 
@@ -12,6 +13,46 @@ import pytest
 
 from src.v2.native_range_optimizer import optimize
 from tools import wf_warlock_native_persistent_optimizer as api
+
+
+def rust_wire_request(frame, payload):
+    """Drive the actual NativeApiSession.request parser with one Rust NDJSON frame."""
+    class WireProcess:
+        def __init__(self):
+            self.stdin = io.StringIO()
+            self.stdout = io.StringIO(json.dumps(frame) + "\n")
+
+        def poll(self):
+            return None
+
+    session = api.NativeApiSession.__new__(api.NativeApiSession)
+    session.process = WireProcess()
+    try:
+        return session.request(payload)
+    finally:
+        assert json.loads(session.process.stdin.getvalue()) == payload
+
+
+def test_native_api_session_preserves_rust_wire_refusal_and_legacy_fallback():
+    request = {"op": "advance", "from_level": 20, "to_level": 21}
+    frame = {
+        "ok": False,
+        "error": "native level transition unavailable",
+        "refusal": {
+            "code": "native_level_transition_unsupported",
+            "reason": "post-combat actor and XP are not retained",
+        },
+    }
+    with pytest.raises(api.NativeApiRefusal) as failure:
+        rust_wire_request(frame, request)
+    assert failure.value.code == "native_level_transition_unsupported"
+    assert failure.value.reason == "post-combat actor and XP are not retained"
+
+    # The previously pinned engine only provided an error string.
+    with pytest.raises(api.NativeApiRefusal) as legacy:
+        rust_wire_request({"ok": False, "error": "old engine refusal"}, request)
+    assert legacy.value.code is None
+    assert legacy.value.reason == "old engine refusal"
 
 
 class FakeProcess:
@@ -558,10 +599,15 @@ def test_native_same_session_probe_pays_new_world_and_retains_refusal(tmp_path, 
                 }
             if payload["op"] == "advance":
                 self.calls.append(payload)
-                raise api.NativeApiRefusal({
-                    "code": "native_level_transition_unsupported",
-                    "reason": "post-combat actor and XP are not retained",
-                })
+                # Exercise the real NDJSON parser, not a hand-built exception.
+                return rust_wire_request({
+                    "ok": False,
+                    "error": "native level transition unavailable",
+                    "refusal": {
+                        "code": "native_level_transition_unsupported",
+                        "reason": "post-combat actor and XP are not retained",
+                    },
+                }, payload)
             result = super().request(payload)
             if payload["op"] == "prepare":
                 self.prepared = result
