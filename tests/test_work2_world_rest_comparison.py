@@ -246,3 +246,43 @@ def test_rolling_cli_refuses_unacknowledged_native_overlap_even_with_serial_win(
     assert head["rolling_refusals"][0]["native_refusal_code"] == (
         "native_world_rolling_unsupported")
     assert head["winner"] is None
+
+def test_rolling_paid_overlap_rejects_unjoined_native_and_world_target_ids():
+    """A synthetic two-ACK flag is never sufficient to report paid overlap."""
+    baseline = paid_row(1.0, 45)
+    source = rolling_paid_row()
+    overlap = source["native_world_overlap"]
+    for invalid in (
+        {k: v for k, v in overlap.items()
+         if k != "native_target_to_world_id"},
+        dict(overlap, native_target_to_world_id={"0": "m1", "1": "m1"}),
+        dict(overlap, native_target_to_world_id={"zero": "m1", "1": "m0"}),
+        dict(overlap, simultaneously_alive_world_target_ids=["m1", "m1"]),
+        dict(overlap, simultaneously_alive_world_target_ids=["m1", "other"]),
+    ):
+        challenger = rolling_paid_row()
+        challenger["native_world_overlap"] = invalid
+        comparison = measured_world_rolling_head_to_head(
+            result_for([baseline, challenger]), level=20)
+        assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
+        assert comparison["winner"] is None
+
+
+def test_rolling_paid_cache_rejects_missing_native_world_join():
+    """Exact paid cache cannot upgrade a forged/disconnected two-kill receipt."""
+    from tools.wf_warlock_native_persistent_optimizer import (
+        ROLLING_WORLD_APL_50, _native_rolling_receipt_verified,
+    )
+    source = rolling_paid_row()
+    source["world_kills"] = source["native_world_kills"]
+    assert _native_rolling_receipt_verified(source, ROLLING_WORLD_APL_50)
+    broken = dict(source)
+    broken["native_world_overlap"] = dict(
+        source["native_world_overlap"], native_target_to_world_id={
+            "0": "m1", "1": "not-killed"})
+    assert not _native_rolling_receipt_verified(
+        broken, ROLLING_WORLD_APL_50)
+    assert not _native_rolling_receipt_verified(
+        dict(source, world_kills=[{"target_id": {}, "ack_sha256": "first"},
+                                  {"target_id": "m0", "ack_sha256": "second"}]),
+        ROLLING_WORLD_APL_50)

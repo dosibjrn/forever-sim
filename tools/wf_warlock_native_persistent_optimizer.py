@@ -455,15 +455,38 @@ def _native_world_policy(rest_health: float, rest_mana: float,
 
 
 def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> bool:
-    return (world_apl is None or (
-        receipt.get("native_world_apl") == world_apl
-        and receipt.get("native_world_overlap_verified") is True
-        and isinstance(receipt.get("native_world_overlap"), dict)
-        and receipt["native_world_overlap"].get(
-            "old_target_dot_ticks_after_switch_acked", 0) > 0
-        and len({row.get("target_id") for row in receipt.get("world_kills", [])}) == 2
-        and len({row.get("ack_sha256") for row in receipt.get("world_kills", [])}) == 2
-    ))
+    """Never reuse an overlap receipt without its source/gsim target-ID join."""
+    if world_apl is None:
+        return True
+    overlap = receipt.get("native_world_overlap")
+    kills = receipt.get("world_kills")
+    if (receipt.get("native_world_apl") != world_apl
+            or receipt.get("native_world_overlap_verified") is not True
+            or not isinstance(overlap, dict)
+            or overlap.get("max_concurrent_alive_targets") != 2
+            or type(overlap.get("old_target_dot_ticks_after_switch_acked")) is not int
+            or overlap["old_target_dot_ticks_after_switch_acked"] < 1
+            or not isinstance(kills, list) or len(kills) != 2
+            or any(not isinstance(kill, dict) for kill in kills)):
+        return False
+    target_ids = [kill.get("target_id") for kill in kills]
+    ack_ids = [kill.get("ack_sha256") for kill in kills]
+    live_ids = overlap.get("simultaneously_alive_world_target_ids")
+    mapping = overlap.get("native_target_to_world_id")
+    return (
+        all(isinstance(value, str) and value
+            for value in (*target_ids, *ack_ids))
+        and len(set(target_ids)) == 2 and len(set(ack_ids)) == 2
+        and isinstance(live_ids, list) and len(live_ids) == 2
+        and all(isinstance(value, str) and value for value in live_ids)
+        and set(live_ids) == set(target_ids)
+        and isinstance(mapping, dict) and len(mapping) == 2
+        and all(isinstance(index, str) and index.isdigit()
+                for index in mapping)
+        and all(isinstance(value, str) and value
+                for value in mapping.values())
+        and set(mapping.values()) == set(target_ids)
+    )
 
 
 class PersistentNativeEvaluator:
