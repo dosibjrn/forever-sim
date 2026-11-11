@@ -871,3 +871,128 @@ def test_paid_world_failure_preserves_prepare_phase_and_axis(tmp_path, monkeypat
                         and row["proposal_axis"] in ("talent", "apl") for row in rows)
     assert all("NATIVE_TERMINAL_BOTH_RESOURCES_NOT_FULL" in row["native_refusal"]
                for row in rows)
+
+
+@pytest.mark.parametrize("level", [20, 40])
+def test_refused_legacy_apl_bootstraps_registered_ranks_without_paid_blank_world(
+        level, tmp_path, monkeypatch):
+    """A native registered spell can be paid even if every legacy APL refuses.
+
+    The initial legacy-APL refusal is real transport evidence; no blank APL is
+    evaluated or treated as a successful gameplay candidate.
+    """
+    class RejectOldRank(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "options":
+                options = super().request(payload)
+                options["spells"] = [
+                    {"spell_id": 93011 if level == 20 else 94011,
+                     "name": "Registered Corruption", "rank": "Rank 1"},
+                    {"spell_id": 93012 if level == 20 else 94012,
+                     "name": "Registered Shadow Bolt", "rank": "Rank 2"},
+                ]
+                return options
+            if payload["op"] != "prepare":
+                return super().request(payload)
+            source = payload["request"]
+            priorities = source["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"]
+            ids = [
+                action["action"]["castSpell"]["spellId"]["spellId"]
+                for action in priorities if "castSpell" in action.get("action", {})
+            ]
+            if any(spell in (1014, 442226, 6222, 1088) for spell in ids):
+                self.calls.append(payload)
+                raise api.NativeApiRefusal({
+                    "code": "native_unregistered_spell",
+                    "reason": "source-native actor refuses inherited spell rank",
+                })
+            prepared = super().request(payload)
+            prepared["player"]["spells"] = [
+                {"flags": ["SpellFlagAPL"],
+                 "action_id": {"spell_id": 93011 if level == 20 else 94011},
+                 "dot": {"native": True}},
+                {"flags": ["SpellFlagAPL"],
+                 "action_id": {"spell_id": 93012 if level == 20 else 94012},
+                 "damage_effect": {"native": True}},
+            ]
+            return prepared
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-level-rank-bootstrap")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity",
+                        lambda *args, **kwargs: None)
+    world_paid = []
+    def counted(*args, **kwargs):
+        world_paid.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(*args, **kwargs)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=RejectOldRank,
+        run_world=counted)
+    try:
+        rows = native(level=level, parent=None, mob_count=2, budget=5,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert rows[0]["native_refusal_code"] == "native_unregistered_spell"
+    assert rows[0]["native_prepared"] is False
+    paid = [row for row in rows
+            if row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"]
+    assert paid and all(row["proposal_axis"] == "native_apl_bootstrap"
+                        for row in paid)
+    assert len(world_paid) == len(paid)
+    assert all(row["native_full_recovery_paid"] is True for row in paid)
+    session = RejectOldRank.instances[-1]
+    blank = [call for call in session.calls if call["op"] == "prepare"
+             and not call["request"]["raid"]["parties"][0]["players"][0][
+                 "rotation"]["priorityList"]]
+    assert len(blank) == 1
+    paid_spells = {
+        action["action"]["castSpell"]["spellId"]["spellId"]
+        for call in session.calls if call["op"] == "prepare"
+        for action in call["request"]["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"]
+        if call["request"]["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"] and
+        "castSpell" in action.get("action", {})
+        and action["action"]["castSpell"]["spellId"]["spellId"] not in (
+            1014, 442226, 6222, 1088)
+    }
+    expected = {93011, 93012} if level == 20 else {94011, 94012}
+    assert paid_spells <= expected and paid_spells
+    assert any("Registered Corruption" == spell["name"]
+               for row in paid for spell in row[
+                   "native_named_build"]["ordered_apl_spells"])
+
+
+def test_native_apl_bootstrap_refusal_is_explicit_not_a_paid_candidate(
+        tmp_path, monkeypatch):
+    class RefusingEveryPrepare(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "prepare":
+                self.calls.append(payload)
+                raise api.NativeApiRefusal({
+                    "code": "native_actor_unavailable",
+                    "reason": "native source actor unavailable",
+                })
+            return super().request(payload)
+
+    native = make_evaluator(tmp_path, monkeypatch)
+    native.close()
+    native = api.PersistentNativeEvaluator(
+        native.binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "failed", session_factory=RefusingEveryPrepare,
+        run_world=lambda *a, **k: pytest.fail("not paid without native prepare"))
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=3,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert len(rows) == 3
+    assert all(row["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+               and row["native_refusal_code"] == "native_actor_unavailable"
+               for row in rows)
+    assert any(row["proposal_axis"] == "native_apl_bootstrap" for row in rows)
+    assert not list((tmp_path / "failed").glob("*.native.json"))
