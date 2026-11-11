@@ -303,6 +303,13 @@ def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_rec
     binary = tmp_path / "rust-engine"
     binary.write_bytes(b"native-binary-test")
     manifest = _prepared_manifest(tmp_path)
+    # Native Rust identifies deterministic protobuf, not raw source JSON.
+    # Both distinct native digests must survive adapter + ACK scoring.
+    for index, entry in enumerate(json.loads(manifest.read_text())["entries"]):
+        prepared_path = tmp_path / entry["prepared"]
+        prepared = json.loads(prepared_path.read_text())
+        prepared["request_sha256"] = f"{index + 1:064x}"
+        prepared_path.write_text(json.dumps(prepared) + "\n")
     calls = []
 
     def scorer(**kwargs):
