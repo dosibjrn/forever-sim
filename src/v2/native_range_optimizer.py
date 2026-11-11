@@ -418,6 +418,27 @@ def render_native_paid_level_shortlist(result: Mapping[str, Any]) -> str:
                                for axis in sorted(attempted_axes))
                      if attempted_axes else "none"),
                   ""]
+        # Axis labels count *attempts*, not actual different successful values.
+        # Reuse the sampled-guide's receipt-verified paid-breadth calculation:
+        # no Python equipment/pet/spell legality rules or new acceptance gate.
+        breadth = _retained_native_paid_axis_breadth(result, level)
+        if breadth is None:
+            lines.append("**Distinct verified native-paid choices:** none (no paid comparison).")
+        else:
+            paid_count, distinct = breadth
+            lines.append(
+                f"**Distinct verified native-paid choices ({paid_count} receipts):** "
+                f"gear sets={distinct['gear']}; pet values={distinct['pet']}; "
+                f"APLs={distinct['apl']}; talent allocations={distinct['talents']}."
+            )
+            single = [axis for axis in ("gear", "pet", "apl", "talents")
+                      if distinct[axis] == 1]
+            if single:
+                lines.append(
+                    "**One observed paid value, not optimized:** "
+                    + ", ".join(single) + "."
+                )
+        lines.append("")
         if not receipts:
             lines += ["No paid, fully recovered candidate at this level.", ""]
         for rank, row in enumerate(receipts[:3], 1):
