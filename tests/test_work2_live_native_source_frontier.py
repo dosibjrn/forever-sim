@@ -627,6 +627,11 @@ def test_scored_child_rechecks_paid_parent_digest_before_any_native_payment(tmp_
     assert all(row["native_continuity_ack"] is True
                and row["native_intermediate_levels_verified"] is False
                and row["terminal_recovery_seconds"] == 2.0 for row in rows)
+    assert all(
+        row["source_request_file_sha256"]
+        == hashlib.sha256(Path(row["source_request_file"]).read_bytes()).hexdigest()
+        for row in rows
+    )
 
     # Tampering the actually paid parent receipt is still a hard refusal,
     # unlike an unrequested skipped-level native prepare certificate.
@@ -902,3 +907,66 @@ def test_high_level_independent_baseline_not_starved_by_native_apl_budget(tmp_pa
     assert len(found["entries"]) == 4
     assert found["refusals"] == []
     assert all(entry["parent_source_sha256"] is None for entry in found["entries"])
+
+def test_paid_parent_accepts_native_protobuf_sha_distinct_from_json_bytes(tmp_path):
+    """A genuine native-prepared parent is not refused by a raw-JSON SHA veto."""
+    from tools.wf_warlock_native_source_frontier import _paid_parent_source
+
+    seed, binary, parent = _scored_parent(tmp_path)
+    native_sha = "e" * 64
+    assert hashlib.sha256(seed.read_bytes()).hexdigest() != native_sha
+    parent["source_request_sha256"] = native_sha
+    prepared_file = Path(parent["prepared_file"])
+    prepared = json.loads(prepared_file.read_text())
+    prepared["request_sha256"] = native_sha
+    prepared_file.write_text(json.dumps(prepared))
+    raw_file = Path(parent["native_raw_receipt_file"])
+    raw = json.loads(raw_file.read_text())
+    raw["source_sha256"] = native_sha
+    raw_file.write_text(json.dumps(raw))
+
+    original, original_receipt_sha = _paid_parent_source(parent, binary)
+    assert original == json.loads(seed.read_text())
+    assert original_receipt_sha == hashlib.sha256(raw_file.read_bytes()).hexdigest()
+
+    # Neither recorded native identity nor historical byte identity agrees:
+    # refuse before new proposals, even if the source file is present.
+    parent["source_request_sha256"] = "d" * 64
+    with pytest.raises(ValueError, match="native parent source identity mismatch"):
+        _paid_parent_source(parent, binary)
+
+def test_paid_protobuf_parent_refuses_changed_scored_source_before_native_calls(tmp_path):
+    """The native protobuf identity must not authorize a modified source file."""
+    from tools.wf_warlock_native_source_frontier import _paid_parent_source
+
+    seed, binary, parent = _scored_parent(tmp_path)
+    native_sha = "e" * 64
+    assert hashlib.sha256(seed.read_bytes()).hexdigest() != native_sha
+    parent["source_request_sha256"] = native_sha
+    parent["source_request_file_sha256"] = hashlib.sha256(seed.read_bytes()).hexdigest()
+    prepared_path = Path(parent["prepared_file"])
+    prepared = json.loads(prepared_path.read_text())
+    prepared["request_sha256"] = native_sha
+    prepared_path.write_text(json.dumps(prepared))
+    raw_path = Path(parent["native_raw_receipt_file"])
+    raw = json.loads(raw_path.read_text())
+    raw["source_sha256"] = native_sha
+    raw_path.write_text(json.dumps(raw))
+
+    # A complete, authentic scored parent remains reusable even though the
+    # deterministic-protobuf request SHA differs from the source JSON hash.
+    original, _ = _paid_parent_source(parent, binary)
+    assert original == json.loads(seed.read_text())
+
+    # Whitespace alone changes the original file bytes, without changing its
+    # JSON contents or the prepared/raw protobuf identities. Never reuse it.
+    seed.write_text(seed.read_text() + "\n")
+    result = produce_frontier(
+        _request(level=30, parent=parent), binary=binary,
+        seed_source=seed, out=tmp_path / "unpaid",
+        runner=lambda *args, **kwargs: 1 / 0,
+    )
+    assert result["entries"] == []
+    assert result["refusals"][0]["status"] == "NATIVE_CONTINUITY_NOT_ATTESTED"
+    assert "original source bytes mismatch" in result["refusals"][0]["native_refusal"]
+    assert result["refusals"][0]["native_prepared"] is False

@@ -331,6 +331,13 @@ def evaluate_request(
                     (manifest.parent / next(
                         entry["source_request"] for entry in selected
                         if entry["id"] == cid)).resolve()),
+                # A deterministic-protobuf request SHA is NOT a digest of
+                # source JSON bytes. Preserve both to detect edits to the
+                # paid source before it is reused as a parent.
+                "source_request_file_sha256": _sha(
+                    manifest.parent / next(
+                        entry["source_request"] for entry in selected
+                        if entry["id"] == cid)),
             })
         except (KeyError, ValueError, TypeError, OSError) as exc:
             refusal = _refusal({"id": cid}, "NATIVE_SCORER_RECEIPT_REFUSAL:"
