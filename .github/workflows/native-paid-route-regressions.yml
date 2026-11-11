@@ -46,30 +46,36 @@ on:
     inputs:
       predecessor_artifact_id:
         description: "Explicit authentic predecessor for a genuinely unmeasured successor (no repeat L47 baseline)"
-        required: true
+        required: false
         type: string
       from_level:
         description: "Source-paid predecessor level (successor is from_level + 1)"
-        required: true
+        required: false
         type: number
       selected_rust_sha:
         description: "Exact selected Rust source revision"
-        required: true
+        required: false
         type: string
       predecessor_binary_sha256:
         description: "Exact binary SHA256 of predecessor's genuine 100-mob receipt"
-        required: true
+        required: false
         type: string
       max_proposals:
         description: "Maximum native prepare probes per complete talent family"
-        required: true
+        required: false
         type: number
         default: 240
       max_finalists:
         description: "Maximum distinct paid 100-mob finalists"
-        required: true
+        required: false
         type: number
         default: 3
+      m05_stride:
+        description: "M0.5 existing generic optimizer sampled-level density (none = historical adjacent paid mode)"
+        required: false
+        type: choice
+        options: [none, '10', '5', '1']
+        default: none
 
 permissions:
   contents: read
@@ -97,7 +103,7 @@ jobs:
   # predecessor and binary identities for any NEW paid comparison.
   # Every native rejection remains in the artifact.
   cross-tree-native-world:
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 65
     env:
@@ -243,14 +249,18 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  # One requested real sparse optimizer run. This stays on the feature PR
-  # branch and never launches a historical 100-mob validation replay.
+  # Real M0.5 densification of the SAME production optimizer, on a single
+  # Work2 capability PR. Do not rerun the now-merged stride-20 milestone.
+  # PR initially pays stride 10; manual dispatch selects 5 or 1 after evidence.
   sparse-optimizer-real:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/run-generic-sparse-optimize-20261110' }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/m05-native-stride-density-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 90
     permissions:
       contents: read
+      actions: read
+    env:
+      M05_STRIDE: ${{ github.event_name == 'pull_request' && '10' || inputs.m05_stride }}
     steps:
       - name: Checkout exact generic optimizer PR
         uses: actions/checkout@v4
@@ -272,24 +282,34 @@ jobs:
       - name: Build recovery-capable Rust binary
         working-directory: engine
         run: cargo build --locked --bin forever-engine
-      - name: Run actual sparse 20/40/60 compatible optimizer, two balanced native mobs
+      - name: Reuse original paid M0.4 receipts only when exact cache identities match
+        uses: actions/download-artifact@v4
+        continue-on-error: true  # Artifact retention expiry must not veto a new native run.
+        with:
+          name: requested-sparse-optimize-42980239306
+          run-id: 42980239306
+          github-token: ${{ github.token }}
+          path: project/runs
+      - name: Run actual M0.5 sampled compatible optimizer (Rust ACK and paid dual restoration)
         working-directory: project
         env:
           PYTHONUNBUFFERED: "1"
         run: |
+          set -euo pipefail
+          case "$M05_STRIDE" in 10|5|1) ;; *) echo "Invalid M0.5 stride" >&2; exit 2;; esac
           python -m src.v2.runner optimize \
             --class warlock --tree unconstrained \
-            --start-level 20 --end-level 60 --level-stride 20 \
+            --start-level 20 --end-level 60 --level-stride "$M05_STRIDE" \
             --n-mobs 2 --recover-at-end true --rng balanced \
-            --backend rust --budget 24 \
+            --backend rust --budget 60 \
             --native-binary ../engine/target/debug/forever-engine \
             --source fixtures/warlock-l20-native-paid-30s.request.json \
-            --out runs/sparse-l20-l40-l60.json
+            --out "runs/m05-l20-l60-stride${M05_STRIDE}.json"
       - name: Preserve real source/prepare/ACK/terminal receipts and optimizer result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: requested-sparse-optimize-${{ github.run_id }}
+          name: requested-m05-optimize-${{ github.run_id }}
           path: project/runs/
           if-no-files-found: warn
           retention-days: 14
