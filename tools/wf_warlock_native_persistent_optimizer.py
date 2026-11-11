@@ -194,7 +194,11 @@ def _source_pet_alternatives(source: dict, options: dict):
     actor = source["raid"]["parties"][0]["players"][0]
     current = actor.get("warlock", {}).get("options", {}).get(
         "classOptions", {}).get("summon")
-    seen = {current, None if current in (None, "NoSummon", 0) else current}
+    seen = {current}
+    if current in (None, "NoSummon", 0):
+        # The old fixture's absent summon already means no active pet.
+        # Do not spend another paid world on a synonymous NoSummon enum.
+        seen.update((None, 0, "NoSummon"))
     for choice in islice(choices, 12):
         value = choice.get("name") if isinstance(choice, dict) else choice
         if not isinstance(value, (str, int)) or value in seen:
@@ -708,6 +712,7 @@ class PersistentNativeEvaluator:
                     "talents": actor["talentsString"],
                     "proposal_axis": proposal_axis,
                     "native_named_build": _described_build(source, options),
+                    "native_options_coverage": options.get("coverage"),
                     "gear": actor.get("equipment"),
                     "apl": actor.get("rotation"),
                     "pet": cls_options.get("summon"),
