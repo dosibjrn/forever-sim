@@ -95,34 +95,231 @@ def _forward_native_talent_hints(hints: Any, *, level: int,
                 yield candidate
 
 
-def _source_item_alternatives(source: dict, options: dict):
-    """Mutate equipment solely from Rust-advertised item IDs.
+# Equipment positions are protobuf request serialization slots, not a Python
+# item-eligibility catalogue. Rust supplies each candidate's native slot and
+# decides complete equipment legality during prepare.
+_NATIVE_EQUIPMENT_POSITIONS = {
+    "head": (0,), "neck": (1,), "shoulder": (2,), "back": (3,),
+    "chest": (4,), "wrist": (5,), "hands": (6,), "waist": (7,),
+    "legs": (8,), "feet": (9,), "finger": (10, 11),
+    "trinket": (12, 13), "main_hand": (14,), "one_hand": (14,),
+    "two_hand": (14,), "off_hand": (15,), "ranged": (16,),
+}
 
-    Unverified item options are NOT declared legal. Rust prepare can accept or
-    refuse each proposal. Keep the untouched seed too, even if not advertised.
+
+def _source_item_alternatives(source: dict, options: dict):
+    """Source-listed slot proposals; only Rust prepare can judge the build.
+
+    The L20 reference's historical 17 items may be absent from the current
+    native options. Try the sanitized baseline AND actually equipped variants,
+    not 17 deletion-only proposals labeled gear optimization.  Unverified
+    native rows never acquire a guessed slot.
     """
     choices = options.get("items", [])
     if not isinstance(choices, list):
+        yield source
         return
-    available = {row.get("item_id") for row in choices
+    verified = [row for row in choices
+                if isinstance(row, dict)
+                and row.get("eligibility") == "native_eligible"
+                and isinstance(row.get("native"), dict)
+                and type(row.get("item_id")) is int
+                and isinstance(row["native"].get("slot"), str)]
+    available = {row["item_id"] for row in choices
                  if isinstance(row, dict) and type(row.get("item_id")) is int}
     actor = source["raid"]["parties"][0]["players"][0]
     equipped = actor.get("equipment", {}).get("items", [])
     if not isinstance(equipped, list):
+        yield source
         return
-    missing = [n for n, row in enumerate(equipped)
-               if isinstance(row, dict) and row.get("id") not in (None, 0)
-               and row["id"] not in available]
-    if missing:
-        clean = copy.deepcopy(source)
-        for index in missing:
-            clean["raid"]["parties"][0]["players"][0]["equipment"]["items"][index] = {"id": 0}
-        yield clean
-        for index in missing[:2]:
-            single = copy.deepcopy(source)
-            single["raid"]["parties"][0]["players"][0]["equipment"]["items"][index] = {"id": 0}
-            yield single
+    base = copy.deepcopy(source)
+    items = base["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    for index, row in enumerate(equipped):
+        if isinstance(row, dict) and row.get("id") not in (None, 0, *available):
+            items[index] = {"id": 0}
+    yield base
+    by_position: dict[int, list[int]] = {}
+    for row in verified:
+        for index in _NATIVE_EQUIPMENT_POSITIONS.get(row["native"]["slot"], ()):
+            if index < len(items):
+                ids = by_position.setdefault(index, [])
+                if row["item_id"] not in ids:
+                    ids.append(row["item_id"])
+    if not by_position:
+        return
 
+    # An all-empty sanitized historical fixture cannot fight fairly. Construct
+    # one complete, Rust-advertised slot proposal, then vary one item at a time.
+    # No item is called legal until the *whole* native prepare succeeds.
+    anchor = copy.deepcopy(base)
+    anchor_items = anchor["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    for index, ids in by_position.items():
+        if anchor_items[index].get("id", 0) == 0:
+            anchor_items[index] = {"id": ids[0]}
+    if anchor != base:
+        yield anchor
+    # Compare the second Rust-listed item for a slot against a consistent
+    # native-equipped reference; avoid a whole-search explosion.
+    for index in sorted(by_position):
+        current = anchor_items[index].get("id", 0)
+        for item_id in by_position[index][:3]:
+            if item_id == current:
+                continue
+            proposal = copy.deepcopy(anchor)
+            proposal["raid"]["parties"][0]["players"][0]["equipment"][
+                "items"][index] = {"id": item_id}
+            yield proposal
+
+
+def _source_pet_alternatives(source: dict, options: dict):
+    """Use Rust-advertised summons or its exact pinned protobuf enum source.
+
+    An enum is a request proposal, not evidence the level/actor can summon it.
+    Any non-executable pet is refused by the same native prepare/world scorer.
+    """
+    from itertools import islice
+    choices = options.get("summons", options.get("pets"))
+    if choices is None and options.get("schema_version") == 1:
+        # The selected engine's generated request schema, not a Python
+        # Warlock mechanics table. The current options API omits pet choices.
+        schema_path = BRIDGE / "engine" / "data" / "proto-schema.json"
+        try:
+            schema = json.loads(schema_path.read_text())
+            choices = [entry["name"] for entry in schema["enums"][
+                "proto.WarlockOptions.Summon"]]
+        except (KeyError, ValueError, OSError, TypeError):
+            choices = []
+    if not isinstance(choices, list):
+        return
+    actor = source["raid"]["parties"][0]["players"][0]
+    current = actor.get("warlock", {}).get("options", {}).get(
+        "classOptions", {}).get("summon")
+    seen = {current, None if current in (None, "NoSummon", 0) else current}
+    for choice in islice(choices, 12):
+        value = choice.get("name") if isinstance(choice, dict) else choice
+        if not isinstance(value, (str, int)) or value in seen:
+            continue
+        seen.add(value)
+        proposal = copy.deepcopy(source)
+        cls = proposal["raid"]["parties"][0]["players"][0].setdefault(
+            "warlock", {}).setdefault("options", {}).setdefault("classOptions", {})
+        cls["summon"] = value
+        yield proposal
+
+
+def _level_aware_apl_variants(source: dict, prepared: dict, options: dict):
+    """Re-rank/reorder learned native APL spells, then fall back to old probes.
+
+    A spell must be registered with SpellFlagAPL on the prepared actor. Rust
+    still decides every changed APL's legality and real combat effects.
+    """
+    prepared_spells = prepared.get("player", {}).get("spells", [])
+    registry = {
+        row["action_id"]["spell_id"] for row in prepared_spells
+        if isinstance(row, dict) and "SpellFlagAPL" in row.get("flags", [])
+        and isinstance(row.get("action_id"), dict)
+        and type(row["action_id"].get("spell_id")) is int
+    } if isinstance(prepared_spells, list) else set()
+    source_spells = {
+        row["spell_id"]: row for row in options.get("spells", [])
+        if isinstance(row, dict) and type(row.get("spell_id")) is int
+    }
+    actor = source["raid"]["parties"][0]["players"][0]
+    original = actor.get("rotation", {}).get("priorityList", [])
+    seen = {json.dumps(original, sort_keys=True)}
+    # Replace existing spell ranks with the last registered source rank of
+    # the *same named spell*. No item/spell learnability is inferred from
+    # get_options alone; intersection with prepared registry is mandatory.
+    if isinstance(original, list):
+        for index, priority in enumerate(original):
+            action = priority.get("action", {}) if isinstance(priority, dict) else {}
+            cast = action.get("castSpell", {})
+            original_id = cast.get("spellId", {}).get("spellId")
+            old = source_spells.get(original_id, {})
+            name = old.get("name")
+            if not name:
+                continue
+            ranked = [row for sid, row in source_spells.items()
+                      if sid in registry and row.get("name") == name
+                      and sid != original_id]
+            def rank_number(row):
+                import re
+                match = re.search(r"\d+", str(row.get("rank", "")))
+                return int(match.group()) if match else 0
+            ranked.sort(key=lambda row: (rank_number(row), row["spell_id"]),
+                        reverse=True)
+            for row in ranked[:1]:
+                candidate = copy.deepcopy(source)
+                priority_list = candidate["raid"]["parties"][0]["players"][0][
+                    "rotation"]["priorityList"]
+                # Update the requested rank and any matching native dot guard.
+                edited = priority_list[index]["action"]
+                edited["castSpell"]["spellId"]["spellId"] = row["spell_id"]
+                guard = edited.get("condition", {}).get(
+                    "not", {}).get("val", {}).get("dotIsActive")
+                if isinstance(guard, dict):
+                    spell = guard.get("spellId")
+                    if isinstance(spell, dict) and spell.get("spellId") == original_id:
+                        spell["spellId"] = row["spell_id"]
+                signature = json.dumps(priority_list, sort_keys=True)
+                if signature not in seen:
+                    seen.add(signature)
+                    yield candidate
+        for proposal in _native_apl_variants(source, prepared):
+            signature = json.dumps(proposal["raid"]["parties"][0][
+                "players"][0]["rotation"]["priorityList"], sort_keys=True)
+            if signature not in seen:
+                seen.add(signature)
+                yield proposal
+        # Priority is a genuine search dimension even when no new spell is
+        # available: source-native prepare and ACK judge reordered policies.
+        for index in range(len(original) - 1):
+            candidate = copy.deepcopy(source)
+            actions = candidate["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"]
+            actions[index], actions[index + 1] = actions[index + 1], actions[index]
+            signature = json.dumps(actions, sort_keys=True)
+            if signature not in seen:
+                seen.add(signature)
+                yield candidate
+
+
+def _described_build(source: dict, options: dict) -> dict:
+    """Human-readable native *proposal* labels, never gameplay certificates."""
+    actor = source["raid"]["parties"][0]["players"][0]
+    item_by_id = {row["item_id"]: row for row in options.get("items", [])
+                  if isinstance(row, dict) and type(row.get("item_id")) is int}
+    spell_by_id = {row["spell_id"]: row for row in options.get("spells", [])
+                   if isinstance(row, dict) and type(row.get("spell_id")) is int}
+    gear = []
+    for pos, row in enumerate(actor.get("equipment", {}).get("items", [])):
+        item_id = row.get("id") if isinstance(row, dict) else None
+        item = item_by_id.get(item_id, {})
+        metadata = item.get("native") or item.get("legacy_wowhead") or {}
+        gear.append({"position": pos, "item_id": item_id,
+                     "name": metadata.get("name"),
+                     "native_slot": (item.get("native") or {}).get("slot")})
+    spells = []
+    for pos, row in enumerate(actor.get("rotation", {}).get("priorityList", [])):
+        action = row.get("action", {}) if isinstance(row, dict) else {}
+        spell_id = action.get("castSpell", {}).get("spellId", {}).get("spellId")
+        native = spell_by_id.get(spell_id, {})
+        spells.append({"priority": pos + 1, "spell_id": spell_id,
+                       "name": native.get("name"), "rank": native.get("rank"),
+                       "condition": action.get("condition")})
+    talents = []
+    encoded = actor.get("talentsString", "").split("-")
+    for tree_index, tree in enumerate(options.get("talents", {}).get("trees", [])):
+        digits = encoded[tree_index] if tree_index < len(encoded) else ""
+        for row in tree.get("talents", []):
+            index = row.get("index")
+            rank = int(digits[index]) if type(index) is int and index < len(
+                digits) else 0
+            if rank:
+                talents.append({"tree": tree.get("name"), "name": row.get("name"),
+                                "rank": rank, "max_rank": row.get("max_rank")})
+    return {"talent_names": talents, "equipped_item_names_ids": gear,
+            "ordered_apl_spells": spells}
 
 class NativeApiRefusal(ValueError):
     """Keep the Rust refusal code structured across the NDJSON transport."""
@@ -410,17 +607,38 @@ class PersistentNativeEvaluator:
                         if variant != seed_talents)
         sources = []
         deferred_unmodified = []
+        axis_gear = []
+        axis_pets = []
         for variant in variants:
             proposal = self._source(level, variant)
-            cleaned = next(_source_item_alternatives(proposal, options), None)
-            if cleaned is None:
-                sources.append(proposal)
-            else:
-                sources.append(cleaned)
+            item_variants = list(islice(_source_item_alternatives(
+                proposal, options), 28))
+            cleaned = item_variants[0] if item_variants else proposal
+            if not sources:
+                # Only true native-equipped changes get gear-axis budget;
+                # the old zero-item cleanup is still the common baseline.
+                axis_gear = [row for row in item_variants[1:]
+                             if row["raid"]["parties"][0]["players"][0][
+                                 "equipment"] != cleaned["raid"]["parties"][0][
+                                     "players"][0]["equipment"]][:8]
+                axis_pets = list(islice(
+                    _source_pet_alternatives(cleaned, options), 4))
+            sources.append(cleaned)
+            if cleaned != proposal:
                 deferred_unmodified.append(proposal)
-        # Preserve source-seed/baseline refusals without forcing predictably
-        # unsupported equipment into the first expensive native attempts.
-        sources.extend(deferred_unmodified)
+        # Reserve early native prepare/paid attempts for *each* source axis.
+        # Talent-family probes remain, but cannot monopolize a small budget.
+        from itertools import zip_longest
+        axis_sources = []
+        for gear, pet in zip_longest(axis_gear, axis_pets):
+            if gear is not None:
+                axis_sources.append((gear, "gear"))
+            if pet is not None:
+                axis_sources.append((pet, "pet"))
+        first = sources.pop(0)
+        sources = [(first, "talent"), *axis_sources,
+                   *((source, "talent") for source in sources),
+                   *((source, "legacy_seed") for source in deferred_unmodified)]
         seen: set[str] = set()
         results: list[dict] = []
         apl_expanded = False
@@ -428,7 +646,7 @@ class PersistentNativeEvaluator:
                      if self.target_hp is None else self.target_hp)
         index = 0
         while index < len(sources) and len(results) < budget:
-            source = sources[index]
+            source, proposal_axis = sources[index]
             index += 1
             identity = json.dumps(source, sort_keys=True)
             if identity in seen:
@@ -453,8 +671,13 @@ class PersistentNativeEvaluator:
                     # low-level fixture's rotation. Give its Rust-advertised
                     # executable APL alternatives a bounded *early* chance,
                     # not a tail slot beyond the current paid budget.
-                    sources[index:index] = list(islice(
-                        _native_apl_variants(source, prepared), 2))
+                    apl_choices = list(islice(
+                        _level_aware_apl_variants(source, prepared, options), 6))
+                    # Under the normal budget, first gear and pet attempts
+                    # precede APL; with no source axes, APL follows the seed.
+                    insert_at = min(len(sources), index + min(2, len(axis_sources)))
+                    sources[insert_at:insert_at] = [
+                        (row, "apl") for row in apl_choices]
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
                     target_hp=target_hp, cid=cid,
@@ -483,6 +706,8 @@ class PersistentNativeEvaluator:
                     "terminal_recovery_seconds":
                         (terminal["end_clock_ns"] - terminal["start_clock_ns"]) / 1e9,
                     "talents": actor["talentsString"],
+                    "proposal_axis": proposal_axis,
+                    "native_named_build": _described_build(source, options),
                     "gear": actor.get("equipment"),
                     "apl": actor.get("rotation"),
                     "pet": cls_options.get("summon"),
@@ -498,6 +723,7 @@ class PersistentNativeEvaluator:
                     "status": "NATIVE_API_CANDIDATE_REFUSED",
                     "candidate_id": cid, "level": level,
                     "native_prepared": False,
+                    "proposal_axis": proposal_axis,
                     "native_refusal": str(exc)[-1500:],
                 })
         return results
