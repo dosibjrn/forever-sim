@@ -465,3 +465,55 @@ def test_generic_optimizer_entrypoint_bypasses_legacy_class_registry():
     assert "--n-mobs" in proc.stdout and "--backend" in proc.stdout
     assert "source-native sampled compatible build optimization" in proc.stdout.lower()
     assert "invalid choice: 'warlock'" not in proc.stderr
+
+
+def test_paid_l60_demo_family_can_backseed_native_l20_ancestor_and_win_route():
+    """The cheapest L20 root need not minimize cumulative native-paid time."""
+    seen = []
+
+    def native(**request):
+        level = request["level"]
+        seen.append(request)
+        if level == 20:
+            choices = [("5-0-0", 1.0)]
+            if request.get("candidate_hints"):
+                choices.append(("0-5-0", 4.0))
+        elif level == 40:
+            choices = [("55-0-0", 10.0), ("0-55-0", 4.0)]
+        else:
+            choices = [("555-0-0", 20.0), ("0-555-0", 1.0)]
+        return [
+            dict(receipt(level, request["mob_count"], talent, seconds),
+                 talents=talent, gear={"items": [level]}, pet="native",
+                 apl={"priorityList": [talent]})
+            for talent, seconds in choices
+        ][:request["budget"]]
+
+    result = optimize(20, 60, 20, 2, 24, evaluate=native,
+                      mode="compatible", beam_width=2)
+    assert result["status"] == "SAMPLED_COMPATIBLE_PATH_RANKED"
+    assert result["native_candidates_examined"] <= 24
+    assert result["backward_seeded_native_attempts"] > 0
+    assert any(request["level"] == 20 and request.get("candidate_hints")
+               for request in seen)
+    assert [step["talents"] for step in result["ranked_alternatives"][0]["steps"]] == [
+        "0-5-0", "0-55-0", "0-555-0",
+    ]
+    assert result["ranked_alternatives"][0]["sampled_cumulative_seconds"] == 9.0
+    assert result["ranked_alternatives"][1]["sampled_cumulative_seconds"] == 31.0
+    assert result["intermediate_level_simulations_run"] is False
+    assert result["full_10_60_continuous_leveling_route_proven"] is False
+
+
+def test_paid_later_talent_hint_proposes_bounded_ancestors_not_legality():
+    from tools.wf_warlock_native_source_frontier import _backward_ancestor_variants
+
+    proposals = list(_backward_ancestor_variants(
+        [{"talents": "0-555-0", "from_level": 60}], points_available=5))
+    assert proposals
+    assert all(sum(map(int, "".join(p.split("-")))) == 5 for p in proposals)
+    assert all(p.startswith("0-") and p.endswith("-0") for p in proposals)
+    # With no source-native point budget, don't manufacture level-derived
+    # talent caps; Rust's options API must provide the actual bound.
+    assert list(_backward_ancestor_variants(
+        [{"talents": "0-555-0"}], points_available=None)) == []
