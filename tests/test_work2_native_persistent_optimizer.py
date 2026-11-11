@@ -451,6 +451,45 @@ def test_bounded_native_search_pays_alternative_talent_before_apl_burst(
     assert all(row["native_full_recovery_paid"] for row in rows)
 
 
+def test_generic_native_search_pays_rest_and_refuses_unverified_rolling(
+        tmp_path, monkeypatch):
+    """Ordinary scored search explores policies, never scores fake overlap.
+
+    The synthetic world deliberately has no native rolling target-ID/ACK
+    evidence. Such a proposal must be retained as a refusal, not a winner.
+    """
+    called = []
+
+    def world(binary, prepared_path, **kwargs):
+        called.append((kwargs["health_threshold"],
+                       kwargs["mana_threshold"], kwargs.get("world_apl")))
+        # The transport stub is source-independent; allow the changed
+        # threshold through to the evaluator but keep its full-paid receipt.
+        sanitized = dict(kwargs, health_threshold=1.0, mana_threshold=1.0)
+        return paid_world(binary, prepared_path, **sanitized)
+
+    native = make_evaluator(tmp_path, monkeypatch, world=world)
+    native.explore_world_policies = True
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=5,
+                      rng_mode="balanced", iterations=1,
+                      recover_to_full=True)
+    finally:
+        native.close()
+
+    rest = [r for r in rows if r["proposal_axis"] == "world_rest_30pct"]
+    rolling = [r for r in rows if r["proposal_axis"] == "world_rolling_50pct"]
+    assert len(rest) == len(rolling) == 1
+    assert rest[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert rest[0]["native_full_recovery_paid"] is True
+    assert rest[0]["native_world_policy"]["rest_when_health_below"] == 0.3
+    assert rolling[0]["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+    assert "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN" in rolling[0]["native_refusal"]
+    assert Path(rolling[0]["native_unverified_receipt_file"]).is_file()
+    assert any(h == m == 0.3 and apl is None for h, m, apl in called)
+    assert any(apl is not None for _, _, apl in called)
+
+
 def test_forward_talent_proposals_preserve_earlier_paid_ancestry_without_respec():
     from tools.wf_warlock_native_persistent_optimizer import _forward_native_talent_hints
     trees = [{"talents": [{"index": idx, "max_rank": 5}

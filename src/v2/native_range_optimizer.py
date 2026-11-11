@@ -1491,6 +1491,10 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                if args.compare_world_rest_30 else {}),
             **({"compare_world_rolling_50": True}
                if args.compare_world_rolling_50 else {}),
+            **({"explore_world_policies": True}
+               if (cls == "warlock" and not args.compare_world_rest_30
+                   and not args.compare_world_rolling_50
+                   and not args.probe_native_continuity) else {}),
         )
         try:
             if args.probe_native_continuity:
