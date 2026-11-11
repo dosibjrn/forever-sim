@@ -1,87 +1,37 @@
-"""Paid P6/P7 no-record diagnostics must not rerun on ordinary PR commits.
+"""Retired accepted Druid P6/P7 paid label jobs must not recur.
 
-This protects compute for the parameterized native optimizer without altering
-source-native execution or any Merge-owned M1 gate verdict.
+Those L30/L40 P6 and L60 P7.1-P7.5 results are already recorded by
+Merge. The generic PR suite remains cheap and still exercises changed
+source-native adapters without launching another optional paid world.
 """
 from pathlib import Path
 import re
 
-
-WORKFLOW = (
-    Path(__file__).resolve().parents[2]
-    / ".github/workflows/generic-source-search-regressions.yml"
-)
+ROOT = Path(__file__).resolve().parents[2]
+WORKFLOW = ROOT / ".github/workflows/generic-source-search-regressions.yml"
 
 
-def _job(name: str) -> str:
-    source = WORKFLOW.read_text(encoding="utf-8")
-    _, separator, body = source.partition(f"  {name}:\n")
-    assert separator, f"missing native diagnostic job {name}"
-    # Match a top-level job at exactly two spaces, not nested YAML keys.
-    return re.split(r"(?m)^  [a-z][a-z0-9_-]*:[ ]*$", body, maxsplit=1)[0]
+def test_only_cheap_source_search_job_can_run_on_pr_updates():
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    trigger, jobs = workflow.split("\njobs:\n", 1)
+    assert "types: [opened, synchronize, reopened]" in trigger
+    assert "labeled" not in trigger, "accepted Druid gates have no paid label replay"
+    assert re.findall(r"(?m)^  ([a-z][a-z0-9_-]*):$", jobs) == ["source-search"]
+    assert "cargo build --release" not in jobs
+    assert "python tools/wf_gate.py --class druid" not in jobs
+    assert "github.event.action" not in jobs
 
 
-def _condition(name: str) -> str:
-    job = _job(name)
-    match = re.search(r"^    if: >-\n((?:      .*\n)+)", job, re.MULTILINE)
-    assert match, f"{name}: paid job must have explicit event condition"
-    return match.group(1)
-
-
-def test_native_paid_diagnostics_run_only_when_explicitly_labeled():
-    expected = {
-        "work2-p6-shared-cold-no-record": (
-            "p6-paid-no-record",
-            ("work/work2-p6-shared-cold-", "work/work2-p6-l40-followon-"),
-        ),
-        "selected-native-p72": (
-            "p7-native-paid-no-record",
-            ("work/work2-p72-native-axis-", "work/work2-p72-feral-",
-             "work/work2-p73-feral-", "work/work2-p74-feral-"),
-        ),
-        "selected-native-p71": (
-            "p7-native-paid-no-record",
-            ("work/work2-p71-native-stochastic-",),
-        ),
-        "selected-native-p75": (
-            "p7-native-paid-no-record",
-            ("work/work2-p75-unrestricted-native-", "work/work2-feral-p75-native-"),
-        ),
-    }
-    for job_name, (label, branches) in expected.items():
-        condition = _condition(job_name)
-        assert "github.event_name == 'pull_request'" in condition
-        assert "github.event.action == 'labeled'" in condition
-        assert f"github.event.label.name == '{label}'" in condition
-        assert "contains(github.event.pull_request.labels" not in condition
-        for branch in branches:
-            assert f"startsWith(github.head_ref, '{branch}')" in condition
-
-
-def test_regular_pr_regressions_and_real_native_paid_producers_still_exist():
-    source = WORKFLOW.read_text(encoding="utf-8")
-    assert "types: [opened, synchronize, reopened, labeled]" in source
-    assert "  source-search:\n" in source
-    assert "needs: source-search" not in _job("work2-p6-shared-cold-no-record")
-    assert "python tools/wf_gate.py --class druid" in _job("work2-p6-shared-cold-no-record")
-    for name in ("selected-native-p71", "selected-native-p72", "selected-native-p75"):
-        job = _job(name)
-        assert "cargo build --release --locked --bin forever-engine" in job
-        assert "python tools/wf_gate.py --class druid" in job
-
-
-
-def test_explicit_paid_label_skips_generic_regression_job_without_blocking_paid_probe():
-    # Labeled event only authorizes the matching opt-in source-native job.
-    # Ordinary PR updates must continue running the generic regression suite.
-    source_job = _job("source-search")
-    assert "if: github.event.action != 'labeled'" in source_job
-    assert "python -m pytest -vv" in source_job
-    for name in (
-        "work2-p6-shared-cold-no-record",
-        "selected-native-p71",
-        "selected-native-p72",
-        "selected-native-p75",
+def test_source_coverage_and_unaccepted_generic_recorder_survive():
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    assert "python -m pytest -vv" in workflow
+    for path in (
+        "tests/maintenance/test_generic_source_paid_dispatch_scope.py",
+        "tests/gates/test_wf_gate_p7_5_live.py",
+        "tests/gates/test_wf_gate_p7_2_live.py",
+        "tests/test_work2_p6_shared_source.py",
+        "tests/test_work1_druid_l30_p72.py",
+        "tests/test_work1_p71_native_generated.py",
     ):
-        assert "needs: source-search" not in _job(name)
-        assert "github.event.action == 'labeled'" in _condition(name)
+        assert path in workflow, f"source regression coverage lost: {path}"
+    assert (ROOT / ".github/workflows/m1-on-demand-record.yml").is_file()
