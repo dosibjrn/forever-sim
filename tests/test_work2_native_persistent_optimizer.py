@@ -716,3 +716,96 @@ def test_native_continuity_cli_refusal_is_nonzero_and_never_a_sampled_guide(tmp_
               evaluate=Probe())
     assert rc == 2
     assert json.loads(out.read_text())["status"] == "NATIVE_LEVEL_TRANSITION_UNSUPPORTED"
+
+
+@pytest.mark.parametrize("level", [20, 40])
+def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch):
+    """Actual producer attempts gear, pet and registered ranks on each level.
+
+    This fake transport exercises proposal breadth and paid-score forwarding;
+    it is not evidence that the real Rust actor accepts or kills these builds.
+    """
+    class NativeAxisSession(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "options":
+                result = super().request(payload)
+                result.update({
+                    "schema_version": 1,
+                    "summons": ["NoSummon", "Imp", "Voidwalker"],
+                    "items": [
+                        {"item_id": 8001, "eligibility": "native_eligible",
+                         "native": {"item_id": 8001, "slot": "head",
+                                    "name": "Test source hat A"}},
+                        {"item_id": 8002, "eligibility": "native_eligible",
+                         "native": {"item_id": 8002, "slot": "head",
+                                    "name": "Test source hat B"}},
+                    ],
+                    "spells": [
+                        {"spell_id": 1088, "name": "Shadow Bolt", "rank": "Rank 2"},
+                        {"spell_id": 80003, "name": "Shadow Bolt", "rank": "Rank 4"},
+                    ],
+                })
+                return result
+            result = super().request(payload)
+            result["player"]["spells"] = [{
+                "flags": ["SpellFlagAPL"],
+                "action_id": {"spell_id": 80003},
+            }]
+            return result
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-axis-test")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity",
+                        lambda *args, **kwargs: None)
+    paid = []
+    def counted_world(*args, **kwargs):
+        paid.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(*args, **kwargs)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=NativeAxisSession,
+        run_world=counted_world)
+    try:
+        rows = native(level=level, parent=None, mob_count=2, budget=10,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+
+    prepared = [payload["request"] for payload in NativeAxisSession.instances[-1].calls
+                if payload["op"] == "prepare"]
+    def actor(source):
+        return source["raid"]["parties"][0]["players"][0]
+    gear_ids = {actor(request)["equipment"]["items"][0].get("id")
+                for request in prepared}
+    summons = {actor(request).get("warlock", {}).get("options", {})
+               .get("classOptions", {}).get("summon") for request in prepared}
+    requested_spells = {priority["action"]["castSpell"]["spellId"]["spellId"]
+                        for request in prepared
+                        for priority in actor(request)["rotation"]["priorityList"]
+                        if "castSpell" in priority.get("action", {})}
+    assert {8001, 8002} <= gear_ids
+    assert {"Imp", "Voidwalker"} & summons
+    assert 80003 in requested_spells
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED" for row in rows)
+    assert len(paid) == len(rows) == 10
+    assert {"gear", "pet", "apl"} <= {row["proposal_axis"] for row in rows}
+    assert all(row["native_named_build"]["ordered_apl_spells"]
+               and row["native_raw_receipt_sha256"]
+               for row in rows)
+    assert any(any(item["name"] == "Test source hat B"
+                   for item in row["native_named_build"]["equipped_item_names_ids"])
+               for row in rows)
+
+
+def test_unadvertised_source_pet_and_item_axes_remain_explicitly_unpaid(
+        tmp_path, monkeypatch):
+    """No synthetic pet/item options become pretend executable alternatives."""
+    native = make_evaluator(tmp_path, monkeypatch)
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=3,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert rows
+    assert not any(row.get("proposal_axis") in ("gear", "pet") for row in rows)
