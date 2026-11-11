@@ -1,0 +1,89 @@
+name: Work2 — Warlock L20 source-native rest-policy pair
+
+# One bounded owner-approved World-APL experiment. The initial push of this
+# workflow on the Work2 branch starts the first run exactly once; later paid
+# reruns are manual, never implicit on ordinary PR source synchronizations.
+on:
+  push:
+    branches:
+      - work2/world-apl-rest-head-to-head-20261111
+    paths:
+      - .github/workflows/work2-world-apl-rest-head-to-head.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work2-l20-rest-pair-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-rest-pair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact Forever head and pinned Rust fork
+        uses: actions/checkout@v4
+        with:
+          path: project
+          submodules: true
+      - name: Verify selected engine and repository source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C project/integrations/mythicsim-rust/engine rev-parse HEAD)" = "af5dd19adb5cb132bbeb7b79a557b0e94b4a6de3"
+          echo "Forever HEAD $(git -C project rev-parse HEAD)"
+          echo "Native Rust HEAD $(git -C project/integrations/mythicsim-rust/engine rev-parse HEAD)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install only native Python bridge test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Run changed-code rest-pair and native session regressions
+        working-directory: project
+        run: python -m pytest -q tests/test_work2_world_rest_comparison.py tests/test_work2_native_persistent_optimizer.py
+      - name: Compile selected native evaluator
+        working-directory: project/integrations/mythicsim-rust/engine
+        run: cargo build --locked --bin forever-engine
+      - name: Pay one exact native two-hostile full-rest versus 30%-rest pair
+        working-directory: project
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python -m src.v2.runner optimize \
+            --class warlock --tree unconstrained \
+            --start-level 20 --end-level 20 --level-stride 1 \
+            --n-mobs 2 --budget 2 --recover-at-end true \
+            --rng balanced --backend rust --compare-world-rest-30 \
+            --native-binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --out runs/world_apl_l20_rest_comparison.json
+      - name: Expose actual native policy result or explicit refusal
+        if: always()
+        working-directory: project
+        run: |
+          if test -f runs/world_apl_l20_rest_comparison.json; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("runs/world_apl_l20_rest_comparison.json").read_text())
+          comparison = result.get("world_rest_head_to_head")
+          print("EXACT_SOURCE_NATIVE_WORLD_REST_PAIR", json.dumps(comparison, indent=2))
+          print("native_candidates_examined", result.get("native_candidates_examined"))
+          print("source_engine_sha256", result.get("native_engine_binary_sha256"))
+          PY
+          else
+            echo 'NO_NATIVE_PAID_RESULT_FILE (check preceding exact error)' >&2
+          fi
+      - name: Retain raw native paid receipts, refusals and source identities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-world-apl-l20-rest-${{ github.run_id }}
+          path: |
+            project/runs/world_apl_l20_rest_comparison.json
+            project/runs/native-api-paid-cache/*.native.json
+            project/runs/native-api-paid-cache/*.native.cache.json
+          if-no-files-found: warn
+          retention-days: 14
