@@ -1,7 +1,7 @@
-# WoW Forever — OVERALL PLAN v13 (OWNER-DIRECTED)
+# WoW Forever — OVERALL PLAN v14 (OWNER-DIRECTED)
 
-**Date:** 2026-11-09  
-**Status:** **OWNER-DIRECTED.** v13 requires parameterized wide-to-dense performance optimization with charged full-resource sample recovery; v12 makes official M1 PASSes permanent until 148/148, starts self-driving execution during M0.5, and requires reusable native observations. v11 separates useful route delivery from 144-gate certification and removes P4 cast-proof paperwork. v10 adds M0.6: an autonomous one-invocation source-native Decisions-style optimization pipeline; v9 defines M0.5 Warlock and free dual-spec optionality, v8 retains acceptance rules, v7 the single-source architecture and v6 the retirement of P1/P2. Git history contains earlier approvals.
+**Date:** 2026-11-11  
+**Status:** **OWNER-DIRECTED.** v14 assigns the direct Rust API to M0.3 and successful measured generic `optimize` to M0.4; v13 requires parameterized wide-to-dense performance optimization with charged full-resource sample recovery; v12 makes official M1 PASSes permanent until 148/148, starts self-driving execution during M0.5, and requires reusable native observations. v11 separates useful route delivery from 144-gate certification and removes P4 cast-proof paperwork. v10 adds M0.6: an autonomous one-invocation source-native Decisions-style optimization pipeline; v9 defines M0.5 Warlock and free dual-spec optionality, v8 retains acceptance rules, v7 the single-source architecture and v6 the retirement of P1/P2. Git history contains earlier approvals.
 **Purpose:** Define WHAT is built, the end-state and precisely when DONE DONE occurs. No gate implementation procedure or changeable milestone ordering belongs here; those live in PROCESS and milestone plans.
 
 ## Owner-approved v13: parameterized Decisions-style route optimization, not first-legal simulations (2026-11-10)
@@ -44,9 +44,40 @@ Build a generic, source-driven WoW Forever 1–60 solo leveling simulator/optimi
 
 A user must be able to inspect actual selected gear with item identities and scored alternatives; talent ranks and next talent; the actual legal actions/rotations and their measured score; stat weights; encounter, survival and recovery; and why the chosen configuration beat benchmark alternatives. The engine must be generic; game facts and the optimizer's available alternatives come from the exact-SHA-pinned MythicSim Rust source of truth, not class-specific Python catalogues or hardcoded winner builds.
 
+## M0.3 — Direct native Rust API (owner-approved 2026-11-11)
+
+**Outcome:** Forever consumes the pinned MythicSim Rust game options, whole-build preparation and native real-world simulation/recovery through a direct typed callable interface or persistent request/response session. Do not create source/prepared JSON intermediate files per candidate, execute a new CLI process for every candidate, or add parallel Python Warcraft legality implementations. JSON remains acceptable as a wire format and for final saved results, not as file-based orchestration.
+
+**Scope:** Class/level/ruleset/scenario-parametric native `get_options`, `prepare` and `evaluate` must expose usable gear, enchant, talent, spell and APL alternatives, accepted/refused whole builds, gsim↔Rust spatial-world ACK execution and genuinely paid terminal recovery to full health **and** mana. Native Forever options exclude items with combat-rating stats (not a Forever stat), and retain native percent stats as percent, with no rating conversion. One rejected item drops that candidate, not the entire search. Verify real native results and errors through a focused integration run; do not compare Rust's deterministic-protobuf SHA against JSON-file SHA or create extra result-acceptance gates.
+
+**Boundary:** M0.3 is the reusable engine API, **not** the first successful optimized multi-level outcome. That is M0.4. Source-native game rules and option legality stay in Rust for every class; no Warlock-only API or hardcoded winner.
+
+## M0.4 — First genuine successful generic optimize invocation (owner-approved 2026-11-11)
+
+**Exact required one-command delivery:**
+
+```bash
+python -m src.v2.runner optimize \
+  --class warlock \
+  --tree unconstrained \
+  --start-level 20 \
+  --end-level 60 \
+  --level-stride 20 \
+  --n-mobs 2 \
+  --recover-at-end true \
+  --rng balanced \
+  --backend rust
+```
+
+**Completion means this command runs successfully using the M0.3 API and real pinned Rust + gsim/native execution**, without manually launching subruns, supplying known winners, inserting a Warlock-specific orchestration script or switching to a mocked evaluator. Within the same optimizer request it searches actually competing talent families/hybrids, equipment, pet and APL/pull/recovery policies at **L20, L40 and L60**, including cross-level/backward seeding, and produces **at least one complete mutually compatible measured sampled-level build path**. Preserve slower early candidates when later-level cumulative performance can make their paths better. The reported output includes per-level talents, actual gear item identities, pet, APL, scored alternative builds, genuine two-mob combat/movement elapsed time, real terminal recovery to **100% HP and 100% mana**, and authentic engine/scenario receipts. Neither a first-legal build nor three independent per-level winners is optimization.
+
+**Level stride is sampling, not a demand to simulate skipped levels.** Do not run or require combat or preparation at L21–39 or L41–59 for this request. Sampled-compatible allocations must follow source-native legal point investment with no invented respec; unmeasured intermediate progression, XP, travel and training must be labeled unmeasured, not fabricated as a continuous 20–60 leveling run. The same generic optimizer supports other classes, strides, mob counts and budgets as parameters, not distinct algorithms.
+
+**No false-green outcome:** unit tests, mock results, green CI without genuine native combat, exit code zero with no winner, an empty `NO_COMPLETE_COMPATIBLE_SAMPLED_PATH` result, unranked/refused candidates or an SHA-identity paperwork check do **not** satisfy M0.4. Reuse already-paid compatible observations; retain precise native error reasons and continue over other valid item/build candidates. M0.4 delivers a real sparse result; M0.5 expands it to a playable continuous Warlock 10–60 route, while M0.6 handles fully autonomous end-to-end execution. No new M1 gate or change to permanent accepted PASSes.
+
 ## M0.5 — Warlock real gates and continuous optimal leveling strategy (owner-approved 2026-11-09)
 
-**Near-term outcome milestone, not an extra acceptance gate or replacement for M1.** Make Warlock the first end-to-end playable demonstration of the intended generic source-native optimizer. Earn the real existing **Warlock L20, L30, L40 and L60 × unrestricted/Affliction/Demonology/Destruction** checkpoint results (16 checkpoints, 144 active P3–P7.5 gate results) using the existing contracts and Merge-owned M1 ledger, while separately delivering a coherent, source-grounded **level 10–60** Warlock leveling simulation and human-playable guide. Intermediate checkpoints do not by themselves prove a full leveling journey. Preserve the established **148-checkpoint/1,332-gate** first-phase DONE DONE target and nine gate predicates exactly.
+**Near-term outcome milestone, not an extra acceptance gate or replacement for M1.** Continue from M0.4's genuinely measured compatible L20/L40/L60 sparse build path into a playable Warlock 10–60 strategy; do not require M0.5's continuous replay or M1 certification for M0.4 to count. Make Warlock the first end-to-end playable demonstration of the intended generic source-native optimizer. Earn the real existing **Warlock L20, L30, L40 and L60 × unrestricted/Affliction/Demonology/Destruction** checkpoint results (16 checkpoints, 144 active P3–P7.5 gate results) using the existing contracts and Merge-owned M1 ledger, while separately delivering a coherent, source-grounded **level 10–60** Warlock leveling simulation and human-playable guide. Intermediate checkpoints do not by themselves prove a full leveling journey. Preserve the established **148-checkpoint/1,332-gate** first-phase DONE DONE target and nine gate predicates exactly.
 
 **What the full Warlock route must answer:** an overall elapsed-leveling-time-optimal *known executable* strategy across levels, with one consistent legal talent-point path, gear/spell/pet/rotation/pull/recovery choices, paid eating/drinking, survival, movement, XP and level progression. At **level 40**, consider dual spec jointly with the continuing primary path: choose legal progression for **both** independently maintained talent trees, which one to activate for each relevant segment/encounter, and any sourced purchase/training/respec/switching costs or restrictions. Output level-by-level talent choices, gear upgrades, pet and APL/pull/regen policy, switch guidance, measured route objective, comparable baseline and reproducible native-backed progression evidence. A proxy, unrelated per-level fastest builds or stitched checkpoint winners is **not** an executed full route.
 
@@ -106,6 +137,8 @@ A milestone report can be updated by agents. A sacred-process or overall-goal ch
 As of the source records inspected 2026-10-15, strictly certified coverage was **0/148**, with earlier Druid L20/L30 results retained as diagnostic/previous-contract evidence rather than deleted. Those states are temporal bookkeeping, not permanent plan definitions. That Druid L20 → Druid L30 → Mage L30 priority was historical. The owner-selected current near-term priority is **M0.5 Warlock**, as defined above; concrete work dispatch remains in the editable milestone/priority plan.
 
 ## Approval record
+
+- **v14 owner-approved 2026-11-11:** M0.3 is the direct generic Rust options/prepare/evaluate API with native Forever-only item stats and no file/SHA false gates. M0.4 is complete only when the exact `python -m src.v2.runner optimize --class warlock --tree unconstrained --start-level 20 --end-level 60 --level-stride 20 --n-mobs 2 --recover-at-end true --rng balanced --backend rust` invocation returns genuinely scored, mutually compatible L20/L40/L60 builds. M0.5 continues the full Warlock 10–60 route/M1 work; M0.6 automates the complete end-to-end route. No new M1 predicates.
 
 - This v5 text was drafted following the user's explicit governance instructions on 2026-10-15.
 - **v6 owner-approved 2026-11-03:** retire P1/P2 formal acceptance; keep 148 checkpoint identities and the remaining nine active gates.
