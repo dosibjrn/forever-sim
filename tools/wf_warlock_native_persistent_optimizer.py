@@ -300,24 +300,29 @@ class PersistentNativeEvaluator:
             _variants(seed_talents, trees, points_available=points),
             max(8, budget * 4)))
         native_family_talents = list(dict.fromkeys(proposed_talents))
-        head = native_family_talents[:3]
+        # Spend the limited paid budget on Rust-advertised equipment first.
+        # The historical L20 seed contains IDs that newer source options
+        # no longer offer. Its unmodified forms remain available as explicit
+        # native-prepare attempts, but must not crowd out clean competing
+        # tree families at the start of a bounded search.
+        variants = native_family_talents[:3]
+        if seed_talents not in variants:
+            variants.append(seed_talents)
+        variants.extend(variant for variant in native_family_talents[3:]
+                        if variant != seed_talents)
         sources = []
-        # The source Rust item list already excludes combat-rating gear. A
-        # legacy L20 seed equipped with that gear must not spend the first
-        # three native attempts on predictably rejected talent-only changes.
-        # Pair *each* distinct native talent family with a gear-cleared
-        # proposal before moving to the next family. Rust still decides
-        # whether any source-produced candidate prepares or kills real mobs.
-        for variant in head:
+        deferred_unmodified = []
+        for variant in variants:
             proposal = self._source(level, variant)
-            sources.append(proposal)
-            sources.extend(islice(_source_item_alternatives(proposal, options), 1))
-        if seed_talents not in head:
-            sources.append(seed)
-            sources.extend(islice(_source_item_alternatives(seed, options), 1))
-        sources.extend(self._source(level, variant)
-                       for variant in native_family_talents[3:]
-                       if variant != seed_talents)
+            cleaned = next(_source_item_alternatives(proposal, options), None)
+            if cleaned is None:
+                sources.append(proposal)
+            else:
+                sources.append(cleaned)
+                deferred_unmodified.append(proposal)
+        # Preserve source-seed/baseline refusals without forcing predictably
+        # unsupported equipment into the first expensive native attempts.
+        sources.extend(deferred_unmodified)
         seen: set[str] = set()
         results: list[dict] = []
         apl_expanded = False
@@ -345,9 +350,13 @@ class PersistentNativeEvaluator:
                     apl_expanded = True
                     # Only prepared-native SpellFlagAPL actions may enter a
                     # changed rotation. The new candidate must prepare again.
-                    # Do not starve alternative legal tree families
-                    # before paying optional prepared-native APL mutations.
-                    sources.extend(islice(_native_apl_variants(source, prepared), 2))
+                    # The first successfully prepared high-level actor may
+                    # still fail to kill a level-scaled hostile mob using the
+                    # low-level fixture's rotation. Give its Rust-advertised
+                    # executable APL alternatives a bounded *early* chance,
+                    # not a tail slot beyond the current paid budget.
+                    sources[index:index] = list(islice(
+                        _native_apl_variants(source, prepared), 2))
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
                     target_hp=target_hp, cid=cid)

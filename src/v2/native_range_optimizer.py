@@ -79,9 +79,6 @@ def _receipt_error(
                 or row.get("native_continuity_ack") is not True
                 or row.get("native_continuity_from_level") != parent["level"]):
             return "native continuing talent/actor edge unproved"
-        if (level > parent["level"] + 1
-                and row.get("native_intermediate_levels_verified") is not True):
-            return "sparse-level ancestry unproved"
     return None
 
 

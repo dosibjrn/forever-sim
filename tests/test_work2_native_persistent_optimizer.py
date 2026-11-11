@@ -3,6 +3,7 @@
 Fake Rust responses cover Forever forwarding only; they are NOT paid native
 M0.4 results. Native world mechanics and original ACKs are owned by Rust.
 """
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -184,11 +185,46 @@ def test_paid_candidates_receive_level_scaled_lethal_timeout_and_native_gear_opt
                for request in requests)
     first = requests[0]["request"]["raid"]["parties"][0]["players"][0]
     second = requests[1]["request"]["raid"]["parties"][0]["players"][0]
-    assert first["talentsString"] == second["talentsString"]
-    assert any(item.get("id", 0) != 0 for item in first["equipment"]["items"])
+    # No native item options were advertised by FakeSession: all legacy
+    # equipment is stripped before the *first* native prepare, regardless
+    # of the talent-family proposal. Rust remains responsible for legality.
+    assert all(item.get("id", 0) == 0 for item in first["equipment"]["items"])
     assert all(item.get("id", 0) == 0 for item in second["equipment"]["items"])
     assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
                for row in rows)
+
+
+def test_native_prepared_apl_proposals_are_scored_before_more_talent_families(
+        tmp_path, monkeypatch):
+    def prepared_actions(source, prepared):
+        for action_id in (70001, 70002):
+            proposal = copy.deepcopy(source)
+            priorities = proposal["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"]
+            priorities[-1] = {"action": {"castSpell": {
+                "spellId": {"spellId": action_id}}}}
+            yield proposal
+
+    monkeypatch.setattr(api, "_native_apl_variants", prepared_actions)
+    native = make_evaluator(tmp_path, monkeypatch)
+    try:
+        rows = native(level=60, parent=None, mob_count=2, budget=3,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert len(rows) == 3
+    requests = [call["request"] for call in FakeSession.instances[0].calls
+                if call["op"] == "prepare"]
+    assert len(requests) == 3
+    def last_spell(request):
+        player = request["raid"]["parties"][0]["players"][0]
+        return player["rotation"]["priorityList"][-1][
+            "action"]["castSpell"]["spellId"]["spellId"]
+    assert [last_spell(request) for request in requests] == [
+        1088, 70001, 70002]
+    assert all(all(item.get("id", 0) == 0 for item in request[
+        "raid"]["parties"][0]["players"][0]["equipment"]["items"])
+               for request in requests)
 
 def test_forward_talent_proposals_preserve_earlier_paid_ancestry_without_respec():
     from tools.wf_warlock_native_persistent_optimizer import _forward_native_talent_hints
