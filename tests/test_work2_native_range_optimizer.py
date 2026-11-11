@@ -663,7 +663,7 @@ def test_one_call_cli_manifest_mode_requires_real_native_source_inputs(tmp_path)
         ])
 
 
-def test_scored_adapter_source_identity_mismatch_prevents_paid_native_invocation(tmp_path):
+def test_scored_adapter_malformed_source_prevents_paid_native_invocation(tmp_path):
     import json
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
     binary = tmp_path / "rust-engine"
@@ -681,7 +681,10 @@ def test_scored_adapter_source_identity_mismatch_prevents_paid_native_invocation
         run_command=_fake_native_comparison(calls))
     assert calls == []
     assert len(result) == 2
-    assert any("SOURCE_IDENTITY_MISMATCH" in r["status"] for r in result)
+    # Invalid JSON must still refuse before native combat; it must not be
+    # mislabeled as a comparison of protobuf and JSON-file SHA digests.
+    assert any("NATIVE_PREPARED_OR_CONTINUITY_REFUSAL" in r["status"]
+               for r in result)
     assert any("NOT_COMPETITIVE_NATIVE_PREPARED_FRONTIER" in r["status"]
                for r in result)
 
