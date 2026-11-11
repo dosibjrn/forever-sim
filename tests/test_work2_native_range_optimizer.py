@@ -299,6 +299,7 @@ def _fake_native_comparison(call_log, *, drop_terminal=False, fail=False):
 
 
 def test_scored_adapter_executes_native_prepared_candidates_and_returns_paid_receipts(tmp_path):
+    import json
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
     binary = tmp_path / "rust-engine"
     binary.write_bytes(b"native-binary-test")
