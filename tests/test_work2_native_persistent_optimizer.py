@@ -1050,3 +1050,95 @@ def test_native_paid_world_ndjson_refusal_keeps_rust_code_and_no_fake_kills():
             prepared_payload={"request_sha256": "b" * 64})
     assert old.value.code is None
     assert old.value.reason == "legacy refusal"
+
+
+def test_world_apl_30pct_evaluate_frame_requires_native_applied_threshold_echo():
+    """Current Rust ignores extra API fields: it must never score as 30% rest."""
+    from live_two_world_pulls import (
+        _persistent_api_evaluate_request, _verify_native_recovery_thresholds,
+    )
+
+    baseline = _persistent_api_evaluate_request(
+        targets=2, rng_mode="balanced", health_threshold=1.0,
+        mana_threshold=1.0)
+    assert baseline == {
+        "op": "evaluate", "targets": 2, "rng_mode": "balanced",
+        "recover_at_end": True,
+    }
+    thirty = _persistent_api_evaluate_request(
+        targets=2, rng_mode="balanced", health_threshold=0.3,
+        mana_threshold=0.3)
+    assert thirty == dict(
+        baseline, health_threshold=0.3, mana_threshold=0.3)
+    with pytest.raises(AssertionError, match="THRESHOLDS_NOT_APPLIED"):
+        _verify_native_recovery_thresholds(
+            {"thresholds": {"health_fraction": 1.0, "mana_fraction": 1.0}},
+            health_threshold=0.3, mana_threshold=0.3)
+    with pytest.raises(AssertionError, match="THRESHOLDS_NOT_APPLIED"):
+        _verify_native_recovery_thresholds(
+            {}, health_threshold=0.3, mana_threshold=0.3)
+    _verify_native_recovery_thresholds(
+        {"thresholds": {"health_fraction": 0.3, "mana_fraction": 0.3}},
+        health_threshold=0.3, mana_threshold=0.3)
+
+
+def test_world_apl_30pct_competes_but_unacknowledged_native_policy_never_ranks(
+        tmp_path, monkeypatch):
+    """One serial paid competitor; Rust's unacknowledged 30% policy is refused."""
+    calls = []
+    def current_rust(binary, prepared_path, **kwargs):
+        thresholds = (kwargs["health_threshold"], kwargs["mana_threshold"])
+        calls.append(thresholds)
+        if thresholds == (0.3, 0.3):
+            raise AssertionError(
+                "RUST_WORLD_NATIVE_RECOVERY_THRESHOLDS_NOT_APPLIED:"
+                " requested=(0.3,0.3) observed=1.0/1.0")
+        return paid_world(binary, prepared_path, **kwargs)
+
+    native = make_evaluator(tmp_path, monkeypatch, current_rust)
+    native.compare_world_rest_30 = True
+    try:
+        rows = native(
+            level=20, parent=None, mob_count=2, budget=2,
+            rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert calls == [(1.0, 1.0), (0.3, 0.3)]
+    assert [r["status"] for r in rows] == [
+        "MEASURED_NATIVE_FULLY_RECOVERED", "NATIVE_API_CANDIDATE_REFUSED"]
+    assert rows[0]["native_world_policy"]["rest_when_health_below"] == 1.0
+    assert rows[1]["proposal_axis"] == "world_rest_30pct"
+    assert rows[1]["native_world_policy"]["rest_when_mana_below"] == 0.3
+    assert "THRESHOLDS_NOT_APPLIED" in rows[1]["native_refusal"]
+    assert len(list((tmp_path / "paid").glob("*.native.json"))) == 1
+
+
+def test_native_rest_policies_have_distinct_session_and_disk_cache_identities(
+        tmp_path, monkeypatch):
+    """30% cannot reuse historical paid 100%-rest evidence, even for same source."""
+    calls = []
+    def paid_policy(binary, prepared_path, **kwargs):
+        thresholds = (kwargs["health_threshold"], kwargs["mana_threshold"])
+        calls.append(thresholds)
+        original = dict(kwargs, health_threshold=1.0, mana_threshold=1.0)
+        return paid_world(binary, prepared_path, **original)
+
+    native = make_evaluator(tmp_path, monkeypatch, paid_policy)
+    try:
+        source = native._source(20, None)
+        prepared = native.session.request({
+            "op": "prepare", "actor_level": 20, "request": source})
+        params = dict(level=20, mobs=2, target_hp=100.0)
+        baseline = native._paid(source, prepared, cid="baseline", **params)
+        changed = native._paid(
+            source, prepared, cid="changed", health_threshold=0.3,
+            mana_threshold=0.3, **params)
+        changed_again = native._paid(
+            source, prepared, cid="again", health_threshold=0.3,
+            mana_threshold=0.3, **params)
+    finally:
+        native.close()
+    assert calls == [(1.0, 1.0), (0.3, 0.3)]
+    assert baseline[2] is False and changed[2] is False
+    assert changed_again[2] is True
+    assert baseline[3] != changed[3] == changed_again[3]
