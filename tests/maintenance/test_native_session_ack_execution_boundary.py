@@ -42,3 +42,31 @@ def test_selected_native_world_job_reaches_executable_checks_without_source_grep
     assert "probe.run(binary, request, distance=15.0" in text
     assert "live_two_world_pulls.py" in text
     assert "--require-native-health-damage" in text
+
+def test_clock_ack_job_ignores_unrelated_gate_helper_and_priest_unit_test_edits():
+    """Keep the ACK suite focused; both excluded files have their own CI."""
+    root = Path(__file__).resolve().parents[2]
+    ack = (root / ".github/workflows/native-session-ack-regressions.yml"
+           ).read_text(encoding="utf-8")
+    source = (root / ".github/workflows/generic-source-search-regressions.yml"
+              ).read_text(encoding="utf-8")
+    ack_paths = ack.split("jobs:", 1)[0]
+    source_paths = source.split("jobs:", 1)[0]
+    for path in ("tools/wf_gate_p4_p5_partial.py",
+                 "tests/test_wf_native_priest_l20_paid.py"):
+        assert path not in ack_paths
+        assert path in source_paths
+    # The generic source suite invokes the Priest test directly, and its
+    # P4/P5 cold-snapshot regression imports the helper under test.
+    source_job = source.split("jobs:", 1)[1]
+    assert "tests/test_wf_native_priest_l20_paid.py" in source_job
+    assert "tests/test_work1_p4_p5_single_cold_snapshot.py" in source_job
+
+    # Keep real clock, native world and the legacy Warlock driver exercised:
+    # the ACK suite actually imports this driver through its paid-chain tests.
+    for path in ("src/game/runtime/native_step_protocol.py",
+                 "src/game/runtime/go_native_world_damage_ack.py",
+                 "integrations/mythicsim-rust/live_two_world_pulls.py",
+                 "tools/wf_warlock_l20_100mob.py"):
+        assert path in ack_paths
+    assert "tests/test_work2_warlock_native_paid_chain.py" in ack
