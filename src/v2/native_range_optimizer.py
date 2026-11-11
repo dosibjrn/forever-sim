@@ -455,8 +455,19 @@ def _optimize_compatible_samples(
         supports_hints = ("candidate_hints" in parameters or any(
             parameter.kind is Parameter.VAR_KEYWORD
             for parameter in parameters.values()))
+        # Adaptive passes are allowed only for scorers that explicitly know
+        # how to skip previously paid source+world-policy identities.
+        supports_exclusion = "excluded_paid_source_policies" in parameters
     except (TypeError, ValueError):
         supports_hints = False
+        supports_exclusion = False
+    adaptive_capable = supports_hints and supports_exclusion
+    # Keep source-native attempts for a finalist challenger rather than
+    # letting backwards ancestry probes exhaust the unspent search budget.
+    adaptive_reserve = (
+        max(1, (budget - initial_budget) // 2)
+        if adaptive_capable and budget > initial_budget else 0
+    )
     paid_by_level: dict[int, list[Mapping[str, Any]]] = {}
 
     def forward_seeded_evaluator(**request):
@@ -560,7 +571,9 @@ def _optimize_compatible_samples(
         # and Rust prepare/ACK to accept/refuse them; no Python talent legality,
         # inferred transition, free respec, or unmeasured elapsed is created.
         for index in range(len(levels) - 2, -1, -1):
-            remaining = budget - measured["native_candidates_examined"]
+            remaining = (
+                budget - adaptive_reserve - measured["native_candidates_examined"]
+            )
             if remaining <= 0:
                 break
             level = levels[index]
@@ -603,7 +616,13 @@ def _optimize_compatible_samples(
                 attempt["rejected_native_attempts"]
             )
             original = measured["independent_level_rankings"].setdefault(key, [])
-            existing = {row["source_request_sha256"] for row in original}
+            # A serial and rolling receipt can share the same prepared source.
+            # Their different paid policies are distinct measured candidates.
+            existing = {
+                (row["source_request_sha256"],
+                 json.dumps(row.get("native_world_policy"), sort_keys=True))
+                for row in original
+            }
             selected_engine = measured["native_engine_binary_sha256"]
             for row in attempt["independent_level_rankings"].get(key, []):
                 if selected_engine is not None and (
@@ -614,12 +633,16 @@ def _optimize_compatible_samples(
                         "reason": "native engine binary differs within optimization request",
                     })
                     continue
-                if row["source_request_sha256"] in existing:
+                identity = (
+                    row["source_request_sha256"],
+                    json.dumps(row.get("native_world_policy"), sort_keys=True),
+                )
+                if identity in existing:
                     continue
                 if selected_engine is None:
                     selected_engine = row["engine_binary_sha256"]
                     measured["native_engine_binary_sha256"] = selected_engine
-                existing.add(row["source_request_sha256"])
+                existing.add(identity)
                 original.append(row)
             original.sort(key=lambda row: (
                 row["native_elapsed_seconds"], row["source_request_sha256"]))
@@ -630,6 +653,125 @@ def _optimize_compatible_samples(
         ]
         matched_levels, ranked = compatible_frontier()
 
+    # Select the next native-paid experiment from *observed* competing
+    # sampled paths. No level, build, movement, damage or recovery is modeled
+    # here: every additional observation goes through the same native scorer.
+    # A scorer must explicitly support source+policy exclusion; without it a
+    # second call could only spend budget replaying its bootstrap proposals.
+    adaptive_levels: list[int] = []
+    adaptive_attempts = 0
+    if adaptive_capable and ranked and measured["native_candidates_examined"] < budget:
+        # A single bounded pass guarantees that a repeatedly refused level
+        # cannot consume the whole request. Recompute the path after every
+        # paid batch so a new viable ancestor may change the selected route.
+        pending = list(levels)
+        while pending and measured["native_candidates_examined"] < budget:
+            def decision_priority(level: int):
+                rows = measured["independent_level_rankings"].get(str(level), [])
+                finalists = {
+                    (step["source_request_sha256"],
+                     json.dumps(step.get("native_world_policy"), sort_keys=True))
+                    for path in ranked[:beam_width]
+                    for step in path["steps"] if step["level"] == level
+                }
+                # Prefer actual contested finalist decisions; within them,
+                # narrow measured margins are more informative than a large
+                # already-proven local win. A one-candidate level still needs
+                # an independent challenger.
+                if len(rows) >= 2:
+                    gap = max(0.0, (
+                        rows[1]["native_elapsed_seconds"]
+                        - rows[0]["native_elapsed_seconds"]
+                    ) / rows[0]["native_elapsed_seconds"])
+                else:
+                    gap = 0.0
+                return (-int(len(finalists) > 1), gap, len(rows), level)
+
+            level = min(pending, key=decision_priority)
+            pending.remove(level)
+            current = measured["independent_level_rankings"].get(str(level), [])
+            if not current:
+                continue
+            available = budget - measured["native_candidates_examined"]
+            allowance = max(1, available // (len(pending) + 1))
+            excluded = {
+                (row["source_request_sha256"],
+                 json.dumps(row.get("native_world_policy"), sort_keys=True))
+                for row in current
+            }
+            # Existing measured survivors are hints, not claimed legal
+            # successors. Native options/prepare decides every new proposal.
+            hints = [{
+                "talents": row["talents"], "from_level": level,
+                "source_request_sha256": row["source_request_sha256"],
+            } for row in current[:max(beam_width * 2, 6)]
+                if _talent_ranks(row.get("talents")) is not None]
+            for later in levels:
+                if later <= level:
+                    continue
+                for row in measured["independent_level_rankings"].get(
+                        str(later), [])[:beam_width]:
+                    if _talent_ranks(row.get("talents")) is not None:
+                        hints.append({
+                            "talents": row["talents"], "from_level": later,
+                            "source_request_sha256": row["source_request_sha256"],
+                        })
+
+            def fresh_native_evaluator(**request):
+                return evaluate(
+                    **request, candidate_hints=hints,
+                    excluded_paid_source_policies=excluded,
+                )
+
+            attempt = optimize(
+                level, level, 1, mob_count, allowance,
+                evaluate=fresh_native_evaluator, beam_width=beam_width,
+                rng_mode=rng_mode, iterations=iterations,
+                recover_to_full=True, mode="independent",
+            )
+            consumed = attempt["native_candidates_examined"]
+            adaptive_attempts += consumed
+            measured["native_candidates_examined"] += consumed
+            adaptive_levels.append(level)
+            key = str(level)
+            measured["native_attempts_by_level"][key] = (
+                measured["native_attempts_by_level"].get(key, 0) + consumed
+            )
+            measured["rejected_native_attempts"].extend(
+                attempt["rejected_native_attempts"]
+            )
+            existing_rows = measured["independent_level_rankings"].setdefault(key, [])
+            selected_engine = measured["native_engine_binary_sha256"]
+            for row in attempt["independent_level_rankings"].get(key, []):
+                if (selected_engine is not None
+                        and row["engine_binary_sha256"] != selected_engine):
+                    measured["rejected_native_attempts"].append({
+                        "level": level,
+                        "candidate_id": row["receipt"].get("candidate_id"),
+                        "reason": "native engine binary differs within optimization request",
+                    })
+                    continue
+                identity = (
+                    row["source_request_sha256"],
+                    json.dumps(row.get("native_world_policy"), sort_keys=True),
+                )
+                if identity in excluded:
+                    continue
+                if selected_engine is None:
+                    selected_engine = row["engine_binary_sha256"]
+                    measured["native_engine_binary_sha256"] = selected_engine
+                excluded.add(identity)
+                existing_rows.append(row)
+            existing_rows.sort(key=lambda row: (
+                row["native_elapsed_seconds"], row["source_request_sha256"],
+                json.dumps(row.get("native_world_policy"), sort_keys=True)))
+            measured["competing_qualified_paths_by_level"][key] = len(existing_rows)
+            matched_levels, ranked = compatible_frontier()
+        measured["sampled_levels_completed"] = [
+            level for level in levels
+            if measured["independent_level_rankings"].get(str(level))
+        ]
+
     measured.update({
         "status": ("SAMPLED_COMPATIBLE_PATH_RANKED" if len(ranked) >= 2
                    else "SAMPLED_COMPATIBLE_PATH_PROVISIONAL" if ranked
@@ -637,6 +779,12 @@ def _optimize_compatible_samples(
         "candidate_budget": budget,
         "backward_seeded_native_attempts": seeded_attempts,
         "backward_seeded_levels": seeded_levels,
+        "adaptive_native_attempts": adaptive_attempts,
+        "adaptive_selected_levels": adaptive_levels,
+        "adaptive_native_candidates_measured": sum(
+            len(measured["independent_level_rankings"].get(str(level), []))
+            for level in levels
+        ),
         "search_mode": "compatible",
         "class": class_name, "tree": talent_tree, "backend": backend,
         "sampled_levels_compatible": matched_levels,
