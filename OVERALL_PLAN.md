@@ -112,7 +112,7 @@ Each accepted checkpoint includes source-legal real whole-build decisions, genui
 
 ## Broader product destination beyond the 148-checkpoint finish line
 
-Eventually enable coherent outputs for **all nine classes × levels 1–60** (**540** class-level reports) and legal continuous 1–60 routes, including irrevocable talent choices, spell ranks, gear availability/acquisition, training/travel, cooldown and resource state across pulls, recovery and survival. Routes must be playable, not simple concatenations of independent per-level local winners. Explicit dual-spec/respec only under sourced rules. Track this separately from the 148/148 current checkpoint scoreboard; do not move the initial goalposts unilaterally.
+Eventually enable coherent outputs for **all nine classes × levels 1–60** (**540** class-level reports) and legally compatible sampled-level build paths, including sourced talent choices, spell ranks, available gear, pull/recovery policies and optional dual-spec/respec only when supported by native rules. Keep missing or unsimulated decisions explicit. This broader coverage target is separate from both M0.6's autonomous orchestration and M1's 148/148 checkpoint scoreboard; do not add world/XP replay prerequisites or move initial goalposts unilaterally.
 
 ## Immutable product constraints
 
