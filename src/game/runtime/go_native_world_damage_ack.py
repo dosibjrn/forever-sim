@@ -53,6 +53,9 @@ class GsimNativeDamageWorldApplier:
         self._native_handoff_ns: dict[int, int] = {}
         # A dead gsim mob alone is not evidence that the native actor killed it.
         self._last_native_lethal_target_id = None
+        # Remember real native effects already applied to each dead 2D target.
+        # A selected dead B can remain selected while A's DoTs still tick.
+        self._native_lethal_acked_ids: set[str] = set()
         # Damage for a later mob must not be dated before its live world handoff.
         self._target_handoff_ns = None
 
@@ -85,6 +88,7 @@ class GsimNativeDamageWorldApplier:
         self._native_target_ids = {0: next_target_id}
         self._native_identities.clear()
         self._native_handoff_ns = {0: handoff_ns}
+        self._native_lethal_acked_ids.clear()
         self._last_native_lethal_target_id = None
 
     def begin_overlapping_world_target(self, next_target_id: str,
@@ -150,7 +154,15 @@ class GsimNativeDamageWorldApplier:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_TARGET_UNBOUND")
         target = self._runtime.targets[target_id]
         if not target.alive:
-            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD")
+            # Rust may keep B selected after its real lethal ACK while an
+            # older live A has source DoTs pending. A fresh/pre-dead B, an
+            # unbound slot or a fully dead encounter cannot use this path.
+            if (target_by_index.get(1) != target_id
+                    or target_id not in self._native_lethal_acked_ids
+                    or 0 not in target_by_index
+                    or not self._runtime.targets[target_by_index[0]].alive):
+                raise NativeDamageWorldApplicationError(
+                    "WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD")
         events = response.get("native_damage_events")
         control_events = response.get("native_control_events", [])
         pid = response.get("native_process_id")
@@ -165,7 +177,7 @@ class GsimNativeDamageWorldApplier:
         max_health = float(target.max_health)
         old_health = float(target.health)
         if (not isfinite(max_health) or max_health <= 0
-                or not isfinite(old_health) or old_health <= 0
+                or not isfinite(old_health) or old_health < 0
                 or old_health > max_health):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MAX_HEALTH_INVALID")
 
@@ -358,11 +370,20 @@ class GsimNativeDamageWorldApplier:
         ) or bool(applied_control_ids)
         if (world_changed and after_hash == digest) or (not world_changed and after_hash != digest):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_NOT_CHANGED_AS_EXPECTED")
+        # Commit deaths only when a valid source event actually took a living
+        # 2D target to zero. A later old-target overkill is a no-op, not a
+        # second kill or a newly acquired dead enemy.
+        self._native_lethal_acked_ids.update(
+            world_id for index, world_id in target_by_index.items()
+            if health_before_by_index[index] > 0
+            and self._runtime.targets[world_id].health == 0
+            and damage_by_index.get(index, 0.0) > 0
+        )
         self._target_id = target_id
+        # Preserve B's prior lethal ancestry while A's old DoTs finish.
+        # A later serial handoff is still forbidden until BOTH targets die.
         self._last_native_lethal_target_id = (
-            target_id if damage_by_index.get(next(
-                index for index, world_id in target_by_index.items()
-                if world_id == target_id), 0.0) > 0.0 and not target.alive else None
+            target_id if target_id in self._native_lethal_acked_ids else None
         )
         self._native_target_ids = dict(target_by_index)
         self._native_identities = target_identity
