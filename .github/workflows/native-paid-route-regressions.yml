@@ -2,7 +2,7 @@ name: Native-paid route continuity regressions
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     branches: [main]
     paths:
       - src/v2/path_dp.py
@@ -77,7 +77,7 @@ permissions:
 
 jobs:
   native-paid-route:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -240,5 +240,60 @@ jobs:
           path: |
             predecessor-staged/
             cross-tree/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Explicitly opt in with the PR label. This is a bounded changed-candidate
+  # native measurement, NOT an M1 gate or a replay of the 41-level M0.5 run.
+  # The generic optimize command remains the production entrypoint.
+  work2-native-paid-l20-l40:
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'work2-native-paid-l20-l40' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact Work2 HEAD and source engine pin
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: recursive
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install required native world Python dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Verify exact source gitlink and build callable Rust API
+        shell: bash
+        run: |
+          set -euo pipefail
+          selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
+          actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
+          test "$selected" = "$actual"
+          echo "FOREVER_HEAD=$(git rev-parse HEAD)"
+          echo "SELECTED_RUST_SHA=$selected"
+          cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+          sha256sum integrations/mythicsim-rust/engine/target/debug/forever-engine
+      - name: Pay new L20 and L40 native gear, pet and APL candidates
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/work2-native-paid-l20-l40
+          python -m src.v2.runner optimize \
+            --class warlock --tree unconstrained \
+            --start-level 20 --end-level 40 --level-stride 20 \
+            --n-mobs 2 --recover-at-end true --rng balanced --backend rust \
+            --budget 10 --beam-width 3 \
+            --native-binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --out evidence/work2-native-paid-l20-l40/result.json \
+            --shortlist-out evidence/work2-native-paid-l20-l40/top-3.md
+      - name: Preserve genuine paid receipts, ranking and native refusals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-native-paid-l20-l40-${{ github.run_id }}
+          path: |
+            evidence/work2-native-paid-l20-l40/
+            runs/native-api-paid-cache/
           if-no-files-found: warn
           retention-days: 14
