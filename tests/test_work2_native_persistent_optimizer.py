@@ -783,6 +783,15 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
                 for request in prepared}
     summons = {actor(request).get("warlock", {}).get("options", {})
                .get("classOptions", {}).get("summon") for request in prepared}
+    pet_preparations = [request for request in prepared if actor(request).get(
+        "warlock", {}).get("options", {}).get("classOptions", {}).get(
+            "summon") in {"Imp", "Voidwalker"}]
+    # Native-advertised equipment is the reference for pet comparisons,
+    # not the legacy fixture after unsupported items have been zeroed out.
+    assert actor(prepared[0])["equipment"]["items"][0]["id"] == 8001
+    assert pet_preparations and all(
+        actor(request)["equipment"]["items"][0]["id"] == 8001
+        for request in pet_preparations)
     requested_spells = {priority["action"]["castSpell"]["spellId"]["spellId"]
                         for request in prepared
                         for priority in actor(request)["rotation"]["priorityList"]
