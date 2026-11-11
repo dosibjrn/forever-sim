@@ -940,6 +940,14 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                         source_sequence=ticks, last_clock_ns=last_clock_ns,
                         boundary_clock_ns=clock_ns)
                     iteration = index
+                    # The source APL may switch after the prior world tick.
+                    # Charge that elapsed source-clock gap in the real world
+                    # before engaging B or scheduling any movement.
+                    switch_ns = rolling_switch["switch_native_clock_ns"]
+                    if switch_ns % 1_000_000:
+                        raise AssertionError(
+                            "RUST_WORLD_OVERLAP_SOURCE_SWITCH_MS_UNSUPPORTED")
+                    world.advance_to(switch_ns / 1e9)
                     world.engage_target(targets[iteration])
                     world.select_target(targets[iteration])
                     applier.begin_overlapping_world_target(targets[iteration])
@@ -1016,10 +1024,16 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 ack["applied_event_ids"] = []
             accumulate_acked_native_source_effects(
                 native_source_damage_effects_by_caster, receipt, ack)
-            if rolling_switch is not None:
+            if (rolling_switch is not None
+                    and before_health[targets[0]] > world.targets[targets[0]].health):
+                # The old A really lost 2D HP in this ACK. Only then count
+                # source-periodic effects on A; a dead-target overkill event
+                # must never become evidence of a live post-switch DoT tick.
+                applied = set(ack["applied_event_ids"])
                 old_target_dot_ticks_after_switch += sum(
                     effect.get("native_target_index") == 0
                     and effect.get("periodic") is True
+                    and effect.get("event_id") in applied
                     and effect.get("damage", 0) > 0
                     for effect in ack["applied_events"])
             newly_dead = _new_source_acked_world_kills(
@@ -1100,20 +1114,27 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             raise AssertionError("RUST_WORLD_OVERLAP_JOINT_WINDOW_NOT_PROVEN")
         native_world_overlap = (
             _verify_native_rolling_world_apl(
-                result, requested=world_apl, kills=kills)
+                result, requested=world_apl, kills=kills,
+                source_switch=rolling_switch,
+                old_target_dot_ticks=old_target_dot_ticks_after_switch,
+                first_world_id=targets[0], second_world_id=targets[1])
             if world_apl is not None else None
         )
         # Rust is the health authority; no invented gsim player damage.
         # A completed native-damage world kill must not hide a dead actor.
-        elapsed = _verified_world_elapsed(result["windows"], kills)
+        native_window_count = 1 if rolling_switch is not None else target_count
+        elapsed = (_verified_joint_overlap_elapsed(result["windows"], kills)
+                   if rolling_switch is not None
+                   else _verified_world_elapsed(result["windows"], kills))
         min_native_health = _native_survival_min_health(
-            result["windows"], target_count)
+            result["windows"], native_window_count)
         native_mana = _native_mana_continuity(
-            result["windows"], target_count)
+            result["windows"], native_window_count)
         food_water = _native_food_water_receipts(
             result["windows"], required=requested_mode == "decisions")
         recovery = _native_paid_recovery_receipts(
-            result["windows"], kills, decisions=requested_mode == "decisions")
+            result["windows"], ([kills[-1]] if rolling_switch is not None else kills),
+            decisions=requested_mode == "decisions")
         if requested_mode == "fixed":
             # The earlier pinned fixed-duration Rust bridge did not yet emit
             # recovery_mode, but it DID echo the exact applied duration.
@@ -1140,8 +1161,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             require_zero=require_native_zero_health_damage)
         if require_native_moving and walks and native_moving_ticks == 0:
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
-        route_receipts, paid_world_movement_s = _paid_world_route_receipts(
-            kills, walks, world.trace)
+        route_receipts, paid_world_movement_s = (
+            _paid_joint_overlap_route(
+                kills, walks, world.trace, switch=rolling_switch)
+            if rolling_switch is not None
+            else _paid_world_route_receipts(kills, walks, world.trace))
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
             "world_target_hp": mob_health,
