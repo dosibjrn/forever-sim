@@ -227,10 +227,12 @@ section.content{margin:38px 0}.section-top{display:flex;align-items:baseline;jus
 '''
 
 
-def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequence[Mapping[str, Any]], character_class: str) -> str:
+def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequence[Mapping[str, Any]], character_class: str,
+                          *, native_raw: Mapping[str, Any] | None = None) -> str:
     """Render source-verified rows; validation belongs to existing _valid_rows()."""
     if not paid_rows:
         raise ValueError('NO_VERIFIED_NATIVE_PAID_WINNER_FOR_HTML_LEVEL_' + str(level))
+    from tools.wf_native_paid_sim_report import SIM_REPORT_CSS, render_paid_simulation
     rows=sorted(paid_rows,key=lambda x:(x['native_elapsed_seconds'],x['source_request_sha256']))
     best=rows[0]
     cls=character_class.title()
@@ -253,7 +255,9 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
              f'{best.get("pet") or "no summoned pet"}, {best["native_elapsed_seconds"]:.3f} seconds '
              f'for {enemy_count} native hostile kills with final HP/mana recovery included.')
     nav=''.join('<a href="#'+k+'">'+v+'</a>' for k,v in [
+        ('simulation','Results & timeline'),('resources','Resources'),('damage','Damage & uptime'),
         ('gear','Gear'),('talents','Talents'),('play','Rotation & pet'),('compare','Top 3'),
+        ('settings','Settings'),
         ('method','Methodology'),('faq','FAQ')])
     policy=raw.get('native_world_policy') or best.get('native_world_policy')
     recovery=best['terminal_recovery_seconds']
@@ -269,7 +273,7 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>'+h(specialization)+' '+h(cls)+' L'+str(level)+' | Best tested native build</title>'
-        '<style>'+_CSS+'</style></head><body>'
+        '<style>'+_CSS+SIM_REPORT_CSS+'</style></head><body>'
         '<header class="site-head"><div class="nav-wrap"><div class="logo">FOREVER <span>SIM LAB</span></div>'
         '<div class="nav-mini">Native build research · Standalone report</div></div></header><main class="wrap">'
         '<div class="breadcrumb">WoW Forever &nbsp;›&nbsp; Builds &nbsp;›&nbsp; <b>'+h(cls)+'</b> &nbsp;›&nbsp; L'+str(level)+'</div>'
@@ -284,7 +288,8 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
         +' actually paid builds for one independently prepared level. Unlike MythicSim’s reference page, this is <b>not</b> '
         'a level-60 raid DPS / pre-raid acquisition list. Source receipts do not include all item stat, source, icon or enchant metadata.</aside>'
         '<nav class="section-nav" aria-label="Report sections">'+nav+'</nav>'
-        '<section class="content" id="gear"><div class="section-top"><h2>Best tested gear</h2><span class="chip">'
+        +render_paid_simulation(result, best, native_raw=native_raw)
+        +'<section class="content" id="gear"><div class="section-top"><h2>Best tested gear</h2><span class="chip">'
         +str(len(need_items))+' source item positions</span></div>'
         '<p class="section-desc">Slot-labelled items from the winning native request. Item IDs link to a separate Wowhead Forever lookup; this HTML renders fully offline.</p>'
         +warning_markup+gear_table(best)
