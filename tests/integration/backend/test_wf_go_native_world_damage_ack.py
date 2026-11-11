@@ -632,3 +632,73 @@ def test_serial_handoff_cannot_erase_still_live_old_dot_target():
                        match="PREVIOUS_NATIVE_TARGET_STILL_LIVE"):
         applier.begin_next_world_target("m1")
     assert applier._native_target_ids == {0: "m1", 1: "m0"}
+
+
+def test_acknowledged_dead_selected_b_does_not_block_old_a_dot_continuation():
+    """A native-selected dead B is not a reason to discard live A's effects."""
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)  # A is still alive after its first hit.
+    assert rt.targets["m1"].alive
+
+    rt.engage_target("m0")
+    rt.select_target("m0")
+    applier.begin_overlapping_world_target("m0")
+    source = reply0["native_damage_events"][0]
+    tick1, reply1 = _native_second_tick(rt, reply0, sequence=1, native_events=[
+        {**source, "event_id": "native-effect-2",
+         "native_time_ns": 100_000_000, "native_target_index": 1,
+         "native_target_unit_index": 2, "native_target_label": "second-mob",
+         "damage": rt.targets["m0"].health + 1.0},
+    ])
+    first_ack = applier.apply(tick1, reply1)
+    assert first_ack["native_target_health_acks"][0]["world_target_id"] == "m0"
+    assert rt.targets["m0"].health == 0
+    assert rt.targets["m1"].alive
+
+    # Rust still selects B, but the authentic source DoT is bound to A/slot 0.
+    remaining = rt.targets["m1"].health
+    tick2, reply2 = _native_second_tick(rt, reply0, sequence=2, native_events=[
+        {**source, "event_id": "native-effect-3",
+         "native_time_ns": 200_000_000, "periodic": True,
+         "damage": min(10.0, remaining / 2)},
+    ])
+    second_ack = applier.apply(tick2, reply2)
+    assert second_ack["selected_native_target_index"] == 1
+    assert second_ack["world_target_health_before"] == 0
+    assert second_ack["world_target_health_after"] == 0
+    assert second_ack["native_target_health_acks"][0]["world_target_id"] == "m1"
+    assert rt.targets["m1"].health < remaining
+    assert rt.targets["m0"].health == 0
+
+    tick3, reply3 = _native_second_tick(rt, reply0, sequence=3, native_events=[
+        {**source, "event_id": "native-effect-4",
+         "native_time_ns": 300_000_000, "periodic": True,
+         "damage": rt.targets["m1"].health + 1.0},
+    ])
+    third_ack = applier.apply(tick3, reply3)
+    assert third_ack["native_target_health_acks"][0]["world_target_id"] == "m1"
+    assert third_ack["native_target_health_acks"][0]["world_target_health_after"] == 0
+    assert not rt.targets["m1"].alive and not rt.targets["m0"].alive
+    assert applier._last_native_lethal_target_id == "m0"
+
+
+def test_predead_selected_b_cannot_admit_old_a_dot_without_native_b_ack():
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)
+    rt.engage_target("m0")
+    rt.select_target("m0")
+    applier.begin_overlapping_world_target("m0")
+    # gsim reports dead B, but *no native event* ever killed it.
+    rt.targets["m0"].apply_damage(rt.targets["m0"].health + 1)
+    tick1, reply1 = _native_second_tick(rt, reply0, sequence=1, native_events=[
+        {**reply0["native_damage_events"][0],
+         "event_id": "native-effect-2", "native_time_ns": 100_000_000,
+         "periodic": True},
+    ])
+    before = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD"):
+        applier.apply(tick1, reply1)
+    assert rt.targets["m1"].health == before
