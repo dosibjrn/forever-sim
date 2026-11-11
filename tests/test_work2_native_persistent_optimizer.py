@@ -812,6 +812,12 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
     # Rust provides the slot; a serialized request index is not itself a
     # gameplay equipment slot. The report must show both without conflation.
     from src.v2.native_range_optimizer import render_native_paid_level_shortlist
+    named_gear_row = next(
+        row for row in rows
+        if any(item.get("name") == "Test source hat B"
+               for item in row["native_named_build"]["equipped_item_names_ids"]))
+    visible_rows = [named_gear_row] + [
+        row for row in rows if row is not named_gear_row]
     result = {
         "sampled_levels_requested": [level],
         "independent_level_rankings": {str(level): [{
@@ -821,7 +827,7 @@ def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch)
             "terminal_recovery_seconds": row["terminal_recovery_seconds"],
             "talents": row["talents"], "gear": row["gear"],
             "apl": row["apl"], "pet": row["pet"], "receipt": row,
-        } for row in rows]},
+        } for row in visible_rows]},
         "rejected_native_attempts": [],
         "native_attempts_by_level": {str(level): len(rows)},
         "mob_count": 2, "rng_mode": "balanced", "iterations": 1,
