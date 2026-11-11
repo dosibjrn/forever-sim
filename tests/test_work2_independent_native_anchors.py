@@ -400,7 +400,7 @@ def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch
     """
     from src.scenarios.leveling_targets import representative_hp
     from src.v2.native_range_optimizer import main as generic_main
-    from tools import wf_warlock_native_range_optimize as native_cli
+    from tools import wf_warlock_native_persistent_optimizer as native_cli
 
     binary = tmp_path / "native-engine"
     binary.write_bytes(b"pinned-engine-placeholder")
@@ -408,11 +408,15 @@ def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch
     source.write_text("{}")
     seen = []
 
-    def fake_native_factory(command, *, binary, target_hp, scorer_command,
-                            artifact_dir):
-        def score(**request):
-            seen.append((request["level"], target_hp, request["mob_count"]))
+    class FakePersistentNativeEvaluator:
+        def __init__(self, binary, source, artifact_dir, *, target_hp=None):
+            self.target_hp = target_hp
+
+        def __call__(self, **request):
             level = request["level"]
+            hp = (float(representative_hp(level)) if self.target_hp is None
+                  else float(self.target_hp))
+            seen.append((level, hp, request["mob_count"]))
             digits = "1" * (level // 20)
             rows = []
             for i, talents in enumerate((f"{digits}-0-0", f"0-{digits}-0")):
@@ -420,10 +424,12 @@ def test_generic_cli_defaults_to_level_specific_hostile_hp(tmp_path, monkeypatch
                 row["talents"] = talents
                 rows.append(row)
             return rows
-        return score
 
-    monkeypatch.setattr(native_cli, "live_native_frontier_evaluator",
-                        fake_native_factory)
+        def close(self):
+            pass
+
+    monkeypatch.setattr(native_cli, "PersistentNativeEvaluator",
+                        FakePersistentNativeEvaluator)
     base_args = [
         "--class", "warlock", "--tree", "unconstrained",
         "--start-level", "20", "--end-level", "60", "--level-stride", "20",

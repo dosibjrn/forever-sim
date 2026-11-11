@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.v2.native_range_optimizer import optimize, sampled_levels
+from src.v2.native_range_optimizer import _receipt_error, optimize, sampled_levels
 
 
 ENGINE = "b" * 64
@@ -934,3 +934,18 @@ def test_live_scored_adapter_reuses_paid_ack_across_fresh_call_dirs(tmp_path, mo
     changed = evaluate()
     assert len(native_kills) == 4
     assert all(not row["reused_exact_native_paid_receipt"] for row in changed)
+
+
+def test_sparse_paid_parent_ack_does_not_require_unmeasured_intermediate_levels():
+    parent = receipt(20, 2, "A", 8.0)
+    child = receipt(40, 2, "A", 9.0, parent)
+    child.pop("native_intermediate_levels_verified")
+    assert _receipt_error(
+        child, level=40, parent=parent, mob_count=2,
+        rng_mode="balanced", iterations=1,
+    ) is None
+    child["native_continuity_ack"] = False
+    assert _receipt_error(
+        child, level=40, parent=parent, mob_count=2,
+        rng_mode="balanced", iterations=1,
+    ) == "native continuing talent/actor edge unproved"
