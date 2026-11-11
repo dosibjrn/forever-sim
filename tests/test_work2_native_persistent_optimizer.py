@@ -1001,3 +1001,52 @@ def test_native_apl_bootstrap_refusal_is_explicit_not_a_paid_candidate(
                for row in rows)
     assert any(row["proposal_axis"] == "native_apl_bootstrap" for row in rows)
     assert not list((tmp_path / "failed").glob("*.native.json"))
+
+
+def test_native_paid_world_ndjson_refusal_keeps_rust_code_and_no_fake_kills():
+    """Real Rust wire shape survives the gsim ACK bridge without a paid PASS."""
+    from live_two_world_pulls import NativeWorldChainFailure, run as native_world
+
+    class RefusingApiProcess:
+        pid = 32101
+        def __init__(self, frame):
+            self.stdin = io.StringIO()
+            self.stdout = io.StringIO(json.dumps(frame) + "\n")
+        def poll(self):
+            return None
+
+    frame = {
+        "ok": False, "error": "prepared input rejected",
+        "refusal": {
+            "code": "native_world_refused",
+            "reason": "prepared input rejected: Warlock spell 11668 is not registered",
+        },
+    }
+    process = RefusingApiProcess(frame)
+    with pytest.raises(NativeWorldChainFailure) as failure:
+        native_world(
+            Path("no-standalone-process"), None, mob_health=100,
+            target_count=2, rng_mode="balanced",
+            recovery_policy="decisions", health_threshold=1.0,
+            mana_threshold=1.0, api_process=process,
+            prepared_payload={"request_sha256": "a" * 64})
+    assert failure.value.code == "native_world_refused"
+    assert failure.value.killed == 0
+    assert failure.value.native_damage_events == 0
+    assert "spell 11668 is not registered" in failure.value.reason
+    # Preserve the established five-part failure tuple for old callers.
+    assert len(failure.value.args[0]) == 5
+    assert json.loads(process.stdin.getvalue()) == {
+        "op": "evaluate", "targets": 2, "rng_mode": "balanced",
+        "recover_at_end": True}
+
+    legacy = RefusingApiProcess({"ok": False, "error": "legacy refusal"})
+    with pytest.raises(NativeWorldChainFailure) as old:
+        native_world(
+            Path("no-standalone-process"), None, mob_health=100,
+            target_count=2, rng_mode="balanced",
+            recovery_policy="decisions", health_threshold=1.0,
+            mana_threshold=1.0, api_process=legacy,
+            prepared_payload={"request_sha256": "b" * 64})
+    assert old.value.code is None
+    assert old.value.reason == "legacy refusal"
