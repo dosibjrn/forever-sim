@@ -322,3 +322,76 @@ def test_joint_source_apl_policy_does_not_pass_without_native_applied_echo():
     with pytest.raises(AssertionError, match="ROLLING_APL_NOT_PROVEN"):
         verify({"world_overlap": overlap, "applied_world_apl": policy},
                **{**args, "old_target_dot_ticks": 0})
+
+
+def test_old_a_dot_counts_only_actual_predeath_world_damage():
+    count = _bridge["_acked_old_target_live_dot_ticks"]
+    ack = {
+        "applied_event_ids": [
+            "native-effect-1", "native-effect-2", "native-effect-3"],
+        "applied_events": [
+            {"event_id": "native-effect-1", "native_target_index": 1,
+             "damage": 40., "periodic": False, "native_time_ns": 120_000_000},
+            {"event_id": "native-effect-2", "native_target_index": 0,
+             "damage": 12., "periodic": True, "native_time_ns": 121_000_000},
+            {"event_id": "native-effect-3", "native_target_index": 0,
+             "damage": 25., "periodic": True, "native_time_ns": 122_000_000},
+        ],
+    }
+    assert count(health_before=10., ack=ack, switch_native_clock_ns=100_000_000) == 1
+    assert count(health_before=0., ack=ack, switch_native_clock_ns=100_000_000) == 0
+    # A real nonperiodic lethal preceding a periodic event cannot turn
+    # subsequent overkill into a rolling DoT witness.
+    ack["applied_events"][1]["periodic"] = False
+    assert count(health_before=10., ack=ack, switch_native_clock_ns=100_000_000) == 0
+
+
+
+def test_post_switch_tick_requires_original_source_timestamp_not_late_ack():
+    count = _bridge["_acked_old_target_live_dot_ticks"]
+    ack = {
+        "applied_event_ids": ["native-effect-1", "native-effect-2"],
+        "applied_events": [
+            {"event_id": "native-effect-1", "native_target_index": 0,
+             "damage": 4., "periodic": True, "native_time_ns": 90_000_000},
+            {"event_id": "native-effect-2", "native_target_index": 0,
+             "damage": 6., "periodic": True, "native_time_ns": 110_000_000},
+        ],
+    }
+    # First effect reaches gsim in the later source batch, but happened
+    # BEFORE the acknowledged 100ms A→B handoff. Only the second proves
+    # that DoTs were still damaging the living old A after B selection.
+    kwargs = {"health_before": 10., "ack": ack,
+              "switch_native_clock_ns": 100_000_000}
+    assert count(**kwargs) == 1
+    ack["applied_events"][1]["native_time_ns"] = 100_000_000
+    assert count(**kwargs) == 0  # same instant is not strictly after switch
+    ack["applied_events"][1]["native_time_ns"] = 110_000_000
+    ack["applied_events"][0]["damage"] = 10.
+    assert count(**kwargs) == 0  # killed A before switch: late overkill
+    ack["applied_events"][0]["damage"] = 4.
+    del ack["applied_events"][1]["native_time_ns"]
+    assert count(**kwargs) == 0  # missing timestamp is not evidence
+
+
+def test_unacked_selected_dead_world_is_not_range_credential():
+    from src.game.runtime.go_world_range_feed import GsimGoRangeFeed, GoWorldRangeError
+    from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
+
+    world = two_live_world()
+    feed = GsimGoRangeFeed(world, native_player_index=0)
+    applier = GsimNativeDamageWorldApplier(world)
+    world.engage_target("m0")
+    world.engage_target("m1")
+    world.select_target("m0")
+    # Two engaged world IDs and a zero-HP selected target cannot impersonate
+    # a previously source-ACKed B death.
+    world.targets["m0"].apply_damage(world.targets["m0"].health)
+    assert world.targets["m1"].alive and not world.targets["m0"].alive
+    world.advance_to(0.1)
+    with pytest.raises(GoWorldRangeError, match="WORLD_SELECTED_TARGET_NOT_ALIVE"):
+        feed.next_tick()
+    with pytest.raises(GoWorldRangeError, match="WORLD_SELECTED_TARGET_NOT_ALIVE"):
+        feed.next_tick(native_world_applier=applier)
+    with pytest.raises(GoWorldRangeError, match="WORLD_NATIVE_ACK_SOURCE_MISMATCH"):
+        feed.next_tick(native_world_applier=GsimNativeDamageWorldApplier(two_live_world()))

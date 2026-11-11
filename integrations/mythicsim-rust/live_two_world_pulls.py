@@ -754,6 +754,37 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
     return dict(source)
 
 
+def _acked_old_target_live_dot_ticks(*, health_before: float, ack: dict,
+                                      switch_native_clock_ns: int) -> int:
+    """Only count a native periodic tick while A still has positive world HP.
+
+    Source effects may be emitted in the same batch AFTER the lethal A event.
+    Such overkill events are ACK-consumed but cannot prove a live rolling DoT.
+    Likewise a DoT tick buffered before the source A→B switch is not evidence
+    of post-switch damage merely because it arrives in the next ACK batch.
+    Replay native event order against actual gsim pre-ACK health and require
+    an authentic source event timestamp strictly after the switch. No Python
+    Warcraft damage calculation or source legality decision.
+    """
+    health = float(health_before)
+    applied = set(ack["applied_event_ids"])
+    count = 0
+    for effect in ack["applied_events"]:
+        if effect.get("native_target_index") != 0:
+            continue
+        if effect.get("event_id") not in applied:
+            continue
+        amount = effect.get("damage", 0)
+        if type(amount) not in (int, float) or not isfinite(amount) or amount <= 0:
+            continue
+        if (health > 0 and effect.get("periodic") is True
+                and type(effect.get("native_time_ns")) is int
+                and effect["native_time_ns"] > switch_native_clock_ns):
+            count += 1
+        health = max(0., health - float(amount))
+    return count
+
+
 def _new_source_acked_world_kills(*, world: CombatRuntime,
                                   before: dict[str, float],
                                   ack: dict, clock_ns: int,
@@ -995,7 +1026,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     or native["native_process_id"] != proc.pid):
                 raise AssertionError("RUST_TWO_WORLD_CLOCK_SOURCE_OR_SEQUENCE_INVALID")
             world.advance_to(clock_ns / 1e9)
-            tick = feed.next_tick()
+            # Authorization is based on the native lethal / 2D identity ledger.
+            tick = feed.next_tick(native_world_applier=applier)
             # Source of truth: gsim live 2D route, not queued-step inference
             # or a native movement guess. Rust applies its own cast legality.
             tick["gsim_player_moving"] = bool(world._player_is_moving())
@@ -1042,16 +1074,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 native_source_damage_effects_by_caster, receipt, ack)
             if (rolling_switch is not None
                     and before_health[targets[0]] > world.targets[targets[0]].health):
-                # The old A really lost 2D HP in this ACK. Only then count
-                # source-periodic effects on A; a dead-target overkill event
-                # must never become evidence of a live post-switch DoT tick.
-                applied = set(ack["applied_event_ids"])
-                old_target_dot_ticks_after_switch += sum(
-                    effect.get("native_target_index") == 0
-                    and effect.get("periodic") is True
-                    and effect.get("event_id") in applied
-                    and effect.get("damage", 0) > 0
-                    for effect in ack["applied_events"])
+                old_target_dot_ticks_after_switch += _acked_old_target_live_dot_ticks(
+                    health_before=before_health[targets[0]], ack=ack,
+                    switch_native_clock_ns=rolling_switch["switch_native_clock_ns"])
             newly_dead = _new_source_acked_world_kills(
                 world=world, before=before_health, ack=ack,
                 clock_ns=clock_ns, overlap=rolling_switch is not None,

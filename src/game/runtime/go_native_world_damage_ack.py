@@ -121,6 +121,38 @@ class GsimNativeDamageWorldApplier:
         self._native_handoff_ns[1] = handoff_ns
         self._target_id = next_target_id
 
+    def is_native_acked_dead_selected_overlap(self, selected_target_id: str) -> bool:
+        """Allow range continuation only for a source-killed selected B with live A.
+
+        This read-only proof is derived from the native event/2D lethal ACK
+        ledger maintained by apply(), never from a caller-supplied boolean,
+        selected-target HP alone or an unauthenticated world snapshot.
+        """
+        if (not isinstance(selected_target_id, str)
+                or self._native_target_ids.get(1) != selected_target_id
+                or len(self._native_target_ids) != 2
+                or self._target_id != selected_target_id
+                or self._last_native_lethal_target_id != selected_target_id
+                or selected_target_id not in self._native_lethal_acked_ids
+                or self._native_process_id is None
+                or self._last_world_tick_ns < 0):
+            return False
+        old_id = self._native_target_ids.get(0)
+        if old_id == selected_target_id:
+            return False
+        world = snapshot_gsim_world(self._runtime)
+        enemies = world["enemies"]
+        old, selected = enemies.get(old_id), enemies.get(selected_target_id)
+        if (not isinstance(old, Mapping) or not isinstance(selected, Mapping)
+                or world["selected_target_id"] != selected_target_id
+                or old.get("alive") is not True or old.get("engaged") is not True
+                or selected.get("alive") is not False or selected.get("health") != 0
+                or any(enemy_id not in (old_id, selected_target_id)
+                       and isinstance(enemy, Mapping) and enemy.get("engaged") is True
+                       for enemy_id, enemy in enemies.items())):
+            return False
+        return True
+
     def apply(self, tick: Mapping, response: Mapping) -> dict:
         if not isinstance(tick, Mapping) or not isinstance(response, Mapping):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_PAYLOAD_INVALID")
