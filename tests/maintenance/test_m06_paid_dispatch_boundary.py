@@ -44,7 +44,7 @@ def test_native_paid_pr_regressions_remain_fast_and_not_paid():
     # Only parser/help is permitted on PRs; native-paid optimize remains
     # guarded by the explicit manual run_m06_original dispatch input.
     direct_optimize_commands = re.findall(
-        r"^\\s+run:\\s*(python -m src\\.v2\\.runner optimize[^\\n]*)$",
+        r"^\s+run:\s*(python -m src\.v2\.runner optimize[^\n]*)$",
         fast_job, flags=re.MULTILINE,
     )
     assert direct_optimize_commands == ["python -m src.v2.runner optimize --help"]
