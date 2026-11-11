@@ -80,6 +80,12 @@ def _receipt_error(
                 or not isinstance(row.get("native_world_overlap"), Mapping)):
             return "rolling World-APL lacks source-applied two-live-target ACK evidence"
         kills = row.get("native_world_kills")
+        overlap = row["native_world_overlap"]
+        if (overlap.get("max_concurrent_alive_targets") != 2
+                or type(overlap.get("old_target_dot_ticks_after_switch_acked"))
+                   is not int
+                or overlap["old_target_dot_ticks_after_switch_acked"] < 1):
+            return "native old-target DoT ACK after rolling switch missing"
         if (not isinstance(kills, list) or len(kills) != 2
                 or any(not isinstance(kill, Mapping) for kill in kills)
                 or len({kill.get("target_id") for kill in kills}) != 2
