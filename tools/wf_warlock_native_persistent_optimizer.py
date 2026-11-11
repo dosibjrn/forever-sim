@@ -403,13 +403,16 @@ def _described_build(source: dict, options: dict) -> dict:
                           "rank": rank, "max_rank": row.get("max_rank")}
                 # Native metadata may carry a selected rank spell ID, or
                 # a rank-indexed list. Never synthesize one from a name.
-                spell_id = row.get("spell_id")
-                if type(spell_id) is not int or spell_id <= 0:
-                    for key in ("rank_spell_ids", "spell_ids"):
-                        rank_ids = row.get(key)
-                        if isinstance(rank_ids, list) and len(rank_ids) >= rank:
-                            spell_id = rank_ids[rank - 1]
+                spell_id = None
+                for key in ("rank_spell_ids", "spell_ids"):
+                    rank_ids = row.get(key)
+                    if isinstance(rank_ids, list) and len(rank_ids) >= rank:
+                        candidate_id = rank_ids[rank - 1]
+                        if type(candidate_id) is int and candidate_id > 0:
+                            spell_id = candidate_id
                             break
+                if spell_id is None:
+                    spell_id = row.get("spell_id")
                 if type(spell_id) is int and spell_id > 0:
                     record["spell_id"] = spell_id
                 for key in ("row", "col", "icon", "icon_filename"):
