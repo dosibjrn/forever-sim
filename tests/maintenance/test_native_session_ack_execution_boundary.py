@@ -151,8 +151,8 @@ def test_rolling_world_pr_smoke_keeps_paid_cross_class_checks_manual_only():
     for step in ("Paid Priest L20 candidate through exact native Rust",
                  "Feral L60 source build through two consecutive native/world"):
         fragment = jobs.split("      - name: " + step, 1)[1]
-        assert fragment.startswith(
-            "\n        if: github.event_name == 'workflow_dispatch'\n"
+        assert fragment.split("\n", 1)[1].startswith(
+            "        if: github.event_name == 'workflow_dispatch'\n"
         )
     assert "PRIEST_L20_REAL_PAID_RUST_GSIM2D_ACK_PASS_NOT_100MOB_NOT_GATE" in jobs
     assert "python tools/wf_native_feral_l60_world.py" in jobs
