@@ -2,7 +2,7 @@ name: Native-paid route continuity regressions
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened]
     branches: [main]
     paths:
       - src/v2/path_dp.py
@@ -77,7 +77,7 @@ permissions:
 
 jobs:
   native-paid-route:
-    if: github.event_name == 'pull_request' && github.event.action != 'labeled'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -247,7 +247,7 @@ jobs:
   # native measurement, NOT an M1 gate or a replay of the 41-level M0.5 run.
   # The generic optimize command remains the production entrypoint.
   work2-native-paid-l20-l40:
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'work2-native-paid-l20-l40' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'work2-native-paid-l20-l40') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
