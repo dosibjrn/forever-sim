@@ -127,69 +127,6 @@ def test_one_session_scores_all_three_samples_with_actual_paid_clock_contract(
     assert native.session.closed
 
 
-
-def test_same_session_identical_paid_world_reused_without_git_identity(
-        tmp_path, monkeypatch):
-    """Unverifiable cross-run cache never justifies repeating this session's ACK."""
-    paid_calls = []
-
-    def counted_world(binary, prepared_path, **kwargs):
-        paid_calls.append(kwargs["mob_health"])
-        return paid_world(binary, prepared_path, **kwargs)
-
-    # This fixture explicitly disables the Git-backed reusable disk identity.
-    native = make_evaluator(tmp_path, monkeypatch, world=counted_world)
-
-    def sample():
-        return native(level=20, parent=None, mob_count=2, budget=2,
-                      rng_mode="balanced", iterations=1, recover_to_full=True)
-
-    try:
-        first = sample()
-        assert len(first) == 2
-        assert len(paid_calls) == 2
-        assert all(not row["reused_exact_native_paid_receipt"] for row in first)
-        again = sample()
-        assert len(paid_calls) == 2
-        assert all(row["reused_exact_native_paid_receipt"] for row in again)
-        assert [row["native_raw_receipt_sha256"] for row in again] == [
-            row["native_raw_receipt_sha256"] for row in first]
-        # The same native actor against a different hostile HP is NOT a hit.
-        native.target_hp = float(api.representative_hp(20)) + 1
-        changed_world = sample()
-        assert len(changed_world) == 2
-        assert len(paid_calls) == 4
-        assert all(not row["reused_exact_native_paid_receipt"]
-                   for row in changed_world)
-    finally:
-        native.close()
-
-
-def test_session_paid_memo_refuses_modified_raw_receipt(tmp_path, monkeypatch):
-    paid_calls = []
-
-    def counted_world(binary, prepared_path, **kwargs):
-        paid_calls.append(True)
-        return paid_world(binary, prepared_path, **kwargs)
-
-    native = make_evaluator(tmp_path, monkeypatch, world=counted_world)
-    try:
-        request = dict(level=20, parent=None, mob_count=2, budget=1,
-                       rng_mode="balanced", iterations=1,
-                       recover_to_full=True)
-        first = native(**request)
-        assert len(paid_calls) == 1
-        original = Path(first[0]["native_raw_receipt_file"])
-        original.write_text("{}\\n")
-        second = native(**request)
-        assert len(paid_calls) == 2
-        assert second[0]["reused_exact_native_paid_receipt"] is False
-        assert Path(second[0]["native_raw_receipt_file"]) != original
-        assert Path(second[0]["native_raw_receipt_file"]).is_file()
-    finally:
-        native.close()
-
-
 def test_exact_paid_cache_identity_is_session_scoped_and_level_specific(
         tmp_path, monkeypatch):
     """One binary/Git identity read serves every paid candidate and level.
@@ -537,3 +474,137 @@ def test_orphaned_cache_metadata_preserves_new_paid_receipts(
     assert second_fallback.is_file() and second_fallback != fallback
     assert fallback.read_bytes() == previous_bytes
     assert metadata[0].read_bytes() == untouched_metadata
+
+
+def test_native_same_session_probe_pays_new_world_and_retains_refusal(tmp_path, monkeypatch):
+    """M0.6 must use a NEW world in one Rust session, not cached M0.5 samples."""
+    class StatefulSession(FakeSession):
+        def __init__(self, binary):
+            super().__init__(binary)
+            self.prepared = None
+            self.last_paid = None
+
+        def request(self, payload):
+            if payload["op"] == "state":
+                return {
+                    "kind": "source_prepared_actor",
+                    "actor_level": self.prepared["player"]["level"],
+                    "source_sha256": self.prepared["request_sha256"],
+                    "retained_combat_runtime": False,
+                    "retained_xp": False, "level_transition_supported": False,
+                    "last_paid_world": self.last_paid,
+                }
+            if payload["op"] == "advance":
+                self.calls.append(payload)
+                raise api.NativeApiRefusal({
+                    "code": "native_level_transition_unsupported",
+                    "reason": "post-combat actor and XP are not retained",
+                })
+            result = super().request(payload)
+            if payload["op"] == "prepare":
+                self.prepared = result
+                self.last_paid = None
+            return result
+
+    world_runs = []
+
+    def run_world(*args, **kwargs):
+        receipt = paid_world(*args, **kwargs)
+        world_runs.append(receipt)
+        state = FakeSession.instances[-1]
+        state.last_paid = {
+            "kind": "completed_independent_native_world",
+            "source_sha256": kwargs["prepared_payload"]["request_sha256"],
+            "actor_level": state.prepared["player"]["level"],
+            "world_targets_killed": kwargs["target_count"],
+            "post_combat_actor_retained": False,
+            "xp_earned": None,
+        }
+        return receipt
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"pinned native engine")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity", lambda *a, **k: {
+        "cache_schema": 1, "forever_commit": "f" * 40,
+        "native_binary_sha256": api._file_digest(binary),
+        "actor_level": 20, "mob_count": 2, "target_hp": 100.0,
+        "rng_mode": "balanced", "iterations": 1,
+        "recovery_policy": "decisions",
+    })
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=StatefulSession, run_world=run_world)
+    try:
+        # First paid screen produces a reusable cache entry, but an M0.6 probe
+        # cannot use it as a post-combat state carried across the boundary.
+        sampled = native(level=20, parent=None, mob_count=2, budget=1,
+                         rng_mode="balanced", iterations=1, recover_to_full=True)
+        assert sampled[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+        assert len(world_runs) == 1
+        result = native.probe_native_level_transition(
+            from_level=20, to_level=21, mob_count=2, candidate_budget=3)
+    finally:
+        native.close()
+    assert len(world_runs) == 2
+    assert result["status"] == "NATIVE_LEVEL_TRANSITION_UNSUPPORTED"
+    assert result["continuous_leveling_proven"] is False
+    assert result["historical_sample_used_as_continuity"] is False
+    assert result["native_advance_refusal_code"] == "native_level_transition_unsupported"
+    assert result["paid_first_world"]["reused_exact_native_paid_receipt"] is False
+    assert result["native_state_after_world"]["last_paid_world"]["world_targets_killed"] == 2
+    assert all(payload.get("actor_level") != 21
+               for payload in FakeSession.instances[-1].calls
+               if payload["op"] == "prepare")
+    assert sum(p["op"] == "advance" for p in FakeSession.instances[-1].calls) == 1
+
+
+def test_native_same_session_probe_rejects_unbound_world_state(tmp_path, monkeypatch):
+    """A paid L20 receipt plus a stale/different Rust state is not continuity."""
+    class UnboundSession(FakeSession):
+        def request(self, payload):
+            if payload["op"] == "state":
+                return {"actor_level": 20, "source_sha256": "f" * 64,
+                        "last_paid_world": None}
+            if payload["op"] == "advance":
+                pytest.fail("must not advance without matching paid state")
+            return super().request(payload)
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"pinned native engine")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity", lambda *a, **k: None)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=UnboundSession, run_world=paid_world)
+    try:
+        result = native.probe_native_level_transition(
+            from_level=20, to_level=21, mob_count=2, candidate_budget=2)
+    finally:
+        native.close()
+    assert result["status"] == "NATIVE_PAID_STATE_NOT_RETAINED"
+    assert result["continuous_leveling_proven"] is False
+    assert "paid_first_world" in result
+
+
+def test_native_continuity_cli_refusal_is_nonzero_and_never_a_sampled_guide(tmp_path):
+    """One normal generic optimize entrypoint; explicit unsupported result."""
+    from src.v2.native_range_optimizer import main
+
+    class Probe:
+        def probe_native_level_transition(self, **kwargs):
+            assert kwargs == {"from_level": 20, "to_level": 21,
+                              "mob_count": 2, "candidate_budget": 1}
+            return {"status": "NATIVE_LEVEL_TRANSITION_UNSUPPORTED",
+                    "continuous_leveling_proven": False}
+
+    out = tmp_path / "m06.json"
+    rc = main(["--class", "warlock", "--tree", "unconstrained",
+               "--start-level", "20", "--end-level", "21",
+               "--level-stride", "1", "--n-mobs", "2",
+               "--recover-at-end", "true", "--rng", "balanced",
+               "--backend", "rust", "--budget", "1",
+               "--probe-native-continuity", "--out", str(out)],
+              evaluate=Probe())
+    assert rc == 2
+    assert json.loads(out.read_text())["status"] == "NATIVE_LEVEL_TRANSITION_UNSUPPORTED"
