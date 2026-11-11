@@ -78,8 +78,13 @@ def test_superseded_pr_native_world_smoke_is_cancelled_without_skipping_checks()
     trigger_and_policy = text.split("jobs:", 1)[0]
     assert "  pull_request:" in trigger_and_policy
     assert ("group: native-source-world-smoke-pr-"
-            "${{ github.event.pull_request.number }}") in trigger_and_policy
-    assert "  cancel-in-progress: true" in trigger_and_policy
+            "${{ github.event.pull_request.number || github.run_id }}") in trigger_and_policy
+    assert ("  cancel-in-progress: "
+            "${{ github.event_name == 'pull_request' }}") in trigger_and_policy
+    # On workflow_dispatch there is no PR number; the unique run ID keeps
+    # manually requested paid class diagnostics from displacing each other.
+    assert "github.run_id" in trigger_and_policy
+    assert "github.event_name == 'pull_request'" in trigger_and_policy
     # Cancellation replaces only obsolete runs; the newest PR head must
     # still build exact selected Rust and run both native/2D world scenarios.
     steps = text.split("jobs:", 1)[1]

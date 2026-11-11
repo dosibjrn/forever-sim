@@ -20,8 +20,10 @@ on:
 # paid evidence. A later commit to the same PR supersedes its Rust build and
 # serial world probes; do not spend runner time finishing the stale HEAD.
 concurrency:
-  group: native-source-world-smoke-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # PR updates supersede stale native builds; separate manual diagnostics
+  # must not cancel each other when they lack a pull_request number.
+  group: native-source-world-smoke-pr-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
