@@ -243,3 +243,103 @@ def test_forward_talent_proposals_preserve_earlier_paid_ancestry_without_respec(
             left + [0] * (len(right) - len(left)), right))
             for left, right in zip(old, new))
         assert sum(sum(p) for p in new) == 51
+
+
+def test_schema1_paid_cache_is_reused_only_after_verified_world_identity(
+        tmp_path, monkeypatch):
+    """Stride-10 receipts remain reusable by stride 5 without false re-payment.
+
+    Python fake sessions test transport only, not authentic M0.5 paid evidence.
+    The legacy migration must retain raw bytes and strictly re-score ACK/HP/mana.
+    """
+    import subprocess
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"unchanged pinned Rust engine")
+    fixture = Path("fixtures/warlock-l20-native-paid-30s.request.json")
+    target = float(api.representative_hp(20))
+    base = {
+        "native_binary_sha256": api._file_digest(binary),
+        "actor_level": 20, "mob_count": 2, "target_hp": target,
+        "rng_mode": "balanced", "iterations": 1,
+        "recovery_policy": "decisions",
+        "health_threshold": 1.0, "mana_threshold": 1.0,
+        "require_native_health_damage": False,
+    }
+    old_identity = dict(base, cache_schema=1, forever_commit="a" * 40)
+    current_identity = dict(
+        base, cache_schema=2, forever_paid_runtime_sha256="b" * 64)
+    monkeypatch.setattr(
+        api, "_exact_paid_cache_identity", lambda *args, **kwargs: old_identity)
+    old = api.PersistentNativeEvaluator(
+        binary, fixture, tmp_path / "paid",
+        session_factory=FakeSession, run_world=paid_world)
+    try:
+        initial = old(level=20, parent=None, mob_count=2, budget=1,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        old.close()
+    assert len(initial) == 1
+    assert initial[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert initial[0]["reused_exact_native_paid_receipt"] is False
+    metadata_paths = list((tmp_path / "paid").glob("*.native.cache.json"))
+    assert len(metadata_paths) == 1
+    metadata_bytes = metadata_paths[0].read_bytes()
+
+    # The original and current versions must agree on *actual world code*,
+    # not the entire Git commit or the upgraded cache helper implementation.
+    changed_world = [False]
+    def git(argv, *, cwd, capture_output, text, check, timeout):
+        assert argv[:2] == ["git", "rev-parse"]
+        assert len(argv) == 2 + len(scorer._LEGACY_PAID_WORLD_PATHS)
+        first = "c" if changed_world[0] and argv[2].startswith("HEAD:") else "d"
+        return subprocess.CompletedProcess(
+            argv, 0, "\n".join([first * 40] *
+                                  len(scorer._LEGACY_PAID_WORLD_PATHS)) + "\n")
+    monkeypatch.setattr(scorer.subprocess, "run", git)
+    monkeypatch.setattr(
+        api, "_exact_paid_cache_identity", lambda *args, **kwargs: current_identity)
+    assert scorer._verified_legacy_paid_cache(
+        json.loads(metadata_bytes), dict(current_identity,
+            source_sha256=initial[0]["source_request_sha256"],
+            prepared_sha256=json.loads(metadata_bytes)["prepared_sha256"]))
+    changed_world[0] = True
+    assert not scorer._verified_legacy_paid_cache(
+        json.loads(metadata_bytes), dict(current_identity,
+            source_sha256=initial[0]["source_request_sha256"],
+            prepared_sha256=json.loads(metadata_bytes)["prepared_sha256"]))
+    changed_world[0] = False
+
+    upgraded = api.PersistentNativeEvaluator(
+        binary, fixture, tmp_path / "paid", session_factory=FakeSession,
+        run_world=lambda *args, **kwargs: pytest.fail(
+            "original authentic fully-recovered cached mobs must not be replayed"))
+    try:
+        reused = upgraded(level=20, parent=None, mob_count=2, budget=1,
+                          rng_mode="balanced", iterations=1,
+                          recover_to_full=True)
+    finally:
+        upgraded.close()
+    assert len(reused) == 1
+    assert reused[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert reused[0]["reused_exact_native_paid_receipt"] is True
+    assert metadata_paths[0].read_bytes() == metadata_bytes
+    assert len(list((tmp_path / "paid").glob("*.native.cache.json"))) == 1
+
+    # A mismatched Rust binary never bypasses the native world execution.
+    changed_identity = dict(current_identity, native_binary_sha256="e" * 64)
+    monkeypatch.setattr(
+        api, "_exact_paid_cache_identity", lambda *args, **kwargs: changed_identity)
+    changed = api.PersistentNativeEvaluator(
+        binary, fixture, tmp_path / "paid", session_factory=FakeSession,
+        run_world=paid_world)
+    try:
+        different = changed(level=20, parent=None, mob_count=2, budget=1,
+                            rng_mode="balanced", iterations=1,
+                            recover_to_full=True)
+    finally:
+        changed.close()
+    assert len(different) == 1
+    assert different[0]["reused_exact_native_paid_receipt"] is False
