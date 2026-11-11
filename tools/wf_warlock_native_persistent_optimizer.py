@@ -11,6 +11,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+# Class plugin metadata; native_range_optimizer owns the shared ranking pipeline.
+DEFAULT_NATIVE_SOURCE = Path("fixtures/warlock-l20-native-paid-30s.request.json")
 import subprocess
 import sys
 from typing import Any, Callable
