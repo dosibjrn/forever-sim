@@ -260,6 +260,41 @@ def test_joint_route_is_charged_from_source_switch_not_first_world_death():
             switch={"switch_native_clock_ns": 200_000_000})
 
 
+def test_submillisecond_native_switch_charges_precise_world_movement():
+    """Native Fight/World-APL can select B between millisecond boundaries."""
+    world = two_live_world()
+    source = source_switch(world)
+    switch_ns = 100_123_456
+    source["switch_native_clock_ns"] = switch_ns
+    assert admit(
+        source, world=world, old_id="m1", new_id="m0",
+        previous_ack="a" * 64, source_sequence=1,
+        last_clock_ns=100_000_000,
+        boundary_clock_ns=200_000_000) == source
+
+    switch_s = switch_ns / 1_000_000_000
+    world.advance_to(switch_s)
+    world.engage_target("m0")
+    world.select_target("m0")
+    walk = _bridge["_queue_world_walk"](
+        world, "m0", speed_yards_s=7., approach_radius_yards=12.)
+    assert walk["start_s"] == pytest.approx(switch_s)
+    assert walk["scheduled_yards"] > 0
+
+    finish_s = walk["arrival_s"] + 0.2
+    world.advance_to(finish_s)
+    kills = [
+        {"target_id": "m0", "world_kill_clock_ns": 1_000_000_000},
+        {"target_id": "m1", "world_kill_clock_ns": round(finish_s * 1e9)},
+    ]
+    receipts, paid_s = _bridge["_paid_joint_overlap_route"](
+        kills, [walk], world.trace, switch=source)
+    assert paid_s == pytest.approx(walk["arrival_s"] - switch_s)
+    assert receipts[0]["source_switch_clock_ns"] == switch_ns
+    assert receipts[0]["observed_gsim_movement_steps"] == walk[
+        "scheduled_movement_steps"]
+
+
 def test_joint_source_apl_policy_does_not_pass_without_native_applied_echo():
     verify = _bridge["_verify_native_rolling_world_apl"]
     policy = {

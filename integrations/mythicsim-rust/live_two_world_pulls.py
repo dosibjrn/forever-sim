@@ -959,9 +959,10 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     # Charge that elapsed source-clock gap in the real world
                     # before engaging B or scheduling any movement.
                     switch_ns = rolling_switch["switch_native_clock_ns"]
-                    if switch_ns % 1_000_000:
-                        raise AssertionError(
-                            "RUST_WORLD_OVERLAP_SOURCE_SWITCH_MS_UNSUPPORTED")
+                    # Rust's native APL/Fight clock is in nanoseconds, not
+                    # necessarily whole milliseconds. Charge the exact
+                    # source-selected switch time instead of refusing a
+                    # legitimate in-between-tick target acquisition.
                     world.advance_to(switch_ns / 1e9)
                     world.engage_target(targets[iteration])
                     world.select_target(targets[iteration])
