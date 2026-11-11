@@ -757,9 +757,22 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
 def _new_source_acked_world_kills(*, world: CombatRuntime,
                                   before: dict[str, float],
                                   ack: dict, clock_ns: int,
-                                  overlap: bool) -> list[dict]:
-    """Record actual 2D kills by world identity, not selected target."""
+                                  overlap: bool,
+                                  native_target_ids: tuple[str, str] | None = None) -> list[dict]:
+    """Record actual 2D kills using the explicit native slot/world ID binding."""
     rows = ack.get("native_target_health_acks") if overlap else None
+    # In a joint Fight slot 0 is original A and slot 1 is acquired B.
+    # Do not derive those bindings from snapshot dictionary insertion order.
+    if overlap:
+        if (not isinstance(native_target_ids, tuple)
+                or len(native_target_ids) != 2
+                or any(not isinstance(value, str) or not value
+                       for value in native_target_ids)
+                or len(set(native_target_ids)) != 2
+                or set(native_target_ids) != set(before)):
+            raise AssertionError("RUST_TWO_WORLD_KILL_SLOT_MAP_INVALID")
+        slot_by_id = {world_id: index
+                      for index, world_id in enumerate(native_target_ids)}
     deaths = []
     for target_id, previous_hp in before.items():
         after_hp = float(world.targets[target_id].health)
@@ -768,6 +781,8 @@ def _new_source_acked_world_kills(*, world: CombatRuntime,
         if overlap:
             matched = [row for row in (rows if isinstance(rows, list) else [])
                        if isinstance(row, dict)
+                       and type(row.get("native_target_index")) is int
+                       and row["native_target_index"] == slot_by_id[target_id]
                        and row.get("world_target_id") == target_id
                        and row.get("world_target_health_before") == previous_hp
                        and row.get("world_target_health_after") == 0]
@@ -1038,7 +1053,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     for effect in ack["applied_events"])
             newly_dead = _new_source_acked_world_kills(
                 world=world, before=before_health, ack=ack,
-                clock_ns=clock_ns, overlap=rolling_switch is not None)
+                clock_ns=clock_ns, overlap=rolling_switch is not None,
+                native_target_ids=targets[:2] if rolling_switch is not None else None)
             for death in newly_dead:
                 if death["target_id"] in {k["target_id"] for k in kills}:
                     raise AssertionError("RUST_TWO_WORLD_DUPLICATE_KILL")
@@ -1130,6 +1146,20 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             result["windows"], native_window_count)
         native_mana = _native_mana_continuity(
             result["windows"], native_window_count)
+        if rolling_switch is not None:
+            # One joint native Fight ends after BOTH lethal world ACKs. Do not
+            # present its terminal mana/regen as two independent kill states.
+            native_mana["native_actor_mana_after_joint_overlap_fight"] = (
+                native_mana.pop("native_actor_mana_after_world_kills")[0])
+            native_mana.pop("native_actor_mana_delta_between_world_kills")
+            for old, new in (
+                ("native_combat_mana_regen_actual_gain_by_target",
+                 "native_combat_mana_regen_actual_gain_by_joint_fight"),
+                ("native_combat_mana_regen_events_by_target",
+                 "native_combat_mana_regen_events_by_joint_fight"),
+            ):
+                if old in native_mana:
+                    native_mana[new] = native_mana.pop(old)[0]
         food_water = _native_food_water_receipts(
             result["windows"], required=requested_mode == "decisions")
         recovery = _native_paid_recovery_receipts(
@@ -1172,6 +1202,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "world_target_provenance": target_metadata,
             "native_windows": result["windows"], "world_kills": kills,
             "minimum_native_actor_health": min_native_health,
+            "native_actor_resource_observation_scope": (
+                "joint_fight_end_only" if rolling_switch is not None
+                else "each_serial_world_kill"),
             **native_mana,
             **recovery,
             **food_water,

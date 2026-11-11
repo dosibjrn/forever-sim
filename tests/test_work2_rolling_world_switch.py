@@ -116,7 +116,7 @@ def test_selected_b_die_first_then_old_a_dot_kill_tracks_two_real_ids():
         }],
     }
     first = new_kills(world=world, before=before, ack=ack_b,
-                      clock_ns=300_000_000, overlap=True)
+                      clock_ns=300_000_000, overlap=True, native_target_ids=("m1", "m0"))
     assert [row["target_id"] for row in first] == ["m0"]
 
     before = {name: world.targets[name].health for name in ("m1", "m0")}
@@ -130,7 +130,7 @@ def test_selected_b_die_first_then_old_a_dot_kill_tracks_two_real_ids():
         }],
     }
     second = new_kills(world=world, before=before, ack=ack_a,
-                       clock_ns=400_000_000, overlap=True)
+                       clock_ns=400_000_000, overlap=True, native_target_ids=("m1", "m0"))
     assert [row["target_id"] for row in first + second] == ["m0", "m1"]
     assert len({row["ack_sha256"] for row in first + second}) == 2
 
@@ -143,7 +143,7 @@ def test_indexless_or_wrong_world_lethal_cannot_be_recorded():
            "native_target_health_acks": []}
     with pytest.raises(AssertionError, match="KILL_NOT_INDEX_ACKED"):
         new_kills(world=world, before=before, ack=ack,
-                  clock_ns=500_000_000, overlap=True)
+                  clock_ns=500_000_000, overlap=True, native_target_ids=("m1", "m0"))
     forged = deepcopy(ack)
     forged["native_target_health_acks"] = [{
         "native_target_index": 0,
@@ -153,8 +153,63 @@ def test_indexless_or_wrong_world_lethal_cannot_be_recorded():
     }]
     with pytest.raises(AssertionError, match="KILL_NOT_INDEX_ACKED"):
         new_kills(world=world, before=before, ack=forged,
-                  clock_ns=500_000_000, overlap=True)
+                  clock_ns=500_000_000, overlap=True, native_target_ids=("m1", "m0"))
 
+    # The same real world death is not an ACK of another native target slot.
+    # Boolean indices are not source-native integer slot IDs either.
+    for bad_slot in (1, None, True):
+        swapped_slot = deepcopy(ack)
+        swapped_slot["native_target_health_acks"] = [{
+            "native_target_index": bad_slot,
+            "world_target_id": "m1",
+            "world_target_health_before": before["m1"],
+            "world_target_health_after": 0.0,
+        }]
+        with pytest.raises(AssertionError, match="KILL_NOT_INDEX_ACKED"):
+            new_kills(world=world, before=before, ack=swapped_slot,
+                      clock_ns=500_000_000, overlap=True, native_target_ids=("m1", "m0"))
+
+    valid_slot = deepcopy(swapped_slot)
+    valid_slot["native_target_health_acks"][0]["native_target_index"] = 0
+    assert [death["target_id"] for death in new_kills(
+        world=world, before=before, ack=valid_slot,
+        clock_ns=500_000_000, overlap=True, native_target_ids=("m1", "m0"))] == ["m1"]
+
+
+
+def test_explicit_native_slot_binding_survives_reordered_health_snapshot():
+    """The live A/B slot identity must not depend on dict insertion order."""
+    world = two_live_world()
+    # Intentionally reverse the source's 0=m1, 1=m0 mapping.
+    before = {name: world.targets[name].health for name in ("m0", "m1")}
+    world.targets["m0"].apply_damage(before["m0"])
+    ack = {
+        "world_after_sha256": "d" * 64,
+        "native_target_health_acks": [{
+            "native_target_index": 1, "world_target_id": "m0",
+            "world_target_health_before": before["m0"],
+            "world_target_health_after": 0.0,
+        }],
+    }
+    def verify(**kwargs):
+        return new_kills(
+            world=world, before=before, ack=ack, clock_ns=600_000_000,
+            overlap=True, **kwargs)
+
+    assert [row["target_id"] for row in verify(
+        native_target_ids=("m1", "m0"))] == ["m0"]
+    # A source slot/order claim that contradicts the actual 0=A / 1=B
+    # world binding remains a rejection, despite matching health values.
+    for invalid in (("m0", "m1"), ("m1", "m1"), None):
+        with pytest.raises(AssertionError, match="SLOT_MAP_INVALID|KILL_NOT_INDEX_ACKED"):
+            verify(native_target_ids=invalid)
+    for invalid_slot in (0, None, False):
+        forged = deepcopy(ack)
+        forged["native_target_health_acks"][0]["native_target_index"] = invalid_slot
+        with pytest.raises(AssertionError, match="KILL_NOT_INDEX_ACKED"):
+            new_kills(world=world, before=before, ack=forged,
+                      clock_ns=600_000_000, overlap=True,
+                      native_target_ids=("m1", "m0"))
 
 def test_joint_world_kill_clocks_use_one_native_fight_not_two_serial_windows():
     measure = _bridge["_verified_joint_overlap_elapsed"]
