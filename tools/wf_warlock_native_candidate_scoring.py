@@ -80,6 +80,58 @@ def _exact_paid_cache_identity(binary: Path, *, actor_level: int,
         return None
 
 
+
+# A historical schema-1 receipt used the entire Forever commit as its key.
+# Reuse it after a cache-identity-only code change only when the actual
+# world/scenario/gsim sources still have identical Git objects. Prepared
+# payload + engine + paid scenario + raw receipt are checked separately.
+_LEGACY_PAID_WORLD_PATHS = (
+    "src/game",
+    "src/scenarios",
+    "src/shared",
+    "integrations/mythicsim-rust",
+)
+
+
+def _verified_legacy_paid_cache(metadata: dict, identity: dict) -> bool:
+    """Admit a historical exact receipt without equating unrelated revisions.
+
+    This function only matches provenance: callers must also verify the
+    original receipt SHA256 and re-score it with the CURRENT strict native
+    two-mob ACK and dual-resource terminal-recovery predicate.
+    """
+    if (metadata.get("cache_schema") != 1
+            or identity.get("cache_schema") != 2):
+        return False
+    old_commit = metadata.get("forever_commit")
+    if (not isinstance(old_commit, str) or len(old_commit) != 40
+            or any(char not in "0123456789abcdef" for char in old_commit)):
+        return False
+    # Compare *every* scenario, native binary and prepared-actor field.
+    # Only the cache schema and historical commit key may be different.
+    if any(metadata.get(key) != value for key, value in identity.items()
+           if key not in ("cache_schema", "forever_paid_runtime_sha256")):
+        return False
+    if not isinstance(metadata.get("native_raw_receipt_sha256"), str):
+        return False
+    root = Path(__file__).resolve().parents[1]
+    try:
+        def objects(revision: str) -> list[str]:
+            result = subprocess.run(
+                ["git", "rev-parse",
+                 *(f"{revision}:{path}" for path in _LEGACY_PAID_WORLD_PATHS)],
+                cwd=root, capture_output=True, text=True, check=True, timeout=10)
+            values = result.stdout.splitlines()
+            if (len(values) != len(_LEGACY_PAID_WORLD_PATHS)
+                    or any(len(value) != 40 for value in values)):
+                return []
+            return values
+        previous = objects(old_commit)
+        return bool(previous) and previous == objects("HEAD")
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
                        expected_target_hp: float) -> tuple[float | None, str]:
     """Total source-ACK-clock elapsed time, or a precise unranked reason.
