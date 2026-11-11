@@ -1016,7 +1016,8 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
         native = PersistentNativeEvaluator(
             args.native_binary, args.source, Path("runs/native-api-paid-cache"),
             target_hp=args.target_hp,
-            compare_world_rest_30=args.compare_world_rest_30,
+            **({"compare_world_rest_30": True}
+               if args.compare_world_rest_30 else {}),
         )
         try:
             if args.probe_native_continuity:
