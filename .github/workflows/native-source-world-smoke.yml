@@ -11,11 +11,11 @@ on:
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
       - 'integrations/mythicsim-rust/live_world_probe.py'
-      - 'tools/wf_native_priest_l20_paid.py'
-      - 'tools/wf_native_feral_l60_world.py'
       - 'tools/wf_gsim_go_live_range_probe.py'
-      - 'src/game/native_p3_item_options.py'
       - '.github/workflows/native-source-world-smoke.yml'
+  # Explicit cross-class paid diagnostics remain available on demand. Do not
+  # run unrelated Priest/Feral builds as prerequisites for rolling World-APL.
+  workflow_dispatch:
 # This is a diagnostic smoke, not an M1 acceptance run or irreplaceable
 # paid evidence. A later commit to the same PR supersedes its Rust build and
 # serial world probes; do not spend runner time finishing the stale HEAD.
@@ -99,6 +99,7 @@ jobs:
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
             --mob-health 1200 --targets 2 --require-native-health-damage
       - name: Paid Priest L20 candidate through exact native Rust and gsim 2D ACK (not P4/P5 acceptance)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           python3 - <<'PY'
           import json
@@ -140,6 +141,7 @@ jobs:
                 flush=True)
           PY
       - name: Feral L60 source build through two consecutive native/world targets (not P4-P6)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           python tools/wf_native_feral_l60_world.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
