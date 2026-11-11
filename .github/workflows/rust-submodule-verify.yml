@@ -83,11 +83,11 @@ jobs:
           fi
 
       - name: Build the exact selected engine
-        if: steps.selected_rust_change.outputs.changed == 'true'
+        if: steps.selected_rust_change.outputs.changed == 'true' || (github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record')
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
       - name: Probe unified get_options JSON on two class/level pairs
-        if: steps.selected_rust_change.outputs.changed == 'true'
+        if: steps.selected_rust_change.outputs.changed == 'true' || (github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record')
         working-directory: integrations/mythicsim-rust/engine
         shell: bash
         run: |
@@ -124,11 +124,11 @@ jobs:
       # still-unaccepted P3 checkpoint probes below.
 
       # Keep the still-unaccepted P3 diagnostics available by explicit label,
-      # but do not pay for them on every selected-Rust PR push. Reapplying the
-      # label opts in to one new diagnostic cycle; native build/options smoke
-      # above remains automatic for genuine Rust-pin changes.
+      # even when a Forever-only P3 producer changes without a Rust gitlink edit.
+      # The label explicitly opts in to one new native build and diagnostic;
+      # ordinary PR pushes only build Rust when the selected pin changes.
       - name: Run no-record Rogue L20 P3 native capability and gate receipt
-        if: steps.selected_rust_change.outputs.changed == 'true' && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
+        if: github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -187,7 +187,7 @@ jobs:
           PY
 
       - name: Run no-record Priest and Mage L20 P3 with native item options
-        if: steps.selected_rust_change.outputs.changed == 'true' && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
+        if: github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -225,7 +225,7 @@ jobs:
           PY
           done
       - name: Run no-record Shaman L20 P3 with native item options
-        if: steps.selected_rust_change.outputs.changed == 'true' && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
+        if: github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -258,7 +258,7 @@ jobs:
           PY
 
       - name: Run no-record Paladin L20 P3 with native player context and item options
-        if: steps.selected_rust_change.outputs.changed == 'true' && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
+        if: github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -293,7 +293,7 @@ jobs:
           PY
 
       - name: Run no-record Mage L30 P3 with native item options
-        if: steps.selected_rust_change.outputs.changed == 'true' && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
+        if: github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
         env:
           GH_TOKEN: ${{ github.token }}
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -331,7 +331,7 @@ jobs:
           PY
 
       - name: Upload no-record native P3 reports
-        if: always() && steps.selected_rust_change.outputs.changed == 'true' && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
+        if: always() && github.event.action == 'labeled' && github.event.label.name == 'p3-native-paid-no-record'
         uses: actions/upload-artifact@v4
         with:
           name: native-p3-no-record-${{ github.sha }}
