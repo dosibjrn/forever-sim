@@ -459,6 +459,8 @@ def _native_rolling_receipt_verified(receipt: dict, world_apl: dict | None) -> b
         receipt.get("native_world_apl") == world_apl
         and receipt.get("native_world_overlap_verified") is True
         and isinstance(receipt.get("native_world_overlap"), dict)
+        and receipt["native_world_overlap"].get(
+            "old_target_dot_ticks_after_switch_acked", 0) > 0
         and len({row.get("target_id") for row in receipt.get("world_kills", [])}) == 2
         and len({row.get("ack_sha256") for row in receipt.get("world_kills", [])}) == 2
     ))
