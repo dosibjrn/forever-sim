@@ -257,15 +257,15 @@ jobs:
   # Work2 capability PR. Do not rerun the now-merged stride-20 milestone.
   # PR initially pays stride 10; manual dispatch selects 5 or 1 after evidence.
   sparse-optimizer-real:
-    if: ${{ (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.ref == 'feature/m05-native-stride-density-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'opened' && github.event.pull_request.head.ref == 'feature/m05-native-stride-density-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
       contents: read
       actions: read
     env:
-      M05_STRIDE: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' && '10' || github.event_name == 'pull_request' && '5' || inputs.m05_stride }}
-      M05_BUDGET: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && '110' || inputs.m05_stride == '1' && '450' || inputs.m05_stride == '5' && '110' || '60' }}
+      M05_STRIDE: ${{ github.event_name == 'pull_request' && '5' || inputs.m05_stride }}
+      M05_BUDGET: ${{ github.event_name == 'pull_request' && '110' || inputs.m05_stride == '1' && '450' || inputs.m05_stride == '5' && '110' || '60' }}
     steps:
       - name: Checkout exact generic optimizer PR
         uses: actions/checkout@v4
@@ -291,8 +291,8 @@ jobs:
         uses: actions/download-artifact@v4
         continue-on-error: true  # Artifact retention expiry must not veto a new native run.
         with:
-          name: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && 'requested-m05-optimize-42981742152' || inputs.m05_cache_run_id && format('requested-m05-optimize-{0}', inputs.m05_cache_run_id) || 'requested-sparse-optimize-42980239306' }}
-          run-id: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && '42981742152' || inputs.m05_cache_run_id || '42980239306' }}
+          name: ${{ github.event_name == 'pull_request' && 'requested-m05-optimize-42981742152' || inputs.m05_cache_run_id && format('requested-m05-optimize-{0}', inputs.m05_cache_run_id) || 'requested-sparse-optimize-42980239306' }}
+          run-id: ${{ github.event_name == 'pull_request' && '42981742152' || inputs.m05_cache_run_id || '42980239306' }}
           github-token: ${{ github.token }}
           path: project/runs
       - name: Run actual M0.5 sampled compatible optimizer (Rust ACK and paid dual restoration)
