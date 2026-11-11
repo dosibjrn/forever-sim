@@ -132,10 +132,47 @@ def _optimize_compatible_samples(
         budget if budget <= 2 * len(levels)
         else max(2 * len(levels), int(budget * 0.6))
     )
+    # Later samples must also try actual native-paid *earlier* build
+    # families, not merely disconnected L20 seed-tree mutations. Retain
+    # each parent from the real scored evaluator; no skipped-level combat,
+    # inferred actor continuation or Python Warcraft legality is asserted.
+    from inspect import Parameter, signature
+    try:
+        parameters = signature(evaluate).parameters
+        supports_hints = ("candidate_hints" in parameters or any(
+            parameter.kind is Parameter.VAR_KEYWORD
+            for parameter in parameters.values()))
+    except (TypeError, ValueError):
+        supports_hints = False
+    paid_by_level: dict[int, list[Mapping[str, Any]]] = {}
+
+    def forward_seeded_evaluator(**request):
+        idx = levels.index(request["level"])
+        previous = paid_by_level.get(levels[idx - 1], []) if idx else []
+        if previous and supports_hints:
+            request["candidate_hints"] = [{
+                "talents": row["talents"], "from_level": levels[idx - 1],
+                "source_request_sha256": row["source_request_sha256"],
+            } for row in sorted(previous, key=lambda r: (
+                r["elapsed_seconds"], r["source_request_sha256"]))
+                if _talent_ranks(row.get("talents")) is not None][
+                    :max(beam_width * 2, 6)]
+        rows = evaluate(**request)
+        if (isinstance(rows, Sequence)
+                and not isinstance(rows, (str, bytes))):
+            paid_by_level.setdefault(request["level"], []).extend(
+                row for row in rows if isinstance(row, Mapping)
+                and _receipt_error(
+                    row, level=request["level"], parent=None,
+                    mob_count=mob_count, rng_mode=rng_mode,
+                    iterations=iterations) is None)
+        return rows
+
     measured = optimize(
         start_level, end_level, level_stride, mob_count, initial_budget,
-        evaluate=evaluate, beam_width=beam_width, rng_mode=rng_mode,
-        iterations=iterations, recover_to_full=True, mode="independent",
+        evaluate=forward_seeded_evaluator, beam_width=beam_width,
+        rng_mode=rng_mode, iterations=iterations,
+        recover_to_full=True, mode="independent",
     )
 
     def compatible_frontier():

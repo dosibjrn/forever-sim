@@ -115,6 +115,12 @@ def test_one_session_scores_all_three_samples_with_actual_paid_clock_contract(
     calls = FakeSession.instances[0].calls
     assert [row["level"] for row in calls if row["op"] == "options"] == [20, 40, 60]
     assert any(row["actor_level"] == 40 for row in calls if row["op"] == "prepare")
+    l40_paid_talents = {row["talents"] for row in
+                        result["independent_level_rankings"]["40"]}
+    l60_proposals = [row["request"]["raid"]["parties"][0]["players"][0]["talentsString"]
+                     for row in calls if row["op"] == "prepare"
+                     and row["actor_level"] == 60]
+    assert l60_proposals and l60_proposals[0] in l40_paid_talents
     assert all(row["receipt"]["native_raw_receipt_sha256"]
                for row in result["independent_level_rankings"]["20"])
     assert native.session.closed
@@ -183,3 +189,21 @@ def test_paid_candidates_receive_level_scaled_lethal_timeout_and_native_gear_opt
     assert all(item.get("id", 0) == 0 for item in second["equipment"]["items"])
     assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
                for row in rows)
+
+def test_forward_talent_proposals_preserve_earlier_paid_ancestry_without_respec():
+    from tools.wf_warlock_native_persistent_optimizer import _forward_native_talent_hints
+    trees = [{"talents": [{"index": idx, "max_rank": 5}
+                           for idx in range(15)]} for _ in range(3)]
+    earlier = "25522323133-0000-00"
+    variants = list(_forward_native_talent_hints([
+        {"talents": earlier, "from_level": 40},
+    ], level=60, points_available=51, trees=trees))
+    assert variants and variants[0] == earlier
+    assert len(variants) > 1
+    for later in variants[1:]:
+        old = [[int(char) for char in piece] for piece in earlier.split("-")]
+        new = [[int(char) for char in piece] for piece in later.split("-")]
+        assert all(all(a <= b for a, b in zip(
+            left + [0] * (len(right) - len(left)), right))
+            for left, right in zip(old, new))
+        assert sum(sum(p) for p in new) == 51

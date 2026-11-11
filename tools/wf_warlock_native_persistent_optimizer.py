@@ -36,6 +36,65 @@ def _file_digest(path: Path) -> str:
     return _digest(path.read_bytes())
 
 
+def _forward_native_talent_hints(hints: Any, *, level: int,
+                                 points_available: int, trees: list[dict]):
+    """Carry source-paid earlier talent families and propose native-option spends.
+
+    Earlier allocations are not respeced or automatically made legal: each
+    candidate still pays Rust prepare and genuine gsim/Rust world evaluation.
+    """
+    if not isinstance(hints, list) or type(points_available) is not int:
+        return
+    seen: set[str] = set()
+    for hint in hints[:12]:
+        if (not isinstance(hint, dict)
+                or type(hint.get("from_level")) is not int
+                or hint["from_level"] >= level
+                or not isinstance(hint.get("talents"), str)):
+            continue
+        original = hint["talents"]
+        pieces = original.split("-")
+        if len(pieces) != 3 or not all(
+                piece.isascii() and piece.isdigit() for piece in pieces):
+            continue
+        ranks = [[int(value) for value in piece] for piece in pieces]
+        spent = sum(sum(p) for p in ranks)
+        if spent > points_available:
+            continue
+        if original not in seen:
+            seen.add(original)
+            yield original
+        # Native options supply only slot index and rank cap. Any additional
+        # tier/prerequisite and level legality belongs solely to Rust prepare.
+        for order in ([0, 1, 2], [1, 0, 2], [2, 0, 1]):
+            next_ranks = [p[:] for p in ranks]
+            needed = points_available - spent
+            for tree_index in order:
+                slots = trees[tree_index].get("talents", [])
+                for slot in slots:
+                    idx, cap = slot.get("index"), slot.get("max_rank")
+                    if (type(idx) is not int or idx < 0
+                            or type(cap) is not int or not 1 <= cap <= 9):
+                        continue
+                    next_ranks[tree_index].extend(
+                        [0] * max(0, idx + 1 - len(next_ranks[tree_index])))
+                    old = next_ranks[tree_index][idx]
+                    extra = min(needed, max(0, cap - old))
+                    next_ranks[tree_index][idx] += extra
+                    needed -= extra
+                    if needed == 0:
+                        break
+                if needed == 0:
+                    break
+            if needed:
+                continue
+            candidate = "-".join(
+                "".join(map(str, tree)) for tree in next_ranks)
+            if candidate not in seen:
+                seen.add(candidate)
+                yield candidate
+
+
 def _source_item_alternatives(source: dict, options: dict):
     """Mutate equipment solely from Rust-advertised item IDs.
 
@@ -231,7 +290,9 @@ class PersistentNativeEvaluator:
 
         seed = self._source(level, None)
         seed_talents = seed["raid"]["parties"][0]["players"][0]["talentsString"]
-        proposed_talents = []
+        proposed_talents = list(_forward_native_talent_hints(
+            candidate_hints, level=level, points_available=points,
+            trees=trees))
         proposed_talents.extend(_backward_ancestor_variants(
             candidate_hints, points_available=points))
         from itertools import islice
