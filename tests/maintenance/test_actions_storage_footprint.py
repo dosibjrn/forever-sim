@@ -556,3 +556,18 @@ def test_concurrent_artifact_expiry_not_misattributed_to_gc_deleted_bytes():
     before = [{"id": 11, "size_in_bytes": 200},
               {"id": 12, "size_in_bytes": 350}]
     assert module.verified_removed_footprint(before, [], [11]) == (200, 550)
+
+
+def test_storage_guard_source_changes_trigger_maintenance_ci():
+    """Production inventory, pin protection and GC edits must run safety tests on PRs."""
+    workflow = (Path(__file__).resolve().parents[2]
+                / ".github/workflows/maintenance-evidence-tests.yml").read_text(
+                    encoding="utf-8")
+    pr_paths = workflow.split("  pull_request:\n", 1)[1].split("\npermissions:", 1)[0]
+    for file in (
+        "tools/actions_storage_footprint.py",
+        "tools/actions_artifact_pins.py",
+        ".github/workflows/actions-storage-preventive-gc.yml",
+        "tests/maintenance/**",
+    ):
+        assert ("      - '%s'" % file) in pr_paths.splitlines(), file
