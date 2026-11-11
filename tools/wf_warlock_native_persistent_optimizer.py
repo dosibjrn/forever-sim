@@ -881,12 +881,6 @@ class PersistentNativeEvaluator:
                     json.dumps(_native_world_policy(
                         rest_health, rest_mana, world_apl), sort_keys=True),
                 )
-                if (excluded_paid_source_policies is not None
-                        and paid_identity in excluded_paid_source_policies):
-                    # Do not spend an adaptive attempt on an existing native
-                    # source+policy score. A different rolling/rest policy for
-                    # the same prepared source remains a legitimate challenger.
-                    continue
                 if not apl_expanded:
                     apl_expanded = True
                     # Only prepared-native SpellFlagAPL actions may enter a
@@ -907,6 +901,12 @@ class PersistentNativeEvaluator:
                         insert_at = max(insert_at, index + 1)
                     sources[insert_at:insert_at] = [
                         (row, "apl") for row in apl_choices]
+                if (excluded_paid_source_policies is not None
+                        and paid_identity in excluded_paid_source_policies):
+                    # Do not spend an adaptive attempt on an existing native
+                    # source+policy score. A different rolling/rest policy for
+                    # the same prepared source remains a legitimate challenger.
+                    continue
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
                     target_hp=target_hp, cid=cid,
