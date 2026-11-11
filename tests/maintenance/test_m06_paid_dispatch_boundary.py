@@ -41,7 +41,13 @@ def test_native_paid_pr_regressions_remain_fast_and_not_paid():
     assert "    if: github.event_name == 'pull_request'\n" in fast_job
     assert "python -m pytest -q" in fast_job
     assert "cargo build" not in fast_job
-    assert "python -m src.v2.runner optimize" not in fast_job
+    # Only parser/help is permitted on PRs; native-paid optimize remains
+    # guarded by the explicit manual run_m06_original dispatch input.
+    direct_optimize_commands = re.findall(
+        r"^\s+run:\s*(python -m src\.v2\.runner optimize[^\n]*)$",
+        fast_job, flags=re.MULTILINE,
+    )
+    assert direct_optimize_commands == ["python -m src.v2.runner optimize --help"]
 
 def test_only_superseded_fast_pr_runs_are_cancelled():
     text = WORKFLOW.read_text(encoding="utf-8")
@@ -60,3 +66,16 @@ def test_only_superseded_fast_pr_runs_are_cancelled():
         manual_job = _job(name, text)
         assert "cancel-in-progress:" not in manual_job
         assert "    if: ${{ github.event_name == 'workflow_dispatch'" in manual_job
+
+def test_fast_native_route_ci_covers_public_m06_optimizer_dispatch():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    pr_paths = text.split("  pull_request:\n", 1)[1].split("  workflow_dispatch:\n", 1)[0]
+    assert "      - src/v2/native_range_optimizer.py\n" in pr_paths
+    assert "      - src/v2/runner.py\n" in pr_paths
+    assert "      - tests/maintenance/test_m06_paid_dispatch_boundary.py\n" in pr_paths
+    fast_job = _job("native-paid-route", text)
+    # A PR changing the real `python -m` entry point must not silently skip
+    # CI or substitute library-only mocks for the public command dispatch.
+    assert "python -m src.v2.runner optimize --help" in fast_job
+    assert "cargo build" not in fast_job
+    assert "run_m06_original" not in fast_job
