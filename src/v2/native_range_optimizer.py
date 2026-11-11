@@ -84,6 +84,100 @@ def _receipt_error(
 
 
 
+
+def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -> dict[str, Any]:
+    """Compare only two paid rest policies on one identical native-prepared build.
+
+    The usual ranked path may legitimately contain just a full-rest baseline.
+    That is not evidence that the opt-in 30% policy was executable or faster.
+    Rust/gsim owns the actual rest decision and threshold acknowledgement.
+    """
+    rows = result.get("independent_level_rankings", {}).get(str(level), [])
+    accepted: dict[tuple[float, float], list[Mapping[str, Any]]] = {
+        (1.0, 1.0): [], (0.3, 0.3): [],
+    }
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        receipt = row.get("receipt")
+        policy = row.get("native_world_policy")
+        if not isinstance(receipt, Mapping) or not isinstance(policy, Mapping):
+            continue
+        thresholds = (policy.get("rest_when_health_below"),
+                      policy.get("rest_when_mana_below"))
+        if thresholds not in accepted or policy != receipt.get("native_world_policy"):
+            continue
+        if (_receipt_error(
+                receipt, level=level, parent=None, mob_count=result["mob_count"],
+                rng_mode=result["rng_mode"], iterations=result["iterations"]
+            ) is not None or any(
+                row.get(field) != receipt.get(field)
+                for field in ("source_request_sha256", "engine_binary_sha256",
+                              "talents", "gear", "apl", "pet")
+            ) or not _sha(receipt.get("native_raw_receipt_sha256"))
+                or not receipt.get("native_raw_receipt_file")):
+            continue
+        accepted[thresholds].append(row)
+
+    def identity(row: Mapping[str, Any]) -> tuple[Any, ...]:
+        return (row["source_request_sha256"], row["engine_binary_sha256"],
+                json.dumps([row.get(field) for field in
+                            ("talents", "gear", "apl", "pet")],
+                           sort_keys=True, separators=(",", ":")))
+
+    pairs = [(full, thirty) for full in accepted[(1.0, 1.0)]
+             for thirty in accepted[(0.3, 0.3)]
+             if identity(full) == identity(thirty)]
+    refusals = [row for row in result.get("rejected_native_attempts", [])
+                if row.get("level") == level and
+                row.get("native_world_policy", {}).get(
+                    "rest_when_health_below") == 0.3]
+    summary: dict[str, Any] = {
+        "status": "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE",
+        "level": level, "mob_count": result["mob_count"],
+        "balanced_rng": result["rng_mode"] == "balanced",
+        "full_rest_paid_candidates": len(accepted[(1.0, 1.0)]),
+        "thirty_percent_paid_candidates": len(accepted[(0.3, 0.3)]),
+        "thirty_percent_refusals": refusals,
+        "winner": None,
+        "baseline": None, "thirty_percent": None,
+        "full_minus_thirty_elapsed_seconds": None,
+    }
+    if not pairs:
+        return summary
+
+    full, thirty = min(pairs, key=lambda pair: (
+        min(pair[0]["native_elapsed_seconds"], pair[1]["native_elapsed_seconds"]),
+        pair[0]["source_request_sha256"]))
+    def evidence(row: Mapping[str, Any]) -> dict[str, Any]:
+        paid = row["receipt"]
+        return {
+            "source_request_sha256": row["source_request_sha256"],
+            "engine_binary_sha256": row["engine_binary_sha256"],
+            "native_raw_receipt_sha256": paid["native_raw_receipt_sha256"],
+            "native_raw_receipt_file": paid["native_raw_receipt_file"],
+            "charged_elapsed_seconds": row["native_elapsed_seconds"],
+            "terminal_recovery_seconds": row["terminal_recovery_seconds"],
+            "terminal_hp": paid["terminal_hp"],
+            "terminal_max_hp": paid["terminal_max_hp"],
+            "terminal_mana": paid["terminal_mana"],
+            "terminal_max_mana": paid["terminal_max_mana"],
+            "reused_exact_native_paid_receipt": paid.get(
+                "reused_exact_native_paid_receipt", False),
+        }
+    full_seconds = float(full["native_elapsed_seconds"])
+    thirty_seconds = float(thirty["native_elapsed_seconds"])
+    summary.update({
+        "status": "MEASURED_NATIVE_REST_HEAD_TO_HEAD",
+        "winner": ("thirty_percent" if thirty_seconds < full_seconds
+                   else "full_rest" if full_seconds < thirty_seconds else "tie"),
+        "baseline": evidence(full),
+        "thirty_percent": evidence(thirty),
+        "full_minus_thirty_elapsed_seconds": full_seconds - thirty_seconds,
+    })
+    return summary
+
+
 def _retained_native_paid_axis_breadth(
     result: Mapping[str, Any], level: int,
 ) -> tuple[int, dict[str, int]] | None:
@@ -998,6 +1092,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                                or (args.guide_out and args.shortlist_out.resolve()
                                    == args.guide_out.resolve())):
         ap.error("--shortlist-out must differ from JSON and guide outputs")
+    if args.compare_world_rest_30 and (
+            args.start_level != args.end_level or args.budget < 2):
+        ap.error("--compare-world-rest-30 requires one level and budget >= 2")
     if args.probe_native_continuity:
         if args.end_level != args.start_level + 1:
             ap.error("--probe-native-continuity needs exactly one level transition")
@@ -1049,6 +1146,9 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
                 iterations=args.iterations, mode="compatible",
                 class_name=cls, talent_tree=args.tree, backend=args.backend,
             )
+    if args.compare_world_rest_30:
+        result["world_rest_head_to_head"] = measured_world_rest_head_to_head(
+            result, level=args.start_level)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
     if args.probe_native_continuity:
@@ -1062,6 +1162,16 @@ def main(argv: list[str] | None = None, *, evaluate=None) -> int:
     if args.shortlist_out:
         args.shortlist_out.parent.mkdir(parents=True, exist_ok=True)
         args.shortlist_out.write_text(render_native_paid_level_shortlist(result))
+    if args.compare_world_rest_30:
+        comparison = result["world_rest_head_to_head"]
+        print("Native World-APL rest-policy head-to-head: "
+              + comparison["status"])
+        if comparison["status"] != "MEASURED_NATIVE_REST_HEAD_TO_HEAD":
+            print("No native head-to-head winner: inspect paid refusals in --out.")
+            return 2
+        print("Policy winner: " + comparison["winner"]
+              + "; full minus 30%-rest charged seconds: "
+              + f"{comparison['full_minus_thirty_elapsed_seconds']:.3f}")
     if result["ranked_alternatives"]:
         best = result["ranked_alternatives"][0]
         print(f"{cls}: sampled compatible build path, "
