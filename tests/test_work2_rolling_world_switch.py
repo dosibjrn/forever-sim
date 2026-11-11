@@ -52,7 +52,7 @@ def test_source_acked_45_percent_b_acquisition_retains_two_live_world_ids():
     assert accepted(world, switch) == switch
     assert world.targets["m1"].alive and world.targets["m0"].alive
     # Source validation does not itself engage, select or move an enemy.
-    assert world.selected_target_id == "m1"
+    assert world.target.id == "m1"
 
 
 @pytest.mark.parametrize("key,value", [
@@ -71,11 +71,11 @@ def test_unacked_early_b_switch_fails_without_mutating_world(key, value):
     world = two_live_world()
     source = source_switch(world)
     source[key] = value
-    before = (world.selected_target_id, world.targets["m0"].alive,
+    before = (world.target.id, world.targets["m0"].alive,
               world.targets["m1"].health)
     with pytest.raises(AssertionError, match="RUST_WORLD_OVERLAP_SOURCE_SWITCH_UNACKED"):
         accepted(world, source)
-    assert before == (world.selected_target_id, world.targets["m0"].alive,
+    assert before == (world.target.id, world.targets["m0"].alive,
                       world.targets["m1"].health)
 
 
