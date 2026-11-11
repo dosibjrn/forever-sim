@@ -746,7 +746,9 @@ class PersistentNativeEvaluator:
                  recover_to_full: bool, search_mode: str = "independent",
                  candidate_hints: list | None = None,
                  fresh_paid_world: bool = False,
-                 stop_after_first_paid: bool = False) -> list[dict]:
+                 stop_after_first_paid: bool = False,
+                 excluded_paid_source_policies: set[tuple[str, str]] | None = None
+                 ) -> list[dict]:
         if (parent is not None or search_mode != "independent"
                 or rng_mode != "balanced" or iterations != 1
                 or recover_to_full is not True or not 2 <= mob_count <= 100):
@@ -874,6 +876,17 @@ class PersistentNativeEvaluator:
                         or len(prepared["request_sha256"]) != 64):
                     raise ValueError("RUST_NATIVE_PREPARED_ACTOR_INVALID")
                 prepared_ok = True
+                paid_identity = (
+                    prepared["request_sha256"],
+                    json.dumps(_native_world_policy(
+                        rest_health, rest_mana, world_apl), sort_keys=True),
+                )
+                if (excluded_paid_source_policies is not None
+                        and paid_identity in excluded_paid_source_policies):
+                    # Do not spend an adaptive attempt on an existing native
+                    # source+policy score. A different rolling/rest policy for
+                    # the same prepared source remains a legitimate challenger.
+                    continue
                 if not apl_expanded:
                     apl_expanded = True
                     # Only prepared-native SpellFlagAPL actions may enter a
