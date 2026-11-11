@@ -195,3 +195,49 @@ def test_adaptive_does_not_repay_same_prepared_world_refusal():
     assert len(report["independent_level_rankings"]["20"]) == 2
     assert report["ranked_alternatives"][0]["steps"][0][
         "receipt"]["candidate_id"] == "new-rest-policy"
+
+
+def test_backward_seed_excludes_previously_paid_source_policy():
+    """Backseed pays a new native ancestor, not the first-pass paid control.
+
+    The score/receipts are transport fixtures, never claimed native gameplay.
+    Distinct source+policy candidates remain eligible under the same budget.
+    """
+    control = paid(20, 2, "5-0-0", 6.0, variant="root-control")
+    later = paid(40, 2, "0-55-0", 8.0, variant="late-family")
+    ancestor = paid(20, 2, "0-5-0", 3.0, variant="late-ancestor")
+    control_key = (
+        control["source_request_sha256"],
+        json.dumps(control["native_world_policy"], sort_keys=True),
+    )
+    ancestor_key = (
+        ancestor["source_request_sha256"],
+        json.dumps(ancestor["native_world_policy"], sort_keys=True),
+    )
+    backward_exclusions = []
+
+    def native(*, level, parent, budget, mob_count, rng_mode, iterations,
+               recover_to_full, candidate_hints=None,
+               excluded_paid_source_policies=None):
+        assert parent is None and mob_count == 2
+        assert rng_mode == "balanced" and iterations == 1
+        assert recover_to_full is True
+        if level == 20 and candidate_hints and any(
+                hint["from_level"] > level for hint in candidate_hints):
+            backward_exclusions.append(set(excluded_paid_source_policies))
+            assert control_key in excluded_paid_source_policies
+            assert ancestor_key not in excluded_paid_source_policies
+            return [ancestor]
+        if excluded_paid_source_policies is not None:
+            return []  # No further source-native options in this fixture.
+        return [control if level == 20 else later]
+
+    report = optimize(20, 40, 20, 2, 12, evaluate=native,
+                      mode="compatible", beam_width=2, class_name="warlock")
+    assert len(backward_exclusions) == 1
+    assert report["backward_seeded_native_attempts"] == 1
+    assert report["native_candidates_examined"] == 3
+    assert report["sampled_levels_compatible"] == [20, 40]
+    assert [step["talents"] for step in report["ranked_alternatives"][0]["steps"]] == [
+        "0-5-0", "0-55-0",
+    ]
