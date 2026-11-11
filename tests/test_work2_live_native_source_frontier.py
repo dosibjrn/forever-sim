@@ -934,3 +934,39 @@ def test_paid_parent_accepts_native_protobuf_sha_distinct_from_json_bytes(tmp_pa
     parent["source_request_sha256"] = "d" * 64
     with pytest.raises(ValueError, match="native parent source identity mismatch"):
         _paid_parent_source(parent, binary)
+
+def test_paid_protobuf_parent_refuses_changed_scored_source_before_native_calls(tmp_path):
+    """The native protobuf identity must not authorize a modified source file."""
+    from tools.wf_warlock_native_source_frontier import _paid_parent_source
+
+    seed, binary, parent = _scored_parent(tmp_path)
+    native_sha = "e" * 64
+    assert hashlib.sha256(seed.read_bytes()).hexdigest() != native_sha
+    parent["source_request_sha256"] = native_sha
+    parent["source_request_file_sha256"] = hashlib.sha256(seed.read_bytes()).hexdigest()
+    prepared_path = Path(parent["prepared_file"])
+    prepared = json.loads(prepared_path.read_text())
+    prepared["request_sha256"] = native_sha
+    prepared_path.write_text(json.dumps(prepared))
+    raw_path = Path(parent["native_raw_receipt_file"])
+    raw = json.loads(raw_path.read_text())
+    raw["source_sha256"] = native_sha
+    raw_path.write_text(json.dumps(raw))
+
+    # A complete, authentic scored parent remains reusable even though the
+    # deterministic-protobuf request SHA differs from the source JSON hash.
+    original, _ = _paid_parent_source(parent, binary)
+    assert original == json.loads(seed.read_text())
+
+    # Whitespace alone changes the original file bytes, without changing its
+    # JSON contents or the prepared/raw protobuf identities. Never reuse it.
+    seed.write_text(seed.read_text() + "\n")
+    result = produce_frontier(
+        _request(level=30, parent=parent), binary=binary,
+        seed_source=seed, out=tmp_path / "unpaid",
+        runner=lambda *args, **kwargs: 1 / 0,
+    )
+    assert result["entries"] == []
+    assert result["refusals"][0]["status"] == "NATIVE_CONTINUITY_NOT_ATTESTED"
+    assert "original source bytes mismatch" in result["refusals"][0]["native_refusal"]
+    assert result["refusals"][0]["native_prepared"] is False
