@@ -1552,10 +1552,14 @@ def test_completed_l20_cold_search_is_not_replayed_by_shared_ack_ci():
     """
     workflow = (cold.ROOT / ".github/workflows/native-session-ack-regressions.yml"
                 ).read_text(encoding="utf-8")
+    native_world = (cold.ROOT / ".github/workflows/native-source-world-smoke.yml"
+                    ).read_text(encoding="utf-8")
     assert "  clock-ack:" in workflow
-    assert "  source-health-world:" in workflow
-    assert "  warlock-l20-cold-30-300:" not in workflow
-    assert "python -u tools/wf_warlock_l20_native_cold.py" not in workflow
+    assert "  source-health-world:" not in workflow
+    assert "  source-health-world:" in native_world
+    for ci in (workflow, native_world):
+        assert "  warlock-l20-cold-30-300:" not in ci
+        assert "python -u tools/wf_warlock_l20_native_cold.py" not in ci
     fast_ci = (cold.ROOT / ".github/workflows/warlock-native-optimizer-regressions.yml"
                ).read_text(encoding="utf-8")
     assert "tests/test_work2_warlock_native_cold.py" in fast_ci
