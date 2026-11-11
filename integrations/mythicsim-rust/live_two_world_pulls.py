@@ -757,8 +757,9 @@ def _source_acked_rolling_switch(source: dict, *, world: CombatRuntime,
 def _new_source_acked_world_kills(*, world: CombatRuntime,
                                   before: dict[str, float],
                                   ack: dict, clock_ns: int,
-                                  overlap: bool) -> list[dict]:
-    """Record actual 2D kills by world identity, not selected target."""
+                                  overlap: bool,
+                                  native_target_ids: tuple[str, ...]) -> list[dict]:
+    """Record 2D kills only when the Rust slot and world ID both ACK death."""
     rows = ack.get("native_target_health_acks") if overlap else None
     deaths = []
     for target_id, previous_hp in before.items():
@@ -768,6 +769,9 @@ def _new_source_acked_world_kills(*, world: CombatRuntime,
         if overlap:
             matched = [row for row in (rows if isinstance(rows, list) else [])
                        if isinstance(row, dict)
+                       and type(row.get("native_target_index")) is int
+                       and 0 <= row["native_target_index"] < len(native_target_ids)
+                       and native_target_ids[row["native_target_index"]] == target_id
                        and row.get("world_target_id") == target_id
                        and row.get("world_target_health_before") == previous_hp
                        and row.get("world_target_health_after") == 0]
@@ -1038,7 +1042,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     for effect in ack["applied_events"])
             newly_dead = _new_source_acked_world_kills(
                 world=world, before=before_health, ack=ack,
-                clock_ns=clock_ns, overlap=rolling_switch is not None)
+                clock_ns=clock_ns, overlap=rolling_switch is not None,
+                native_target_ids=targets)
             for death in newly_dead:
                 if death["target_id"] in {k["target_id"] for k in kills}:
                     raise AssertionError("RUST_TWO_WORLD_DUPLICATE_KILL")
