@@ -134,10 +134,14 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
     pairs = [(full, thirty) for full in accepted[(1.0, 1.0)]
              for thirty in accepted[(0.3, 0.3)]
              if identity(full) == identity(thirty)]
-    refusals = [row for row in result.get("rejected_native_attempts", [])
-                if row.get("level") == level and
-                row.get("native_world_policy", {}).get(
-                    "rest_when_health_below") == 0.3]
+    refusals = [
+        row for row in result.get("rejected_native_attempts", [])
+        if isinstance(row, Mapping) and row.get("level") == level
+        and (row.get("proposal_axis") == "world_rest_30pct"
+             or (isinstance(row.get("native_world_policy"), Mapping)
+                 and row["native_world_policy"].get("rest_when_health_below") == 0.3
+                 and row["native_world_policy"].get("rest_when_mana_below") == 0.3))
+    ]
     summary: dict[str, Any] = {
         "status": "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE",
         "level": level, "mob_count": result["mob_count"],
