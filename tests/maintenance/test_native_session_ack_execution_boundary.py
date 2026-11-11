@@ -28,6 +28,10 @@ def test_selected_native_world_job_reaches_executable_checks_without_source_grep
     # edits must not schedule a redundant Rust build or native-paid worlds.
     trigger = text.split("jobs:", 1)[0]
     assert "tests/test_" not in trigger
+    # P7.5 historical rotation evidence is consumed by separate P7 tests,
+    # not by this expensive selected-Rust/2D world job. Editing archived
+    # evidence must not compile Rust or re-pay unrelated world scenarios.
+    assert "docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json" not in trigger
     assert "- 'integrations/mythicsim-rust/engine'" in trigger
     # The downstream scenario checks still exercise native + 2D behavior.
     assert "native_source_control(binary, request, 5, rng_mode=mode)" in text
