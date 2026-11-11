@@ -1514,3 +1514,52 @@ def test_adaptive_exclusion_skips_exact_paid_source_and_rest_policy(
         assert next_rows[0]["reused_exact_native_paid_receipt"] is False
     finally:
         native.close()
+
+
+def test_normalized_native_source_and_policy_count_once_per_invocation(
+        tmp_path, monkeypatch):
+    """A Rust-canonical request identity is one contender, not many JSON rows.
+
+    This deliberately simulates multiple raw candidate proposals normalizing
+    to one prepared Rust request. It exercises Forever budget/receipt handling,
+    not the correctness of native preparation or combat mechanics.
+    """
+    class CanonicalSession(FakeSession):
+        def request(self, payload):
+            response = super().request(payload)
+            if payload["op"] == "prepare":
+                response["request_sha256"] = "d" * 64
+            return response
+
+    world_calls = []
+    def counted_world(binary, prepared_path, **kwargs):
+        world_calls.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(binary, prepared_path, **kwargs)
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"native-normalization-test")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity",
+                        lambda *args, **kwargs: None)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=CanonicalSession,
+        run_world=counted_world)
+    try:
+        rows = native(level=20, parent=None, mob_count=2, budget=3,
+                      rng_mode="balanced", iterations=1,
+                      recover_to_full=True)
+        prepared_sources = [
+            call["request"] for call in native.session.calls
+            if call["op"] == "prepare"
+        ]
+    finally:
+        native.close()
+
+    assert len({json.dumps(source, sort_keys=True)
+                for source in prepared_sources}) > 1
+    assert len(world_calls) == 1
+    assert len(rows) == 1
+    assert rows[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert rows[0]["source_request_sha256"] == "d" * 64
+    assert rows[0]["reused_exact_native_paid_receipt"] is False
