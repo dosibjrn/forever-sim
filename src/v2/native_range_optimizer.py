@@ -231,7 +231,10 @@ def _optimize_compatible_samples(
     )
     seeded_levels: list[int] = []
     seeded_attempts = 0
-    if (len(levels) > 1 and (not ranked or missed_late_family)
+    # The backseed pass is optional; without native hint support it would
+    # re-pay unrelated candidates or crash on an unexpected keyword argument.
+    # Keep completed real native samples rather than making hints a fake gate.
+    if (supports_hints and len(levels) > 1 and (not ranked or missed_late_family)
             and measured["native_candidates_examined"] < budget):
         # Feed exact talents from *paid, source-prepared* later samples to
         # the native producer. It uses Rust options to propose earlier ranks
