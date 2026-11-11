@@ -256,14 +256,30 @@ def measured_world_rolling_head_to_head(
                        for field in ("source_request_sha256", "engine_binary_sha256",
                                      "talents", "gear", "apl", "pet"))):
             continue
+        # Compare pull scheduling only: a rolling candidate that also uses
+        # different rest thresholds is a two-variable experiment, not a
+        # measured 50%-switch advantage over this full-rest serial baseline.
+        # These are Forever's selected experiment inputs, not Warcraft rules.
+        rest_matched = (
+            policy.get("rest_when_health_below") == 1.0
+            and policy.get("rest_when_mana_below") == 1.0
+            and policy.get("rest_until") == "full_when_triggered"
+            and policy.get("terminal_full_hp_and_mana") is True
+        )
         mode = policy.get("pull_mode")
-        if (mode == "serial" and
-                policy.get("rest_when_health_below") == 1.0 and
-                policy.get("rest_when_mana_below") == 1.0):
+        if mode == "serial" and rest_matched and "world_apl" not in policy:
             accepted["serial"].append(row)
-        elif (mode == "rolling" and
-                paid.get("native_world_overlap_verified") is True and
-                paid.get("native_world_apl") == policy.get("world_apl")):
+        elif (mode == "rolling" and rest_matched
+                and policy.get("world_apl") == {
+                    "pull_mode": "rolling",
+                    "switch_trigger": {
+                        "type": "current_target_hp_fraction_at_most",
+                        "fraction": 0.5,
+                    },
+                    "max_live_targets": 2,
+                }
+                and paid.get("native_world_overlap_verified") is True
+                and paid.get("native_world_apl") == policy.get("world_apl")):
             accepted["rolling"].append(row)
 
     def build_key(row):
@@ -303,6 +319,9 @@ def measured_world_rolling_head_to_head(
             "native_raw_receipt_sha256": paid["native_raw_receipt_sha256"],
             "native_world_policy": paid["native_world_policy"],
             "charged_elapsed_seconds": paid["elapsed_seconds"],
+            "terminal_recovery_seconds": paid["terminal_recovery_seconds"],
+            "reused_exact_native_paid_receipt": paid.get(
+                "reused_exact_native_paid_receipt", False),
             "terminal_hp": paid["terminal_hp"],
             "terminal_max_hp": paid["terminal_max_hp"],
             "terminal_mana": paid["terminal_mana"],
