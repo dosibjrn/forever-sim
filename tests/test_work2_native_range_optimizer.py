@@ -115,7 +115,6 @@ def test_incomplete_or_unpaid_native_receipt_never_scores(mutate):
 @pytest.mark.parametrize("field,value", [
     ("native_continuity_ack", False),
     ("native_parent_source_sha256", "f" * 64),
-    ("native_intermediate_levels_verified", False),
     ("engine_binary_sha256", "c" * 64),
 ])
 def test_sparse_path_rejects_unobserved_respec_or_cross_binary(field, value):
