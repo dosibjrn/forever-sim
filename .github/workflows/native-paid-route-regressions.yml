@@ -281,6 +281,9 @@ jobs:
         env:
           PYTHONUNBUFFERED: '1'
         run: |
+          # GitHub runs bash with -e by default. Disable it explicitly
+          # so an L20 refusal cannot suppress the independent L40 attempt.
+          set +e
           set -uo pipefail
           mkdir -p evidence/work2-native-paid-l20-l40
           failed=0
@@ -296,6 +299,30 @@ jobs:
               --shortlist-out "evidence/work2-native-paid-l20-l40/l${level}-top-3.md"
             code=$?
             echo "L${level} native optimize exit code: $code"
+            # Surface actual Rust refusal reasons without artifact downloads.
+            LEVEL="$level" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          level = int(os.environ["LEVEL"])
+          path = Path(f"evidence/work2-native-paid-l20-l40/l{level}.json")
+          if path.exists():
+              data = json.loads(path.read_text())
+              refused = data.get("rejected_native_attempts") or []
+              print("NATIVE_L%d_RESULT" % level, json.dumps({
+                  "status": data.get("status"),
+                  "native_attempts": data.get("native_attempts_by_level", {}).get(str(level)),
+                  "paid_ranked": len(data.get("independent_level_rankings", {}).get(str(level), [])),
+                  "refused": len(refused),
+              }, sort_keys=True), flush=True)
+              for row in refused[:12]:
+                  print("NATIVE_SOURCE_REFUSAL", level, json.dumps({
+                      "axis": row.get("proposal_axis"),
+                      "prepared": row.get("native_prepared"),
+                      "code": (row.get("native_refusal") or {}).get("code")
+                          if isinstance(row.get("native_refusal"), dict) else None,
+                      "reason": str(row.get("native_refusal") or row.get("reason"))[-650:],
+                  }, sort_keys=True), flush=True)
+          PY
             if [ "$code" -ne 0 ]; then failed=$((failed+1)); fi
             echo '::endgroup::'
           done
