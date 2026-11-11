@@ -543,3 +543,67 @@ def test_native_executor_forwards_go_rules_and_preserves_real_refusal(monkeypatc
             time.monotonic() + 30, go_rules=True)
     assert calls[0][-1] == "--go-rules"
     assert "--rng-mode" in calls[0]
+
+
+def test_naked_rogue_l20_source_seeds_two_distinct_native_item_options():
+    """Only Rust-proposed IDs seed the paid baseline, never a Python gear model."""
+    reference = _reference()
+    original = copy.deepcopy(reference)
+    for entry in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        entry["id"] = 0
+    original = copy.deepcopy(reference)
+    calls = []
+
+    def source_native(binary, request, iterations, seed, rng_mode, deadline, **kwargs):
+        items = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        calls.append(copy.deepcopy(request))
+        assert iterations == 5 and rng_mode == "balanced"
+        assert items[14]["id"] in (410, 411)
+        return (12.0 if items[14]["id"] == 410 else 15.0), {}, 0.01, (
+            "paid-native-" + str(len(calls)))
+
+    receipt = compare_equipped_native(
+        "selected-native", reference,
+        {"weapon": {"selected_ids": [410, 410, 411]},
+         "chest": {"selected_ids": [700, 701]}},
+        evaluator=source_native, preparer=_prepared_actor,
+        max_paid_attempts=2)
+    assert reference == original
+    assert len(calls) == 2
+    assert [request["raid"]["parties"][0]["players"][0]["equipment"]["items"][14]["id"]
+            for request in calls] == [410, 411]
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
+    assert receipt["paid_attempts"] == 2
+    assert receipt["actor_checkpoint_verified"] is True
+    assert receipt["native_source_seed"] == {
+        "slot": "weapon", "item_id": 410,
+        "source": "SELECTED_NATIVE_P3_ITEM_OPTIONS",
+        "original_reference_naked": True,
+    }
+    assert receipt["source_occupied_slots"] == ["weapon"]
+    assert receipt["comparison"]["delta_dps"] == 3.0
+
+
+def test_naked_rogue_source_without_two_native_options_never_pays():
+    reference = _reference()
+    for entry in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        entry["id"] = 0
+    receipt = compare_equipped_native(
+        "selected-native", reference, {"weapon": {"selected_ids": [410, 410]}},
+        evaluator=lambda *a, **k: pytest.fail("no independent native pair"))
+    assert receipt["status"] == "NO_DISTINCT_NATIVE_EQUIPPED_ALTERNATIVE"
+    assert receipt["paid_attempts"] == 0
+
+
+def test_native_seed_refusal_is_not_promoted_to_paid_evidence():
+    reference = _reference()
+    for entry in reference["raid"]["parties"][0]["players"][0]["equipment"]["items"]:
+        entry["id"] = 0
+    receipt = compare_equipped_native(
+        "selected-native", reference, {"weapon": {"selected_ids": [410, 411]}},
+        preparer=lambda *_args: {
+            "status": "NATIVE_PREPARE_REFUSED", "reason": "native item refused"},
+        evaluator=lambda *a, **k: pytest.fail("native refusal cannot be paid"))
+    assert receipt["status"] == "NATIVE_PREPARE_REFUSED"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["actor_checkpoint_verified"] is False
