@@ -951,34 +951,24 @@ def test_sparse_paid_parent_ack_does_not_require_unmeasured_intermediate_levels(
     ) == "native continuing talent/actor edge unproved"
 
 
-def test_m05_same_native_optimizer_dispatch_and_paid_cache_reuse():
-    """The live density runner must not turn PR updates into repeated paid work."""
+def test_completed_m05_paid_density_dispatch_is_retired():
+    """Completed sampled densities cannot launch fresh paid runs through CI.
+
+    The generic optimizer and original M0.5 receipts remain intact; M0.6 is
+    stateful native continuation, not an automatic 20/10/5/1 rerun.
+    """
     from pathlib import Path
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "native-paid-route-regressions.yml").read_text()
-    m05 = workflow.split("  sparse-optimizer-real:\n", 1)[1]
-    # The Work2 M0.5 feature PR is merged and all three native-paid
-    # densities were measured. Only explicit manual dispatch may pay again.
-    assert "github.event_name == 'workflow_dispatch'" in m05.splitlines()[0]
-    assert "github.event.action" not in m05
-    assert "github.event_name == 'pull_request'" not in m05
-    assert "if: github.event_name == 'pull_request'" in workflow  # fast checks remain
-    assert "m05_stride:" in workflow and "m05_cache_run_id:" in workflow
-    assert '--start-level 20 --end-level 60 --level-stride "$M05_STRIDE"' in m05
-    assert '--n-mobs 2 --recover-at-end true --rng balanced' in m05
-    assert '--backend rust --budget "$M05_BUDGET"' in m05
-    assert "inputs.m05_stride == '1' && '450'" in m05
-    assert "inputs.m05_stride == '5' && '110'" in m05
-    assert "requested-m05-optimize-{0}" in m05
-    # A manual dispatch should reuse compatible paid observations at its
-    # requested density by default, not retry the original sparse baseline.
-    for run_id in ("42981742152", "42984895024", "42985475032"):
-        assert f"requested-m05-optimize-{run_id}" in m05
-        assert f"'{run_id}'" in m05
-    assert "inputs.m05_cache_run_id ||" in m05
-    assert "if: always()" in m05 and "path: project/runs/" in m05
-    assert "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9" in m05
-
+    assert "  sparse-optimizer-real:" not in workflow
+    assert "m05_stride:" not in workflow
+    assert "m05_cache_run_id:" not in workflow
+    assert "requested-m05-optimize-" not in workflow
+    # Fast paid-receipt tests and distinct manual finalist comparisons stay.
+    assert "if: github.event_name == 'pull_request'" in workflow
+    assert "  cross-tree-native-world:" in workflow
+    assert "inputs.predecessor_artifact_id != ''" in workflow
+    assert "tests/test_work2_native_range_optimizer.py" in workflow
 
 @pytest.mark.parametrize("mode", ["independent", "continuing", "compatible"])
 def test_single_beam_pays_real_samples_without_inventing_competition(mode):
