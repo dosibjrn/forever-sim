@@ -16,6 +16,13 @@ on:
       - 'tools/wf_gsim_go_live_range_probe.py'
       - 'src/game/native_p3_item_options.py'
       - '.github/workflows/native-source-world-smoke.yml'
+# This is a diagnostic smoke, not an M1 acceptance run or irreplaceable
+# paid evidence. A later commit to the same PR supersedes its Rust build and
+# serial world probes; do not spend runner time finishing the stale HEAD.
+concurrency:
+  group: native-source-world-smoke-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read

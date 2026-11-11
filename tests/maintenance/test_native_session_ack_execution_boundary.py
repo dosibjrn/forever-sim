@@ -70,3 +70,20 @@ def test_clock_ack_job_ignores_unrelated_gate_helper_and_priest_unit_test_edits(
                  "tools/wf_warlock_l20_100mob.py"):
         assert path in ack_paths
     assert "tests/test_work2_warlock_native_paid_chain.py" in ack
+
+
+def test_superseded_pr_native_world_smoke_is_cancelled_without_skipping_checks():
+    """New source/world commits must not finish compiling obsolete PR heads."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    trigger_and_policy = text.split("jobs:", 1)[0]
+    assert "  pull_request:" in trigger_and_policy
+    assert ("group: native-source-world-smoke-pr-"
+            "${{ github.event.pull_request.number }}") in trigger_and_policy
+    assert "  cancel-in-progress: true" in trigger_and_policy
+    # Cancellation replaces only obsolete runs; the newest PR head must
+    # still build exact selected Rust and run both native/2D world scenarios.
+    steps = text.split("jobs:", 1)[1]
+    assert "cargo build --locked --manifest-path" in steps
+    assert "Two distinct sourced-HP native↔2D world kills" in steps
+    assert "--require-native-zero-health-damage" in steps
+    assert "--require-native-health-damage" in steps
