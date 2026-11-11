@@ -155,6 +155,26 @@ def test_indexless_or_wrong_world_lethal_cannot_be_recorded():
         new_kills(world=world, before=before, ack=forged,
                   clock_ns=500_000_000, overlap=True)
 
+    # The same real world death is not an ACK of another native target slot.
+    # Boolean indices are not source-native integer slot IDs either.
+    for bad_slot in (1, None, True):
+        swapped_slot = deepcopy(ack)
+        swapped_slot["native_target_health_acks"] = [{
+            "native_target_index": bad_slot,
+            "world_target_id": "m1",
+            "world_target_health_before": before["m1"],
+            "world_target_health_after": 0.0,
+        }]
+        with pytest.raises(AssertionError, match="KILL_NOT_INDEX_ACKED"):
+            new_kills(world=world, before=before, ack=swapped_slot,
+                      clock_ns=500_000_000, overlap=True)
+
+    valid_slot = deepcopy(swapped_slot)
+    valid_slot["native_target_health_acks"][0]["native_target_index"] = 0
+    assert [death["target_id"] for death in new_kills(
+        world=world, before=before, ack=valid_slot,
+        clock_ns=500_000_000, overlap=True)] == ["m1"]
+
 
 def test_joint_world_kill_clocks_use_one_native_fight_not_two_serial_windows():
     measure = _bridge["_verified_joint_overlap_elapsed"]
