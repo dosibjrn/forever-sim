@@ -161,3 +161,25 @@ def test_native_prepare_refusal_remains_a_candidate_attempt(tmp_path, monkeypatc
     assert all(row["status"] == "NATIVE_API_CANDIDATE_REFUSED" for row in rows)
     assert all("native talent prerequisites refused" in row["native_refusal"]
                for row in rows)
+
+def test_paid_candidates_receive_level_scaled_lethal_timeout_and_native_gear_option(
+        tmp_path, monkeypatch):
+    native = make_evaluator(tmp_path, monkeypatch)
+    try:
+        rows = native(level=40, parent=None, mob_count=2, budget=2,
+                      rng_mode="balanced", iterations=1, recover_to_full=True)
+    finally:
+        native.close()
+    assert len(rows) == 2
+    requests = [request for request in FakeSession.instances[0].calls
+                if request["op"] == "prepare"]
+    assert len(requests) == 2
+    assert all(request["request"]["encounter"]["duration"] >= 180
+               for request in requests)
+    first = requests[0]["request"]["raid"]["parties"][0]["players"][0]
+    second = requests[1]["request"]["raid"]["parties"][0]["players"][0]
+    assert first["talentsString"] == second["talentsString"]
+    assert any(item.get("id", 0) != 0 for item in first["equipment"]["items"])
+    assert all(item.get("id", 0) == 0 for item in second["equipment"]["items"])
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+               for row in rows)

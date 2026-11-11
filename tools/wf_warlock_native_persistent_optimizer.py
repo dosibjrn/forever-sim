@@ -142,6 +142,12 @@ class PersistentNativeEvaluator:
         actor = source["raid"]["parties"][0]["players"][0]
         actor["level"] = level
         source["encounter"]["targets"][0]["level"] = level
+        # The original L20 fixture has a 12s stationary smoke horizon.
+        # Full level-scaled mobs at L40/L60 can require longer to die.
+        # This is only a generous source-native fight timeout, never elapsed
+        # charged time: Rust/gsim uses actual lethal ACK and recovery clocks.
+        source["encounter"]["duration"] = max(
+            180, int(source["encounter"].get("duration", 0)))
         if talents is not None:
             actor["talentsString"] = talents
         return source
@@ -234,12 +240,20 @@ class PersistentNativeEvaluator:
             max(8, budget * 4)))
         native_family_talents = list(dict.fromkeys(proposed_talents))
         head = native_family_talents[:3]
-        sources = [self._source(level, variant) for variant in head]
-        # Original request and Rust-options equipment alternatives must not
-        # starve behind a large number of same-tree talent mutations.
+        sources = []
+        # The source Rust item list already excludes combat-rating gear. A
+        # legacy L20 seed equipped with that gear must not spend the first
+        # three native attempts on predictably rejected talent-only changes.
+        # Pair *each* distinct native talent family with a gear-cleared
+        # proposal before moving to the next family. Rust still decides
+        # whether any source-produced candidate prepares or kills real mobs.
+        for variant in head:
+            proposal = self._source(level, variant)
+            sources.append(proposal)
+            sources.extend(islice(_source_item_alternatives(proposal, options), 1))
         if seed_talents not in head:
             sources.append(seed)
-        sources.extend(_source_item_alternatives(seed, options))
+            sources.extend(islice(_source_item_alternatives(seed, options), 1))
         sources.extend(self._source(level, variant)
                        for variant in native_family_talents[3:]
                        if variant != seed_talents)
@@ -270,8 +284,9 @@ class PersistentNativeEvaluator:
                     apl_expanded = True
                     # Only prepared-native SpellFlagAPL actions may enter a
                     # changed rotation. The new candidate must prepare again.
-                    sources[index:index] = list(islice(
-                        _native_apl_variants(source, prepared), 2))
+                    # Do not starve alternative legal tree families
+                    # before paying optional prepared-native APL mutations.
+                    sources.extend(islice(_native_apl_variants(source, prepared), 2))
                 receipt, elapsed, cached, raw_path = self._paid(
                     source, prepared, level=level, mobs=mob_count,
                     target_hp=target_hp, cid=cid)
