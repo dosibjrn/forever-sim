@@ -1015,6 +1015,13 @@ class PersistentNativeEvaluator:
                         rest_health, rest_mana, world_apl),
                     "native_refusal_code": getattr(exc, "code", None),
                     "native_refusal": str(exc)[-1500:],
+                    # Preparation can succeed even when a native world/ACK or
+                    # terminal-recovery receipt is refused. Keep the exact
+                    # prepared source and engine identity on that refusal;
+                    # never represent it as a paid, ranked measurement.
+                    **({"source_request_sha256": prepared["request_sha256"],
+                        "engine_binary_sha256": self.engine_sha}
+                       if prepared_ok else {}),
                     **({"native_unverified_receipt_file": exc.receipt_path,
                         "native_unverified_receipt_sha256": exc.receipt_sha256}
                        if isinstance(exc, UnverifiedNativeWorldReceipt) else {}),
