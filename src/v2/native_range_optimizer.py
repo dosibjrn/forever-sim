@@ -350,6 +350,43 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
     levels = result["sampled_levels_requested"]
     if [step["level"] for step in steps] != levels:
         raise ValueError("cannot publish an incomplete sampled path as a full guide")
+    if (result.get("status") != "SAMPLED_COMPATIBLE_PATH_RANKED"
+            or result.get("sampled_levels_compatible") != levels):
+        raise ValueError("cannot publish a guide without completed compatible native samples")
+    # These original paid receipts are the reason the guide can call the
+    # displayed numbers measured.  Reject edited/mixed JSON rather than
+    # silently publishing a plausible-looking, uncharged build path.
+    for path in ranked:
+        path_steps = path.get("steps")
+        if not isinstance(path_steps, list) or [
+            step.get("level") for step in path_steps
+        ] != levels:
+            raise ValueError("cannot publish an incomplete sampled alternative")
+        measured_total = 0.0
+        for step in path_steps:
+            receipt = step.get("receipt")
+            if not isinstance(receipt, dict):
+                raise ValueError("cannot publish a guide without original native paid receipts")
+            refusal = _receipt_error(
+                receipt, level=step["level"], parent=None,
+                mob_count=result["mob_count"], rng_mode=result["rng_mode"],
+                iterations=result["iterations"],
+            )
+            if refusal is not None:
+                raise ValueError(f"cannot publish unpaid or refused native receipt: {refusal}")
+            for field in ("source_request_sha256", "engine_binary_sha256",
+                          "talents", "gear", "apl", "pet"):
+                if receipt.get(field) != step.get(field):
+                    raise ValueError(f"native guide step/receipt disagreement: {field}")
+            if (not math.isclose(receipt["elapsed_seconds"],
+                                 step["native_elapsed_seconds"], abs_tol=1e-6)
+                    or not math.isclose(receipt["terminal_recovery_seconds"],
+                                        step["terminal_recovery_seconds"], abs_tol=1e-6)):
+                raise ValueError("native guide elapsed/recovery disagrees with paid receipt")
+            measured_total += receipt["elapsed_seconds"]
+        if not math.isclose(measured_total, path["sampled_cumulative_seconds"],
+                            rel_tol=1e-9, abs_tol=1e-6):
+            raise ValueError("native guide cumulative score disagrees with paid receipts")
     title = str(result.get("class", "character")).capitalize()
     lines = [
         f"# {title} — source-native sampled build guide",
