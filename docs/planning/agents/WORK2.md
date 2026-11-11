@@ -1,5 +1,14 @@
 # Work2 — independent #2+ implementation
 
+## Owner M0.4/M0.5 deliverable — one generic `optimize` and real paid results (2026-11-11)
+
+Your immediate product is the **exact successful native execution** of `python -m src.v2.runner optimize --class warlock --tree unconstrained --start-level 20 --end-level 60 --level-stride 20 --n-mobs 2 --recover-at-end true --rng balanced --backend rust` on current main plus compatible pinned Rust; not a green mock, independent level winners, new Warlock-named script, or input fixtures pretending to be winners. `src/v2/native_range_optimizer.py` and `src/v2/runner.py` already exist on main; build on those. Rust API PR #50 is an incomplete starting point. Consume Work1's native M0.3 API for options, whole-build prepare, actual gsim↔Rust world execution and true 100% HP/mana restoration; avoid temp source/prepared JSON transport and false SHA checks.
+
+Native candidate generation: seek genuine gear, talent families/hybrids, APL, pet and pull/recovery competition from native options; **exclude rating-stat item proposals at the Rust item source**, never Python veto. Cross-seed later-level good talent allocations into earlier-level ancestors, retain slower early candidates for cumulative path decisions, and preserve source-native legal sample compatibility without inventing skipped-level simulation, continuity certificates or free respec. L20, L40 and L60 are the *only requested sampled levels* for stride=20. Treat L40 prep and L20 item errors as specific candidate/engine defects; continue independent exploration and report exact refusals. Remove old source-JSON vs protobuf SHA mismatch from active adapters.
+
+**M0.4 done criterion:** one CLI invocation exits successfully AND returns an inspectable real measured ranked compatible path at L20/L40/L60, containing exact talents, gear item IDs, pet, APL, actual two hostile mob and terminal both-resources-full elapsed scores, alternative candidates and real receipts. Never make empty-path exit 0 green. Then **M0.5 is the same optimizer at level strides 10 → 5 → 1**, start L20/end L60 is valid; reuse paid candidate/scenario cache and forward/backward promising paths. Do not demand L10–19, 100 mobs, continuous XP/travel or a separate route algorithm for M0.5. Link each real action and its output artifact in your existing owned PR; update the route result only from actual paid native observations.
+
+
 Read [COMMON](COMMON.md), [WORK_COMMON](WORK_COMMON.md), this file and current [WORK_PRIORITY](../WORK_PRIORITY.md). Read only the relevant OVERALL_PLAN / PROCESS / gate sections for the assigned item.
 
 Read Work2's current issue/branch/PR from the top of WORK_PRIORITY; assignments can change and must not be hard-coded into task prompts.
