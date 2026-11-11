@@ -465,7 +465,7 @@ def _scored_parent(tmp_path: Path):
     }
 
 
-def test_paid_parent_advances_through_every_native_prepared_sparse_level(tmp_path):
+def test_paid_parent_prepares_only_requested_sparse_level(tmp_path):
     seed, binary, parent = _scored_parent(tmp_path)
     prepared_levels = []
     proposed_talents = []
@@ -487,8 +487,7 @@ def test_paid_parent_advances_through_every_native_prepared_sparse_level(tmp_pat
         actor = request["raid"]["parties"][0]["players"][0]
         level = actor["level"]
         assert request["encounter"]["targets"][0]["level"] == level
-        # Every intermediate L21..L29 and the actual L30 frontier must be
-        # prepared at its own native actor level, not Rust's CLI default.
+        # Only sampled L30 must be prepared; no L21..L29 native payment.
         assert cmd[cmd.index("--actor-level") + 1] == str(level)
         prepared_levels.append(level)
         if level == 30:
@@ -507,10 +506,9 @@ def test_paid_parent_advances_through_every_native_prepared_sparse_level(tmp_pat
     result = produce_frontier(
         _request(level=30, parent=parent, budget=3), binary=binary,
         seed_source=seed, out=tmp_path / "native", runner=native)
-    assert prepared_levels[:9] == list(range(21, 30))
-    assert prepared_levels[9:] == [30, 30, 30]
+    assert prepared_levels == [30, 30, 30]
     assert proposed_talents == ["11-0-0", "21-0-0", "12-0-0"]
-    assert result["native_intermediate_prepares"] == 9
+    assert result["native_intermediate_prepares"] == 0
     assert len(result["entries"]) == 2
     assert len(result["refusals"]) == 1
     assert "source native refused new rank" in result["refusals"][0]["native_refusal"]
@@ -518,38 +516,10 @@ def test_paid_parent_advances_through_every_native_prepared_sparse_level(tmp_pat
         assert entry["parent_source_sha256"] == parent["source_request_sha256"]
         lineage = json.loads(Path(entry["native_continuity_receipt"]).read_text())
         assert lineage["native_continuity_from_level"] == 20
-        assert lineage["native_intermediate_levels_verified"] is True
+        assert lineage["native_intermediate_levels_verified"] is False
         assert lineage["native_parent_raw_receipt_sha256"] == hashlib.sha256(
             Path(parent["native_raw_receipt_file"]).read_bytes()).hexdigest()
-        assert [step["level"] for step in lineage["infill"]] == list(range(21, 30))
-        assert all(Path(step["prepared"]).exists() for step in lineage["infill"])
-
-
-def test_sparse_native_prepare_refusal_stops_at_actual_failed_level(tmp_path):
-    seed, binary, parent = _scored_parent(tmp_path)
-    visited = []
-
-    def native(cmd, **kwargs):
-        assert cmd[1] == "prepare"  # Never ask for target options after broken infill
-        source = Path(cmd[cmd.index("--request") + 1])
-        level = json.loads(source.read_text())["raid"]["parties"][0]["players"][0]["level"]
-        visited.append(level)
-        if level == 23:
-            return subprocess.CompletedProcess(cmd, 2, stderr="Rust refused L23 actor")
-        prepared = Path(cmd[cmd.index("--outfile") + 1])
-        prepared.write_text(json.dumps({
-            "request_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-            "player": {"class": "ClassWarlock", "level": level},
-        }))
-        return subprocess.CompletedProcess(cmd, 0)
-
-    result = produce_frontier(
-        _request(level=30, parent=parent), binary=binary,
-        seed_source=seed, out=tmp_path / "native", runner=native)
-    assert visited == [21, 22, 23]
-    assert result["entries"] == []
-    assert result["refusals"][0]["status"] == "NATIVE_CONTINUITY_NOT_ATTESTED"
-    assert "Rust refused L23 actor" in result["refusals"][0]["native_refusal"]
+        assert lineage["infill"] == []
 
 
 def test_source_parent_mismatch_never_asks_native_for_an_edge(tmp_path):
@@ -564,7 +534,7 @@ def test_source_parent_mismatch_never_asks_native_for_an_edge(tmp_path):
     assert result["refusals"][0]["native_prepared"] is False
 
 
-def test_scored_child_rechecks_rust_infill_before_any_native_payment(tmp_path):
+def test_scored_child_rechecks_paid_parent_digest_before_any_native_payment(tmp_path):
     from tools.wf_warlock_native_range_scored_adapter import evaluate_request
 
     seed, binary, parent = _scored_parent(tmp_path)
@@ -637,12 +607,13 @@ def test_scored_child_rechecks_rust_infill_before_any_native_payment(tmp_path):
     assert len(score_calls) == 1
     assert len(rows) == 2
     assert all(row["native_continuity_ack"] is True
-               and row["native_intermediate_levels_verified"] is True
+               and row["native_intermediate_levels_verified"] is False
                and row["terminal_recovery_seconds"] == 2.0 for row in rows)
 
-    lineage = json.loads(Path(found["entries"][0]["native_continuity_receipt"]).read_text())
-    prepared_infill = Path(lineage["infill"][3]["prepared"])
-    prepared_infill.write_text(prepared_infill.read_text() + "tampered")
+    # Tampering the actually paid parent receipt is still a hard refusal,
+    # unlike an unrequested skipped-level native prepare certificate.
+    parent_raw = Path(parent["native_raw_receipt_file"])
+    parent_raw.write_text(parent_raw.read_text() + "tampered")
     score_calls.clear()
     rejected = evaluate_request(
         request, manifest=manifest, binary=binary, target_hp=400,
@@ -650,7 +621,7 @@ def test_scored_child_rechecks_rust_infill_before_any_native_payment(tmp_path):
         artifact_dir=tmp_path / "unpaid", run_command=scorer)
     assert score_calls == []
     assert len(rejected) == 2
-    assert all("NATIVE_SOURCE_CHAIN_FILE_IDENTITY_MISMATCH" in row["status"]
+    assert all("NATIVE_SOURCE_CHAIN_PARENT_OR_ENGINE_MISMATCH" in row["status"]
                for row in rejected)
 
 
