@@ -511,3 +511,94 @@ def test_source_native_damage_cannot_apply_to_unselected_real_gsim_target():
                        match="WORLD_DAMAGE_ACK_TARGET_NOT_SELECTED"):
         GsimNativeDamageWorldApplier(rt).apply(tick, reply)
     assert {key: target.health for key, target in rt.targets.items()} == before
+
+
+def _native_second_tick(rt, previous, *, sequence, native_events):
+    rt.advance_to(sequence * 0.1)
+    snap = snapshot_gsim_world(rt)
+    tick = {
+        "sequence": sequence, "clock_ms": sequence * 100,
+        "native_clock_ns": sequence * 100_000_000,
+        "selected_target_id": snap["selected_target_id"],
+        "world_sha256": state_hash(snap),
+    }
+    return tick, {
+        "sequence": sequence, "native_process_id": 123,
+        "observed_input_world_sha256": tick["world_sha256"],
+        "native_damage_events": native_events,
+    }
+
+
+def test_two_live_gsim_targets_keep_old_native_dot_and_distinct_lethal_acks():
+    rt, tick, first = fixture()
+    rt.targets["m1"].health = rt.targets["m1"].max_health = 100.0
+    tick["world_sha256"] = state_hash(snapshot_gsim_world(rt))
+    first["observed_input_world_sha256"] = tick["world_sha256"]
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick, first)  # First mob remains alive at 25 HP.
+    assert rt.targets["m1"].alive
+
+    rt.engage_target("m0")
+    rt.select_target("m0")
+    applier.begin_overlapping_world_target("m0", native_target_index=1)
+    assert rt.targets["m0"].alive and rt.targets["m1"].alive
+
+    original = first["native_damage_events"][0]
+    tick1, response1 = _native_second_tick(rt, first, sequence=1, native_events=[
+        {**original, "event_id": "native-effect-2",
+         "native_time_ns": 100_000_000, "periodic": True,
+         "damage": 30.0},  # Original target dies from its continuing DoT.
+        {**original, "event_id": "native-effect-3",
+         "native_time_ns": 100_000_000, "native_target_index": 1,
+         "native_target_unit_index": 2, "native_target_label": "second-mob",
+         "damage": 40.0},
+    ])
+    ack1 = applier.apply(tick1, response1)
+    assert not rt.targets["m1"].alive and rt.targets["m0"].alive
+    assert ack1["selected_native_target_index"] == 1
+    assert [row["world_target_id"] for row in ack1["native_target_health_acks"]] == [
+        "m1", "m0"]
+    assert ack1["native_target_health_acks"][0]["world_target_health_after"] == 0
+    assert ack1["native_target_health_acks"][1]["world_target_health_after"] > 0
+    assert ack1["applied_event_ids"] == ["native-effect-2", "native-effect-3"]
+
+    tick2, response2 = _native_second_tick(rt, first, sequence=2, native_events=[
+        {**original, "event_id": "native-effect-4",
+         "native_time_ns": 200_000_000, "native_target_index": 1,
+         "native_target_unit_index": 2, "native_target_label": "second-mob",
+         "damage": rt.targets["m0"].health + 10.0},
+    ])
+    ack2 = applier.apply(tick2, response2)
+    assert not rt.targets["m0"].alive and not rt.targets["m1"].alive
+    assert ack2["native_target_health_acks"][0]["world_target_id"] == "m0"
+    assert ack2["native_target_health_acks"][0]["world_target_health_after"] == 0
+    assert ack2["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
+
+
+def test_overlapping_world_handoff_refuses_unacked_or_unengaged_second_mob():
+    rt, tick, reply = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    rt.select_target("m0")
+    with pytest.raises(NativeDamageWorldApplicationError, match="OVERLAP_SLOT_INVALID"):
+        applier.begin_overlapping_world_target("m0")
+    rt.select_target("m1")
+    applier.apply(tick, reply)
+    rt.select_target("m0")
+    with pytest.raises(NativeDamageWorldApplicationError, match="OVERLAP_NOT_TWO_LIVE"):
+        applier.begin_overlapping_world_target("m0")
+    assert rt.targets["m0"].alive and rt.targets["m1"].alive
+
+
+def test_unbound_native_second_target_rejected_atomically_before_old_dot_applies():
+    rt, tick, response = fixture()
+    original = response["native_damage_events"][0]
+    response["native_damage_events"] = [
+        original,
+        {**original, "event_id": "native-effect-2",
+         "native_target_index": 1, "native_target_unit_index": 2,
+         "native_target_label": "second-mob"},
+    ]
+    before = {key: mob.health for key, mob in rt.targets.items()}
+    with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, response)
+    assert {key: mob.health for key, mob in rt.targets.items()} == before
