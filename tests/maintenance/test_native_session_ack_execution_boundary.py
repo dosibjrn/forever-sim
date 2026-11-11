@@ -143,6 +143,12 @@ def test_rolling_world_pr_smoke_keeps_paid_cross_class_checks_manual_only():
     trigger, jobs = text.split("jobs:", 1)
     assert "  pull_request:" in trigger
     assert "  workflow_dispatch:" in trigger
+    # Manual paid sessions choose just one diagnostic: the old dispatch
+    # ran both class experiments plus the unrelated core checks every time.
+    for option in ("world-core", "priest-l20", "feral-l60"):
+        assert f"          - {option}" in trigger
+    assert "        type: choice" in trigger
+    assert "        default: world-core" in trigger
     for path in ("tools/wf_native_priest_l20_paid.py",
                  "tools/wf_native_feral_l60_world.py",
                  "src/game/native_p3_item_options.py"):
@@ -153,11 +159,21 @@ def test_rolling_world_pr_smoke_keeps_paid_cross_class_checks_manual_only():
     assert "--require-native-zero-health-damage" in jobs
     assert "Real source-native incoming health damage" in jobs
     # Preserve the historic class diagnostics for explicit manual execution.
-    for step in ("Paid Priest L20 candidate through exact native Rust",
-                 "Feral L60 source build through two consecutive native/world"):
+    for step, diagnostic in (("Paid Priest L20 candidate through exact native Rust", "priest-l20"),
+                             ("Feral L60 source build through two consecutive native/world", "feral-l60")):
         fragment = jobs.split("      - name: " + step, 1)[1]
         assert fragment.split("\n", 1)[1].startswith(
-            "        if: github.event_name == 'workflow_dispatch'\n"
+            "        if: ${{ github.event_name == 'workflow_dispatch' && "
+            f"inputs.diagnostic == '{diagnostic}' }}}}\n"
+        )
+    # PR source/world checks cannot be silently skipped by a dispatch selector.
+    for step in ("Verify explicit Balanced and Stochastic modes in real native",
+                 "Two distinct sourced-HP native↔2D world kills",
+                 "Real source-native incoming health damage"):
+        fragment = jobs.split("      - name: " + step, 1)[1]
+        assert fragment.split("\n", 1)[1].startswith(
+            "        if: ${{ github.event_name == 'pull_request' || "
+            "inputs.diagnostic == 'world-core' }}\n"
         )
     assert "PRIEST_L20_REAL_PAID_RUST_GSIM2D_ACK_PASS_NOT_100MOB_NOT_GATE" in jobs
     assert "python tools/wf_native_feral_l60_world.py" in jobs
