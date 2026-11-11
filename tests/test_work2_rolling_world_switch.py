@@ -412,10 +412,20 @@ def test_b_first_hit_requires_native_ack_and_old_a_survival():
     world.targets["m0"].apply_damage(10)
     ack = {"applied_event_ids": ["native-b-hit"], "applied_events": [
         {"event_id": "native-b-hit", "native_target_index": 1,
-         "damage": 10.0}]}
+         "damage": 10.0, "native_time_ns": 110_000_000}]}
     kwargs = dict(before=before, world=world, ack=ack,
-                  old_id="m1", new_id="m0")
+                  old_id="m1", new_id="m0",
+                  switch_native_clock_ns=100_000_000)
     assert check(**kwargs)
+    # A pre-switch event buffered until a later ACK is not overlap proof.
+    early = {**ack["applied_events"][0], "native_time_ns": 90_000_000}
+    assert not check(**{**kwargs, "ack": {**ack, "applied_events": [early]}})
+    untimed = {k: v for k, v in ack["applied_events"][0].items()
+               if k != "native_time_ns"}
+    assert not check(**{**kwargs, "ack": {**ack, "applied_events": [untimed]}})
+    idle_b = two_live_world()
+    idle_b.targets["m0"].apply_damage(10)
+    assert not check(**{**kwargs, "world": idle_b})
     assert not check(**{**kwargs, "ack": {**ack, "applied_event_ids": []}})
     assert not check(**{**kwargs, "ack": {**ack, "applied_events": [
         {**ack["applied_events"][0], "native_target_index": 0}]}})

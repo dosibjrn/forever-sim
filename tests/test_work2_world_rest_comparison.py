@@ -3,8 +3,10 @@
 Synthetic receipts here exercise reporting only, not Rust combat or ACK proof.
 The paid workflow runs the exact pinned source-native evaluator separately.
 """
+import copy
 import json
 
+from tools.wf_warlock_native_candidate_scoring import score_native_chain
 from src.v2.native_range_optimizer import (
     main, measured_world_rest_head_to_head, measured_world_rolling_head_to_head,
 )
@@ -379,3 +381,79 @@ def test_serial_comparison_rejects_native_overlap_even_without_verified_flag():
     assert comparison["status"] == "NATIVE_ROLLING_WORLD_APL_INCOMPLETE"
     assert comparison["serial_paid_candidates"] == 0
     assert comparison["winner"] is None
+
+def test_rolling_joint_window_scores_original_world_clock_not_serial_windows():
+    """Synthetic receipt-shape regression; only the live paid workflow proves overlap."""
+    source = "a" * 64
+    prepared = {"request_sha256": source, "player": {
+        "stats": {"Health": 574.0, "Mana": 943.0}}}
+    first_kill, final_kill = 18_100_000_000, 21_100_000_000
+    receipt = {
+        "source_sha256": source, "world_target_hp": 484.0,
+        "world_targets_killed": 2, "continuous_native_actor": True,
+        "actual_2d_ack": True, "native_recovery_clock_accounted": True,
+        "native_recovery_mode": "decisions_food_water", "paid_recovery": True,
+        "native_health_damage": {
+            "observed": True, "damage_taken": 0.0, "damage_events": 0},
+        "native_world_apl": {"pull_mode": "rolling"},
+        "native_world_overlap_verified": True,
+        "native_world_overlap": {
+            "combined_native_fight_window": True,
+            "source_apl_selected_b": True, "both_world_targets_lethal_ack": True,
+            "first_b_source_hit_while_old_a_alive": True,
+            "old_target_dot_ticks_after_switch_acked": 8,
+            "simultaneously_alive_world_target_ids": ["m1", "m0"],
+            "native_target_to_world_id": {"0": "m1", "1": "m0"},
+        },
+        "native_windows": [{
+            "index": 0, "native_kill_ns": final_kill,
+            "actor_health": 574.0}],
+        "native_actor_mana_after_joint_overlap_fight": 293.0,
+        "world_kills": [
+            {"target_id": "m1", "world_kill_clock_ns": first_kill,
+             "ack_sha256": "b" * 64},
+            {"target_id": "m0", "world_kill_clock_ns": final_kill,
+             "ack_sha256": "c" * 64},
+        ],
+        "world_kill_order": ["m1", "m0"],
+        "native_joint_window_end_ns": final_kill,
+        "world_elapsed_seconds": 21.1,
+        "native_terminal_recovery": {
+            "paid": True, "native_clock_accounted": True,
+            "start_clock_ns": final_kill,
+            "end_clock_ns": 34_300_000_000,
+            "health_before": 574.0, "mana_before": 293.0,
+            "health_after": 574.0, "mana_after": 943.0,
+            "max_health": 574.0, "max_mana": 943.0,
+        },
+    }
+    assert score_native_chain(
+        receipt, prepared, mob_count=2, expected_target_hp=484.) == (
+            34.3, "MEASURED_NATIVE_FULLY_RECOVERED")
+    # A joint window alone is insufficient: the two old/new world IDs must
+    # both have real source ACKs, one post-switch DoT and full paid resources.
+    mutations = [
+        ("native_world_overlap_verified", False),
+        ("native_actor_mana_after_joint_overlap_fight", None),
+        ("native_joint_window_end_ns", first_kill),
+    ]
+    for key, value in mutations:
+        corrupted = copy.deepcopy(receipt)
+        corrupted[key] = value
+        assert score_native_chain(
+            corrupted, prepared, mob_count=2,
+            expected_target_hp=484.)[0] is None, key
+    for change in (
+        lambda d: d["native_world_overlap"].update(
+            old_target_dot_ticks_after_switch_acked=0),
+        lambda d: d["native_world_overlap"].update(
+            first_b_source_hit_while_old_a_alive=False),
+        lambda d: d["world_kills"][1].update(ack_sha256="b" * 64),
+        lambda d: d["native_terminal_recovery"].update(mana_after=300.),
+    ):
+        corrupted = copy.deepcopy(receipt)
+        change(corrupted)
+        assert score_native_chain(
+            corrupted, prepared, mob_count=2,
+            expected_target_hp=484.)[0] is None
+

@@ -157,7 +157,47 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
             or not _positive(stats.get("Mana"))):
         return None, "INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY"
     windows = receipt.get("native_windows")
-    mana = receipt.get("native_actor_mana_after_world_kills")
+    # Serial pulls emit one window/mana sample per lethal ACK. A genuine
+    # two-live-target rolling pull emits ONE joint native Fight window while
+    # the 2D world still ACKs TWO distinct source-bound lethal targets.
+    # Treating that legitimate joint shape as two serial windows discards
+    # the exact original paid World-APL measurement.
+    joint = receipt.get("native_world_overlap_verified") is True
+    if joint:
+        overlap = receipt.get("native_world_overlap")
+        kills = receipt.get("world_kills")
+        if (mob_count != 2 or not isinstance(overlap, dict)
+                or overlap.get("combined_native_fight_window") is not True
+                or overlap.get("source_apl_selected_b") is not True
+                or overlap.get("both_world_targets_lethal_ack") is not True
+                or overlap.get("first_b_source_hit_while_old_a_alive") is not True
+                or type(overlap.get("old_target_dot_ticks_after_switch_acked")) is not int
+                or overlap["old_target_dot_ticks_after_switch_acked"] < 1
+                or not isinstance(kills, list) or len(kills) != 2
+                or any(not isinstance(kill, dict)
+                       or not isinstance(kill.get("target_id"), str)
+                       or type(kill.get("world_kill_clock_ns")) is not int
+                       or not isinstance(kill.get("ack_sha256"), str)
+                       or len(kill["ack_sha256"]) != 64
+                       for kill in kills)
+                or len({kill["target_id"] for kill in kills}) != 2
+                or len({kill["ack_sha256"] for kill in kills}) != 2
+                or overlap.get("simultaneously_alive_world_target_ids") != [
+                    "m1", "m0"]
+                or overlap.get("native_target_to_world_id") != {
+                    "0": "m1", "1": "m0"}
+                or receipt.get("world_kill_order") != [
+                    kill["target_id"] for kill in kills]):
+            return None, "INCOMPLETE_NATIVE_JOINT_OVERLAP_RECEIPT"
+        mana = [receipt.get("native_actor_mana_after_joint_overlap_fight")]
+    else:
+        # An ignored/unacknowledged native rolling policy cannot masquerade
+        # as the ordinary serial source-approved two-kill baseline.
+        if (receipt.get("native_world_apl") is not None
+                or receipt.get("native_world_overlap") is not None):
+            return None, "INCOMPLETE_NATIVE_JOINT_OVERLAP_RECEIPT"
+        mana = receipt.get("native_actor_mana_after_world_kills")
+    expected_windows = 1 if joint else mob_count
     if (receipt.get("source_sha256") != source
             or receipt.get("world_target_hp") != expected_target_hp
             or receipt.get("world_targets_killed") != mob_count
@@ -170,8 +210,8 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
             # and whether its clock is accounted for. A False *needed-rest*
             # flag is not an instant free resource refill.
             or type(receipt.get("paid_recovery")) is not bool
-            or not isinstance(windows, list) or len(windows) != mob_count
-            or not isinstance(mana, list) or len(mana) != mob_count):
+            or not isinstance(windows, list) or len(windows) != expected_windows
+            or not isinstance(mana, list) or len(mana) != expected_windows):
         return None, "INCOMPLETE_NATIVE_WORLD_OR_BETWEEN_KILL_RECEIPT"
     # Original native incoming-damage telemetry must be present and internally
     # consistent, but taking damage is NOT a performance requirement: a valid
@@ -195,6 +235,13 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
                 or not _nonnegative(value)):
             return None, "INCOMPLETE_NATIVE_ACTOR_OR_ACK_CLOCK"
         last_clock = window["native_kill_ns"]
+    if joint and (
+            receipt.get("native_joint_window_end_ns") != last_clock
+            or kills[-1]["world_kill_clock_ns"] != last_clock
+            or not 0 < kills[0]["world_kill_clock_ns"]
+                   < kills[1]["world_kill_clock_ns"]
+            or receipt.get("world_targets_killed") != 2):
+        return None, "NATIVE_JOINT_WORLD_KILL_CLOCK_MISMATCH"
     elapsed = receipt.get("world_elapsed_seconds")
     if not _positive(elapsed) or not math.isclose(
             elapsed, last_clock / 1e9, abs_tol=1e-6):
