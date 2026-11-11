@@ -77,7 +77,7 @@ on:
         options: [none, '10', '5', '1']
         default: none
       m05_cache_run_id:
-        description: "Prior stride-10/5 run ID for compatible native paid cache reuse (empty selects M0.4)"
+        description: "Existing paid-cache run ID; empty reuses the same-stride measured run"
         required: false
         type: string
 
@@ -253,21 +253,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  # Real M0.5 densification of the SAME production optimizer, on a single
-  # Work2 capability PR. Do not rerun the now-merged stride-20 milestone.
-  # The initial PR-open event starts one paid density; later source/test syncs
-  # run focused tests only, avoiding an automatic repeat of the paid 41-level
-  # job. Explicit workflow_dispatch still runs any requested new density.
+  # The M0.5 stride-10, stride-5 and stride-1 native-paid milestones already
+  # succeeded. Keep this one shared production runner for deliberate new
+  # measurements only; opening/reopening an old feature PR must never repay
+  # an accepted density. Pull requests still run the focused tests above.
   sparse-optimizer-real:
-    if: ${{ (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened') && github.event.pull_request.head.ref == 'feature/work2-m05-stride5-executable-20261111') || (github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.m05_stride != 'none' && inputs.m05_stride != '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
       contents: read
       actions: read
     env:
-      M05_STRIDE: ${{ github.event_name == 'pull_request' && '1' || inputs.m05_stride }}
-      M05_BUDGET: ${{ github.event_name == 'pull_request' && '450' || inputs.m05_stride == '1' && '450' || inputs.m05_stride == '5' && '110' || '60' }}
+      M05_STRIDE: ${{ inputs.m05_stride }}
+      M05_BUDGET: ${{ inputs.m05_stride == '1' && '450' || inputs.m05_stride == '5' && '110' || '60' }}
     steps:
       - name: Checkout exact generic optimizer PR
         uses: actions/checkout@v4
@@ -297,8 +296,8 @@ jobs:
         uses: actions/download-artifact@v4
         continue-on-error: true  # Artifact retention expiry must not veto a new native run.
         with:
-          name: ${{ github.event_name == 'pull_request' && 'requested-m05-optimize-42984895024' || inputs.m05_cache_run_id && format('requested-m05-optimize-{0}', inputs.m05_cache_run_id) || 'requested-sparse-optimize-42980239306' }}
-          run-id: ${{ github.event_name == 'pull_request' && '42984895024' || inputs.m05_cache_run_id || '42980239306' }}
+          name: ${{ inputs.m05_cache_run_id && format('requested-m05-optimize-{0}', inputs.m05_cache_run_id) || inputs.m05_stride == '1' && 'requested-m05-optimize-42985475032' || inputs.m05_stride == '5' && 'requested-m05-optimize-42984895024' || 'requested-m05-optimize-42981742152' }}
+          run-id: ${{ inputs.m05_cache_run_id || inputs.m05_stride == '1' && '42985475032' || inputs.m05_stride == '5' && '42984895024' || '42981742152' }}
           github-token: ${{ github.token }}
           path: project/runs
       - name: Resolve old paid-run merge commits for safe source-object cache matching
