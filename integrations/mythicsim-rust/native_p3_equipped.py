@@ -161,6 +161,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     # native prepare and both paid executions still accept/refuse the items.
     # This is not a Python equipment-legality decision or a simulated score.
     native_source_seed = None
+    native_seed_ids = ()
     if class_key == "rogue" and level == 20 and not occupied_slots:
         for slot, index in NATIVE_SLOT_POSITIONS:
             if index >= len(entries):
@@ -178,6 +179,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             entries = _first_player(reference)["equipment"]["items"]
             entries[index] = {"id": distinct[0]}
             occupied_slots = {slot}
+            native_seed_ids = tuple(distinct)
             native_source_seed = {
                 "slot": slot, "item_id": distinct[0],
                 "source": "SELECTED_NATIVE_P3_ITEM_OPTIONS",
@@ -219,6 +221,53 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     if go_rules:
         prepare_kwargs["go_rules"] = True
     prepared = preparer(binary, copy.deepcopy(reference), **prepare_kwargs)
+    # Rust item-options supplies proposals, not guaranteed executable gear.
+    # If the naked Rogue fixture's first seed is refused, give at most two
+    # later native source items a prepare attempt before paying for combat.
+    # Leave a distinct later alternative for the actual paid comparison.
+    if (native_source_seed is not None and isinstance(prepared, dict)
+            and prepared.get("status") == "NATIVE_PREPARE_REFUSED"):
+        seed_slot = native_source_seed["slot"]
+        seed_index = dict(NATIVE_SLOT_POSITIONS)[seed_slot]
+        refusals = [{
+            "item_id": native_source_seed["item_id"],
+            "status": prepared["status"],
+            "reason": prepared.get("reason"),
+        }]
+        for offset, item_id in enumerate(native_seed_ids[1:-1], start=1):
+            if offset > 2:
+                break
+            alternative_reference = copy.deepcopy(reference)
+            _first_player(alternative_reference)["equipment"]["items"][seed_index] = {
+                "id": item_id}
+            alternative_prepared = preparer(
+                binary, copy.deepcopy(alternative_reference), **prepare_kwargs)
+            if (isinstance(alternative_prepared, dict)
+                    and alternative_prepared.get("status") == "PREPARED"
+                    and alternative_prepared.get("actor_class") == expected_class
+                    and type(alternative_prepared.get("actor_level")) is int
+                    and alternative_prepared["actor_level"] == level):
+                reference = alternative_reference
+                prepared = alternative_prepared
+                native_source_seed["item_id"] = item_id
+                native_source_seed["refused_prepares"] = refusals
+                # Do not spend the paid cap re-testing known refused seeds.
+                occupied_selection = dict(occupied_selection)
+                occupied_selection[seed_slot] = {
+                    "selected_ids": list(native_seed_ids[offset + 1:])}
+                candidate, swap = first_equipped_proposal(
+                    reference, occupied_selection, expected_class=expected_class)
+                break
+            refusals.append({
+                "item_id": item_id,
+                "status": (alternative_prepared.get("status")
+                           if isinstance(alternative_prepared, dict)
+                           else "NATIVE_PREPARE_ERROR"),
+                "reason": (alternative_prepared.get("reason")
+                           if isinstance(alternative_prepared, dict) else None),
+            })
+        if prepared.get("status") == "NATIVE_PREPARE_REFUSED":
+            native_source_seed["refused_prepares"] = refusals
     if not isinstance(prepared, dict) or prepared.get("status") != "PREPARED":
         return {
             "status": (prepared.get("status", "NATIVE_PREPARE_ERROR")
@@ -226,6 +275,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
             "reason": prepared.get("reason") if isinstance(prepared, dict) else None,
             "paid_attempts": 0, "comparison": None, "swap": swap,
             "actor_requested_level": requested_level,
+            "native_source_seed": native_source_seed,
             "native_prepared_actor": prepared,
             "actor_checkpoint_verified": False,
             "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
