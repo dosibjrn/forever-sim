@@ -1278,3 +1278,44 @@ def test_source_echoed_rolling_policy_never_shares_serial_native_paid_cache(
     assert calls == [None, api.ROLLING_WORLD_APL_50]
     assert serial[2] is False and rolling[2] is False and repeat[2] is True
     assert serial[3] != rolling[3] == repeat[3]
+
+
+def test_native_named_build_preserves_real_wowhead_ids_for_hover_overlays():
+    from tools.wf_warlock_native_persistent_optimizer import _described_build
+
+    source = {"raid": {"parties": [{"players": [{
+        "talentsString": "200-0-0",
+        "equipment": {"items": [
+            {"id": 11832, "enchant": {"effectId": 2504}},
+        ]},
+        "rotation": {"priorityList": [{
+            "action": {"castSpell": {"spellId": {"spellId": 11711}}},
+        }]},
+    }]}]}}
+    options = {
+        "items": [{"item_id": 11832, "native": {
+            "name": "Native Wand", "slot": "ranged",
+            "item_level": 59, "icon_filename": "inv_wand_1",
+        }}],
+        "spells": [{"spell_id": 11711, "name": "Bane of Agony",
+                    "rank": "Rank 5", "icon_filename": "spell_shadow_curseofachimonde"}],
+        "talents": {"trees": [
+            {"name": "Affliction", "talents": [
+                {"index": 0, "name": "Improved Corruption", "max_rank": 5,
+                 "rank_spell_ids": [17810, 17811], "row": 0, "col": 0},
+                {"index": 1, "name": "Unselected", "max_rank": 5,
+                 "rank_spell_ids": [99999]},
+            ]},
+        ]},
+    }
+    labels = _described_build(source, options)
+    item = labels["equipped_item_names_ids"][0]
+    assert item["item_id"] == 11832 and item["enchant_id"] == 2504
+    assert item["item_level"] == 59
+    assert item["icon_filename"] == "inv_wand_1"
+    assert labels["ordered_apl_spells"][0]["spell_id"] == 11711
+    assert labels["ordered_apl_spells"][0]["icon_filename"] == "spell_shadow_curseofachimonde"
+    talent = labels["talent_names"][0]
+    assert talent["spell_id"] == 17811
+    assert talent["row"] == 0 and talent["col"] == 0
+    assert len(labels["talent_names"]) == 1
