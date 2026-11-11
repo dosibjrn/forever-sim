@@ -260,7 +260,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mythicsim-forever-engine
-          ref: 81b764fc8faa7cc46e384b7f90f395ac590b6c08
+          ref: dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9
           path: native-engine
       - uses: actions/setup-python@v5
         with:
@@ -271,7 +271,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C native-engine rev-parse HEAD)" = "81b764fc8faa7cc46e384b7f90f395ac590b6c08"
+          test "$(git -C native-engine rev-parse HEAD)" = "dd53c747abca5bb86ba2bfe0c8090dffd7f5e1c9"
           grep -q 'fn run_native_api' native-engine/src/main.rs
           echo "FOREVER_HEAD=$(git rev-parse HEAD)"
           echo "SELECTED_RUST_SHA=$(git -C native-engine rev-parse HEAD)"
@@ -284,6 +284,7 @@ jobs:
           # GitHub runs bash with -e by default. Disable it explicitly
           # so an L20 refusal cannot suppress the independent L40 attempt.
           set +e
+          set +e  # Default Actions shell invokes bash -e; still attempt L40 on L20 refusal.
           set -uo pipefail
           mkdir -p evidence/work2-native-paid-l20-l40
           failed=0
