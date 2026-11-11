@@ -334,6 +334,48 @@ def _optimize_compatible_samples(
 
 
 
+
+def _retained_native_paid_axis_breadth(
+    result: Mapping[str, Any], level: int,
+) -> tuple[int, dict[str, int]] | None:
+    """Describe observed axis breadth, not source legality or an optimum.
+
+    Include only native-prepared, fully recovered independent candidates
+    whose original paid receipt agrees with the ranked build fields.
+    Refusals, rejected attempts and unmeasured proposals never count.
+    """
+    import json
+
+    rankings = result.get("independent_level_rankings")
+    rows = rankings.get(str(level)) if isinstance(rankings, Mapping) else None
+    if not isinstance(rows, list):
+        return None
+    paid = []
+    fields = ("source_request_sha256", "engine_binary_sha256",
+              "talents", "gear", "apl", "pet")
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        receipt = row.get("receipt")
+        if (not isinstance(receipt, Mapping)
+                or _receipt_error(
+                    receipt, level=level, parent=None,
+                    mob_count=result["mob_count"], rng_mode=result["rng_mode"],
+                    iterations=result["iterations"],
+                ) is not None
+                or any(row.get(field) != receipt.get(field)
+                       for field in fields)):
+            continue
+        paid.append(row)
+    if not paid:
+        return None
+    return len(paid), {
+        field: len({json.dumps(row.get(field), sort_keys=True,
+                               separators=(",", ":")) for row in paid})
+        for field in ("talents", "gear", "apl", "pet")
+    }
+
+
 def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
     """Explain a measured sampled path without inventing continuous leveling.
 
@@ -402,6 +444,11 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
         "are comparisons of native-prepared snapshots, not prescribed "
         "intermediate training decisions.",
         "",
+        "**Search scope:** Best means fastest among the observed compatible "
+        "native-paid candidates, not a proven joint gear × talents × APL × "
+        "pet optimum. A single paid value for an axis means no comparison "
+        "on that axis.",
+        "",
         f"**Best compatible sampled score:** "
         f"{best['sampled_cumulative_seconds']:.3f} s "
         f"(among {len(ranked)} retained compatible path(s)).",
@@ -418,6 +465,25 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
             f"- Measured elapsed: {step['native_elapsed_seconds']:.3f} s "
             f"(terminal recovery: {step['terminal_recovery_seconds']:.3f} s)",
         ]
+        breadth = _retained_native_paid_axis_breadth(result, level)
+        if breadth is not None:
+            paid_count, counts = breadth
+            lines.append(
+                "- Native-paid candidate breadth: "
+                f"{paid_count}; talent allocations {counts['talents']}, "
+                f"gear sets {counts['gear']}, APLs {counts['apl']}, "
+                f"pet values {counts['pet']}."
+            )
+            fixed = [label for field, label in (
+                ("talents", "talents"), ("gear", "gear"),
+                ("apl", "APL"), ("pet", "pet")
+            ) if counts[field] == 1]
+            if fixed:
+                lines.append(
+                    "- Limited axes (one paid value): "
+                    + ", ".join(fixed)
+                    + ". No joint-axis optimum is established."
+                )
         before = _talent_ranks(previous["talents"]) if previous else None
         after = _talent_ranks(step["talents"])
         if before is not None and after is not None:
