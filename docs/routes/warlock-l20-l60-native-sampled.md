@@ -2,6 +2,8 @@
 
 **Measured scope:** 41 sampled level(s), L20–L60; 2 hostile mob(s) per level; balanced RNG, 1 iteration(s).
 
+**Candidate breadth of the original paid run:** At L20, 6 native-qualified candidates varied 4 talent allocations and 3 APLs but only **1 gear set and 1 pet value (null)**. At L40, 7 native-qualified candidates varied 5 talent allocations and 3 APLs but again only **1 gear set and 1 pet value (null)**. Both also used the same 17 item IDs and the winning spell IDs were unchanged. These measured best-known sampled decisions are **not** evidence of an optimized gear × trained spell rank/APL × pet combination. This is a coverage annotation to the original [paid stride-1 run](https://github.com/dosibjrn/forever-sim/actions/runs/42985475032), not a replay or replacement of its native receipts.
+
 **Not a continuous leveling route.** Scores include actual native combat, movement and paid terminal recovery to full HP and mana at each sample. XP, travel between levels, training, acquisition and intervening gameplay are not measured. Talent rank deltas below are comparisons of native-prepared snapshots, not prescribed intermediate training decisions.
 
 **Best compatible sampled score:** 3515.550 s (among 3 retained compatible path(s)).
