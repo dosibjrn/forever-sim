@@ -84,8 +84,9 @@ def _receipt_error(
         if (overlap.get("max_concurrent_alive_targets") != 2
                 or type(overlap.get("old_target_dot_ticks_after_switch_acked"))
                    is not int
-                or overlap["old_target_dot_ticks_after_switch_acked"] < 1):
-            return "native old-target DoT ACK after rolling switch missing"
+                or overlap["old_target_dot_ticks_after_switch_acked"] < 1
+                or overlap.get("first_b_source_hit_while_old_a_alive") is not True):
+            return "native two-live-target first-hit/old-target DoT ACK missing"
         if (not isinstance(kills, list) or len(kills) != 2
                 or any(not isinstance(kill, Mapping) for kill in kills)):
             return "rolling World-APL distinct world kills/ACK IDs missing"
