@@ -175,7 +175,9 @@ jobs:
   # predecessor and binary identities for any NEW paid comparison.
   # Every native rejection remains in the artifact.
   cross-tree-native-world:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' }}
+    # The original M0.6 paid comparison is independent of predecessor 100-mob trials.
+    # One manual dispatch must never launch both expensive Rust-paid jobs.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.predecessor_artifact_id != '' && inputs.run_m06_original != true }}
     runs-on: ubuntu-24.04
     timeout-minutes: 65
     env:
