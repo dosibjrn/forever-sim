@@ -101,14 +101,22 @@ def test_p71_dispatch_rejects_other_warlock_checkpoints(monkeypatch, tmp_path):
     assert len(calls) == 1
 
 
-def test_stationary_fixture_preserves_pinned_rust_warlock_actor():
+def test_stationary_fixture_preserves_frozen_reference_scenario():
+    """Check our retained P7.1 input, not a moving Rust-fork fixture path.
+
+    Exact request-byte and original-paid-engine provenance are checked in
+    test_paid_stochastic_warlock_reference_is_frozen_to_exact_source below.
+    The currently selected Rust fork no longer carries the historical
+    `warlock-l20-troll-source-equipped.request.json` fixture. Requiring it
+    would reject unrelated source-native PRs before their actual tests run.
+    """
     root = Path(__file__).resolve().parents[1]
-    reference_path = root / "fixtures/warlock-l20-p71.request.json"
-    native_path = (root / "integrations/mythicsim-rust/engine/fixtures/"
-                   "warlock-l20-troll-source-equipped.request.json")
-    frozen = json.loads(reference_path.read_text())
-    selected_native = json.loads(native_path.read_text())
-    assert frozen["raid"] == selected_native["raid"]  # provenance, not rules audit
+    frozen = json.loads(
+        (root / "fixtures/warlock-l20-p71.request.json").read_text())
+    player = frozen["raid"]["parties"][0]["players"][0]
+    assert player["class"] == "ClassWarlock"
+    assert player["race"] == "RaceTroll"
+    assert player["equipment"]["items"]
     target = frozen["encounter"]["targets"]
     assert frozen["encounter"]["duration"] == 120
     assert len(target) == 1 and target[0]["level"] == 20
