@@ -6,6 +6,7 @@ No Warcraft stats, drops, raid DPS, icons or equipment legality are inferred.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from tools.wf_native_paid_wowhead import WOWHEAD_BOOTSTRAP, wowhead_anchor
 from html import escape
 from typing import Any, Mapping, Sequence
 import json
@@ -86,7 +87,7 @@ def gear_table(row: Mapping[str, Any]) -> str:
         slot = slot_label(item.get('native_slot'))
         name = item.get('name') or f'Native item {iid}'
         # A linked source lookup is optional; the report itself has zero network dependencies.
-        url = f'https://www.wowhead.com/forever/item={iid}'
+        item_link = wowhead_anchor('item', iid, name, edition=item.get('wowhead_edition', 'forever'), enchant_id=item.get('enchant_id'))
         lvl = item_meta(item,'item_level','ilvl')
         ench = item_meta(item,'enchant','enchant_name')
         src = item_meta(item,'source','drop_source','acquisition')
@@ -97,8 +98,7 @@ def gear_table(row: Mapping[str, Any]) -> str:
             '<tr><td><div class="slothead"><span class="slotglyph" aria-hidden="true">'
             + h(slot[:1].upper()) + '</span><span>' + h(slot) + '<small>Input #'
             + h(item.get('position')) + '</small></span></div></td>'
-            '<td><a class="item" href="' + h(url) + '" target="_blank" rel="noopener noreferrer">'
-            + h(name) + '</a><small>' + note + ' · Item ID ' + h(iid) + '</small></td>'
+            '<td><span class="item">' + item_link + '</span><small>' + note + ' · Item ID ' + h(iid) + '</small></td>'
             '<td class="source">' + (h(src) if src is not None else '<span class="unknown">Source not in receipt</span>')
             + '</td></tr>')
     return ('<div class="table-scroll"><table class="gear"><thead><tr>'
@@ -115,7 +115,7 @@ def talent_section(row: Mapping[str, Any]) -> str:
     for tree, ts in by.items():
         n = points(ts)
         entries = ''.join('<li><span class="talent-symbol" aria-hidden="true">✧</span>'
-                          '<span class="talent-name">' + h(t.get('name') or 'Unknown talent')
+                          '<span class="talent-name">' + wowhead_anchor('spell', t.get('spell_id') or t.get('talent_spell_id'), t.get('name') or 'Unknown talent')
                           + '</span><b>' + h(t.get('rank')) + '/' + h(t.get('max_rank'))
                           + '</b></li>' for t in ts)
         groups.append('<section class="talent-tree"><div class="tree-title"><h3>'
@@ -151,7 +151,7 @@ def apl_section(row: Mapping[str, Any]) -> str:
         rank = s.get('rank')
         items.append('<li class="rotation-row"><span class="priority">'
                      + h(s.get('priority') or idx) + '</span><span class="spell-icon" aria-hidden="true">✦</span>'
-                     '<span class="spell-text"><strong>' + h(s.get('name') or 'Unknown native spell')
+                     '<span class="spell-text"><strong>' + wowhead_anchor('spell', s.get('spell_id'), s.get('name') or 'Unknown native spell')
                      + '</strong><small>Spell ID ' + h(s.get('spell_id'))
                      + (' · ' + h(rank) if rank else ' · rank unavailable')
                      + '</small></span><span class="condition">'
@@ -273,7 +273,7 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>'+h(specialization)+' '+h(cls)+' L'+str(level)+' | Best tested native build</title>'
-        '<style>'+_CSS+SIM_REPORT_CSS+'</style></head><body>'
+        '<style>'+_CSS+SIM_REPORT_CSS+'</style>'+WOWHEAD_BOOTSTRAP+'</head><body>'
         '<header class="site-head"><div class="nav-wrap"><div class="logo">FOREVER <span>SIM LAB</span></div>'
         '<div class="nav-mini">Native build research · Standalone report</div></div></header><main class="wrap">'
         '<div class="breadcrumb">WoW Forever &nbsp;›&nbsp; Builds &nbsp;›&nbsp; <b>'+h(cls)+'</b> &nbsp;›&nbsp; L'+str(level)+'</div>'
@@ -291,7 +291,7 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
         +render_paid_simulation(result, best, native_raw=native_raw)
         +'<section class="content" id="gear"><div class="section-top"><h2>Best tested gear</h2><span class="chip">'
         +str(len(need_items))+' source item positions</span></div>'
-        '<p class="section-desc">Slot-labelled items from the winning native request. Item IDs link to a separate Wowhead Forever lookup; this HTML renders fully offline.</p>'
+        '<p class="section-desc">Source-native item IDs open Wowhead. Hover or tap online to load real Wowhead item details; the base report remains readable offline.</p>'
         +warning_markup+gear_table(best)
         +('<p class="section-desc">Acquisition source not supplied for '+str(unlabeled)+' / '+str(len(need_items))+' items. Item level, enchants and item artwork are likewise omitted unless explicitly sourced.</p>' if need_items else '')
         +'</section><section class="content" id="talents"><h2>Talents</h2><p class="section-desc">Points and ranks from the native prepared actor; this is not a visual recreation of the in-game grid.</p>'
@@ -316,5 +316,5 @@ def render_reference_page(result: Mapping[str, Any], level: int, paid_rows: Sequ
         '<details><summary>Native verification and traceability</summary><div class="inside">'+hashes(best)+'</div></details></section>'
         '<section class="content" id="faq"><h2>Frequently asked questions</h2>'+footer_faq(level,cls)+'</section>'
         '<footer>Standalone offline build report · Content from exact source-prepared and paid native World receipts · '
-        'External item links are optional · Not affiliated with MythicSim or Blizzard. Reference layout inspired by MythicSim BiS information structure, not its source code.</footer>'
+        'Wowhead hover overlays require internet; saved metrics remain offline · Not affiliated with MythicSim or Blizzard. Reference layout inspired by MythicSim BiS information structure, not its source code.</footer>'
         '</main></body></html>\n')
