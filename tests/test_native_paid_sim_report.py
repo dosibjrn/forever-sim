@@ -131,3 +131,37 @@ def test_missing_cast_and_ability_breakdown_is_never_misrepresented_as_zero():
     assert "Actual casts and aura uptimes not recorded" in page
     assert "not raid DPS" in page
     assert "confidence intervals are unavailable" in page
+
+
+def test_native_acked_source_effect_timeline_comes_from_exact_observations():
+    result, row, raw = sample()
+    raw["native_acked_damage_effect_timeline"] = [
+        {"clock_ns": 1_000_000_000, "event_id": "a",
+         "native_caster_type": "player", "source_action_id": "corruption",
+         "source_damage": 40.0, "periodic": True, "native_target_index": 0},
+        {"clock_ns": 1_200_000_000, "event_id": "b",
+         "native_caster_type": "pet", "source_action_id": "<script>alert(1)</script>",
+         "source_damage": 23.0, "periodic": False, "native_target_index": 1},
+    ]
+    rendered = render_paid_simulation(result, row, native_raw=raw)
+    assert "Actual source-native damage-effect timeline (2 events)" in rendered
+    assert "1.000 s" in rendered and "1.200 s" in rendered
+    assert "40.00" in rendered and "23.00" in rendered
+    assert "<script>alert(1)</script>" not in rendered
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered
+    assert "not inferred casts" in rendered
+
+
+def test_invalid_native_effect_order_is_not_described_as_recorded():
+    result, row, raw = sample()
+    raw["native_acked_damage_effect_timeline"] = [
+        {"clock_ns": 2_000_000_000, "event_id": "a",
+         "native_caster_type": "player", "source_action_id": "a",
+         "source_damage": 40.0},
+        {"clock_ns": 1_000_000_000, "event_id": "b",
+         "native_caster_type": "player", "source_action_id": "a",
+         "source_damage": 40.0},
+    ]
+    rendered = render_paid_simulation(result, row, native_raw=raw)
+    assert "Invalid damage-effect timeline" in rendered
+    assert "Actual source-native damage-effect timeline" not in rendered
