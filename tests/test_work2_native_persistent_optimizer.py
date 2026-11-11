@@ -849,6 +849,11 @@ def test_human_readable_top_three_cli_retains_exact_paid_receipts(
     assert "### #1" in report and "### #2" in report and "### #3" in report
     assert "Source protobuf SHA256" in report
     assert "Native paid qualified" in report
+    # Candidate-axis proposal counts are not the number of distinct *paid*
+    # gear, pet, APL and talent values. Never call one value optimized.
+    assert "Distinct verified native-paid choices" in report
+    assert "gear sets=1; pet values=1;" in report
+    assert "One observed paid value, not optimized" in report
     assert "NoSummon / unspecified" in report
     assert "NOT a global optimum" in report
     assert paid["independent_level_rankings"]["20"][0][
