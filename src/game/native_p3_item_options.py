@@ -248,8 +248,11 @@ def _query_native_spell_coefficients(
     reference = prepared.get("reference")
     engine_revision = (
         reference.get("engine_revision") if isinstance(reference, dict) else None)
-    if not isinstance(engine_revision, str) or not engine_revision:
-        raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_ENGINE_REVISION_UNAVAILABLE")
+    # The selected native prepare result supplies the actual spell facts.
+    # A missing/malformed revision label is optional metadata, not a
+    # second proof requirement before source-native P3 scoring.
+    if not isinstance(engine_revision, str) or not engine_revision.strip():
+        engine_revision = None
     return {
         "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
         "engine_revision": engine_revision,
@@ -295,8 +298,10 @@ def apply_native_mage_spell_coefficients(
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_COEFFICIENT_MAP_INVALID")
     source = native_facts.get("source")
     engine_revision = native_facts.get("engine_revision")
-    if source != "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS" or not engine_revision:
+    if source != "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS":
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_PROVENANCE_INVALID")
+    if not isinstance(engine_revision, str) or not engine_revision.strip():
+        engine_revision = None
 
     updated_actions = []
     applied = []
@@ -320,12 +325,13 @@ def apply_native_mage_spell_coefficients(
         has_direct_damage = False
         fact = {
             "authority": "mythicsim_rust_prepared_v2",
-            "engine_revision": engine_revision,
             "spell_id": spell_id,
             "field": "bonus_coefficient",
             "value": coefficient,
             "action_id": str(getattr(action, "id", "")),
         }
+        if engine_revision is not None:
+            fact["engine_revision"] = engine_revision
         for effect in tuple(getattr(action, "effects", ()) or ()):
             if isinstance(effect, DamageEffect):
                 # The selected native PreparedV2 spellbook owns the value.
@@ -346,7 +352,11 @@ def apply_native_mage_spell_coefficients(
             continue
         metadata["native_spell_power_coefficient_verified"] = True
         metadata["native_spell_power_coefficient"] = coefficient
-        metadata["native_spell_power_coefficient_engine_revision"] = engine_revision
+        if engine_revision is not None:
+            metadata["native_spell_power_coefficient_engine_revision"] = engine_revision
+        else:
+            # An older IR revision must not be presented as this native fact.
+            metadata.pop("native_spell_power_coefficient_engine_revision", None)
         provenance = tuple(getattr(action, "provenance", ()) or ())
         if fact not in provenance:
             provenance = provenance + (fact,)

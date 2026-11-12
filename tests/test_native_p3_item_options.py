@@ -700,6 +700,65 @@ def test_native_mage_spell_coefficients_are_read_from_prepared_v2(tmp_path):
     assert result["spell_power_coefficients"] == {8401: 0.857, 8406: 0.714}
 
 
+@pytest.mark.parametrize(
+    ("class_key", "level", "spell_id", "action_id", "coefficient"), [
+        ("mage", 30, 8401, "fireball:8401", 0.857),
+        ("shaman", 20, 915, "lightning_bolt:915", 0.42),
+    ],
+)
+@pytest.mark.parametrize("revision_reference", [
+    None, {}, {"engine_revision": ""}, {"engine_revision": []},
+])
+def test_native_p3_selected_coefficients_need_no_revision_certificate(
+        class_key, level, spell_id, action_id, coefficient, revision_reference):
+    # The selected native prepare output is already the coefficient source.
+    # Optional engine revision metadata cannot veto a real selected action.
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.model.ir import DamageEffect
+
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "player": {"class": class_key.title(), "spells": [
+            {"action_id": {"spell_id": spell_id},
+             "bonus_coefficient": coefficient},
+        ]},
+    }
+    if revision_reference is not None:
+        prepared["reference"] = revision_reference
+    query = (query_native_shaman_spell_coefficients if class_key == "shaman"
+             else query_native_mage_spell_coefficients)
+    facts = query("selected-native", runner=_runner(prepared))
+    assert facts["engine_revision"] is None
+    assert facts["spell_power_coefficients"][spell_id] == coefficient
+
+    ir = build_game_ir_slice(class_key=class_key, level=level)
+    apply = (apply_native_shaman_lightning_bolt_coefficient if class_key == "shaman"
+             else apply_native_mage_spell_coefficients)
+    enriched, applied = apply(ir, facts)
+    action = next(action for action in enriched.actions if action.id == action_id)
+    direct = [e for e in action.effects if isinstance(e, DamageEffect)]
+    assert direct and all(e.spell_power_coefficient == coefficient for e in direct)
+    assert action.metadata["native_spell_power_coefficient_verified"] is True
+    assert "native_spell_power_coefficient_engine_revision" not in action.metadata
+    assert len(applied) == 1 and applied[0]["spell_id"] == spell_id
+    assert any(fact.get("authority") == "mythicsim_rust_prepared_v2"
+               and fact.get("spell_id") == spell_id
+               and "engine_revision" not in fact
+               for fact in enriched.source_facts)
+
+
+def test_native_p3_missing_revision_still_rejects_non_native_coefficient_source():
+    from src.game.data.forever.registry import build_game_ir_slice
+
+    ir = build_game_ir_slice(class_key="mage", level=30)
+    with pytest.raises(NativeItemOptionsError, match="PROVENANCE_INVALID"):
+        apply_native_mage_spell_coefficients(ir, {
+            "source": "not-a-native-prepare",
+            "spell_power_coefficients": {8401: 0.857},
+        })
+
+
 def test_native_mage_spell_prepare_refusal_includes_native_reason():
     refusal = {
         "prepared": False,
