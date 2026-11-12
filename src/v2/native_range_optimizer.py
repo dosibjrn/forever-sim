@@ -405,6 +405,12 @@ def _retained_native_paid_axis_breadth(
                     mob_count=result["mob_count"], rng_mode=result["rng_mode"],
                     iterations=result["iterations"],
                 ) is not None
+                # Axis breadth drives adaptive paid-allocation decisions and
+                # is described as verified original paid evidence. A scored
+                # projection without a raw run identity is not original paid.
+                or not _sha(receipt.get("native_raw_receipt_sha256"))
+                or not isinstance(receipt.get("native_raw_receipt_file"), str)
+                or not receipt["native_raw_receipt_file"].strip()
                 or any(row.get(field) != receipt.get(field)
                        for field in fields)):
             continue
