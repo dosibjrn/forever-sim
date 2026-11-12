@@ -1,0 +1,70 @@
+# The GitHub ChatGPT integration can comment on an owned issue but cannot
+# directly call workflow_dispatch. This narrow owner-command relay enables the
+# existing, explicitly opt-in native-paid M0.6 job without making paid work run
+# on ordinary pushes, PRs or untrusted issue comments.
+name: Owner-command M0.6 original-paid dispatch
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: owner-command-m06-original-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    # Ignore all other issue traffic. Only the repository owner can request
+    # this particular hard-coded operation from the existing owner P0 issue.
+    if: >-
+      ${{
+        github.event.issue.number == 1104 &&
+        github.event.comment.user.login == 'dosibjrn' &&
+        github.event.comment.body == '/run-m06-original'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Resolve main and refuse duplicate paid dispatches at its SHA
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          echo "selected_main_sha=$main_sha" >> "$GITHUB_OUTPUT"
+          echo "M06_OWNER_COMMAND_MAIN_SHA=$main_sha"
+          # The API returns past manual dispatches of the target workflow, not
+          # this relay. Check their actual paid job, because unrelated manual
+          # dispatches may legitimately leave it SKIPPED.
+          run_ids="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/native-paid-route-regressions.yml/runs?event=workflow_dispatch&per_page=50" \
+            --jq ".workflow_runs[] | select(.head_sha == \"$main_sha\") | .id")"
+          while IFS= read -r run_id; do
+            [[ -n "$run_id" ]] || continue
+            paid_job="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
+              --jq '[.jobs[] | select(.name == "work2-m06-original-native" and .conclusion != "skipped")] | length')"
+            if [[ "$paid_job" -gt 0 ]]; then
+              echo "M06_OWNER_COMMAND_ALREADY_DISPATCHED=$run_id"
+              echo "dispatch=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done <<< "$run_ids"
+          echo "dispatch=true" >> "$GITHUB_OUTPUT"
+      - name: Dispatch only original M0.6 native payment
+        if: steps.guard.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$current_sha" = "${{ steps.guard.outputs.selected_main_sha }}"
+          gh workflow run native-paid-route-regressions.yml --ref main \
+            -f run_m06_original=true -f predecessor_artifact_id=''
+          echo "M06_OWNER_COMMAND_DISPATCHED_MAIN_SHA=$current_sha"
+          echo "M06_OWNER_COMMAND_TARGET=https://github.com/$GITHUB_REPOSITORY/actions/workflows/native-paid-route-regressions.yml"
