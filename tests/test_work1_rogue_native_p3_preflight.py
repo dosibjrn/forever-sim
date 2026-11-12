@@ -1,5 +1,8 @@
 """Work1 regression: native Rogue P3 scoring survives legacy bounded policy search."""
+from hashlib import sha256
 from pathlib import Path
+
+import pytest
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -323,3 +326,87 @@ def test_rogue_native_p3_scores_only_source_occupied_slots():
     unverified = _native_rogue_p3_verdict(options, receipt)
     assert unverified["status"] == "FAIL"
     assert "P3_NATIVE_SLOT_UNSCORED:chest:NOT_ATTEMPTED" in unverified["reasons"]
+
+
+@pytest.mark.parametrize("checkpoint,actor,level,objective", [
+    ("rogue_l20", "ClassRogue", 20, "DPS"),
+    ("feral_l60", "ClassDruid", 60, "DPS"),
+    ("mage_l60", "ClassMage", 60, "DPS"),
+    ("paladin_holy_l60", "ClassPaladin", 60, "HPS"),
+    ("warlock_l20", "ClassWarlock", 20, "DPS"),
+])
+def test_p3_native_paid_identity_falls_back_to_actual_selected_binary(
+        tmp_path, checkpoint, actor, level, objective):
+    """Missing optional native prepare revision must not veto paid P3 scores.
+
+    This is a Forever scorer/identity regression with a synthetic receipt,
+    not an original Rust combat execution or a new M1 PASS.
+    """
+    from tools.wf_gate_p3_live import _native_rogue_p3_verdict
+
+    binary = tmp_path / "selected-mythicsim-binary"
+    binary.write_bytes(b"distinct selected native executable bytes\\0")
+    expected = "mythicsim-rust-bin-sha256:" + sha256(binary.read_bytes()).hexdigest()
+    options = {"status": "ok", "items": [
+        {"slot": "head", "item_id": 900, "item_level": level}]}
+    receipt = {
+        "status": "PAID_NATIVE_DIFFERENCE",
+        "objective": objective,
+        "paid_attempts": 2,
+        "actor_checkpoint_verified": True,
+        "native_prepared_actor": {
+            "actor_class": actor, "actor_level": level,
+            # No native reference.engine_revision in this prepared response.
+        },
+        "source_occupied_slots": ["head"],
+        "evaluations": [
+            {"status": "VALID", "score": 10.0,
+             "request_sha256": "actual-native-paid-request-id"},
+            {"status": "VALID", "score": 13.0,
+             "request_sha256": "actual-native-paid-swap-id"},
+        ],
+        "native_slot_evaluations": [{
+            "swap": {"slot": "head", "to_id": 900},
+            "status": "VALID", "delta_dps": 3.0, "delta_score": 3.0,
+        }],
+        "native_slots_valid": 1,
+    }
+
+    result = _native_rogue_p3_verdict(
+        options, receipt, checkpoint=checkpoint, native_binary=str(binary))
+    assert result["status"] == "PASS", result["reasons"]
+    assert result["runtime_proof"] == {
+        "executed": True, "engine_revision": expected,
+        "source_revision": result["source_context_sha256"],
+        "run_id": "actual-native-paid-request-id",
+    }
+
+    # Without a readable exact executable, a missing engine identity remains
+    # a genuine refusal even if all other receipt fields look successful.
+    missing = _native_rogue_p3_verdict(
+        options, receipt, checkpoint=checkpoint,
+        native_binary=str(tmp_path / "missing-native-binary"))
+    assert missing["status"] == "FAIL"
+    assert "P3_NATIVE_ENGINE_REVISION_UNAVAILABLE" in missing["reasons"]
+    assert "runtime_proof" not in missing
+
+    # A real native paid refusal must not be rescued by the binary fingerprint.
+    refused = {**receipt, "native_slot_evaluations": [{
+        "swap": {"slot": "head", "to_id": 900},
+        "status": "UNSUPPORTED", "reason": "native cannot score selected item",
+    }]}
+    rejected = _native_rogue_p3_verdict(
+        options, refused, checkpoint=checkpoint, native_binary=str(binary))
+    assert rejected["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:head:UNSUPPORTED" in rejected["reasons"]
+    assert "runtime_proof" not in rejected
+
+    # The paid baseline request ID is still required for runtime proof.
+    no_request_id = {**receipt, "evaluations": [
+        {"status": "VALID", "score": 10.0},
+        receipt["evaluations"][1],
+    ]}
+    untraceable = _native_rogue_p3_verdict(
+        options, no_request_id, checkpoint=checkpoint, native_binary=str(binary))
+    assert untraceable["status"] == "FAIL"
+    assert "P3_NATIVE_PAID_REQUEST_ID_UNAVAILABLE" in untraceable["reasons"]

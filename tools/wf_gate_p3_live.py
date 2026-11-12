@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from math import isfinite
 from pathlib import Path
-from hashlib import sha256
+from hashlib import file_digest, sha256
 from uuid import uuid4
 import os
 
@@ -498,7 +498,8 @@ def _paid_native_equipped_probe(root: Path, native_binary: str | None,
 
 
 def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
-                             checkpoint: str = "rogue_l20") -> dict:
+                             checkpoint: str = "rogue_l20",
+                             native_binary: str | None = None) -> dict:
     """P3 is native paid gear scoring, not legacy naked-policy discovery."""
     import json
     source_sha = sha256(json.dumps(
@@ -538,6 +539,19 @@ def _native_rogue_p3_verdict(options: dict, receipt: dict, *,
     baseline = rows[0] if rows and isinstance(rows[0], dict) else {}
     prepared = receipt.get("native_prepared_actor") or {}
     revision = prepared.get("engine_revision")
+    # A selected Rust prepare may omit its optional reference revision label.
+    # Keep the formal executed-runtime identity without making that label a
+    # separate P3 gate: fingerprint the exact binary used for paid scoring.
+    # If the binary cannot be read, retain the real identity refusal below.
+    if not isinstance(revision, str) or not revision.strip():
+        revision = None
+        if native_binary:
+            try:
+                with open(native_binary, "rb") as binary_stream:
+                    revision = ("mythicsim-rust-bin-sha256:"
+                                + file_digest(binary_stream, "sha256").hexdigest())
+            except OSError:
+                pass
     request_sha = baseline.get("request_sha256")
     paid = receipt.get("paid_attempts", 0)
     reasons = []
@@ -706,7 +720,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             receipt = _paid_native_equipped_probe(
                 root, native_binary, selection, 44, checkpoint=checkpoint)
         return _native_rogue_p3_verdict(
-            native_options, receipt, checkpoint=checkpoint)
+            native_options, receipt, checkpoint=checkpoint,
+            native_binary=native_binary)
 
     rogue_native_preflight = None
     from src.game.data.forever.registry import build_game_ir_slice
