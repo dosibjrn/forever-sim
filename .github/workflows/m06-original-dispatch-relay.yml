@@ -64,7 +64,7 @@ jobs:
           set -euo pipefail
           current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           test "$current_sha" = "${{ steps.guard.outputs.selected_main_sha }}"
-          gh workflow run native-paid-route-regressions.yml --ref main \
+          gh workflow run native-paid-route-regressions.yml --repo "$GITHUB_REPOSITORY" --ref main \
             -f run_m06_original=true -f predecessor_artifact_id=''
           echo "M06_OWNER_COMMAND_DISPATCHED_MAIN_SHA=$current_sha"
           echo "M06_OWNER_COMMAND_TARGET=https://github.com/$GITHUB_REPOSITORY/actions/workflows/native-paid-route-regressions.yml"
