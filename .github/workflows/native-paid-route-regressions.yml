@@ -22,6 +22,7 @@ on:
       - tools/wf_warlock_native_candidate_scoring.py
       - tests/test_work1_native_candidate_scoring.py
       - tests/test_work2_native_range_optimizer.py
+      - tests/test_clean_native_paid_axis_breadth.py
       - tests/test_work2_adaptive_native_finalists.py
       - tests/test_work2_world_rest_comparison.py
       - tools/wf_native_paid_html.py
