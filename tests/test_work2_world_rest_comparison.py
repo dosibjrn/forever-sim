@@ -81,6 +81,51 @@ def test_unmatched_source_or_actor_is_not_a_fake_policy_win():
         assert comparison["winner"] is None
 
 
+
+def test_rest_comparison_requires_same_paid_world_hp_and_distinct_raw_runs():
+    """Prepared actor hashes omit the 2D hostile HP; mismatched scenes are not pairs."""
+    baseline = paid_row(1.0, 43)
+    for changed_field, changed_value in (
+        ("native_world_target_hp", 150.0),
+        ("native_world_target_hp", None),
+        ("native_raw_receipt_sha256", baseline["native_raw_receipt_sha256"]),
+    ):
+        challenger = paid_row(0.3, 30)
+        challenger[changed_field] = changed_value
+        comparison = measured_world_rest_head_to_head(
+            result_for([baseline, challenger]), level=20)
+        assert comparison["status"] == "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE"
+        assert comparison["winner"] is None
+    matched = measured_world_rest_head_to_head(
+        result_for([baseline, paid_row(0.3, 39)]), level=20)
+    assert matched["status"] == "MEASURED_NATIVE_REST_HEAD_TO_HEAD"
+    assert matched["baseline"]["native_world_target_hp"] == 100.0
+    assert matched["thirty_percent"]["native_world_target_hp"] == 100.0
+
+
+def test_rest_comparison_does_not_confuse_rolling_advantage_with_rest_policy():
+    """An M0.6 World-APL candidate is not the serial full-rest control."""
+    serial = paid_row(1.0, 43)
+    for changed in ("pull_mode", "world_apl", "native_world_apl",
+                    "native_world_overlap", "rest_until"):
+        challenger = copy.deepcopy(serial)
+        challenger["native_raw_receipt_sha256"] = "e" * 64
+        if changed == "pull_mode":
+            challenger["native_world_policy"]["pull_mode"] = "rolling"
+        elif changed == "world_apl":
+            challenger["native_world_policy"]["world_apl"] = {"switch": "half"}
+        elif changed == "native_world_apl":
+            challenger["native_world_apl"] = {"switch": "half"}
+        elif changed == "native_world_overlap":
+            challenger["native_world_overlap"] = {"some_native_overlap": True}
+        else:
+            challenger["native_world_policy"]["rest_until"] = "partial"
+        comparison = measured_world_rest_head_to_head(
+            result_for([challenger, paid_row(0.3, 30)]), level=20)
+        assert comparison["status"] == "NATIVE_REST_HEAD_TO_HEAD_INCOMPLETE", changed
+        assert comparison["winner"] is None
+
+
 def test_missing_original_native_receipt_is_not_paid_evidence():
     challenger = paid_row(0.3, 30)
     challenger.pop("native_raw_receipt_sha256")
