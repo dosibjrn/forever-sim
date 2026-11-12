@@ -58,17 +58,20 @@ def query_native_p3_item_options(
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_JSON") from exc
     if not isinstance(response, dict):
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_RESPONSE")
+    # A source-native refusal is authoritative even when it intentionally
+    # omits success-only request metadata. Never disguise it as a transport
+    # identity/coverage error; it still cannot supply a scored candidate.
+    status = response.get("status")
+    if status == "refused":
+        refusal = response.get("refusal")
+        code = refusal.get("code") if isinstance(refusal, dict) else None
+        raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_REFUSED:" + str(code or "UNKNOWN"))
     if (response.get("class") != str(class_key).lower()
             or type(response.get("level")) is not int
             or response["level"] != int(level)
             or response.get("spec") != spec
             or response.get("slot") != slot):
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_REQUEST_MISMATCH")
-    status = response.get("status")
-    if status == "refused":
-        refusal = response.get("refusal") or {}
-        code = refusal.get("code") if isinstance(refusal, dict) else None
-        raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_REFUSED:" + str(code or "UNKNOWN"))
     if response.get("required_level_supported") is not True:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_LEVEL_SOURCE_UNAVAILABLE")
     # Rust's unverified_candidate_count is optional source-coverage accounting,

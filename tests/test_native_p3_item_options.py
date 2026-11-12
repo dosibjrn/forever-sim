@@ -234,6 +234,31 @@ def test_native_p3_nonzero_cli_exit_preserves_structured_rust_refusal(refusal, r
     assert str(error.value) == reason
 
 
+@pytest.mark.parametrize("payload", [
+    {"status": "refused", "refusal": {
+        "code": "NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"}},
+    # Even conflicting success-only metadata must not disguise an authoritative
+    # refusal as REQUEST_MISMATCH or LEVEL_SOURCE_UNAVAILABLE.
+    {"status": "refused", "class": "mage", "level": 60,
+     "required_level_supported": False,
+     "refusal": {"code": "NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"}},
+])
+def test_native_p3_zero_exit_source_refusal_precedes_success_only_metadata(payload):
+    with pytest.raises(NativeItemOptionsError) as error:
+        query_native_p3_item_options(
+            "native", "priest", 20, runner=_runner(payload))
+    assert str(error.value) == (
+        "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS")
+
+
+def test_native_p3_zero_exit_refusal_without_code_is_still_authoritative():
+    with pytest.raises(NativeItemOptionsError) as error:
+        query_native_p3_item_options(
+            "native", "priest", 20,
+            runner=_runner({"status": "refused", "refusal": None}))
+    assert str(error.value) == "P3_NATIVE_ITEM_OPTIONS_REFUSED:UNKNOWN"
+
+
 def test_native_p3_preserves_partial_level_unknown_status_and_count():
     payload = _response(status="partial_level_unknown", unverified_candidate_count=2267)
     actual = query_native_p3_item_options("native", "priest", 20, runner=_runner(payload))
