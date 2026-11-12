@@ -355,7 +355,15 @@ def compare_prepared_candidates(*, binary: Path,
             continue
         if (player.get("class") != "ClassWarlock"
                 or player.get("level") != actor_level):
-            raise ValueError("NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH")
+            # A mismatched native-prepared actor must never be paid or ranked,
+            # but it must not discard correctly prepared later alternatives.
+            # Actor/scenario identity remains a per-candidate hard refusal.
+            rows.append({"candidate_id": candidate_id,
+                         "status": "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH",
+                         "elapsed_seconds": None,
+                         "prepared_actor_class": player.get("class"),
+                         "prepared_actor_level": player.get("level")})
+            continue
         source_sha = prepared.get("request_sha256")
         prepared_sha = _sha256(path)
         row = {"candidate_id": candidate_id,
