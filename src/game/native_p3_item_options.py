@@ -62,14 +62,10 @@ def query_native_p3_item_options(
     unverified_count = response.get("unverified_candidate_count", 0)
     if type(unverified_count) is not int or unverified_count < 0:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_UNVERIFIED_COUNT")
-    # Optional source-accounting diagnostics are not a P3 acceptance gate.
-    # Rust has already selected and returned the item candidates.
-    excluded_count = response.get("excluded_non_client_item_count", 0)
-    if type(excluded_count) is not int or excluded_count < 0:
-        raise NativeItemOptionsError(
-            "P3_NATIVE_ITEM_OPTIONS_INVALID_EXCLUDED_NON_CLIENT_COUNT")
-    # Rust status and actual candidate/refusal are authoritative; diagnostic
-    # source-accounting totals do not certify or veto paid P3 alternatives.
+    # Rust status and actual candidate/refusal are authoritative. The
+    # optional excluded_non_client_item_count is catalogue accounting, not
+    # source legality: even a malformed/missing diagnostic must not veto
+    # genuine native items or prevent their paid P3 score comparison.
     if status not in ("ok", "empty", "partial_level_unknown") or not isinstance(response.get("items"), list):
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_RESPONSE")
     if ((status == "empty" and response["items"])
