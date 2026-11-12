@@ -146,3 +146,15 @@ def test_owner_comment_requires_exact_one_positive_decimal_artifact_id():
                     "/run-m06-original 42 more", "/run-m06-original 42;echo",
                     "/run-m06-original\t42", "/run-m06-original -f foo"):
         assert re.fullmatch(pattern, invalid) is None
+
+
+def test_native_paid_fast_pr_triggers_for_every_executed_regression_file():
+    """A modified native paid/axis test must actually launch its fast PR CI."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    pr_paths = text.split("  pull_request:\n", 1)[1].split(
+        "  workflow_dispatch:\n", 1)[0]
+    fast_job = _job("native-paid-route", text)
+    executed = set(re.findall(r"\btests/(?:maintenance/)?[a-zA-Z0-9_]+\.py\b", fast_job))
+    assert executed, "the fast native route job lost its focused regressions"
+    missing = sorted(path for path in executed if f"      - {path}\n" not in pr_paths)
+    assert not missing, f"fast native route tests missing PR path triggers: {missing}"
