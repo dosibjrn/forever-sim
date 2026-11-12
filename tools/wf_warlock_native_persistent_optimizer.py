@@ -556,6 +556,16 @@ class PersistentNativeEvaluator:
         self._paid_sources_by_sha: dict[tuple[int, str], dict] = {}
         self.options: dict[int, dict] = {}
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
+        self._original_refusal_ledger: dict | None = None
+        try:
+            ledger = json.loads((self.artifact_dir /
+                "m06-original-refusals.json").read_text())
+            if (isinstance(ledger, dict)
+                    and ledger.get("native_binary_sha256") == self.engine_sha
+                    and isinstance(ledger.get("refused"), list)):
+                self._original_refusal_ledger = ledger
+        except (OSError, ValueError, TypeError):
+            pass
 
     def close(self):
         self.session.close()
@@ -869,6 +879,32 @@ class PersistentNativeEvaluator:
             return [{"status": "NATIVE_OPTIONS_REFUSED", "level": level,
                      "native_refusal": str(exc)[-1200:]}]
 
+        # Do not consume the *new* budget on a prior native refusal for
+        # exactly the same source, hostile scenario and world policy. The
+        # historical artifact is never promoted to a measured success.
+        old_refusals: set[tuple[str, str]] = set()
+        old_ledger = self._original_refusal_ledger
+        if old_ledger is not None:
+            if not self._paid_cache_identity_initialized:
+                self._paid_cache_identity_seed = _exact_paid_cache_identity(
+                    self.binary, actor_level=level, mob_count=mob_count,
+                    target_hp=float(target_hp))
+                self._paid_cache_identity_initialized = True
+            current = self._paid_cache_identity_seed
+            if (current is not None
+                    and old_ledger.get("forever_paid_runtime_sha256")
+                    == current.get("forever_paid_runtime_sha256")):
+                old_refusals = {
+                    (row["source_request_sha256"],
+                     json.dumps(row["native_world_policy"], sort_keys=True))
+                    for row in old_ledger["refused"]
+                    if (isinstance(row, dict)
+                        and row.get("level") == level
+                        and row.get("mob_count") == mob_count
+                        and row.get("target_hp") == float(target_hp)
+                        and isinstance(row.get("source_request_sha256"), str)
+                        and isinstance(row.get("native_world_policy"), dict))
+                }
         seed = self._source(level, None)
         seed_talents = seed["raid"]["parties"][0]["players"][0]["talentsString"]
         proposed_talents = list(_forward_native_talent_hints(
@@ -1162,6 +1198,10 @@ class PersistentNativeEvaluator:
                         insert_at = max(insert_at, index + 1)
                     sources[insert_at:insert_at] = [
                         (row, "apl") for row in apl_choices]
+                if paid_identity in old_refusals:
+                    # Already refused by the identical pinned Rust world.
+                    # No new payment and no fabricated ranked result.
+                    continue
                 if paid_identity in seen_prepared_policies:
                     # Native preparation, not superficial source JSON shape,
                     # defines a distinct experiment within this invocation.
