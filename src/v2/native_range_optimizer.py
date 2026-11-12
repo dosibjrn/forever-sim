@@ -1191,10 +1191,39 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
         previous = step
     if len(ranked) > 1:
         lines += ["", "## Measured alternative sampled scores"]
-        lines += [
-            f"- Alternative {n}: {path['sampled_cumulative_seconds']:.3f} s"
-            for n, path in enumerate(ranked[1:], 2)
-        ]
+        for n, path in enumerate(ranked[1:], 2):
+            lines.append(
+                f"- Alternative {n}: {path['sampled_cumulative_seconds']:.3f} s"
+            )
+            # The alternative's native policy and prepared request may be the
+            # reason it beats another path. A score alone conceals the actual
+            # paid candidate being compared, especially for rolling/rest.
+            for candidate in path["steps"]:
+                policy = candidate.get("native_world_policy")
+                paid = candidate["receipt"]  # validated against the step above
+                raw_path = paid.get("native_raw_receipt_file")
+                raw_sha = paid.get("native_raw_receipt_sha256")
+                raw_receipt = (
+                    f"{raw_path} (SHA256 {raw_sha})"
+                    if isinstance(raw_path, str) and raw_path and _sha(raw_sha)
+                    else "embedded in result JSON; no separate raw file/digest reported"
+                )
+                lines += [
+                    f"  - L{candidate['level']}: talents {candidate['talents']}; "
+                    f"gear {json.dumps(candidate.get('gear'), sort_keys=True, separators=(',', ':'))}; "
+                    f"pet {json.dumps(candidate.get('pet'))}",
+                    "    - Native APL: "
+                    + json.dumps(candidate.get("apl"), sort_keys=True, separators=(",", ":")),
+                    ("    - Native world pull/rest policy (paid): "
+                     + json.dumps(policy, sort_keys=True, separators=(",", ":"))
+                     if isinstance(policy, Mapping)
+                     else "    - Native world pull/rest policy: not reported in this sample"),
+                    f"    - Paid elapsed {candidate['native_elapsed_seconds']:.3f} s "
+                    f"(terminal recovery {candidate['terminal_recovery_seconds']:.3f} s)",
+                    f"    - Source SHA256 {candidate['source_request_sha256']}; "
+                    f"engine binary SHA256 {candidate['engine_binary_sha256']}",
+                    f"    - Original native-paid receipt: {raw_receipt}",
+                ]
     return "\n".join(lines) + "\n"
 
 
