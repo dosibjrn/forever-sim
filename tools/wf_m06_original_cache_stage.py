@@ -15,7 +15,9 @@ from pathlib import Path, PurePosixPath
 import re
 import zipfile
 
-from tools.wf_warlock_native_candidate_scoring import _exact_paid_cache_identity
+from tools.wf_warlock_native_candidate_scoring import (
+    _exact_paid_cache_identity, _verified_schema2_paid_runtime_migration,
+)
 
 _ALLOWED_SUFFIXES = (".native.cache.json", ".native.json")
 _MAX_ENTRY_BYTES = 32 * 1024 * 1024
@@ -28,7 +30,8 @@ def _sha256(data: bytes) -> str:
 
 
 def stage_original_paid_cache(
-    archive: Path, destination: Path, *, expected_identity: dict
+    archive: Path, destination: Path, *, expected_identity: dict,
+    predecessor_ref: str | None = None
 ) -> dict:
     """Import only digest-valid schema-2 pairs matching this executable runtime.
 
@@ -74,6 +77,7 @@ def stage_original_paid_cache(
 
     accepted: dict[str, bytes] = {}
     rejected_identity = 0
+    migrated_runtime = 0
     for name, raw_meta in sorted(members.items()):
         if not name.endswith(".native.cache.json"):
             continue
@@ -87,11 +91,20 @@ def stage_original_paid_cache(
             raise ValueError("M06_INVALID_ORIGINAL_CACHE_METADATA") from exc
         if not isinstance(metadata, dict):
             raise ValueError("M06_INVALID_ORIGINAL_CACHE_METADATA")
-        if metadata.get("cache_schema") != 2 or any(
-                metadata.get(key) != value
-                for key, value in expected_identity.items()):
+        if metadata.get("cache_schema") != 2:
             rejected_identity += 1
             continue
+        if any(metadata.get(key) != value
+               for key, value in expected_identity.items()):
+            # Keep original metadata immutable; never substitute the new
+            # runtime digest for old observed evidence.
+            if (predecessor_ref is None
+                    or not _verified_schema2_paid_runtime_migration(
+                        metadata, dict(metadata, **expected_identity),
+                        predecessor_ref)):
+                rejected_identity += 1
+                continue
+            migrated_runtime += 1
         if (not _HEX64.fullmatch(str(metadata.get("source_sha256", "")))
                 or not _HEX64.fullmatch(str(
                     metadata.get("prepared_sha256", "")))):
@@ -115,15 +128,23 @@ def stage_original_paid_cache(
             "runtime; refusing to replay an existing 12-attempt experiment")
     destination.mkdir(parents=True, exist_ok=True)
     # Do not overwrite locally paid evidence or silently merge two archives.
-    if any((destination / name).exists() for name in accepted):
+    marker = destination / "m06-runtime-migration.json"
+    if (any((destination / name).exists() for name in accepted)
+            or (migrated_runtime and marker.exists())):
         raise FileExistsError("M06_CACHE_DESTINATION_COLLISION")
     for name, data in accepted.items():
         with (destination / name).open("xb") as handle:
             handle.write(data)
+    if migrated_runtime:
+        with marker.open("x", encoding="utf-8") as handle:
+            json.dump({"predecessor_ref": predecessor_ref,
+                       "old_receipts_remain_immutable": True}, handle)
+            handle.write("\n")
     return {
         "status": "M06_COMPATIBLE_CACHE_STAGED",
         "imported_pairs": len(accepted) // 2,
         "excluded_incompatible_pairs": rejected_identity,
+        "verified_runtime_migration_pairs": migrated_runtime,
         "archive_sha256": _sha256(archive.read_bytes()),
         "native_binary_sha256": expected_identity["native_binary_sha256"],
         "forever_paid_runtime_sha256":
@@ -136,6 +157,7 @@ def main() -> int:
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--binary", type=Path, required=True)
+    parser.add_argument("--predecessor-ref", type=str)
     parser.add_argument("--manifest-out", type=Path, required=True)
     args = parser.parse_args()
     # Actor/mob/target specifics vary by cache pair and are subsequently
@@ -151,7 +173,7 @@ def main() -> int:
             "forever_paid_runtime_sha256":
                 identity["forever_paid_runtime_sha256"],
             "native_binary_sha256": identity["native_binary_sha256"],
-        })
+        }, predecessor_ref=args.predecessor_ref)
     args.manifest_out.parent.mkdir(parents=True, exist_ok=True)
     args.manifest_out.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, sort_keys=True), flush=True)
