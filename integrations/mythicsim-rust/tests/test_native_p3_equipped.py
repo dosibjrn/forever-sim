@@ -865,10 +865,9 @@ def test_native_p3_shared_cap_covers_occupied_slots_before_third_refusal_retries
         evaluator=source_paid, preparer=_prepared_actor, max_paid_attempts=44)
 
     expected_slots = [slot for slot, _index in NATIVE_SLOT_POSITIONS]
-    # First two source alternatives for every slot are paid before any third.
+    # Every first source choice, then every second, precedes third retries.
     assert [row["swap"]["slot"] for row in
-            receipt["native_slot_evaluations"][:34]] == [
-                slot for slot in expected_slots for _ in range(2)]
+            receipt["native_slot_evaluations"][:34]] == expected_slots * 2
     assert [row["status"] for row in
             receipt["native_slot_evaluations"][:34]] == ["UNSUPPORTED"] * 34
     assert [row["swap"]["slot"] for row in
@@ -880,3 +879,42 @@ def test_native_p3_shared_cap_covers_occupied_slots_before_third_refusal_retries
     assert receipt["native_slots_unscored"] == expected_slots[9:]
     assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
     assert reference == original
+
+
+def test_native_p3_reduced_cap_reaches_later_slots_before_retrying_refusal():
+    """Four paid calls (one baseline) should cover three occupied slots once."""
+    reference = _reference()
+    source = {
+        slot: {"selected_ids": [100 + index, 5000 + index * 10,
+                               5001 + index * 10]}
+        for slot, index in (("weapon", 14), ("offhand", 15), ("head", 0))
+    }
+
+    def native(_binary, request, _iterations, _seed, mode, _deadline, **_kwargs):
+        assert mode == "balanced"
+        items = request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        changed = [index for index, item in enumerate(items)
+                   if item["id"] != 100 + index]
+        if not changed:
+            return 100.0, {}, 0.01, "baseline"
+        assert len(changed) == 1
+        index = changed[0]
+        if index == 14:
+            raise NativeCandidateRefusal(
+                "UNSUPPORTED", reason="native refused weapon",
+                request_sha256="source-weapon-refusal", raw_response={})
+        return 110.0 + index, {}, 0.01, "source-comparison"
+
+    receipt = compare_equipped_native(
+        "selected-native", reference, source, evaluator=native,
+        preparer=_prepared_actor, max_paid_attempts=4)
+
+    assert [row["swap"]["slot"] for row in receipt["native_slot_evaluations"]] == [
+        "weapon", "offhand", "head"]
+    assert receipt["paid_attempts"] == 4
+    assert receipt["native_slots_unattempted"] == []
+    assert receipt["native_slots_unscored"] == ["weapon"]
+    assert receipt["native_slots_verified"] == 2
+    assert receipt["native_slot_evaluations"][0]["status"] == "UNSUPPORTED"
+    assert receipt["native_slot_evaluations"][0]["request_sha256"] == "source-weapon-refusal"
+    assert receipt["status"] == "PAID_NATIVE_DIFFERENCE"
