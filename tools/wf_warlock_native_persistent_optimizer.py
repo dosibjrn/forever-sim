@@ -128,8 +128,13 @@ def _source_item_alternatives(source: dict, options: dict):
                 and isinstance(row.get("native"), dict)
                 and type(row.get("item_id")) is int
                 and isinstance(row["native"].get("slot"), str)]
-    available = {row["item_id"] for row in choices
-                 if isinstance(row, dict) and type(row.get("item_id")) is int}
+    # A listed item is not necessarily legal: source options also report
+    # explicitly excluded entries (including combat-rating gear). Retaining
+    # their IDs from the historical seed poisons the first prepared builds,
+    # wasting bounded native attempts before any valid gear can compete.
+    # Only Rust-confirmed native_eligible IDs survive seed sanitation; Rust
+    # prepare remains the final authority for the entire equipped actor.
+    available = {row["item_id"] for row in verified}
     actor = source["raid"]["parties"][0]["players"][0]
     equipped = actor.get("equipment", {}).get("items", [])
     if not isinstance(equipped, list):
