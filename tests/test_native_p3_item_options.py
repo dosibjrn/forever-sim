@@ -929,6 +929,24 @@ def test_native_mage_spell_prepare_refusal_includes_native_reason():
         )
 
 
+@pytest.mark.parametrize("query", [
+    query_native_mage_spell_coefficients,
+    query_native_shaman_spell_coefficients,
+])
+@pytest.mark.parametrize("refusal", [
+    {"status": "refused", "refusal": {"code": "unsupported", "reason": "rank"}},
+    # Some native prepare refusals expose only a refusal object, not a
+    # successful PreparedV2 schema or an explicit refusal status.
+    {"prepared": False, "refusal": {"code": "class_option", "reason": "no options"}},
+])
+def test_native_spellbook_zero_exit_refusal_preserves_native_reason(query, refusal):
+    with pytest.raises(NativeItemOptionsError) as error:
+        query("native-engine", runner=_runner(refusal, returncode=0))
+    code = refusal["refusal"]["code"]
+    reason = refusal["refusal"]["reason"]
+    assert str(error.value) == f"P3_NATIVE_SPELLBOOK_PREPARE_FAILED:{code}:{reason}"
+
+
 def test_native_mage_spell_coefficients_enrich_only_exact_source_rank_actions():
     from dataclasses import replace
     from src.game.data.forever.registry import build_game_ir_slice
