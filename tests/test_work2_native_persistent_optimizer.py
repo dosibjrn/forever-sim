@@ -2061,3 +2061,65 @@ def test_verified_schema2_historical_paid_receipt_reused_not_replayed(
     assert verified == [(original_runtime, current_runtime, "c" * 40)]
     assert original_path.read_bytes() == original_bytes
     assert old_metadata.read_bytes() == original_meta_bytes
+
+
+def test_original_native_refusal_only_skips_matching_policy_without_budget(
+        tmp_path, monkeypatch):
+    """A refused source/policy is neither replayed nor reported as a winner."""
+    paid_calls = []
+
+    def counted(*args, **kwargs):
+        paid_calls.append(kwargs["mob_health"])
+        return paid_world(*args, **kwargs)
+
+    def identity(path, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "a" * 64,
+            "native_binary_sha256": api._file_digest(path),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced",
+            "iterations": 1, "recovery_policy": "decisions",
+            "health_threshold": 1.0, "mana_threshold": 1.0,
+            "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(api, "_exact_paid_cache_identity", identity)
+    FakeSession.instances.clear()
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"exact pinned native test binary")
+    fixture = Path("fixtures/warlock-l20-native-paid-30s.request.json")
+    paid_dir = tmp_path / "paid"
+    request = dict(level=20, parent=None, mob_count=2, budget=1,
+                   rng_mode="balanced", iterations=1, recover_to_full=True)
+    first = api.PersistentNativeEvaluator(
+        binary, fixture, paid_dir, session_factory=FakeSession,
+        run_world=counted)
+    try:
+        original = first(**request)[0]
+    finally:
+        first.close()
+    assert len(paid_calls) == 1
+    refusal = {
+        "level": 20, "mob_count": 2,
+        "target_hp": float(api.representative_hp(20)),
+        "source_request_sha256": original["source_request_sha256"],
+        "native_world_policy": original["native_world_policy"],
+        "native_refusal_code": "old_original_native_refusal",
+    }
+    (paid_dir / "m06-original-refusals.json").write_text(json.dumps({
+        "forever_paid_runtime_sha256": "a" * 64,
+        "native_binary_sha256": api._file_digest(binary),
+        "refused": [refusal],
+    }))
+    second = api.PersistentNativeEvaluator(
+        binary, fixture, paid_dir, session_factory=FakeSession,
+        run_world=counted)
+    try:
+        rows = second(**request)
+    finally:
+        second.close()
+    assert len(rows) == 1
+    assert len(paid_calls) == 2  # one new source; old refused pair not paid
+    assert rows[0]["source_request_sha256"] != refusal["source_request_sha256"]
+    assert rows[0]["reused_exact_native_paid_receipt"] is False
+    assert rows[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
