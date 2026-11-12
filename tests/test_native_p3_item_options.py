@@ -580,6 +580,73 @@ def test_native_p3_prefers_distinct_stat_vector_and_keeps_zero_negative_paid_wei
                    for reason in report["blockers"])
 
 
+def test_native_p3_two_item_budget_finds_actual_scorer_difference():
+    """A raw-stat difference with zero measured weight must not conceal the
+    available source-native item that changes the real production gear score."""
+    items = (
+        ItemRecord(
+            item_id=9888125401, name="Top source item", slot="chest",
+            item_level=30, required_level=1, spell_power=4.0, spirit=1.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+        ItemRecord(
+            item_id=9888125402, name="Only unmeasured Spirit differs",
+            slot="chest", item_level=29, required_level=1,
+            spell_power=4.0, spirit=9.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+        ItemRecord(
+            item_id=9888125403, name="Measured spell-power tradeoff",
+            slot="chest", item_level=28, required_level=1,
+            spell_power=1.0, spirit=1.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+    )
+    metadata = {"status": "ok", "unverified_candidate_count": 0,
+                "source": "mythicsim:data/items.jsonl"}
+    with patch("src.game.native_p3_item_options.native_p3_item_records",
+               return_value=(items, {}, metadata)):
+        report = fast_p3_smoke(
+            class_key="mage", level=30,
+            weights={"spell_power": 2.0, "spirit": 0.0},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+    chest = report["slots"]["chest"]
+    assert report["legal_item_count"] == 3
+    assert report["tested_item_count"] == 2
+    assert chest["selected_ids"] == [9888125401, 9888125403]
+    assert [row["score"] for row in chest["items"]] == [8.0, 2.0]
+    assert all("SCORER_MISMATCH" not in reason for reason in report["blockers"])
+
+
+def test_native_p3_two_item_budget_falls_back_when_all_paid_scores_equal():
+    """Equal measured scores remain valid; report a distinct raw source
+    candidate without inventing a nonzero effect or demanding a P3 winner."""
+    items = (
+        ItemRecord(
+            item_id=9888125411, name="First", slot="chest",
+            item_level=30, required_level=1, spell_power=4.0, spirit=1.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+        ItemRecord(
+            item_id=9888125412, name="Different unmeasured stat",
+            slot="chest", item_level=29, required_level=1,
+            spell_power=4.0, spirit=9.0,
+            identity_origin="mythicsim_native", source_type="mythicsim_native"),
+    )
+    metadata = {"status": "partial_level_unknown", "unverified_candidate_count": 42,
+                "source": "mythicsim:data/items.jsonl"}
+    with patch("src.game.native_p3_item_options.native_p3_item_records",
+               return_value=(items, {}, metadata)):
+        report = fast_p3_smoke(
+            class_key="mage", level=30,
+            weights={"spell_power": 2.0, "spirit": 0.0},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+    assert report["slots"]["chest"]["selected_ids"] == [9888125411, 9888125412]
+    assert [row["score"] for row in report["slots"]["chest"]["items"]] == [8.0, 8.0]
+    assert report["native_item_options_status"] == "partial_level_unknown"
+    assert report["tested_item_count"] == 2
+
+
 def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     from tools.wf_gate_p3_live import native_item_options_required
 

@@ -212,13 +212,33 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         # The untouched SQLite fallback retains its historical diagnostic set.
         ordered = sorted(items, key=lambda item:(
             -(item.item_level if item.item_level is not None else -1), item.item_id))
+        # Use the same production scorer and the selected policy's actual
+        # finite weights when choosing a second native item. Raw stat-vector
+        # diversity alone can spend both bounded P3 slots on the *same score*
+        # while a genuine measurable alternative is already available.
+        scorer_weights = {
+            axis: weight for axis, weight in parsed.items()
+            if weight is not None
+            and (weapon_damage_dependent or axis != 'mean_weapon_hit_damage')
+        }
         if native_options_binary is not None:
             selected = ordered[:1]
             if len(ordered) > 1:
-                first_stats = _ordinary_stats(ordered[0])
-                alternative = next((item for item in ordered[1:]
-                                    if _ordinary_stats(item) != first_stats),
-                                   ordered[1])
+                first_score = item_score(ordered[0], scorer_weights)
+                alternative = None
+                if isfinite(first_score):
+                    for candidate in ordered[1:]:
+                        candidate_score = item_score(candidate, scorer_weights)
+                        if (isfinite(candidate_score)
+                                and abs(candidate_score - first_score)
+                                > 1e-7 * max(1., abs(first_score))):
+                            alternative = candidate
+                            break
+                if alternative is None:
+                    first_stats = _ordinary_stats(ordered[0])
+                    alternative = next((item for item in ordered[1:]
+                                        if _ordinary_stats(item) != first_stats),
+                                       ordered[1])
                 selected.append(alternative)
         else:
             selected = ordered[:5]
@@ -267,9 +287,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                     item_valid_weight_checks += 1
             # Check the ACTUAL selector scorer; do not certify a parallel
             # dot-product that the optimizer itself never uses.
-            scorer_weights = {axis:weight for axis,weight in parsed.items()
-                              if weight is not None and (weapon_damage_dependent or axis!='mean_weapon_hit_damage')}
-            score = item_score(item,scorer_weights)
+            score = item_score(item, scorer_weights)
             if not isfinite(score):
                 blockers.add('NONFINITE_SCORE:' + str(item.item_id))
             elif abs(score-sum(parts.values()))>1e-7*max(1.,abs(score)):
