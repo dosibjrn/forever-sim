@@ -494,6 +494,46 @@ def test_generic_native_search_pays_rest_and_refuses_unverified_rolling(
     assert any(apl is not None for _, _, apl in called)
 
 
+def test_single_adaptive_slot_pays_new_rolling_policy_before_rest(
+        tmp_path, monkeypatch):
+    """The only remaining paid slot can reach source-ACKed two-live rolling.
+
+    A synthetic serial-shaped native world cannot earn a rolling score:
+    its rejected original receipt is preserved. The original serial result
+    remains distinct and no extra attempt is spent on the 30% rest policy.
+    """
+    calls = []
+
+    def world(binary, prepared_path, **kwargs):
+        calls.append(kwargs.get("world_apl"))
+        return paid_world(binary, prepared_path, **kwargs)
+
+    native = make_evaluator(tmp_path, monkeypatch, world=world)
+    native.explore_world_policies = True
+    request = dict(level=20, parent=None, mob_count=2, rng_mode="balanced",
+                   iterations=1, recover_to_full=True)
+    try:
+        baseline = native(**request, budget=1)
+        assert len(baseline) == 1
+        assert baseline[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+        excluded = {
+            (baseline[0]["source_request_sha256"],
+             json.dumps(baseline[0]["native_world_policy"], sort_keys=True))
+        }
+        revisit = native(
+            **request, budget=1, excluded_paid_source_policies=excluded)
+    finally:
+        native.close()
+
+    assert len(revisit) == 1
+    assert revisit[0]["proposal_axis"] == "world_rolling_50pct"
+    assert revisit[0]["source_request_sha256"] == baseline[0]["source_request_sha256"]
+    assert revisit[0]["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+    assert "RUST_WORLD_NATIVE_ROLLING_APL_NOT_PROVEN" in revisit[0]["native_refusal"]
+    assert Path(revisit[0]["native_unverified_receipt_file"]).is_file()
+    assert calls == [None, api.ROLLING_WORLD_APL_50]
+
+
 def test_adaptive_revisit_pays_uncompared_native_rest_and_rolling_before_gear(
         tmp_path, monkeypatch):
     """An actual small range budget must reach unpaid policies on revisit.
