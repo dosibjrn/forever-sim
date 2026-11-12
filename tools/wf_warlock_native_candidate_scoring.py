@@ -312,7 +312,13 @@ def compare_prepared_candidates(*, binary: Path,
     if artifact_dir is not None:
         artifact_dir.mkdir(parents=True, exist_ok=True)
     if paid_cache_dir is not None:
-        paid_cache_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            paid_cache_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            # Shared paid receipts are an optional acceleration, not the
+            # source of truth. Preserve local ACK recording and exact local
+            # reuse if this cache location cannot be created or accessed.
+            paid_cache_dir = None
     cache_identity = (_exact_paid_cache_identity(
         binary, actor_level=actor_level, mob_count=mob_count,
         target_hp=float(target_hp)) if artifact_dir is not None else None)
