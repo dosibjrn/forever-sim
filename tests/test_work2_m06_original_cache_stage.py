@@ -24,6 +24,7 @@ def make_archive(tmp_path, *, identity=None, digest_ok=True, filename_prefix="na
     meta.update({
         "source_sha256": "c" * 64,
         "prepared_sha256": "d" * 64,
+        "actor_level": 20, "mob_count": 2, "target_hp": 484.0,
         "native_raw_receipt_sha256":
             hashlib.sha256(raw).hexdigest() if digest_ok else "0" * 64,
     })
@@ -179,3 +180,45 @@ def test_historical_runtime_migration_rejects_changed_paid_world_code(
     mutate_paid[0] = True
     assert not scorer._verified_schema2_paid_runtime_migration(
         old, current, predecessor)
+
+
+def test_original_refusals_are_excluded_only_with_original_native_context(
+        tmp_path):
+    archive, _ = make_archive(tmp_path)
+    matching = {
+        "level": 20, "native_status": "NATIVE_API_CANDIDATE_REFUSED",
+        "native_prepared": True,
+        "engine_binary_sha256": RUNTIME["native_binary_sha256"],
+        "source_request_sha256": "c" * 64,
+        "native_world_policy": {
+            "pull_mode": "rolling", "rest_when_health_below": 1.0,
+            "rest_when_mana_below": 1.0},
+        "native_refusal_code": "native_rolling_two_live_targets_not_acked",
+    }
+    unrelated = dict(matching, level=40)
+    original = {
+        "native_engine_binary_sha256": RUNTIME["native_binary_sha256"],
+        "mob_count": 2,
+        "rejected_native_attempts": [matching, unrelated],
+    }
+    with zipfile.ZipFile(archive, "a") as zf:
+        # An exact filename duplicate would itself be unsafe; use a fresh ZIP.
+        replacement = tmp_path / "with-original-result.zip"
+        with zipfile.ZipFile(replacement, "w") as output:
+            for name in zf.namelist():
+                if name == "m06-adaptive-original.json":
+                    output.writestr(name, json.dumps(original))
+                else:
+                    output.writestr(name, zf.read(name))
+    out = tmp_path / "cache"
+    result = stage_original_paid_cache(
+        replacement, out, expected_identity=RUNTIME)
+    assert result["excluded_prior_native_refusals"] == 1
+    refusal_ledger = json.loads(
+        (out / "m06-original-refusals.json").read_text())
+    assert refusal_ledger["native_binary_sha256"] == (
+        RUNTIME["native_binary_sha256"])
+    assert len(refusal_ledger["refused"]) == 1
+    assert refusal_ledger["refused"][0]["target_hp"] == 484.0
+    assert refusal_ledger["refused"][0]["native_refusal_code"] == (
+        "native_rolling_two_live_targets_not_acked")
