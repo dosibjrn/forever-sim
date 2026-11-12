@@ -774,12 +774,31 @@ def test_orphaned_cache_metadata_preserves_new_paid_receipts(
     assert metadata[0].read_bytes() == untouched_metadata
 
     previous_bytes = fallback.read_bytes()
+    fallback_meta = fallback.with_name(
+        fallback.name.removesuffix(".native.json") + ".native.cache.json")
+    assert fallback_meta.is_file()
+    assert json.loads(fallback_meta.read_text())["native_raw_receipt_sha256"] == (
+        hashlib.sha256(previous_bytes).hexdigest())
+
+    # The intact, separately authenticated fallback is now reusable across
+    # sessions, without overwriting or trusting the orphaned primary sidecar.
     repeated = paid_once()
-    second_fallback = Path(repeated["native_raw_receipt_file"])
-    assert repeated["reused_exact_native_paid_receipt"] is False
-    assert second_fallback.is_file() and second_fallback != fallback
+    assert repeated["reused_exact_native_paid_receipt"] is True
+    assert Path(repeated["native_raw_receipt_file"]) == fallback
     assert fallback.read_bytes() == previous_bytes
     assert metadata[0].read_bytes() == untouched_metadata
+
+    # The fallback's own receipt digest is mandatory: a modified raw ACK
+    # causes a genuine new payment and yet another preserved fallback.
+    fallback.write_bytes(previous_bytes + b"\n")
+    fresh = paid_once()
+    next_fallback = Path(fresh["native_raw_receipt_file"])
+    assert fresh["reused_exact_native_paid_receipt"] is False
+    assert next_fallback != fallback and next_fallback.is_file()
+    assert next_fallback.read_bytes() == previous_bytes
+    assert metadata[0].read_bytes() == untouched_metadata
+    assert fallback.read_bytes() == previous_bytes + b"\n"
+    assert paid_once()["reused_exact_native_paid_receipt"] is True
 
 def test_native_same_session_probe_pays_new_world_and_retains_refusal(tmp_path, monkeypatch):
     """M0.6 must use a NEW world in one Rust session, not cached M0.5 samples."""
