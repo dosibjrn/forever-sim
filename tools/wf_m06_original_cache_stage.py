@@ -47,6 +47,7 @@ def stage_original_paid_cache(
                 expected_identity.get("native_binary_sha256", "")))):
         raise ValueError("M06_CURRENT_PAID_RUNTIME_NOT_VERIFIABLE")
     members: dict[str, bytes] = {}
+    original_result: bytes | None = None
     total_bytes = 0
     with zipfile.ZipFile(archive) as zf:
         for info in zf.infolist():
@@ -57,6 +58,11 @@ def stage_original_paid_cache(
                     or "\\" in info.filename
                     or ((info.external_attr >> 16) & 0o170000) == 0o120000):
                 raise ValueError("M06_UNSAFE_CACHE_ARCHIVE_ENTRY")
+            if info.filename == "m06-adaptive-original.json":
+                if info.file_size > _MAX_ENTRY_BYTES:
+                    raise ValueError("M06_OVERSIZED_ORIGINAL_RESULT")
+                original_result = zf.read(info)
+                continue
             if not name.name.endswith(_ALLOWED_SUFFIXES):
                 continue
             # The archived run contains several output files. Only the
@@ -78,6 +84,7 @@ def stage_original_paid_cache(
     accepted: dict[str, bytes] = {}
     rejected_identity = 0
     migrated_runtime = 0
+    sampled_contexts: dict[int, tuple[int, float]] = {}
     for name, raw_meta in sorted(members.items()):
         if not name.endswith(".native.cache.json"):
             continue
@@ -119,6 +126,14 @@ def stage_original_paid_cache(
             raise ValueError("M06_INVALID_ORIGINAL_RAW_RECEIPT") from exc
         if not isinstance(receipt, dict):
             raise ValueError("M06_INVALID_ORIGINAL_RAW_RECEIPT")
+        context = (metadata.get("mob_count"), metadata.get("target_hp"))
+        level = metadata.get("actor_level")
+        if (type(level) is not int or not isinstance(context[1], (int, float))
+                or type(context[0]) is not int):
+            raise ValueError("M06_INVALID_ORIGINAL_SCENARIO_CONTEXT")
+        if level in sampled_contexts and sampled_contexts[level] != context:
+            raise ValueError("M06_INCONSISTENT_ORIGINAL_SCENARIO_CONTEXT")
+        sampled_contexts[level] = context
         accepted[name] = raw_meta
         accepted[raw_name] = members[raw_name]
     if not accepted:
@@ -126,11 +141,56 @@ def stage_original_paid_cache(
             "M06_NO_COMPATIBLE_ORIGINAL_PAID_CACHE: "
             "no validated receipt matches this exact Rust binary and paid "
             "runtime; refusing to replay an existing 12-attempt experiment")
+    # The original ranked JSON also records genuinely refused rolling
+    # source+policy pairs. They cannot be used as successful cache hits, but
+    # an unchanged engine/world must not spend a new payment on them either.
+    refused: list[dict] = []
+    if original_result is not None:
+        try:
+            original = json.loads(original_result)
+        except (UnicodeError, ValueError) as exc:
+            raise ValueError("M06_INVALID_ORIGINAL_RANKED_RESULT") from exc
+        if not isinstance(original, dict):
+            raise ValueError("M06_INVALID_ORIGINAL_RANKED_RESULT")
+        if (original.get("native_engine_binary_sha256")
+                == expected_identity["native_binary_sha256"]
+                and original.get("mob_count") == 2):
+            for row in original.get("rejected_native_attempts", []):
+                if not isinstance(row, dict):
+                    continue
+                level = row.get("level")
+                context = sampled_contexts.get(level)
+                if (context is None
+                        or row.get("native_prepared") is not True
+                        or row.get("native_status") != "NATIVE_API_CANDIDATE_REFUSED"
+                        or row.get("engine_binary_sha256")
+                        != expected_identity["native_binary_sha256"]
+                        or not _HEX64.fullmatch(
+                            str(row.get("source_request_sha256", "")))
+                        or not isinstance(row.get("native_world_policy"), dict)
+                        or not isinstance(row.get("native_refusal_code"), str)):
+                    continue
+                refused.append({
+                    "level": level, "mob_count": context[0],
+                    "target_hp": context[1],
+                    "source_request_sha256": row["source_request_sha256"],
+                    "native_world_policy": row["native_world_policy"],
+                    "native_refusal_code": row["native_refusal_code"],
+                })
+    refusals_path = destination / "m06-original-refusals.json"
+    refusal_ledger = ({
+        "native_binary_sha256": expected_identity["native_binary_sha256"],
+        "forever_paid_runtime_sha256":
+            expected_identity["forever_paid_runtime_sha256"],
+        "original_result_sha256": _sha256(original_result),
+        "refused": refused,
+    } if refused else None)
     destination.mkdir(parents=True, exist_ok=True)
     # Do not overwrite locally paid evidence or silently merge two archives.
     marker = destination / "m06-runtime-migration.json"
     if (any((destination / name).exists() for name in accepted)
-            or (migrated_runtime and marker.exists())):
+            or (migrated_runtime and marker.exists())
+            or (refusal_ledger is not None and refusals_path.exists())):
         raise FileExistsError("M06_CACHE_DESTINATION_COLLISION")
     for name, data in accepted.items():
         with (destination / name).open("xb") as handle:
@@ -140,11 +200,16 @@ def stage_original_paid_cache(
             json.dump({"predecessor_ref": predecessor_ref,
                        "old_receipts_remain_immutable": True}, handle)
             handle.write("\n")
+    if refusal_ledger is not None:
+        with refusals_path.open("x", encoding="utf-8") as handle:
+            json.dump(refusal_ledger, handle, sort_keys=True)
+            handle.write("\n")
     return {
         "status": "M06_COMPATIBLE_CACHE_STAGED",
         "imported_pairs": len(accepted) // 2,
         "excluded_incompatible_pairs": rejected_identity,
         "verified_runtime_migration_pairs": migrated_runtime,
+        "excluded_prior_native_refusals": len(refused),
         "archive_sha256": _sha256(archive.read_bytes()),
         "native_binary_sha256": expected_identity["native_binary_sha256"],
         "forever_paid_runtime_sha256":
