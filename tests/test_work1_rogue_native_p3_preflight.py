@@ -217,6 +217,45 @@ def test_feral_p3_offhand_native_scores_required_and_refusals_not_waived():
     assert "runtime_proof" not in rejected
 
 
+def test_feral_l60_native_p3_does_not_require_unoccupied_catalogue_slots():
+    """Only source-occupied slots need real paid native swap comparisons."""
+    from tools.wf_gate_p3_live import _native_rogue_p3_verdict
+    options = {"status": "ok", "items": [
+        {"slot": "two_hand", "item_id": 22589, "item_level": 60},
+        {"slot": "off_hand", "item_id": 19366, "item_level": 60},
+    ]}
+    receipt = _paid_receipt()
+    receipt["native_prepared_actor"] = {
+        "actor_class": "ClassDruid", "actor_level": 60,
+        "engine_revision": "selected-feral-native",
+    }
+    receipt["source_occupied_slots"] = ["weapon"]
+
+    # The native character had only a weapon; an ItemSparse offhand option
+    # is not an actual equipped-vs-equipped comparison obligation.
+    matched = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert matched["status"] == "PASS"
+    assert matched["pass_count"] == matched["reachability_count"] == 1
+    assert matched["source_occupied_slots"] == ["weapon"]
+
+    # A genuinely occupied offhand still needs its own VALID native score.
+    receipt["source_occupied_slots"] = ["weapon", "offhand"]
+    missing = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert missing["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:offhand:NOT_ATTEMPTED" in missing["reasons"]
+    assert "runtime_proof" not in missing
+
+    # Malformed or absent provenance cannot bypass unpaid catalogue slots.
+    receipt["source_occupied_slots"] = ["weapon", "weapon"]
+    malformed = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert malformed["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:offhand:NOT_ATTEMPTED" in malformed["reasons"]
+    receipt.pop("source_occupied_slots")
+    legacy = _native_rogue_p3_verdict(options, receipt, checkpoint="feral_l60")
+    assert legacy["status"] == "FAIL"
+    assert "P3_NATIVE_SLOT_UNSCORED:offhand:NOT_ATTEMPTED" in legacy["reasons"]
+
+
 def test_rogue_l20_native_gate_uses_shipped_source_without_environment_override(monkeypatch):
     """Source-native scoring is runnable without a caller-supplied request path."""
     from tools.wf_gate_p3_live import _rogue_l20_native_request
