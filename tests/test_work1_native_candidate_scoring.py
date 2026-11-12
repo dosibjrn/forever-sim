@@ -924,3 +924,61 @@ def test_wrong_native_prepared_actor_isolated_from_valid_paid_successor(tmp_path
     assert result["candidates"][2]["terminal_mana"] == 1500.
     assert not (tmp_path / "receipts" / "wrong_class.native.json").exists()
     assert not (tmp_path / "receipts" / "wrong_level.native.json").exists()
+
+
+def test_native_prepared_rewrite_during_payment_is_unranked_without_losing_successor(
+        tmp_path, monkeypatch):
+    """A native call may reopen a rewritten input: never misattribute its ACK."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"source-native-engine")
+    paths = {}
+    for candidate_id, source_sha in (("unstable", "a" * 64),
+                                     ("valid", "v" * 64)):
+        path = tmp_path / f"{candidate_id}.json"
+        path.write_text(json.dumps(_prepared(source_sha)))
+        paths[candidate_id] = path
+
+    def identity(engine, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": hashlib.sha256(engine.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+    calls = []
+
+    def native(engine, path, **kwargs):
+        calls.append((path.stem, kwargs["target_count"], kwargs["rng_mode"]))
+        if path.stem == "unstable":
+            # Source input was valid when inspected, but changed before the
+            # native result returned. The original paid ACK must be retained
+            # without earning a score or a reusable cache identity.
+            path.write_text(json.dumps(_prepared("b" * 64)))
+            return _receipt("a" * 64)
+        return _receipt("v" * 64)
+
+    artifacts = tmp_path / "receipts"
+    result = compare_prepared_candidates(
+        binary=binary, prepared_paths=paths, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=native,
+        artifact_dir=artifacts)
+    assert calls == [("unstable", 3, "balanced"), ("valid", 3, "balanced")]
+    assert [row["status"] for row in result["candidates"]] == [
+        "NATIVE_PREPARED_INPUT_CHANGED",
+        "MEASURED_NATIVE_FULLY_RECOVERED",
+    ]
+    assert result["candidates"][0]["elapsed_seconds"] is None
+    assert result["comparable_candidates"] == 1
+    assert result["winner_candidate_id"] is None
+    assert result["candidates"][1]["elapsed_seconds"] == 20.
+    assert result["candidates"][1]["terminal_health"] == 1000.
+    assert result["candidates"][1]["terminal_mana"] == 1500.
+    assert (artifacts / "unstable.native.json").exists()
+    assert not (artifacts / "unstable.native.cache.json").exists()
+    assert (artifacts / "valid.native.cache.json").exists()
