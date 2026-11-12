@@ -894,6 +894,7 @@ class PersistentNativeEvaluator:
                 axis_sources.append((pet, "pet"))
         first = sources.pop(0)
         first_axis = "talent"
+        paid_survivor = None
         # Paid survivor hints carry an exact native-prepared source SHA. Only
         # reuse the complete build if this evaluator actually measured that
         # source in its current pinned session. A foreign/stale hint cannot
@@ -928,6 +929,8 @@ class PersistentNativeEvaluator:
                 selected_survivor = survivor
                 break
             survivor = selected_survivor or fallback_survivor
+            if survivor is not None:
+                paid_survivor = copy.deepcopy(survivor)
             if survivor is not None and survivor != first:
                 sources.insert(0, first)
                 first = copy.deepcopy(survivor)
@@ -966,14 +969,45 @@ class PersistentNativeEvaluator:
             # comparisons retain their previous ordering. Rust/gsim still
             # must prove source ACK overlap before this policy can rank.
             policy_sources.reverse()
+        # The initial source axes vary the original seed's talent family.
+        # On a later paid-survivor revisit, also propose gear and pet changes
+        # to the *complete measured* actor (its talents and rotation included).
+        # Native get_options supplies the alternatives; Rust prepare/world
+        # retains sole authority over whether each recombination is executable.
+        # Skip the sanitized-baseline item proposal, which can strip a valid
+        # survivor's equipped items, and leave all scores to native payment.
+        survivor_joint_axes = []
+        if paid_survivor is not None and excluded_paid_source_policies is not None:
+            # Interleave source-backed axes. With only two paid slots left,
+            # exhausting eight gear proposals first would starve every pet.
+            # Filter no-op prepared-source proposals *before* interleaving,
+            # so a duplicate gear variant cannot give the pet an accidental
+            # first slot or crowd another meaningful gear alternative out.
+            gear_candidates = (
+                gear for gear in islice(_source_item_alternatives(
+                    paid_survivor, options), 1, 9)
+                if gear != paid_survivor)
+            pet_candidates = (
+                pet for pet in islice(_source_pet_alternatives(
+                    paid_survivor, options), 4)
+                if pet != paid_survivor)
+            for gear, pet in zip_longest(gear_candidates, pet_candidates):
+                if gear is not None:
+                    survivor_joint_axes.append((gear, "survivor_gear"))
+                if pet is not None:
+                    survivor_joint_axes.append((pet, "survivor_pet"))
         sources = [(first, first_axis),
                    *(policy_sources if not self.explore_world_policies
                       or adaptive_policy_revisit else []),
-                   *axis_sources[:2],
-                   *([(early_talent, "talent")] if early_talent is not None else []),
+                   *(axis_sources[:2] if not adaptive_policy_revisit else []),
+                   *([(early_talent, "talent")] if early_talent is not None
+                     and not adaptive_policy_revisit else []),
                    *(policy_sources if self.explore_world_policies
                       and not adaptive_policy_revisit else []),
-                   *axis_sources[2:],
+                   *survivor_joint_axes,
+                   *(axis_sources if adaptive_policy_revisit else axis_sources[2:]),
+                   *([(early_talent, "talent")] if early_talent is not None
+                     and adaptive_policy_revisit else []),
                    *((source, "talent") for source in sources),
                    *((source, "legacy_seed") for source in deferred_unmodified)]
         seen: set[str] = set()
