@@ -1081,6 +1081,31 @@ def test_native_continuity_cli_refusal_is_nonzero_and_never_a_sampled_guide(tmp_
     assert json.loads(out.read_text())["status"] == "NATIVE_LEVEL_TRANSITION_UNSUPPORTED"
 
 
+def test_native_item_seed_discards_source_excluded_rating_gear():
+    """A reported rating/excluded ID cannot keep poisoning native prepare."""
+    source = json.loads(Path(
+        "fixtures/warlock-l20-native-paid-30s.request.json").read_text())
+    equipped = source["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    assert len(equipped) >= 2
+    equipped[0] = {"id": 9001}
+    equipped[1] = {"id": 8002}
+    options = {"items": [
+        {"item_id": 9001, "eligibility": "combat_rating_excluded",
+         "native": {"slot": "head"}},
+        {"item_id": 8002, "eligibility": "native_eligible",
+         "native": {"slot": "neck"}},
+        {"item_id": 8001, "eligibility": "native_eligible",
+         "native": {"slot": "head"}},
+    ]}
+    proposals = list(api._source_item_alternatives(source, options))
+    actors = [proposal["raid"]["parties"][0]["players"][0] for proposal in proposals]
+    assert actors[0]["equipment"]["items"][0] == {"id": 0}
+    assert actors[0]["equipment"]["items"][1] == {"id": 8002}
+    assert actors[1]["equipment"]["items"][0] == {"id": 8001}
+    assert all(9001 not in [row.get("id") for row in actor["equipment"]["items"]]
+               for actor in actors)
+
+
 @pytest.mark.parametrize("level", [20, 40])
 def test_native_source_axes_compete_across_l20_l40(level, tmp_path, monkeypatch):
     """Actual producer attempts gear, pet and registered ranks on each level.
