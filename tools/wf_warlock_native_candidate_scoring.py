@@ -490,8 +490,32 @@ def compare_prepared_candidates(*, binary: Path,
                                      health_threshold=1.0, mana_threshold=1.0,
                                      require_native_health_damage=False)
                 if native_receipt_path is not None:
-                    native_receipt_path.write_text(
-                        json.dumps(receipt, indent=2, allow_nan=False) + "\n")
+                    # A valid older ACK may have different source/engine or
+                    # scenario identity and therefore cannot be reused. Never
+                    # replace those original paid bytes on a new attempt.
+                    # The metadata and raw receipt share the chosen label, so
+                    # later exact-cache discovery can still find the new pair.
+                    raw = json.dumps(receipt, indent=2, allow_nan=False) + "\n"
+                    suffix = 0
+                    while True:
+                        label = (candidate_id if suffix == 0
+                                 else f"{candidate_id}-{suffix}")
+                        new_receipt_path = artifact_dir / f"{label}.native.json"
+                        new_metadata_path = artifact_dir / f"{label}.native.cache.json"
+                        if new_metadata_path.exists():
+                            suffix += 1
+                            continue
+                        try:
+                            with new_receipt_path.open("x", encoding="utf-8") as handle:
+                                handle.write(raw)
+                        except FileExistsError:
+                            # Another native attempt owns this label; preserve
+                            # its receipt and select a fresh path atomically.
+                            suffix += 1
+                            continue
+                        native_receipt_path = paid_receipt_path = new_receipt_path
+                        metadata_path = new_metadata_path
+                        break
             # The native executor reopens the prepared path. Its bytes must
             # still match the actor/source snapshot after payment or cache
             # reuse; never rank or cache an ACK against a replaced payload.
