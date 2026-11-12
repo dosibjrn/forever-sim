@@ -990,13 +990,13 @@ class PersistentNativeEvaluator:
         sources = [(first, first_axis),
                    *(policy_sources if not self.explore_world_policies
                       or adaptive_policy_revisit else []),
-                   *axis_sources[:2] if not adaptive_policy_revisit else [],
+                   *(axis_sources[:2] if not adaptive_policy_revisit else []),
                    *([(early_talent, "talent")] if early_talent is not None
                      and not adaptive_policy_revisit else []),
                    *(policy_sources if self.explore_world_policies
                       and not adaptive_policy_revisit else []),
                    *survivor_joint_axes,
-                   *axis_sources if adaptive_policy_revisit else axis_sources[2:],
+                   *(axis_sources if adaptive_policy_revisit else axis_sources[2:]),
                    *([(early_talent, "talent")] if early_talent is not None
                      and adaptive_policy_revisit else []),
                    *((source, "talent") for source in sources),
