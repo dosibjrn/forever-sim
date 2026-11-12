@@ -959,6 +959,13 @@ class PersistentNativeEvaluator:
             self.explore_world_policies
             and excluded_paid_source_policies is not None
         )
+        if adaptive_policy_revisit and mob_count == 2 and budget == 1:
+            # When a revisit has just one paid slot, give the native two-live
+            # rolling challenge a chance before the serial 30%-rest variant.
+            # The initial build-diversity pass and two-slot/explicit matched
+            # comparisons retain their previous ordering. Rust/gsim still
+            # must prove source ACK overlap before this policy can rank.
+            policy_sources.reverse()
         sources = [(first, first_axis),
                    *(policy_sources if not self.explore_world_policies
                       or adaptive_policy_revisit else []),
