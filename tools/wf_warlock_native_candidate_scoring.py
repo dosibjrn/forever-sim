@@ -152,9 +152,17 @@ def score_native_chain(receipt: dict, prepared: dict, *, mob_count: int,
     if (type(mob_count) is not int or not 2 <= mob_count <= 100
             or not _positive(expected_target_hp)):
         raise ValueError("INVALID_NATIVE_SCORING_SCENARIO")
+    # Native IPC and recovered cache files are external inputs. A malformed
+    # payload must refuse this candidate, not crash the whole frontier.
+    if not isinstance(receipt, Mapping):
+        return None, "INVALID_NATIVE_RECEIPT_SHAPE"
+    if not isinstance(prepared, Mapping):
+        return None, "INVALID_NATIVE_PREPARED_IDENTITY_OR_CAPACITY"
     source = prepared.get("request_sha256")
     player = prepared.get("player")
-    stats = player.get("stats", {}) if isinstance(player, dict) else {}
+    stats = player.get("stats", {}) if isinstance(player, Mapping) else {}
+    if not isinstance(stats, Mapping):
+        stats = {}
     if (not isinstance(source, str) or len(source) != 64
             or not _positive(stats.get("Health"))
             or not _positive(stats.get("Mana"))):
@@ -331,8 +339,20 @@ def compare_prepared_candidates(*, binary: Path,
                 or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
                        for c in candidate_id)):
             raise ValueError("INVALID_NATIVE_CANDIDATE_ID")
-        prepared = json.loads(path.read_text())
-        player = prepared.get("player", {})
+        try:
+            prepared = json.loads(path.read_text())
+        except (OSError, ValueError, TypeError) as exc:
+            rows.append({"candidate_id": candidate_id,
+                         "status": "INVALID_NATIVE_PREPARED_PAYLOAD",
+                         "elapsed_seconds": None,
+                         "refusal": str(exc)[-500:]})
+            continue
+        player = prepared.get("player") if isinstance(prepared, dict) else None
+        if not isinstance(player, dict):
+            rows.append({"candidate_id": candidate_id,
+                         "status": "INVALID_NATIVE_PREPARED_PAYLOAD",
+                         "elapsed_seconds": None})
+            continue
         if (player.get("class") != "ClassWarlock"
                 or player.get("level") != actor_level):
             raise ValueError("NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH")
@@ -473,7 +493,8 @@ def compare_prepared_candidates(*, binary: Path,
                         except OSError:
                             pass
             row.update(status=status, elapsed_seconds=score,
-                       acked_world_kills=receipt.get("world_targets_killed"))
+                       acked_world_kills=(receipt.get("world_targets_killed")
+                                          if isinstance(receipt, Mapping) else None))
             if score is not None:
                 # Forward the same verified Rust/2D ACK receipt used for the
                 # ranking. World elapsed includes kills, travel and any
