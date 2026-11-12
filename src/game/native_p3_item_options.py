@@ -37,6 +37,18 @@ def query_native_p3_item_options(
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_EXECUTION_FAILED") from exc
     if completed.returncode != 0:
+        # Rust can report a structured source refusal with a nonzero exit.
+        # Preserve its actual code instead of disguising it as a generic CLI
+        # failure. A refused candidate remains blocked; never score it.
+        try:
+            failure = json.loads(completed.stdout)
+        except (ValueError, TypeError):
+            failure = None
+        if isinstance(failure, dict) and failure.get("status") == "refused":
+            refusal = failure.get("refusal")
+            code = refusal.get("code") if isinstance(refusal, dict) else None
+            raise NativeItemOptionsError(
+                "P3_NATIVE_ITEM_OPTIONS_REFUSED:" + str(code or "UNKNOWN"))
         raise NativeItemOptionsError(
             "P3_NATIVE_ITEM_OPTIONS_EXECUTION_FAILED:" +
             str(completed.stderr or "").strip()[-500:])

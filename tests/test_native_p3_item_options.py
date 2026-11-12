@@ -217,6 +217,23 @@ def test_native_p3_empty_is_distinct_from_refusal():
                       refusal={"code": "NATIVE_UNSUPPORTED"})))
 
 
+@pytest.mark.parametrize(("refusal", "reason"), [
+    ({"code": "NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"},
+     "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"),
+    ({"reason": "source does not support this actor"},
+     "P3_NATIVE_ITEM_OPTIONS_REFUSED:UNKNOWN"),
+])
+def test_native_p3_nonzero_cli_exit_preserves_structured_rust_refusal(refusal, reason):
+    # The real native CLI may exit nonzero on an authoritative JSON refusal.
+    # Do not replace its reason with EXECUTION_FAILED or promote it to items.
+    payload = _response(status="refused", items=[], refusal=refusal)
+    with pytest.raises(NativeItemOptionsError) as error:
+        query_native_p3_item_options(
+            "native", "priest", 20,
+            runner=_runner(payload, returncode=7, stderr="native rejected"))
+    assert str(error.value) == reason
+
+
 def test_native_p3_preserves_partial_level_unknown_status_and_count():
     payload = _response(status="partial_level_unknown", unverified_candidate_count=2267)
     actual = query_native_p3_item_options("native", "priest", 20, runner=_runner(payload))
