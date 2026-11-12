@@ -1137,6 +1137,24 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         assert ("Native-paid candidate breadth: 2; talent allocations 2, "
                 "gear sets 2, APLs 2, pet values 2.") in varied_guide
         assert "Limited axes (one paid value): talents, gear, APL, pet." not in varied_guide
+        # A second measured path must disclose its own paid World-APL choice,
+        # exact build and raw receipt: a total-only summary is not inspectable.
+        alternate = deepcopy(result)
+        competing = alternate["ranked_alternatives"][1]["steps"][0]
+        paid_rolling = dict(competing["native_world_policy"])
+        paid_rolling["pull_mode"] = "rolling"
+        competing["native_world_policy"] = paid_rolling
+        competing["receipt"]["native_world_policy"] = paid_rolling
+        alternate_guide = render_sampled_build_guide(alternate)
+        assert "Alternative 2:" in alternate_guide
+        assert f"  - L{competing['level']}: talents {competing['talents']}" in alternate_guide
+        assert '    - Native world pull/rest policy (paid): {"pull_mode":"rolling"' in alternate_guide
+        assert ("    - Original native-paid receipt: "
+                + competing["receipt"]["native_raw_receipt_file"]) in alternate_guide
+        assert "    - Source SHA256 " + competing["source_request_sha256"] in alternate_guide
+        assert "    - Paid elapsed " in alternate_guide
+        # No new native work is run to render any measured alternative.
+        assert seen == [20, 21]
         # An unprepared/refused third proposal is not a paid pet/gear axis.
         varied["independent_level_rankings"]["20"].append({
             "gear": {"items": [{"id": 9999}]}, "pet": "Voidwalker",
