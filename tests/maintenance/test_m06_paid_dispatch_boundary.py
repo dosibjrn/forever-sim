@@ -92,3 +92,23 @@ def test_fast_native_route_ci_covers_public_m06_optimizer_dispatch():
     assert "python -m src.v2.runner optimize --help" in fast_job
     assert "cargo build" not in fast_job
     assert "run_m06_original" not in fast_job
+
+
+def test_m06_new_original_dispatch_needs_digest_verified_predecessor_before_payment():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    dispatch = text.split("  workflow_dispatch:\n", 1)[1].split("\npermissions:", 1)[0]
+    assert "      reuse_m06_artifact_id:\n" in dispatch
+    paid_job = _job("work2-m06-original-native", text)
+    assert "M06_ORIGINAL_CACHE_ARTIFACT_REQUIRED" in paid_job
+    assert '[[ ! "$REUSE_M06_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]' in paid_job
+    assert "python -m tools.wf_m06_original_cache_stage" in paid_job
+    assert "--cache-dir runs/native-api-paid-cache" in paid_job
+    assert "runs/m06-original-cache-manifest.json" in paid_job
+    assert paid_job.index("M06_ORIGINAL_CACHE_ARTIFACT_REQUIRED") < (
+        paid_job.index("cargo build --locked"))
+    assert paid_job.index("python -m tools.wf_m06_original_cache_stage") < (
+        paid_job.index("python -m src.v2.runner optimize"))
+    assert "actions: read" in text
+    fast_job = _job("native-paid-route", text)
+    assert "tests/test_work2_m06_original_cache_stage.py" in fast_job
+    assert "python -m tools.wf_m06_original_cache_stage" not in fast_job
