@@ -757,6 +757,12 @@ class PersistentNativeEvaluator:
             while True:
                 name = key + "-" + cid + (f"-{suffix}" if suffix else "")
                 other = self.artifact_dir / (name + ".native.json")
+                # A previous interrupted fallback can leave metadata alone.
+                # Never reuse its name or overwrite that independent evidence.
+                if identity is not None and (
+                        self.artifact_dir / (name + ".native.cache.json")).exists():
+                    suffix += 1
+                    continue
                 try:
                     with other.open("x") as handle:
                         handle.write(json.dumps(
@@ -771,11 +777,16 @@ class PersistentNativeEvaluator:
                 fallback_meta = path.with_name(
                     path.name.removesuffix(".native.json")
                     + ".native.cache.json")
-                with fallback_meta.open("x", encoding="utf-8") as handle:
-                    handle.write(json.dumps(
-                        dict(identity,
-                             native_raw_receipt_sha256=_file_digest(path)),
-                        sort_keys=True, indent=2) + "\n")
+                try:
+                    with fallback_meta.open("x", encoding="utf-8") as handle:
+                        handle.write(json.dumps(
+                            dict(identity,
+                                 native_raw_receipt_sha256=_file_digest(path)),
+                            sort_keys=True, indent=2) + "\n")
+                except FileExistsError:
+                    # A concurrent interrupted writer must not turn this
+                    # successfully paid run into an unscored storage refusal.
+                    pass
         return retain(receipt, elapsed, False, path)
 
     def __call__(self, *, level: int, parent: dict | None, mob_count: int,
