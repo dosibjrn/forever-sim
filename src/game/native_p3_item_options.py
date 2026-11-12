@@ -59,9 +59,9 @@ def query_native_p3_item_options(
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_REFUSED:" + str(code or "UNKNOWN"))
     if response.get("required_level_supported") is not True:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_LEVEL_SOURCE_UNAVAILABLE")
-    unverified_count = response.get("unverified_candidate_count", 0)
-    if type(unverified_count) is not int or unverified_count < 0:
-        raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_UNVERIFIED_COUNT")
+    # Rust's unverified_candidate_count is optional source-coverage accounting,
+    # not item legality. Trust native status and actual selected items below;
+    # malformed diagnostic counts must not veto their paid P3 scoring.
     # Rust status and actual candidate/refusal are authoritative. The
     # optional excluded_non_client_item_count is catalogue accounting, not
     # source legality: even a malformed/missing diagnostic must not veto
