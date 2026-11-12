@@ -454,16 +454,15 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                        request_sha256=getattr(exc, "request_sha256", None))
         return row
 
-    # One shared native baseline. Try the second Rust-supplied item when
-    # the first is refused, unscored, or has exactly the same measured score
-    # as the baseline. If both source alternatives refuse, attempt the third
-    # source-proposed item before leaving an occupied slot unscored. All
-    # evaluations, including refusals, debit the same paid budget.
+    # One shared paid baseline. Sweep every source-occupied slot once before
+    # spending the remaining budget on second, then third native alternatives.
+    # Even a reduced shared paid cap must not let early refusals starve later
+    # slots. All VALID/INVALID/UNSUPPORTED/ERROR outcomes still cost one call.
     rows = [score_request("baseline", reference)]
     requested_slots = []
-    # A refused/failed native baseline has no comparable objective. Preserve
-    # its authoritative status and debit exactly that paid call; trying gear
-    # swaps cannot establish P3 sensitivity without a valid baseline.
+    slot_alternatives = []
+    # A refused/failed native baseline cannot establish a comparable
+    # sensitivity; preserve its source status without paying gear swaps.
     slots_to_probe = (NATIVE_SLOT_POSITIONS if rows[0]["status"] == "VALID" else ())
     for slot, _index in slots_to_probe:
         source = occupied_selection.get(slot)
@@ -471,8 +470,7 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         if not isinstance(ids, list):
             continue
         alternatives = []
-        # A native option may already be equipped in the reference. Skip it
-        # without consuming a paid comparison.
+        # An already-equipped option is not a paid comparison.
         for item_id in ids:
             alternative, item_swap = first_equipped_proposal(
                 reference, {slot: {"selected_ids": [item_id]}},
@@ -482,23 +480,34 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
                 alternatives.append((alternative, item_swap))
                 if len(alternatives) == 3:
                     break
-        if not alternatives:
-            continue
-        requested_slots.append(slot)
-        valid_slot_score = False
-        for candidate_index, (alternative, item_swap) in enumerate(alternatives):
-            # A third paid probe is warranted only when the first two native
-            # outcomes have not scored this occupied slot at all.
-            if candidate_index >= 2 and valid_slot_score:
-                break
+        if alternatives:
+            requested_slots.append(slot)
+            slot_alternatives.append((slot, alternatives))
+
+    valid_slots = set()
+    differing_slots = set()
+    for alternative_index in (0, 1):
+        for slot, alternatives in slot_alternatives:
             if len(rows) >= max_paid_attempts:
                 break
+            if alternative_index >= len(alternatives) or slot in differing_slots:
+                continue
+            alternative, item_swap = alternatives[alternative_index]
             row = score_request("equipped", alternative, item_swap)
             rows.append(row)
             if row["status"] == "VALID":
-                valid_slot_score = True
+                valid_slots.add(slot)
                 if row["score"] != rows[0]["score"]:
-                    break
+                    differing_slots.add(slot)
+    # Third native item only when both earlier candidates failed to score
+    # this slot. Never pay it before first/second comparisons elsewhere.
+    for slot, alternatives in slot_alternatives:
+        if len(rows) >= max_paid_attempts:
+            break
+        if slot in valid_slots or len(alternatives) < 3:
+            continue
+        alternative, item_swap = alternatives[2]
+        rows.append(score_request("equipped", alternative, item_swap))
     if reference != original:
         raise AssertionError("Native evaluation modified source reference")
     baseline_valid = rows[0]["status"] == "VALID"
