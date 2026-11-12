@@ -636,6 +636,72 @@ def test_adaptive_policy_challenges_complete_measured_gear_survivor(
 
 
 
+def test_adaptive_policy_skips_exhausted_measured_survivor(
+        tmp_path, monkeypatch):
+    """A second paid build gets policies when the faster one's were tried.
+
+    Synthetic native worlds test bounded scheduling, not game performance.
+    A refused rolling ACK still consumes its original attempt identity.
+    """
+    def items(source, options):
+        for item_id in (0, 8001, 8002):
+            proposal = copy.deepcopy(source)
+            proposal["raid"]["parties"][0]["players"][0][
+                "equipment"]["items"][0] = {"id": item_id}
+            yield proposal
+
+    requests = []
+
+    def world(binary, prepared_path, **kwargs):
+        requests.append((kwargs["prepared_payload"]["request_sha256"],
+                         kwargs["health_threshold"], kwargs.get("world_apl")))
+        return paid_world(binary, prepared_path, **dict(
+            kwargs, health_threshold=1.0, mana_threshold=1.0))
+
+    monkeypatch.setattr(api, "_source_item_alternatives", items)
+    native = make_evaluator(tmp_path, monkeypatch, world=world)
+    native.explore_world_policies = True
+    request = dict(level=20, parent=None, mob_count=2, rng_mode="balanced",
+                   iterations=1, recover_to_full=True)
+
+    def exclude(rows):
+        return {(row["source_request_sha256"],
+                 json.dumps(row["native_world_policy"], sort_keys=True))
+                for row in rows}
+
+    try:
+        first = native(**request, budget=2)
+        assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+                   for row in first)
+        hints = [
+            {"from_level": 20, "talents": row["talents"],
+             "source_request_sha256": row["source_request_sha256"]}
+            for row in first
+        ]
+        first_policy = native(
+            **request, budget=2, candidate_hints=hints,
+            excluded_paid_source_policies=exclude(first))
+        assert all(row["source_request_sha256"]
+                   == first[0]["source_request_sha256"]
+                   for row in first_policy)
+        second_policy = native(
+            **request, budget=2, candidate_hints=hints,
+            excluded_paid_source_policies=(
+                exclude(first) | exclude(first_policy)))
+    finally:
+        native.close()
+
+    assert [row["proposal_axis"] for row in second_policy] == [
+        "world_rest_30pct", "world_rolling_50pct"]
+    assert all(row["source_request_sha256"] == first[1]["source_request_sha256"]
+               for row in second_policy)
+    assert second_policy[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert second_policy[1]["status"] == "NATIVE_API_CANDIDATE_REFUSED"
+    assert len(requests) == 6
+    assert [row[0] for row in requests[-2:]] == [
+        first[1]["source_request_sha256"]] * 2
+
+
 def test_forward_talent_proposals_preserve_earlier_paid_ancestry_without_respec():
     from tools.wf_warlock_native_persistent_optimizer import _forward_native_talent_hints
     trees = [{"talents": [{"index": idx, "max_rank": 5}
