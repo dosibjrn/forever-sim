@@ -417,6 +417,7 @@ def compare_prepared_candidates(*, binary: Path,
                 if artifact_dir is not None else None)
             receipt = None
             reused = False
+            paid_raw_bytes = None
             paid_receipt_path = native_receipt_path
             # A separate, stable cache survives Work2's new output directory
             # on every frontier evaluation. The key excludes proposal labels
@@ -448,19 +449,25 @@ def compare_prepared_candidates(*, binary: Path,
                             ".native.cache.json") + ".native.json")
                     try:
                         metadata = json.loads(cached_metadata_path.read_text())
+                        # The raw ACK is immutable input to BOTH digest
+                        # validation and scoring. Separate reads could admit
+                        # changed bytes after a valid digest was checked.
+                        cached_raw_bytes = cached_receipt_path.read_bytes()
                         expected = dict(
                             cache_identity, prepared_sha256=prepared_sha,
                             source_sha256=source_sha,
-                            native_raw_receipt_sha256=_sha256(cached_receipt_path))
+                            native_raw_receipt_sha256=hashlib.sha256(
+                                cached_raw_bytes).hexdigest())
                         if metadata != expected:
                             continue
-                        old = json.loads(cached_receipt_path.read_text())
+                        old = json.loads(cached_raw_bytes)
                         old_score, old_status = score_native_chain(
                             old, prepared, mob_count=mob_count,
                             expected_target_hp=target_hp)
                         if (old_score is not None
                                 and old_status == "MEASURED_NATIVE_FULLY_RECOVERED"):
                             receipt, reused = old, True
+                            paid_raw_bytes = cached_raw_bytes
                             paid_receipt_path = cached_receipt_path
                             # Promote a verified local payment into the shared
                             # content-addressed cache for future frontier dirs.
@@ -476,7 +483,7 @@ def compare_prepared_candidates(*, binary: Path,
                                     # shared ACK if another worker claims the
                                     # key after our existence check.
                                     with shared_receipt_path.open("xb") as output:
-                                        output.write(cached_receipt_path.read_bytes())
+                                        output.write(cached_raw_bytes)
                                     with shared_metadata_path.open(
                                             "x", encoding="utf-8") as output:
                                         output.write(json.dumps(
@@ -500,6 +507,7 @@ def compare_prepared_candidates(*, binary: Path,
                     # The metadata and raw receipt share the chosen label, so
                     # later exact-cache discovery can still find the new pair.
                     raw = json.dumps(receipt, indent=2, allow_nan=False) + "\n"
+                    paid_raw_bytes = raw.encode("utf-8")
                     suffix = 0
                     while True:
                         label = (candidate_id if suffix == 0
@@ -538,12 +546,27 @@ def compare_prepared_candidates(*, binary: Path,
             score, status = score_native_chain(receipt, prepared,
                                                mob_count=mob_count,
                                                expected_target_hp=target_hp)
+            if score is not None and paid_receipt_path is not None:
+                # Never rank an ACK whose persisted raw bytes changed between
+                # the verified snapshot and the scoring/receipt handoff.
+                try:
+                    raw_unchanged = (
+                        paid_raw_bytes is not None
+                        and paid_receipt_path.read_bytes() == paid_raw_bytes)
+                except OSError:
+                    raw_unchanged = False
+                if not raw_unchanged:
+                    row.update(status="NATIVE_PAID_RECEIPT_CHANGED",
+                               elapsed_seconds=None)
+                    rows.append(row)
+                    continue
             if (score is not None and not reused and cache_identity is not None
                     and native_receipt_path is not None and metadata_path is not None):
                 metadata = dict(
                     cache_identity, prepared_sha256=prepared_sha,
                     source_sha256=source_sha,
-                    native_raw_receipt_sha256=_sha256(native_receipt_path))
+                    native_raw_receipt_sha256=hashlib.sha256(
+                        paid_raw_bytes).hexdigest())
                 metadata_text = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
                 # A successful paid ACK must retain a local identity sidecar
                 # even if the optional shared cache cannot be published. The
@@ -561,13 +584,26 @@ def compare_prepared_candidates(*, binary: Path,
                             and not shared_metadata_path.exists()):
                         try:
                             with shared_receipt_path.open("xb") as output:
-                                output.write(native_receipt_path.read_bytes())
+                                output.write(paid_raw_bytes)
                             with shared_metadata_path.open(
                                     "x", encoding="utf-8") as output:
                                 output.write(metadata_text)
                             paid_receipt_path = shared_receipt_path
                         except OSError:
                             pass
+            if score is not None and paid_receipt_path is not None:
+                # A shared publication may have raced after its exclusive
+                # create. Refuse an altered/missing file, never report its
+                # changed digest as if those bytes were the scored ACK.
+                try:
+                    raw_unchanged = paid_receipt_path.read_bytes() == paid_raw_bytes
+                except OSError:
+                    raw_unchanged = False
+                if not raw_unchanged:
+                    row.update(status="NATIVE_PAID_RECEIPT_CHANGED",
+                               elapsed_seconds=None)
+                    rows.append(row)
+                    continue
             row.update(status=status, elapsed_seconds=score,
                        acked_world_kills=(receipt.get("world_targets_killed")
                                           if isinstance(receipt, Mapping) else None))
@@ -588,7 +624,8 @@ def compare_prepared_candidates(*, binary: Path,
                 )
                 if native_receipt_path is not None:
                     row.update(native_raw_receipt_file=str(paid_receipt_path),
-                               native_raw_receipt_sha256=_sha256(paid_receipt_path))
+                               native_raw_receipt_sha256=hashlib.sha256(
+                                   paid_raw_bytes).hexdigest())
         except (RuntimeError, AssertionError, ValueError, OSError,
                 subprocess.SubprocessError) as exc:
             row.update(status="NATIVE_REFUSAL", elapsed_seconds=None,
