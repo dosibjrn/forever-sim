@@ -148,6 +148,16 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
                       policy.get("rest_when_mana_below"))
         if thresholds not in accepted or policy != receipt.get("native_world_policy"):
             continue
+        # A rest-only comparison cannot use a rolling-pull receipt as its
+        # full-rest control: both sides must execute the same serial policy.
+        if (policy.get("pull_mode") != "serial"
+                or "world_apl" in policy
+                or policy.get("rest_until") != "full_when_triggered"
+                or policy.get("terminal_full_hp_and_mana") is not True
+                or receipt.get("native_world_apl") is not None
+                or receipt.get("native_world_overlap_verified") is True
+                or receipt.get("native_world_overlap") is not None):
+            continue
         if (_receipt_error(
                 receipt, level=level, parent=None, mob_count=result["mob_count"],
                 rng_mode=result["rng_mode"], iterations=result["iterations"]
@@ -162,7 +172,8 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
                     ("terminal_recovery_seconds", "terminal_recovery_seconds"),
                 )
             ) or not _sha(receipt.get("native_raw_receipt_sha256"))
-                or not receipt.get("native_raw_receipt_file")):
+                or not receipt.get("native_raw_receipt_file")
+                or not _positive_number(receipt.get("native_world_target_hp"))):
             continue
         accepted[thresholds].append(row)
 
@@ -174,7 +185,14 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
 
     pairs = [(full, thirty) for full in accepted[(1.0, 1.0)]
              for thirty in accepted[(0.3, 0.3)]
-             if identity(full) == identity(thirty)]
+             if (identity(full) == identity(thirty)
+                 # The hostile HP is a gsim-world input, not part of Rust's
+                 # prepared source hash. Compare equal paid scenarios only.
+                 and full["receipt"]["native_world_target_hp"]
+                     == thirty["receipt"]["native_world_target_hp"]
+                 # One original receipt must not stand for two policies.
+                 and full["receipt"]["native_raw_receipt_sha256"]
+                     != thirty["receipt"]["native_raw_receipt_sha256"])]
     refusals = [
         row for row in result.get("rejected_native_attempts", [])
         if isinstance(row, Mapping) and row.get("level") == level
@@ -207,6 +225,7 @@ def measured_world_rest_head_to_head(result: Mapping[str, Any], *, level: int) -
             "engine_binary_sha256": row["engine_binary_sha256"],
             "native_raw_receipt_sha256": paid["native_raw_receipt_sha256"],
             "native_raw_receipt_file": paid["native_raw_receipt_file"],
+            "native_world_target_hp": paid["native_world_target_hp"],
             "charged_elapsed_seconds": paid["elapsed_seconds"],
             "terminal_recovery_seconds": paid["terminal_recovery_seconds"],
             "terminal_hp": paid["terminal_hp"],
@@ -386,6 +405,12 @@ def _retained_native_paid_axis_breadth(
                     mob_count=result["mob_count"], rng_mode=result["rng_mode"],
                     iterations=result["iterations"],
                 ) is not None
+                # Axis breadth drives adaptive paid-allocation decisions and
+                # is described as verified original paid evidence. A scored
+                # projection without a raw run identity is not original paid.
+                or not _sha(receipt.get("native_raw_receipt_sha256"))
+                or not isinstance(receipt.get("native_raw_receipt_file"), str)
+                or not receipt["native_raw_receipt_file"].strip()
                 or any(row.get(field) != receipt.get(field)
                        for field in fields)):
             continue

@@ -18,6 +18,10 @@ def paid(level, mobs, talents, elapsed, *, variant="base", policy=None):
         "source_request_sha256": hashlib.sha256(
             f"{level}/{talents}/{variant}".encode()).hexdigest(),
         "engine_binary_sha256": "b" * 64,
+        # Fake original receipt identity for transport/scheduling tests only.
+        "native_raw_receipt_sha256": hashlib.sha256(
+            f"raw/{level}/{talents}/{variant}".encode()).hexdigest(),
+        "native_raw_receipt_file": f"runs/{level}-{variant}.native.json",
         "talents": talents, "gear": {"source_item_ids": [variant]},
         "pet": "native", "apl": {"source_actions": [variant]},
         "native_world_policy": policy or {
