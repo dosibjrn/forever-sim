@@ -204,6 +204,16 @@ def _query_native_spell_coefficients(
         prepared = json.loads(completed.stdout)
     except (ValueError, TypeError) as exc:
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_JSON") from exc
+    # Native prepare refusals are authoritative regardless of the CLI exit
+    # status. A zero-exit refusal may omit every success-only PreparedV2 field;
+    # report the actual Rust code/reason rather than an invalid-schema veto.
+    if isinstance(prepared, dict) and isinstance(prepared.get("refusal"), dict):
+        refusal = prepared["refusal"]
+        code = str(refusal.get("code") or "UNKNOWN")
+        reason = str(refusal.get("reason") or "")
+        details = f"{code}:{reason}".strip(":")
+        raise NativeItemOptionsError(
+            "P3_NATIVE_SPELLBOOK_PREPARE_FAILED:" + details[-500:])
     if (not isinstance(prepared, dict)
             or prepared.get("contract") != "forever-prepared"
             or prepared.get("schema_version") != 2):
