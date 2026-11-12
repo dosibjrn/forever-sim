@@ -978,15 +978,17 @@ class PersistentNativeEvaluator:
         # survivor's equipped items, and leave all scores to native payment.
         survivor_joint_axes = []
         if paid_survivor is not None and excluded_paid_source_policies is not None:
-            survivor_joint_axes.extend(
-                (candidate, "survivor_gear")
-                for candidate in islice(
-                    _source_item_alternatives(paid_survivor, options), 1, 9)
-                if candidate != paid_survivor)
-            survivor_joint_axes.extend(
-                (candidate, "survivor_pet")
-                for candidate in islice(
-                    _source_pet_alternatives(paid_survivor, options), 4))
+            # Interleave source-backed axes. With only two paid slots left,
+            # exhausting eight gear proposals first would starve every pet.
+            for gear, pet in zip_longest(
+                    islice(_source_item_alternatives(
+                        paid_survivor, options), 1, 9),
+                    islice(_source_pet_alternatives(
+                        paid_survivor, options), 4)):
+                if gear is not None and gear != paid_survivor:
+                    survivor_joint_axes.append((gear, "survivor_gear"))
+                if pet is not None and pet != paid_survivor:
+                    survivor_joint_axes.append((pet, "survivor_pet"))
         sources = [(first, first_axis),
                    *(policy_sources if not self.explore_world_policies
                       or adaptive_policy_revisit else []),
