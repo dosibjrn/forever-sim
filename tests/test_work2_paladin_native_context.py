@@ -117,6 +117,36 @@ def test_native_player_context_preserves_native_refusal():
         query_native_player_context("engine", "paladin", 20, runner=runner)
 
 
+@pytest.mark.parametrize(("payload", "expected"), [
+    ({"status": "refused", "refusal": {"code": "SOURCE_ACTOR_UNSUPPORTED"}},
+     "P3_NATIVE_PLAYER_CONTEXT_REFUSED:SOURCE_ACTOR_UNSUPPORTED"),
+    ({"status": "refused", "refusal": {"reason": "unavailable"}},
+     "P3_NATIVE_PLAYER_CONTEXT_REFUSED:UNKNOWN"),
+])
+def test_nonzero_native_player_context_preserves_source_refusal(payload, expected):
+    """Nonzero Rust refusal is not a generic transport failure or P3 PASS."""
+    def runner(*_args, **_kwargs):
+        return SimpleNamespace(returncode=2, stdout=json.dumps(payload),
+                               stderr="native refusal")
+
+    with pytest.raises(NativePlayerContextError) as caught:
+        query_native_player_context("engine", "paladin", 20, runner=runner)
+    assert str(caught.value) == expected
+
+
+def test_nonzero_native_player_context_without_refusal_keeps_execution_error():
+    """Malformed stdout never fabricates a source-native refusal code."""
+    def runner(*_args, **_kwargs):
+        return SimpleNamespace(returncode=1, stdout="not json",
+                               stderr="runtime failed")
+
+    with pytest.raises(
+        NativePlayerContextError,
+        match="P3_NATIVE_PLAYER_CONTEXT_EXECUTION_FAILED:runtime failed",
+    ):
+        query_native_player_context("engine", "paladin", 20, runner=runner)
+
+
 def test_paladin_p3_queries_selected_native_engine_without_separate_context_env(
         monkeypatch, tmp_path):
     """Omitting the redundant context env must not silently use proxy stats."""
