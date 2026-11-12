@@ -80,10 +80,25 @@ def test_native_p3_accepts_native_items_without_optional_source_accounting(class
     assert result["items"][0]["item_id"] == 25
 
 
-def test_native_p3_validates_optional_source_accounting_when_present():
-    payload = _response(**{"class": "mage", "excluded_non_client_item_count": -1})
-    with pytest.raises(NativeItemOptionsError, match="INVALID_EXCLUDED_NON_CLIENT_COUNT"):
-        query_native_p3_item_options("native", "mage", 20, runner=_runner(payload))
+@pytest.mark.parametrize("optional_count", [-1, "unknown", None, []])
+def test_native_p3_optional_catalogue_accounting_cannot_veto_native_items(optional_count):
+    # The native engine already selected the item and its required level.
+    # Catalogue-exclusion accounting is neither a legality test nor a P3 gate.
+    payload = _response(**{
+        "class": "mage", "excluded_non_client_item_count": optional_count})
+    result = query_native_p3_item_options(
+        "native", "mage", 20, runner=_runner(payload))
+    assert result == payload
+    assert result["items"][0]["item_id"] == 25
+    assert result["required_level_supported"] is True
+
+
+def test_native_p3_invalid_item_remains_refused_with_bad_optional_accounting():
+    payload = _response(
+        excluded_non_client_item_count="unknown",
+        items=[{"item_id": 25, "slot": "chest"}])
+    with pytest.raises(NativeItemOptionsError, match="INVALID_ITEM_SHAPE"):
+        query_native_p3_item_options("native", "priest", 20, runner=_runner(payload))
 
 
 def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
