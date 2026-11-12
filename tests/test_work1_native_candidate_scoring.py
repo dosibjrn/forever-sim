@@ -751,3 +751,68 @@ def test_failed_shared_cache_write_reuses_local_paid_ack(tmp_path, monkeypatch):
     assert again["native_raw_receipt_file"] == str(raw)
     assert again["elapsed_seconds"] == first["elapsed_seconds"]
     assert not (local / "renamed.native.json").exists()
+
+
+def test_shared_cache_init_failure_keeps_local_paid_ack(tmp_path, monkeypatch):
+    """An unusable optional shared cache must not prevent real local paid scoring."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected-rust-engine")
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    local = tmp_path / "local"
+    # A regular file cannot be turned into a shared-cache directory. This
+    # exercises a real mkdir failure before the first native evaluation.
+    shared = tmp_path / "shared"
+    shared.write_text("unavailable shared cache")
+    calls = []
+
+    def identity(engine, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": hashlib.sha256(engine.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+
+    def native(engine, source, **kwargs):
+        calls.append(kwargs)
+        return _receipt("a" * 64)
+
+    def evaluate(label):
+        return compare_prepared_candidates(
+            binary=binary, prepared_paths={label: prepared},
+            actor_level=30, mob_count=3, target_hp=1200.,
+            run_native=native, artifact_dir=local,
+            paid_cache_dir=shared)["candidates"][0]
+
+    first = evaluate("original")
+    assert first["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert first["elapsed_seconds"] == 20.
+    assert first["reused_exact_native_paid_receipt"] is False
+    assert len(calls) == 1
+    assert calls[0]["target_count"] == 3
+    assert calls[0]["rng_mode"] == "balanced"
+    assert calls[0]["health_threshold"] == calls[0]["mana_threshold"] == 1.0
+    original = local / "original.native.json"
+    metadata = local / "original.native.cache.json"
+    assert original.exists() and metadata.exists()
+    assert json.loads(metadata.read_text())["native_raw_receipt_sha256"] == (
+        hashlib.sha256(original.read_bytes()).hexdigest())
+
+    # A renamed candidate reuses the same exact paid ACK locally, despite the
+    # still-invalid shared location; neither path should invent a free refill.
+    again = evaluate("renamed")
+    assert len(calls) == 1
+    assert again["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert again["reused_exact_native_paid_receipt"] is True
+    assert again["elapsed_seconds"] == first["elapsed_seconds"]
+    assert again["terminal_health"] == again["terminal_max_health"] == 1000.
+    assert again["terminal_mana"] == again["terminal_max_mana"] == 1500.
+    assert again["native_raw_receipt_file"] == str(original)
+    assert shared.read_text() == "unavailable shared cache"
