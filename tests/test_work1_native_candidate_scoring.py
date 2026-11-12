@@ -816,3 +816,70 @@ def test_shared_cache_init_failure_keeps_local_paid_ack(tmp_path, monkeypatch):
     assert again["terminal_mana"] == again["terminal_max_mana"] == 1500.
     assert again["native_raw_receipt_file"] == str(original)
     assert shared.read_text() == "unavailable shared cache"
+
+
+def test_corrupt_prepared_candidate_does_not_abort_later_native_payment(tmp_path):
+    """One incomplete native prepare artifact must not erase other candidates."""
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{truncated native JSON")
+    wrong_shape = tmp_path / "wrong-shape.json"
+    wrong_shape.write_text(json.dumps({"player": ["not an actor"]}))
+    valid = tmp_path / "valid.json"
+    valid.write_text(json.dumps(_prepared("v" * 64)))
+    calls = []
+
+    def native(binary, prepared, **kwargs):
+        calls.append((prepared.stem, kwargs["target_count"]))
+        return _receipt("v" * 64)
+
+    result = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths={
+            "malformed": malformed, "wrong_shape": wrong_shape,
+            "valid": valid},
+        actor_level=30, mob_count=3, target_hp=1200.,
+        run_native=native, artifact_dir=tmp_path / "receipts")
+    assert calls == [("valid", 3)]
+    assert [row["status"] for row in result["candidates"]] == [
+        "INVALID_NATIVE_PREPARED_PAYLOAD",
+        "INVALID_NATIVE_PREPARED_PAYLOAD",
+        "MEASURED_NATIVE_FULLY_RECOVERED",
+    ]
+    assert result["comparable_candidates"] == 1
+    assert result["winner_candidate_id"] is None
+    assert result["candidates"][2]["terminal_health"] == 1000.
+    assert result["candidates"][2]["terminal_mana"] == 1500.
+
+
+def test_nonobject_native_receipt_refuses_only_its_candidate(tmp_path):
+    """Malformed native IPC must never become an ACK or hide a paid successor."""
+    paths = {}
+    for cid in ("invalid", "valid"):
+        path = tmp_path / f"{cid}.json"
+        path.write_text(json.dumps(_prepared(cid[0] * 64)))
+        paths[cid] = path
+    calls = []
+
+    def native(binary, prepared, **kwargs):
+        calls.append(prepared.stem)
+        if prepared.stem == "invalid":
+            return ["not a source-native world ACK"]
+        return _receipt("v" * 64)
+
+    result = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths=paths,
+        actor_level=30, mob_count=3, target_hp=1200.,
+        run_native=native, artifact_dir=tmp_path / "receipts")
+    assert calls == ["invalid", "valid"]
+    assert [row["status"] for row in result["candidates"]] == [
+        "INVALID_NATIVE_RECEIPT_SHAPE",
+        "MEASURED_NATIVE_FULLY_RECOVERED",
+    ]
+    assert result["candidates"][0]["elapsed_seconds"] is None
+    assert result["candidates"][0]["acked_world_kills"] is None
+    assert result["comparable_candidates"] == 1
+    assert result["winner_candidate_id"] is None
+    assert result["candidates"][1]["elapsed_seconds"] == 20.
+    assert result["candidates"][1]["terminal_mana"] == 1500.
+    assert score_native_chain([], _prepared("i" * 64), mob_count=3,
+                              expected_target_hp=1200.) == (
+        None, "INVALID_NATIVE_RECEIPT_SHAPE")
