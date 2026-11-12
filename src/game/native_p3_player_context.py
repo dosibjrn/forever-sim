@@ -33,6 +33,18 @@ def query_native_player_context(
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise NativePlayerContextError("P3_NATIVE_PLAYER_CONTEXT_EXECUTION_FAILED") from exc
     if completed.returncode != 0:
+        # Rust may emit a structured source refusal even when its CLI exits
+        # nonzero. Preserve the authoritative reason before the transport
+        # fallback; a refusal remains a refusal, never a valid P3 candidate.
+        try:
+            failure = json.loads(completed.stdout)
+        except (ValueError, TypeError):
+            failure = None
+        if isinstance(failure, dict) and failure.get("status") == "refused":
+            refusal = failure.get("refusal")
+            code = refusal.get("code") if isinstance(refusal, dict) else None
+            raise NativePlayerContextError(
+                "P3_NATIVE_PLAYER_CONTEXT_REFUSED:" + str(code or "UNKNOWN"))
         raise NativePlayerContextError(
             "P3_NATIVE_PLAYER_CONTEXT_EXECUTION_FAILED:" +
             str(completed.stderr or "")[-400:])
