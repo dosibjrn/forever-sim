@@ -147,6 +147,12 @@ jobs:
             echo "::error::M06_ORIGINAL_CACHE_ARTIFACT_REQUIRED; refusing a 12-attempt replay" >&2
             exit 1
           fi
+      - name: Fetch pinned original-paid Git revision for verified runtime comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin 0fdd07a8ad82972cf89b796391949a26c2cf7b57
+          test "$(git cat-file -t 0fdd07a8ad82972cf89b796391949a26c2cf7b57)" = commit
       - name: Compile exact selected MythicSim engine for paid M0.6
         run: |
           set -euo pipefail
@@ -171,6 +177,7 @@ jobs:
             --archive runs/m06-original-predecessor.zip \
             --cache-dir runs/native-api-paid-cache \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --predecessor-ref 0fdd07a8ad82972cf89b796391949a26c2cf7b57 \
             --manifest-out runs/m06-original-cache-manifest.json
       - name: Original two-level adaptive native-paid optimize and ranked guide
         shell: bash
