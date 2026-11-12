@@ -570,6 +570,7 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
 
     binary = tmp_path / "forever-engine"
     binary.write_bytes(b"native engine A")
+    assert "src/shared" in scorer._PAID_RUNTIME_GIT_PATHS
     shas = ["a" * 40 for _ in scorer._PAID_RUNTIME_GIT_PATHS]
     dirty = ["clean"]
 
@@ -586,6 +587,8 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
                 "unrelated-workflow": "",
                 "runtime-modified": " M tools/wf_warlock_native_candidate_scoring.py\n",
                 "runtime-untracked": "?? src/game/untracked_runtime.py\n",
+                "shared-modified": " M src/shared/stat_math.py\n",
+                "shared-untracked": "?? src/shared/new_runtime.py\n",
             }
             return subprocess.CompletedProcess(argv, 0, rows[dirty[0]])
         assert argv[1] == "rev-parse"
@@ -610,10 +613,20 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
     assert changed != first
     assert changed["forever_paid_runtime_sha256"] != first["forever_paid_runtime_sha256"]
     shas[-1] = "a" * 40
+    # The gsim runtime calls src.shared.stat_math: editing the shared code
+    # must change the exact paid fingerprint without repaying unrelated edits.
+    shared_index = scorer._PAID_RUNTIME_GIT_PATHS.index("src/shared")
+    shas[shared_index] = "c" * 40
+    assert identity()["forever_paid_runtime_sha256"] != first["forever_paid_runtime_sha256"]
+    shas[shared_index] = "a" * 40
     binary.write_bytes(b"native engine B")
     assert identity()["native_binary_sha256"] != first["native_binary_sha256"]
     binary.write_bytes(b"native engine A")
     dirty[0] = "runtime-modified"
     assert identity() is None
     dirty[0] = "runtime-untracked"
+    assert identity() is None
+    dirty[0] = "shared-modified"
+    assert identity() is None
+    dirty[0] = "shared-untracked"
     assert identity() is None
