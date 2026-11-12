@@ -132,6 +132,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          # Strict historical Git-object verification for original M0.6 reuse.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
