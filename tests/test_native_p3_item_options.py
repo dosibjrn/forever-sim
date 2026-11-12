@@ -617,6 +617,48 @@ def test_native_p3_two_item_budget_finds_actual_scorer_difference():
     assert all("SCORER_MISMATCH" not in reason for reason in report["blockers"])
 
 
+def test_native_p3_two_item_budget_prefers_strongest_paid_score_contrast():
+    """The first nonzero change may be negligible despite a larger legal
+    scorer contrast already returned by the same native source lookup."""
+    items = (
+        ItemRecord(item_id=9888125421, name="Top item", slot="chest",
+                   item_level=30, required_level=1, spell_power=4.0,
+                   identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=9888125422, name="Different unmeasured stat",
+                   slot="chest", item_level=29, required_level=1,
+                   spell_power=4.0, spirit=6.0,
+                   identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=9888125423, name="Tiny but finite contrast",
+                   slot="chest", item_level=28, required_level=1,
+                   spell_power=3.99,
+                   identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=9888125424, name="Strongest paid contrast",
+                   slot="chest", item_level=27, required_level=1,
+                   spell_power=1.0,
+                   identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+    )
+    with patch("src.game.native_p3_item_options.native_p3_item_records",
+               return_value=(items, {}, {"status": "ok",
+                                          "unverified_candidate_count": 0,
+                                          "source": "mythicsim:data/items.jsonl"})):
+        report = fast_p3_smoke(
+            class_key="mage", level=30,
+            weights={"spell_power": 2.0, "spirit": 0.0},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+    assert report["legal_item_count"] == 4
+    assert report["tested_item_count"] == 2
+    chest = report["slots"]["chest"]
+    assert chest["selected_ids"] == [9888125421, 9888125424]
+    assert [item["score"] for item in chest["items"]] == [8.0, 2.0]
+    assert not report["blockers"]
+
+
 def test_native_p3_two_item_budget_falls_back_when_all_paid_scores_equal():
     """Equal measured scores remain valid; report a distinct raw source
     candidate without inventing a nonzero effect or demanding a P3 winner."""
