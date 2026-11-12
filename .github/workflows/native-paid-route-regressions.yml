@@ -140,7 +140,7 @@ jobs:
       - name: Fail closed without an existing original-paid artifact
         shell: bash
         env:
-          REUSE_M06_ARTIFACT_ID: \${{ inputs.reuse_m06_artifact_id }}
+          REUSE_M06_ARTIFACT_ID: ${{ inputs.reuse_m06_artifact_id }}
         run: |
           set -euo pipefail
           if [[ ! "$REUSE_M06_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]; then
@@ -158,8 +158,8 @@ jobs:
       - name: Download and verify original native-paid cache before any new payment
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
-          REUSE_M06_ARTIFACT_ID: \${{ inputs.reuse_m06_artifact_id }}
+          GH_TOKEN: ${{ github.token }}
+          REUSE_M06_ARTIFACT_ID: ${{ inputs.reuse_m06_artifact_id }}
         run: |
           set -euo pipefail
           mkdir -p runs
