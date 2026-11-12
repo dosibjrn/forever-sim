@@ -24,7 +24,7 @@ jobs:
       ${{
         github.event.issue.number == 1104 &&
         github.event.comment.user.login == 'dosibjrn' &&
-        github.event.comment.body == '/run-m06-original'
+        startsWith(github.event.comment.body, '/run-m06-original ')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -33,9 +33,23 @@ jobs:
         id: guard
         env:
           GH_TOKEN: ${{ github.token }}
+          OWNER_COMMENT: ${{ github.event.comment.body }}
         shell: bash
         run: |
           set -euo pipefail
+          # Require one original artifact ID; never dispatch the old
+          # bare command or treat arbitrary issue text as shell input.
+          if [[ ! "$OWNER_COMMENT" =~ ^/run-m06-original[ ]([1-9][0-9]*)$ ]]; then
+            echo "::error::M06_OWNER_COMMAND_REQUIRES_ORIGINAL_ARTIFACT_ID" >&2
+            exit 1
+          fi
+          artifact_id="${BASH_REMATCH[1]}"
+          IFS=$'\t' read -r artifact_name artifact_expired <<< "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" --jq '[.name, .expired] | @tsv')"
+          if [[ ! "$artifact_name" =~ ^work2-m06-adaptive-original-[0-9a-f]{40}$ || "$artifact_expired" != false ]]; then
+            echo "::error::M06_OWNER_COMMAND_ARTIFACT_NOT_ORIGINAL_OR_EXPIRED" >&2
+            exit 1
+          fi
+          echo "reuse_m06_artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
           main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           echo "selected_main_sha=$main_sha" >> "$GITHUB_OUTPUT"
           echo "M06_OWNER_COMMAND_MAIN_SHA=$main_sha"
@@ -65,6 +79,6 @@ jobs:
           current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           test "$current_sha" = "${{ steps.guard.outputs.selected_main_sha }}"
           gh workflow run native-paid-route-regressions.yml --repo "$GITHUB_REPOSITORY" --ref main \
-            -f run_m06_original=true -f predecessor_artifact_id=''
+            -f run_m06_original=true -f reuse_m06_artifact_id="${{ steps.guard.outputs.reuse_m06_artifact_id }}" -f predecessor_artifact_id=''
           echo "M06_OWNER_COMMAND_DISPATCHED_MAIN_SHA=$current_sha"
           echo "M06_OWNER_COMMAND_TARGET=https://github.com/$GITHUB_REPOSITORY/actions/workflows/native-paid-route-regressions.yml"
