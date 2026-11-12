@@ -678,7 +678,13 @@ class PersistentNativeEvaluator:
                         old_receipt, prepared, mob_count=mobs,
                         expected_target_hp=target_hp)
                     if (old_elapsed is not None
-                            and old_verdict == "MEASURED_NATIVE_FULLY_RECOVERED"):
+                            and old_verdict == "MEASURED_NATIVE_FULLY_RECOVERED"
+                            and _native_rolling_receipt_verified(
+                                old_receipt, world_apl)):
+                        # Historical schema-1 metadata predates the policy
+                        # cache axis. A source-reported non-serial World-APL
+                        # must not be relabeled as the serial control merely
+                        # because its ACK/recovery score is otherwise valid.
                         return retain(old_receipt, old_elapsed, True, old_path)
                 except (ValueError, TypeError, OSError, KeyError):
                     continue
