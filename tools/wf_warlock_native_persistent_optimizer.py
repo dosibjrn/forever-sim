@@ -544,6 +544,10 @@ class PersistentNativeEvaluator:
         # even when a dirty/unavailable Git checkout disables disk cache reuse.
         # Never persist this unverified identity across sessions.
         self._session_paid: dict[tuple, tuple[dict, float, Path, str]] = {}
+        # Same-session successful native worlds retain their *complete* build
+        # request, not merely the talent hint. Adaptive policy challengers can
+        # then pay a new policy on a genuinely measured gear/pet/APL survivor.
+        self._paid_sources_by_sha: dict[tuple[int, str], dict] = {}
         self.options: dict[int, dict] = {}
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -844,6 +848,45 @@ class PersistentNativeEvaluator:
             if pet is not None:
                 axis_sources.append((pet, "pet"))
         first = sources.pop(0)
+        first_axis = "talent"
+        # Paid survivor hints carry an exact native-prepared source SHA. Only
+        # reuse the complete build if this evaluator actually measured that
+        # source in its current pinned session. A foreign/stale hint cannot
+        # supply an invented gear, pet, APL or policy candidate.
+        if excluded_paid_source_policies is not None:
+            # Prefer a measured survivor that still has an untried policy.
+            # The fastest paid build may already have both rest and rolling
+            # receipts; repeatedly selecting it starves the next measured
+            # full build of policy comparisons under a small total budget.
+            fallback_survivor = None
+            selected_survivor = None
+            for hint in candidate_hints or ():
+                if (not isinstance(hint, dict)
+                        or hint.get("from_level") != level
+                        or not isinstance(hint.get("source_request_sha256"), str)):
+                    continue
+                source_sha = hint["source_request_sha256"]
+                survivor = self._paid_sources_by_sha.get((level, source_sha))
+                if survivor is None:
+                    continue
+                if fallback_survivor is None:
+                    fallback_survivor = survivor
+                if self.explore_world_policies:
+                    policies = [_native_world_policy(0.3, 0.3)]
+                    if mob_count == 2:
+                        policies.append(_native_world_policy(
+                            1.0, 1.0, ROLLING_WORLD_APL_50))
+                    if all((source_sha, json.dumps(policy, sort_keys=True))
+                           in excluded_paid_source_policies
+                           for policy in policies):
+                        continue
+                selected_survivor = survivor
+                break
+            survivor = selected_survivor or fallback_survivor
+            if survivor is not None and survivor != first:
+                sources.insert(0, first)
+                first = copy.deepcopy(survivor)
+                first_axis = "paid_survivor"
         # With source-native gear/pet options, reserve a slot for a real
         # alternative talent family before the first burst of APL mutations.
         # A small paid budget must compare builds, not just one build's
@@ -871,7 +914,7 @@ class PersistentNativeEvaluator:
             self.explore_world_policies
             and excluded_paid_source_policies is not None
         )
-        sources = [(first, "talent"),
+        sources = [(first, first_axis),
                    *(policy_sources if not self.explore_world_policies
                       or adaptive_policy_revisit else []),
                    *axis_sources[:2],
@@ -1019,6 +1062,8 @@ class PersistentNativeEvaluator:
                     "native_raw_receipt_sha256": _file_digest(raw_path),
                     "reused_exact_native_paid_receipt": cached,
                 })
+                self._paid_sources_by_sha[(
+                    level, prepared["request_sha256"])] = copy.deepcopy(source)
                 if stop_after_first_paid:
                     break
             except (KeyError, ValueError, TypeError, RuntimeError, AssertionError,
