@@ -641,20 +641,38 @@ class PersistentNativeEvaluator:
                            + repr(policy_key)).encode())
         path = self.artifact_dir / (key + ".native.json")
         meta = self.artifact_dir / (key + ".native.cache.json")
-        cached = False
-        if not fresh_world and identity is not None and path.is_file() and meta.is_file():
-            try:
-                record = json.loads(meta.read_text())
-                if record == dict(identity, native_raw_receipt_sha256=_file_digest(path)):
-                    receipt = json.loads(path.read_text())
+        # Exact primary cache entries remain preferred. If an interrupted or
+        # corrupt primary entry forced a genuine paid run into a separately
+        # preserved fallback, reuse that fallback only with its OWN matching
+        # identity, raw byte digest, native scorer and world-policy ACK.
+        # Keep the old primary bytes/metadata intact for investigation.
+        cached_entries = [(path, meta)]
+        if not fresh_world and identity is not None:
+            for fallback_meta in sorted(self.artifact_dir.glob(
+                    f"{key}-*.native.cache.json")):
+                fallback_path = fallback_meta.with_name(
+                    fallback_meta.name.removesuffix(".native.cache.json")
+                    + ".native.json")
+                cached_entries.append((fallback_path, fallback_meta))
+            for cached_path, cached_meta in cached_entries:
+                if not cached_path.is_file() or not cached_meta.is_file():
+                    continue
+                try:
+                    record = json.loads(cached_meta.read_text())
+                    if record != dict(
+                            identity,
+                            native_raw_receipt_sha256=_file_digest(cached_path)):
+                        continue
+                    receipt = json.loads(cached_path.read_text())
                     elapsed, verdict = score_native_chain(
-                        receipt, prepared, mob_count=mobs, expected_target_hp=target_hp)
+                        receipt, prepared, mob_count=mobs,
+                        expected_target_hp=target_hp)
                     if (elapsed is not None
                             and verdict == "MEASURED_NATIVE_FULLY_RECOVERED"
                             and _native_rolling_receipt_verified(receipt, world_apl)):
-                        return retain(receipt, elapsed, True, path)
-            except (ValueError, TypeError, OSError, KeyError):
-                pass
+                        return retain(receipt, elapsed, True, cached_path)
+                except (ValueError, TypeError, OSError, KeyError):
+                    continue
         # Earlier density runs wrote schema-1 records with a whole-commit
         # key. A workflow/cache-helper-only change must not repay those mobs:
         # verify historical source-world Git objects plus the complete native
@@ -747,7 +765,18 @@ class PersistentNativeEvaluator:
                 except FileExistsError:
                     suffix += 1
             path = other
-        return retain(receipt, elapsed, cached, path)
+            if identity is not None:
+                # The newly paid fallback is independently verifiable across
+                # sessions. Never overwrite the damaged primary cache entry.
+                fallback_meta = path.with_name(
+                    path.name.removesuffix(".native.json")
+                    + ".native.cache.json")
+                with fallback_meta.open("x", encoding="utf-8") as handle:
+                    handle.write(json.dumps(
+                        dict(identity,
+                             native_raw_receipt_sha256=_file_digest(path)),
+                        sort_keys=True, indent=2) + "\n")
+        return retain(receipt, elapsed, False, path)
 
     def __call__(self, *, level: int, parent: dict | None, mob_count: int,
                  budget: int, rng_mode: str, iterations: int,
