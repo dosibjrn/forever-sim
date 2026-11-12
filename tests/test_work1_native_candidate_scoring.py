@@ -1151,3 +1151,69 @@ def test_repaid_native_candidate_preserves_previous_raw_ack_and_cache(
     assert sorted(p.name for p in artifacts.glob("*.native.json")) == [
         "candidate-1.native.json", "candidate.native.json"]
     assert original.read_text() == old_receipt
+
+
+def test_cached_native_ack_mutation_after_verified_read_never_scores_new_bytes(
+        tmp_path, monkeypatch):
+    """A receipt changed between digest validation and parsing is not paid proof."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected-rust-engine")
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    artifact_dir = tmp_path / "artifacts"
+    calls = []
+
+    monkeypatch.setattr(
+        scorer, "_exact_paid_cache_identity",
+        lambda engine, *, actor_level, mob_count, target_hp: {
+            "cache_schema": 2,
+            "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": hashlib.sha256(engine.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        })
+
+    def native(engine, source, **kwargs):
+        calls.append(kwargs["target_count"])
+        return _receipt("a" * 64)
+
+    def evaluate():
+        return compare_prepared_candidates(
+            binary=binary, prepared_paths={"candidate": prepared},
+            actor_level=30, mob_count=3, target_hp=1200.,
+            run_native=native, artifact_dir=artifact_dir)["candidates"][0]
+
+    original = evaluate()
+    assert original["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert original["elapsed_seconds"] == 20.
+    raw_path = artifact_dir / "candidate.native.json"
+    original_raw = raw_path.read_bytes()
+
+    old_read = Path.read_bytes
+    altered = []
+
+    def swap_after_read(self):
+        snapshot = old_read(self)
+        if self == raw_path and not altered:
+            # The snapshot still matches the genuine sidecar, but the next
+            # filesystem read sees a distinct, otherwise valid ACK clock.
+            new_ack = _receipt("a" * 64, kill_seconds=17,
+                               recovery_seconds=5)
+            self.write_text(json.dumps(new_ack, indent=2) + "\n")
+            altered.append(True)
+        return snapshot
+
+    monkeypatch.setattr(Path, "read_bytes", swap_after_read)
+    repeated = evaluate()
+
+    assert altered == [True]
+    assert len(calls) == 1, "do not pay unchanged native mobs again"
+    assert repeated["status"] == "NATIVE_PAID_RECEIPT_CHANGED"
+    assert repeated["elapsed_seconds"] is None
+    assert raw_path.read_bytes() != original_raw
+    assert repeated.get("reused_exact_native_paid_receipt") is None
+    assert repeated.get("native_raw_receipt_sha256") is None
