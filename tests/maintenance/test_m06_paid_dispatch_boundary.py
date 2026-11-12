@@ -112,3 +112,37 @@ def test_m06_new_original_dispatch_needs_digest_verified_predecessor_before_paym
     fast_job = _job("native-paid-route", text)
     assert "tests/test_work2_m06_original_cache_stage.py" in fast_job
     assert "python -m tools.wf_m06_original_cache_stage" not in fast_job
+
+RELAY = (Path(__file__).resolve().parents[2]
+         / ".github/workflows/m06-original-dispatch-relay.yml")
+
+
+def test_owner_comment_relay_passes_authenticated_original_cache_to_native_job():
+    relay = RELAY.read_text(encoding="utf-8")
+    assert "github.event.issue.number == 1104" in relay
+    assert "github.event.comment.user.login == 'dosibjrn'" in relay
+    assert "startsWith(github.event.comment.body, '/run-m06-original ')" in relay
+    assert "github.event.comment.body == '/run-m06-original'" not in relay
+    assert "^/run-m06-original[ ]([1-9][0-9]*)$" in relay
+    assert "M06_OWNER_COMMAND_REQUIRES_ORIGINAL_ARTIFACT_ID" in relay
+    assert "actions/artifacts/$artifact_id" in relay
+    assert "^work2-m06-adaptive-original-[0-9a-f]{40}$" in relay
+    assert '"$artifact_expired" != false' in relay
+    assert 'echo "reuse_m06_artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"' in relay
+    assert '-f reuse_m06_artifact_id="${{ steps.guard.outputs.reuse_m06_artifact_id }}"' in relay
+    assert "-f run_m06_original=true" in relay
+    assert "-f predecessor_artifact_id=''" in relay
+    assert relay.count("gh workflow run native-paid-route-regressions.yml") == 1
+    paid = WORKFLOW.read_text(encoding="utf-8")
+    assert "      reuse_m06_artifact_id:\n" in paid
+    assert 'REUSE_M06_ARTIFACT_ID: ${{ inputs.reuse_m06_artifact_id }}' in paid
+
+
+def test_owner_comment_requires_exact_one_positive_decimal_artifact_id():
+    pattern = r"^/run-m06-original[ ]([1-9][0-9]*)$"
+    assert re.fullmatch(pattern, "/run-m06-original 13941049347").group(1) == "13941049347"
+    for invalid in ("/run-m06-original", "/run-m06-original ",
+                    "/run-m06-original 0", "/run-m06-original 01",
+                    "/run-m06-original 42 more", "/run-m06-original 42;echo",
+                    "/run-m06-original\t42", "/run-m06-original -f foo"):
+        assert re.fullmatch(pattern, invalid) is None
