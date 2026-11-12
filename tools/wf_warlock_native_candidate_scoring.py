@@ -167,7 +167,21 @@ def _verified_schema2_paid_runtime_migration(
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef,
                                          ast.ClassDef)) and node.name == part
                 ]
-            return ast.dump(nodes[0], include_attributes=False)
+            target = nodes[0]
+            if (revision == "HEAD"
+                    and name == "PersistentNativeEvaluator._paid"):
+                # The added cache-migration lookup may only select an
+                # independently re-scored old receipt. Compare the original
+                # paid execution body with that one bounded lookup removed.
+                migration = [
+                    node for node in target.body
+                    if isinstance(node, ast.If)
+                    and "m06-runtime-migration.json" in ast.unparse(node)
+                ]
+                if len(migration) != 1:
+                    raise ValueError("M06_PAID_MIGRATION_BODY_CHANGED")
+                target.body.remove(migration[0])
+            return ast.dump(target, include_attributes=False)
 
         # Prepared request creation, scorer, and paid world transport must be
         # AST-identical. Candidate *ordering* can evolve; a different prepare
