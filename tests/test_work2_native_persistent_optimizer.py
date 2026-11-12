@@ -1838,7 +1838,8 @@ def test_adaptive_revisit_joint_gear_and_pet_keep_paid_survivor_build(
     no real Warlock kills, world overlap or M0.6 winner is inferred.
     """
     def items(source, options):
-        for item_id in (0, 8001, 8002):
+        # More gear choices than paid revisit slots: the pet still competes.
+        for item_id in (0, 8001, 8002, 8003, 8004):
             proposal = copy.deepcopy(source)
             proposal["raid"]["parties"][0]["players"][0][
                 "equipment"]["items"][0] = {"id": item_id}
