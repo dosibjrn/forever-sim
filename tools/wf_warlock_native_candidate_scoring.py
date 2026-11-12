@@ -8,6 +8,7 @@ silently promoted to a full HP+mana terminally-recovered optimization score.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import math
@@ -87,6 +88,111 @@ def _exact_paid_cache_identity(binary: Path, *, actor_level: int,
         }
     except (OSError, subprocess.SubprocessError):
         return None
+
+
+
+# Schema-2 receipts from an earlier paid experiment may survive a *provably
+# unrelated* scheduler/P3 transport edit. Never replace their runtime digest:
+# reconstruct it from the actual historical Git objects, compare all changed
+# execution paths, and leave the original raw bytes/metadata untouched.
+_M06_NON_WORLD_RUNTIME_CHANGES = frozenset({
+    "src/game/native_p3_item_options.py",
+    "src/game/native_p3_player_context.py",
+    "tools/wf_warlock_native_candidate_scoring.py",
+    "tools/wf_warlock_native_persistent_optimizer.py",
+})
+_M06_STABLE_PAID_FUNCTIONS = {
+    "tools/wf_warlock_native_candidate_scoring.py": (
+        "score_native_chain", "_exact_paid_cache_identity",
+    ),
+    "tools/wf_warlock_native_persistent_optimizer.py": (
+        "_native_world_policy", "_native_rolling_receipt_verified",
+        "PersistentNativeEvaluator._source", "PersistentNativeEvaluator._paid",
+    ),
+}
+
+
+def _verified_schema2_paid_runtime_migration(
+    metadata: dict, identity: dict, predecessor_ref: str
+) -> bool:
+    """Allow exact old receipts only across checked non-world source drift.
+
+    This does not infer mechanics from old JSON: caller must still match the
+    fresh Rust prepare digest, policy/target and score original native/2D ACK,
+    paid recovery and the SHA256 of immutable receipt bytes.
+    """
+    if (not isinstance(metadata, dict) or not isinstance(identity, dict)
+            or metadata.get("cache_schema") != 2
+            or identity.get("cache_schema") != 2
+            or not isinstance(predecessor_ref, str)
+            or len(predecessor_ref) != 40
+            or any(c not in "0123456789abcdef" for c in predecessor_ref)
+            or metadata.get("forever_paid_runtime_sha256")
+            == identity.get("forever_paid_runtime_sha256")
+            or any(metadata.get(key) != value for key, value in identity.items()
+                   if key != "forever_paid_runtime_sha256")):
+        return False
+    root = Path(__file__).resolve().parents[1]
+    try:
+        def git(*args: str) -> str:
+            return subprocess.run(
+                ["git", *args], cwd=root, text=True, capture_output=True,
+                check=True, timeout=15).stdout.strip()
+
+        objects = git("rev-parse", *(
+            f"{predecessor_ref}:{p}" for p in _PAID_RUNTIME_GIT_PATHS
+        )).splitlines()
+        if len(objects) != len(_PAID_RUNTIME_GIT_PATHS):
+            return False
+        old_hash = hashlib.sha256(("\n".join(objects)).encode()).hexdigest()
+        if old_hash != metadata.get("forever_paid_runtime_sha256"):
+            return False
+        changed = set(git(
+            "diff", "--name-only", predecessor_ref, "HEAD", "--",
+            *_PAID_RUNTIME_GIT_PATHS).splitlines())
+        if not changed or not changed <= _M06_NON_WORLD_RUNTIME_CHANGES:
+            return False
+
+        def extract(revision: str, file: str, name: str) -> str:
+            nodes = ast.parse(git("show", f"{revision}:{file}")).body
+            parts = name.split(".")
+            for part in parts:
+                nodes = next(
+                    node for node in nodes
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                         ast.ClassDef)) and node.name == part
+                ).body if part != parts[-1] else [
+                    node for node in nodes
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                         ast.ClassDef)) and node.name == part
+                ]
+            target = nodes[0]
+            if (revision == "HEAD"
+                    and name == "PersistentNativeEvaluator._paid"):
+                # The added cache-migration lookup may only select an
+                # independently re-scored old receipt. Compare the original
+                # paid execution body with that one bounded lookup removed.
+                migration = [
+                    node for node in target.body
+                    if isinstance(node, ast.If)
+                    and "m06-runtime-migration.json" in ast.unparse(node)
+                ]
+                if len(migration) != 1:
+                    raise ValueError("M06_PAID_MIGRATION_BODY_CHANGED")
+                target.body.remove(migration[0])
+            return ast.dump(target, include_attributes=False)
+
+        # Prepared request creation, scorer, and paid world transport must be
+        # AST-identical. Candidate *ordering* can evolve; a different prepare
+        # output is independently rejected by its original digest.
+        for file, functions in _M06_STABLE_PAID_FUNCTIONS.items():
+            for name in functions:
+                if extract(predecessor_ref, file, name) != extract("HEAD", file, name):
+                    return False
+        return True
+    except (OSError, ValueError, StopIteration, SyntaxError,
+            subprocess.SubprocessError):
+        return False
 
 
 
