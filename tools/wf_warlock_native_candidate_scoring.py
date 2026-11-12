@@ -34,6 +34,9 @@ def _sha256(path: Path) -> str:
 _PAID_RUNTIME_GIT_PATHS = (
     "src/game",
     "src/scenarios",
+    # The live gsim combat runtime imports src.shared.stat_math. Omitting it
+    # would reuse already-paid ACKs after a combat-relevant shared-code edit.
+    "src/shared",
     "integrations/mythicsim-rust/live_two_world_pulls.py",
     "tools/wf_warlock_native_candidate_scoring.py",
     "tools/wf_warlock_native_persistent_optimizer.py",
