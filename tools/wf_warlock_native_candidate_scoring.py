@@ -405,6 +405,9 @@ def compare_prepared_candidates(*, binary: Path,
                 row.update(status="NATIVE_PREPARED_INPUT_CHANGED",
                            elapsed_seconds=None)
                 rows.append(row)
+                # This source was never evaluated against its inspected actor.
+                # Do not consume it: a later stable candidate can still pay.
+                seen_source_requests.pop(source_sha, None)
                 continue
             native_receipt_path = (
                 artifact_dir / f"{candidate_id}.native.json"
@@ -500,6 +503,9 @@ def compare_prepared_candidates(*, binary: Path,
                 row.update(status="NATIVE_PREPARED_INPUT_CHANGED",
                            elapsed_seconds=None)
                 rows.append(row)
+                # This source was never evaluated against its inspected actor.
+                # Do not consume it: a later stable candidate can still pay.
+                seen_source_requests.pop(source_sha, None)
                 continue
             score, status = score_native_chain(receipt, prepared,
                                                mob_count=mob_count,

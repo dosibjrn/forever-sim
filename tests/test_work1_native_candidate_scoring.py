@@ -982,3 +982,36 @@ def test_native_prepared_rewrite_during_payment_is_unranked_without_losing_succe
     assert (artifacts / "unstable.native.json").exists()
     assert not (artifacts / "unstable.native.cache.json").exists()
     assert (artifacts / "valid.native.cache.json").exists()
+
+
+def test_native_changed_prepared_input_does_not_consume_stable_same_source_successor(tmp_path):
+    """A transient actor rewrite must not suppress a later stable same-source candidate."""
+    paths = {}
+    for candidate_id in ("rewritten", "stable"):
+        path = tmp_path / f"{candidate_id}.json"
+        path.write_text(json.dumps(_prepared("a" * 64)))
+        paths[candidate_id] = path
+    calls = []
+
+    def native(binary, path, **kwargs):
+        calls.append((path.stem, kwargs["target_count"], kwargs["rng_mode"]))
+        if path.stem == "rewritten":
+            path.write_text(json.dumps(_prepared("z" * 64)))
+        return _receipt("a" * 64)
+
+    artifact_dir = tmp_path / "receipts"
+    result = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths=paths, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=native,
+        artifact_dir=artifact_dir)
+    assert calls == [("rewritten", 3, "balanced"), ("stable", 3, "balanced")]
+    assert [row["status"] for row in result["candidates"]] == [
+        "NATIVE_PREPARED_INPUT_CHANGED", "MEASURED_NATIVE_FULLY_RECOVERED",
+    ]
+    assert result["comparable_candidates"] == 1
+    assert result["candidates"][0]["elapsed_seconds"] is None
+    assert result["candidates"][1]["elapsed_seconds"] == 20.
+    assert result["candidates"][1]["terminal_health"] == 1000.
+    assert result["candidates"][1]["terminal_mana"] == 1500.
+    assert (artifact_dir / "rewritten.native.json").exists()
+    assert (artifact_dir / "stable.native.json").exists()
