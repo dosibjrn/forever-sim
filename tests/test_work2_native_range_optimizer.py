@@ -1052,6 +1052,18 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
             row["gear"] = {"items": [{"id": 1234}]}
             row["apl"] = {"priorityList": [{"action": {"castSpell": {"spellId": 42}}}]}
             row["pet"] = "Imp"
+            # Synthetic original-paid transport only: the guide must expose
+            # the *measured* rest/pull policy and exact raw receipt provenance.
+            row["native_world_policy"] = {
+                "pull_mode": "serial",
+                "rest_when_health_below": 0.3,
+                "rest_when_mana_below": 0.3,
+                "rest_until": "full_when_triggered",
+                "terminal_full_hp_and_mana": True,
+            }
+            row["native_raw_receipt_file"] = f"paid/L{level}-{talent}.native.json"
+            row["native_raw_receipt_sha256"] = hashlib.sha256(
+                f"raw/{level}/{talent}".encode()).hexdigest()
             out.append(row)
         return out
 
@@ -1079,6 +1091,11 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         assert "tree 1, slot 2: +1" in guide
         assert "1234" in guide and "Imp" in guide
         assert "Native APL" in guide
+        assert 'Native world pull/rest policy (paid):' in guide
+        assert '"pull_mode":"serial"' in guide
+        assert '"rest_when_health_below":0.3' in guide
+        assert "Original native-paid receipt: paid/L20-1-0-0.native.json" in guide
+        assert "Native engine binary SHA256: " + ENGINE in guide
         assert "2 hostile mob(s)" in guide
         assert "Not a continuous leveling route" in guide
         assert "not a proven joint gear × talents × APL × pet optimum" in guide
@@ -1127,6 +1144,12 @@ def test_sampled_guide_uses_paid_native_receipts_without_continuous_route_claim(
         })
         assert render_sampled_build_guide(varied) == varied_guide
 
+        bad = deepcopy(result)
+        bad["ranked_alternatives"][0]["steps"][0]["native_world_policy"] = {
+            "pull_mode": "rolling",
+        }
+        with pytest.raises(ValueError, match="step/receipt disagreement: native_world_policy"):
+            render_sampled_build_guide(bad)
         bad = deepcopy(result)
         bad["ranked_alternatives"][0]["steps"][0]["receipt"]["native_full_recovery_paid"] = False
         with pytest.raises(ValueError, match="unpaid or refused native receipt"):
