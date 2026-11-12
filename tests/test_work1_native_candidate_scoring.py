@@ -883,3 +883,44 @@ def test_nonobject_native_receipt_refuses_only_its_candidate(tmp_path):
     assert score_native_chain([], _prepared("i" * 64), mob_count=3,
                               expected_target_hp=1200.) == (
         None, "INVALID_NATIVE_RECEIPT_SHAPE")
+
+
+def test_wrong_native_prepared_actor_isolated_from_valid_paid_successor(tmp_path):
+    """Never pay a foreign class/level, or let it abort other native candidates."""
+    paths = {}
+    for candidate_id in ("wrong_class", "wrong_level", "valid"):
+        prepared = _prepared(candidate_id[0] * 64)
+        if candidate_id == "wrong_class":
+            prepared["player"]["class"] = "ClassRogue"
+        elif candidate_id == "wrong_level":
+            prepared["player"]["level"] = 40
+        path = tmp_path / (candidate_id + ".json")
+        path.write_text(json.dumps(prepared))
+        paths[candidate_id] = path
+
+    calls = []
+
+    def native(binary, path, **kwargs):
+        calls.append((path.stem, kwargs["target_count"], kwargs["rng_mode"]))
+        return _receipt("v" * 64)
+
+    result = compare_prepared_candidates(
+        binary=Path("rust"), prepared_paths=paths, actor_level=30,
+        mob_count=3, target_hp=1200., run_native=native,
+        artifact_dir=tmp_path / "receipts")
+    assert calls == [("valid", 3, "balanced")]
+    assert [row["status"] for row in result["candidates"]] == [
+        "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH",
+        "NATIVE_PREPARED_ACTOR_LEVEL_OR_CLASS_MISMATCH",
+        "MEASURED_NATIVE_FULLY_RECOVERED",
+    ]
+    assert result["candidates"][0]["prepared_actor_class"] == "ClassRogue"
+    assert result["candidates"][1]["prepared_actor_level"] == 40
+    assert all(row["elapsed_seconds"] is None
+               for row in result["candidates"][:2])
+    assert result["comparable_candidates"] == 1
+    assert result["winner_candidate_id"] is None
+    assert result["candidates"][2]["terminal_health"] == 1000.
+    assert result["candidates"][2]["terminal_mana"] == 1500.
+    assert not (tmp_path / "receipts" / "wrong_class.native.json").exists()
+    assert not (tmp_path / "receipts" / "wrong_level.native.json").exists()
