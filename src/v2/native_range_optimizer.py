@@ -1037,7 +1037,7 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
             if refusal is not None:
                 raise ValueError(f"cannot publish unpaid or refused native receipt: {refusal}")
             for field in ("source_request_sha256", "engine_binary_sha256",
-                          "talents", "gear", "apl", "pet"):
+                          "talents", "gear", "apl", "pet", "native_world_policy"):
                 if receipt.get(field) != step.get(field):
                     raise ValueError(f"native guide step/receipt disagreement: {field}")
             if (not math.isclose(receipt["elapsed_seconds"],
@@ -1164,8 +1164,30 @@ def render_sampled_build_guide(result: Mapping[str, Any]) -> str:
                 lines.append(f"- {label}: "
                              + json.dumps(step.get(field), sort_keys=True,
                                           separators=(",", ":")))
+        # A winning rolling/rest policy is a build decision, not just a
+        # measurement detail. Print the paid policy and original receipt
+        # identity; never synthesize a default serial policy for older rows.
+        policy = step.get("native_world_policy")
+        if isinstance(policy, Mapping):
+            lines.append("- Native world pull/rest policy (paid): "
+                         + json.dumps(policy, sort_keys=True,
+                                      separators=(",", ":")))
+        else:
+            lines.append("- Native world pull/rest policy: "
+                         "not reported in this sample")
+        paid = step["receipt"]
+        raw_path = paid.get("native_raw_receipt_file")
+        raw_sha = paid.get("native_raw_receipt_sha256")
+        if isinstance(raw_path, str) and raw_path and _sha(raw_sha):
+            lines.append(f"- Original native-paid receipt: {raw_path} "
+                         f"(SHA256 {raw_sha})")
+        else:
+            lines.append("- Original native-paid receipt: embedded in result "
+                         "JSON; no separate raw file/digest reported")
         lines.append("- Source request SHA256: "
                      + str(step["source_request_sha256"]))
+        lines.append("- Native engine binary SHA256: "
+                     + str(step["engine_binary_sha256"]))
         previous = step
     if len(ranked) > 1:
         lines += ["", "## Measured alternative sampled scores"]
