@@ -879,32 +879,6 @@ class PersistentNativeEvaluator:
             return [{"status": "NATIVE_OPTIONS_REFUSED", "level": level,
                      "native_refusal": str(exc)[-1200:]}]
 
-        # Do not consume the *new* budget on a prior native refusal for
-        # exactly the same source, hostile scenario and world policy. The
-        # historical artifact is never promoted to a measured success.
-        old_refusals: set[tuple[str, str]] = set()
-        old_ledger = self._original_refusal_ledger
-        if old_ledger is not None:
-            if not self._paid_cache_identity_initialized:
-                self._paid_cache_identity_seed = _exact_paid_cache_identity(
-                    self.binary, actor_level=level, mob_count=mob_count,
-                    target_hp=float(target_hp))
-                self._paid_cache_identity_initialized = True
-            current = self._paid_cache_identity_seed
-            if (current is not None
-                    and old_ledger.get("forever_paid_runtime_sha256")
-                    == current.get("forever_paid_runtime_sha256")):
-                old_refusals = {
-                    (row["source_request_sha256"],
-                     json.dumps(row["native_world_policy"], sort_keys=True))
-                    for row in old_ledger["refused"]
-                    if (isinstance(row, dict)
-                        and row.get("level") == level
-                        and row.get("mob_count") == mob_count
-                        and row.get("target_hp") == float(target_hp)
-                        and isinstance(row.get("source_request_sha256"), str)
-                        and isinstance(row.get("native_world_policy"), dict))
-                }
         seed = self._source(level, None)
         seed_talents = seed["raid"]["parties"][0]["players"][0]["talentsString"]
         proposed_talents = list(_forward_native_talent_hints(
@@ -1117,6 +1091,32 @@ class PersistentNativeEvaluator:
         bootstrap_attempted = False
         target_hp = (float(representative_hp(level))
                      if self.target_hp is None else self.target_hp)
+        # Do not consume the *new* budget on a prior native refusal for
+        # exactly the same source, hostile scenario and world policy. The
+        # historical artifact is never promoted to a measured success.
+        old_refusals: set[tuple[str, str]] = set()
+        old_ledger = self._original_refusal_ledger
+        if old_ledger is not None:
+            if not self._paid_cache_identity_initialized:
+                self._paid_cache_identity_seed = _exact_paid_cache_identity(
+                    self.binary, actor_level=level, mob_count=mob_count,
+                    target_hp=float(target_hp))
+                self._paid_cache_identity_initialized = True
+            current = self._paid_cache_identity_seed
+            if (current is not None
+                    and old_ledger.get("forever_paid_runtime_sha256")
+                    == current.get("forever_paid_runtime_sha256")):
+                old_refusals = {
+                    (row["source_request_sha256"],
+                     json.dumps(row["native_world_policy"], sort_keys=True))
+                    for row in old_ledger["refused"]
+                    if (isinstance(row, dict)
+                        and row.get("level") == level
+                        and row.get("mob_count") == mob_count
+                        and row.get("target_hp") == float(target_hp)
+                        and isinstance(row.get("source_request_sha256"), str)
+                        and isinstance(row.get("native_world_policy"), dict))
+                }
         index = 0
         while index < len(sources) and len(results) < budget:
             candidate = sources[index]
