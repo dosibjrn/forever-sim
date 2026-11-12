@@ -93,6 +93,34 @@ def test_native_p3_optional_catalogue_accounting_cannot_veto_native_items(option
     assert result["required_level_supported"] is True
 
 
+@pytest.mark.parametrize("status", ["ok", "partial_level_unknown"])
+@pytest.mark.parametrize("optional_count", [-1, "unknown", None, [], True])
+def test_native_p3_optional_unverified_accounting_cannot_veto_scored_items(
+        status, optional_count):
+    # Rust's chosen items and status are authoritative. An optional count is
+    # only display/provenance metadata, not a P3 scoring or legality gate.
+    payload = _response(status=status, unverified_candidate_count=optional_count)
+    result = query_native_p3_item_options(
+        "native", "priest", 20, runner=_runner(payload))
+    assert result == payload
+
+    records, unmapped, metadata = native_p3_item_records(
+        "native", "priest", 20, native_response=result)
+    assert len(records) == 1 and records[0].item_id == 25
+    assert records[0].stamina == 2.0
+    assert unmapped == {}
+    assert metadata["status"] == status
+    assert metadata["unverified_candidate_count"] == optional_count
+
+
+def test_native_p3_invalid_item_still_refused_with_bad_unverified_accounting():
+    payload = _response(
+        unverified_candidate_count="unknown",
+        items=[{"item_id": 25, "slot": "chest"}])
+    with pytest.raises(NativeItemOptionsError, match="INVALID_ITEM_SHAPE"):
+        query_native_p3_item_options("native", "priest", 20, runner=_runner(payload))
+
+
 def test_native_p3_invalid_item_remains_refused_with_bad_optional_accounting():
     payload = _response(
         excluded_non_client_item_count="unknown",
