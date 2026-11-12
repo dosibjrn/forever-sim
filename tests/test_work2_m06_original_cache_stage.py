@@ -141,3 +141,20 @@ def test_historical_runtime_requires_available_verified_git_objects(monkeypatch)
     monkeypatch.setattr(stage.subprocess, "run", missing_historical_git)
     assert not stage._original_m06_runtime_compatible(
         dict(RUNTIME, forever_paid_runtime_sha256="e" * 64), RUNTIME)
+
+def test_nested_original_provenance_is_not_reimported_as_paid_cache(tmp_path):
+    archive, raw = make_archive(tmp_path)
+    with zipfile.ZipFile(archive, "a") as zf:
+        zf.writestr(
+            "runs/native-api-paid-cache/original-runtime-provenance/"
+            "paid.native.cache.json",
+            '{"cache_schema":2,"forever_paid_runtime_sha256":"old"}')
+        zf.writestr(
+            "runs/native-api-paid-cache/original-runtime-provenance/"
+            "paid.native.json", raw)
+    out = tmp_path / "cache"
+    result = stage_original_paid_cache(archive, out, expected_identity=RUNTIME)
+    assert result["imported_pairs"] == 1
+    assert result["migrated_original_runtime_pairs"] == 0
+    assert (out / "paid.native.json").read_bytes() == raw
+    assert len(list(out.glob("*.native.cache.json"))) == 1

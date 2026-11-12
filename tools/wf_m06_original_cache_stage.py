@@ -152,6 +152,12 @@ def stage_original_paid_cache(
                 raise ValueError("M06_UNSAFE_CACHE_ARCHIVE_ENTRY")
             if not name.name.endswith(_ALLOWED_SUFFIXES):
                 continue
+            # A later artifact can contain our immutable original metadata
+            # alongside the currently keyed cache. Do not re-import those
+            # historical names as independent paid candidates (or duplicate
+            # the same basename across separate archive directories).
+            if "original-runtime-provenance" in name.parts:
+                continue
             # The archived run contains several output files. Only the
             # immutable native API paid cache is eligible for import.
             if (len(name.parts) > 1
