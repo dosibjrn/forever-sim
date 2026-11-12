@@ -227,13 +227,18 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                 first_score = item_score(ordered[0], scorer_weights)
                 alternative = None
                 if isfinite(first_score):
+                    # Spend the bounded second sample on the largest actual
+                    # scorer contrast, not the first tiny nonzero difference.
+                    # Keep the native-legal, highest-ilvl anchor unchanged.
+                    best_score_delta = 1e-7 * max(1., abs(first_score))
                     for candidate in ordered[1:]:
                         candidate_score = item_score(candidate, scorer_weights)
-                        if (isfinite(candidate_score)
-                                and abs(candidate_score - first_score)
-                                > 1e-7 * max(1., abs(first_score))):
+                        if not isfinite(candidate_score):
+                            continue
+                        score_delta = abs(candidate_score - first_score)
+                        if score_delta > best_score_delta:
+                            best_score_delta = score_delta
                             alternative = candidate
-                            break
                 if alternative is None:
                     first_stats = _ordinary_stats(ordered[0])
                     alternative = next((item for item in ordered[1:]
