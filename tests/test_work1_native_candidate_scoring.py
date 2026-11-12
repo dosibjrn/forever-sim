@@ -688,3 +688,66 @@ def test_migrate_legacy_local_label_into_shared_paid_cache(tmp_path, monkeypatch
     assert calls == [3]
     assert next_frontier["reused_exact_native_paid_receipt"] is True
     assert Path(next_frontier["native_raw_receipt_file"]) == shared_receipt
+
+
+def test_failed_shared_cache_write_reuses_local_paid_ack(tmp_path, monkeypatch):
+    """A shared-cache I/O refusal must not cause an identical second payment."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected-rust-engine")
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    local, shared = tmp_path / "local", tmp_path / "shared"
+    calls = []
+
+    def identity(engine, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": hashlib.sha256(engine.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+    original_write_bytes = Path.write_bytes
+
+    def fail_shared_receipt(self, data):
+        if self.parent == shared and self.name.endswith(".native.json"):
+            raise PermissionError("shared cache temporarily read-only")
+        return original_write_bytes(self, data)
+
+    monkeypatch.setattr(Path, "write_bytes", fail_shared_receipt)
+
+    def native(engine, source, **kwargs):
+        calls.append(kwargs["target_count"])
+        return _receipt("a" * 64)
+
+    def evaluate(label):
+        return compare_prepared_candidates(
+            binary=binary, prepared_paths={label: prepared}, actor_level=30,
+            mob_count=3, target_hp=1200., run_native=native,
+            artifact_dir=local, paid_cache_dir=shared)["candidates"][0]
+
+    first = evaluate("first")
+    assert first["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert not first["reused_exact_native_paid_receipt"]
+    assert calls == [3]
+    raw = local / "first.native.json"
+    metadata = local / "first.native.cache.json"
+    assert first["native_raw_receipt_file"] == str(raw)
+    assert metadata.exists()
+    assert json.loads(metadata.read_text())["native_raw_receipt_sha256"] == (
+        hashlib.sha256(raw.read_bytes()).hexdigest())
+
+    # Same paid scenario, new optimizer label; the shared cache is still
+    # unwritable, but its failure must not erase local paid evidence.
+    again = evaluate("renamed")
+    assert calls == [3]
+    assert again["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert again["reused_exact_native_paid_receipt"]
+    assert again["native_raw_receipt_file"] == str(raw)
+    assert again["elapsed_seconds"] == first["elapsed_seconds"]
+    assert not (local / "renamed.native.json").exists()

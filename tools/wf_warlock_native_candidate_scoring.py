@@ -449,6 +449,11 @@ def compare_prepared_candidates(*, binary: Path,
                     source_sha256=source_sha,
                     native_raw_receipt_sha256=_sha256(native_receipt_path))
                 metadata_text = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
+                # A successful paid ACK must retain a local identity sidecar
+                # even if the optional shared cache cannot be published. The
+                # local receipt is authoritative only after digest/ACK checks
+                # on the next invocation; no duplicate native payment needed.
+                metadata_path.write_text(metadata_text)
                 if shared_receipt_path is not None and shared_metadata_path is not None:
                     # Never overwrite an original paid artifact. A torn or
                     # tampered shared entry is untrusted: this invocation's
@@ -461,8 +466,6 @@ def compare_prepared_candidates(*, binary: Path,
                             paid_receipt_path = shared_receipt_path
                         except OSError:
                             pass
-                else:
-                    metadata_path.write_text(metadata_text)
             row.update(status=status, elapsed_seconds=score,
                        acked_world_kills=receipt.get("world_targets_killed"))
             if score is not None:
