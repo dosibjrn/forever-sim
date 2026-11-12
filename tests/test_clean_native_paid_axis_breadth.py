@@ -24,6 +24,9 @@ def _paid(level: int, identity: str, talent: str, apl_id: int) -> dict:
         "terminal_hp": 100.0, "terminal_max_hp": 100.0,
         "terminal_mana": 120.0, "terminal_max_mana": 120.0,
         "elapsed_seconds": 12.0, "terminal_recovery_seconds": 2.0,
+        # Synthetic byte-identity only; no real Rust payment.
+        "native_raw_receipt_sha256": identity * 64,
+        "native_raw_receipt_file": f"runs/{identity}.native.json",
         "talents": talent, "gear": {"items": [{"id": 101}]},
         "apl": {"priorityList": [{"id": apl_id}]}, "pet": None,
     }
@@ -101,6 +104,32 @@ def test_paid_axis_breadth_rejects_disagreement_with_original_receipt():
     }
     assert _retained_native_paid_axis_breadth(result, 20) == (
         1, {"talents": 1, "gear": 1, "apl": 1, "pet": 1})
+
+
+def test_paid_axis_breadth_requires_original_raw_receipt_identity():
+    """ACK+recovery alone cannot count as verified original paid breadth."""
+    original = _paid(20, "a", "100-0-0", 1)
+    row = {
+        **{key: original.get(key) for key in (
+            "source_request_sha256", "engine_binary_sha256",
+            "talents", "gear", "apl", "pet")},
+        "receipt": original,
+    }
+    report = {
+        "mob_count": 2, "rng_mode": "balanced", "iterations": 1,
+        "independent_level_rankings": {"20": [row]},
+    }
+    assert _retained_native_paid_axis_breadth(report, 20) == (
+        1, {"talents": 1, "gear": 1, "apl": 1, "pet": 1})
+    for field, value in (
+        ("native_raw_receipt_sha256", None),
+        ("native_raw_receipt_sha256", "not-a-sha"),
+        ("native_raw_receipt_file", None),
+        ("native_raw_receipt_file", "  "),
+    ):
+        invalid = {**original, field: value}
+        report["independent_level_rankings"]["20"][0]["receipt"] = invalid
+        assert _retained_native_paid_axis_breadth(report, 20) is None, field
 
 
 def test_refused_source_axes_keep_native_codes_without_becoming_paid_breadth():
