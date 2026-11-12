@@ -1828,3 +1828,85 @@ def test_normalized_native_source_and_policy_count_once_per_invocation(
     assert rows[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
     assert rows[0]["source_request_sha256"] == "d" * 64
     assert rows[0]["reused_exact_native_paid_receipt"] is False
+
+
+def test_adaptive_revisit_joint_gear_and_pet_keep_paid_survivor_build(
+        tmp_path, monkeypatch):
+    """Recombine native-listed axes on a paid talent/APL survivor, not seed.
+
+    Synthetic Rust/2D transport checks the finite paid scheduler only:
+    no real Warlock kills, world overlap or M0.6 winner is inferred.
+    """
+    def items(source, options):
+        for item_id in (0, 8001, 8002):
+            proposal = copy.deepcopy(source)
+            proposal["raid"]["parties"][0]["players"][0][
+                "equipment"]["items"][0] = {"id": item_id}
+            yield proposal
+
+    def pets(source, options):
+        proposal = copy.deepcopy(source)
+        proposal["raid"]["parties"][0]["players"][0].setdefault(
+            "warlock", {}).setdefault("options", {}).setdefault(
+            "classOptions", {})["summon"] = "Voidwalker"
+        yield proposal
+
+    paid_requests = []
+    def native_world(binary, prepared_path, **kwargs):
+        paid_requests.append(kwargs["prepared_payload"]["request_sha256"])
+        return paid_world(binary, prepared_path, **kwargs)
+
+    monkeypatch.setattr(api, "_source_item_alternatives", items)
+    monkeypatch.setattr(api, "_source_pet_alternatives", pets)
+    native = make_evaluator(tmp_path, monkeypatch, world=native_world)
+    native.explore_world_policies = True
+    request = dict(level=20, parent=None, mob_count=2,
+                   rng_mode="balanced", iterations=1, recover_to_full=True)
+    try:
+        original = native(**request, budget=4)
+        assert [row["proposal_axis"] for row in original] == [
+            "talent", "gear", "pet", "talent"]
+        selected = original[-1]
+        assert selected["talents"] != original[0]["talents"]
+        assert selected["gear"]["items"][0]["id"] == 8001
+
+        # The selected paid talent family's serial, rest and rolling policies
+        # have already been tried/refused. A new original payment should
+        # attempt its native source-item/pet crosses, not the old seed axes.
+        excluded = {
+            (row["source_request_sha256"],
+             json.dumps(row["native_world_policy"], sort_keys=True))
+            for row in original
+        }
+        for policy in (
+                api._native_world_policy(0.3, 0.3),
+                api._native_world_policy(1.0, 1.0, api.ROLLING_WORLD_APL_50)):
+            excluded.add((
+                selected["source_request_sha256"],
+                json.dumps(policy, sort_keys=True)))
+        follow_up = native(
+            **request, budget=2,
+            candidate_hints=[{
+                "from_level": 20, "talents": selected["talents"],
+                "source_request_sha256": selected["source_request_sha256"],
+            }],
+            excluded_paid_source_policies=excluded)
+    finally:
+        native.close()
+
+    assert [row["proposal_axis"] for row in follow_up] == [
+        "survivor_gear", "survivor_pet"]
+    assert [row["talents"] for row in follow_up] == [
+        selected["talents"]] * 2
+    assert follow_up[0]["gear"]["items"][0]["id"] == 8002
+    assert follow_up[1]["gear"] == selected["gear"]
+    assert follow_up[1]["pet"] == "Voidwalker"
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+               for row in follow_up)
+    assert len(paid_requests) == 6
+    assert paid_requests[-2:] == [
+        row["source_request_sha256"] for row in follow_up]
+    assert all((
+        row["source_request_sha256"],
+        json.dumps(row["native_world_policy"], sort_keys=True)
+    ) not in excluded for row in follow_up)
