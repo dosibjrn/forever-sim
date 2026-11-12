@@ -712,14 +712,15 @@ def test_failed_shared_cache_write_reuses_local_paid_ack(tmp_path, monkeypatch):
         }
 
     monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
-    original_write_bytes = Path.write_bytes
+    original_open = Path.open
 
-    def fail_shared_receipt(self, data):
-        if self.parent == shared and self.name.endswith(".native.json"):
+    def fail_shared_receipt(self, mode="r", *args, **kwargs):
+        if (self.parent == shared and self.name.endswith(".native.json")
+                and mode == "xb"):
             raise PermissionError("shared cache temporarily read-only")
-        return original_write_bytes(self, data)
+        return original_open(self, mode, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "write_bytes", fail_shared_receipt)
+    monkeypatch.setattr(Path, "open", fail_shared_receipt)
 
     def native(engine, source, **kwargs):
         calls.append(kwargs["target_count"])
@@ -751,6 +752,75 @@ def test_failed_shared_cache_write_reuses_local_paid_ack(tmp_path, monkeypatch):
     assert again["native_raw_receipt_file"] == str(raw)
     assert again["elapsed_seconds"] == first["elapsed_seconds"]
     assert not (local / "renamed.native.json").exists()
+
+
+def test_shared_cache_racing_original_ack_is_never_overwritten(
+        tmp_path, monkeypatch):
+    """A competing worker can claim a shared key after its exists() check."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected-rust-engine")
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    local, shared = tmp_path / "local", tmp_path / "shared"
+    shared.mkdir()
+    calls, racing_receipts = [], []
+    monkeypatch.setattr(
+        scorer, "_exact_paid_cache_identity",
+        lambda engine, *, actor_level, mob_count, target_hp: {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": hashlib.sha256(engine.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        })
+    original_open = Path.open
+    competing_bytes = b"another worker's immutable original receipt"
+
+    def race_before_exclusive_open(self, mode="r", *args, **kwargs):
+        if (self.parent == shared and self.name.endswith(".native.json")
+                and mode == "xb" and not racing_receipts):
+            # The pre-open exists() check succeeded, but another worker
+            # creates the raw ACK first. Only exclusive create is safe.
+            with original_open(self, "wb") as rival:
+                rival.write(competing_bytes)
+            racing_receipts.append(self)
+        return original_open(self, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", race_before_exclusive_open)
+
+    def native(engine, request, **kwargs):
+        calls.append(kwargs["target_count"])
+        return _receipt("a" * 64)
+
+    def evaluate(label):
+        return compare_prepared_candidates(
+            binary=binary, prepared_paths={label: prepared},
+            actor_level=30, mob_count=3, target_hp=1200.,
+            run_native=native, artifact_dir=local,
+            paid_cache_dir=shared)["candidates"][0]
+
+    paid = evaluate("initial")
+    local_raw = local / "initial.native.json"
+    assert paid["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert paid["reused_exact_native_paid_receipt"] is False
+    assert paid["native_raw_receipt_file"] == str(local_raw)
+    assert paid["native_raw_receipt_sha256"] == hashlib.sha256(
+        local_raw.read_bytes()).hexdigest()
+    assert calls == [3] and len(racing_receipts) == 1
+    assert racing_receipts[0].read_bytes() == competing_bytes
+    assert not list(shared.glob("*.native.cache.json"))
+
+    # Keep the authentic local raw ACK and its full identity, and reuse it
+    # without paying a second world even when shared promotion is refused.
+    reused = evaluate("renamed")
+    assert reused["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert reused["reused_exact_native_paid_receipt"] is True
+    assert reused["native_raw_receipt_file"] == str(local_raw)
+    assert racing_receipts[0].read_bytes() == competing_bytes
+    assert calls == [3]
 
 
 def test_shared_cache_init_failure_keeps_local_paid_ack(tmp_path, monkeypatch):
@@ -1015,3 +1085,69 @@ def test_native_changed_prepared_input_does_not_consume_stable_same_source_succe
     assert result["candidates"][1]["terminal_mana"] == 1500.
     assert (artifact_dir / "rewritten.native.json").exists()
     assert (artifact_dir / "stable.native.json").exists()
+
+
+def test_repaid_native_candidate_preserves_previous_raw_ack_and_cache(
+        tmp_path, monkeypatch):
+    """A cache miss must never overwrite a different original paid attempt."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    artifacts = tmp_path / "native"
+    artifacts.mkdir()
+    original = artifacts / "candidate.native.json"
+    old_receipt = json.dumps(_receipt("b" * 64), indent=2) + "\n"
+    original.write_text(old_receipt)
+    original_metadata = artifacts / "candidate.native.cache.json"
+    old_metadata = json.dumps({"source_sha256": "b" * 64}) + "\n"
+    original_metadata.write_text(old_metadata)
+
+    # Exercise the real cache lookup and exact raw digest on a controlled
+    # runtime fingerprint without paying Rust or changing gameplay rules.
+    monkeypatch.setattr(
+        scorer, "_exact_paid_cache_identity",
+        lambda binary, *, actor_level, mob_count, target_hp: {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": "e" * 64, "actor_level": actor_level,
+            "mob_count": mob_count, "target_hp": target_hp,
+            "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        })
+    calls = []
+
+    def native(binary, path, **kwargs):
+        calls.append(kwargs["target_count"])
+        return _receipt("a" * 64)
+
+    def screen():
+        result = compare_prepared_candidates(
+            binary=Path("rust"), prepared_paths={"candidate": prepared},
+            actor_level=30, mob_count=3, target_hp=1200.,
+            run_native=native, artifact_dir=artifacts)
+        return result["candidates"][0]
+
+    first = screen()
+    fresh = artifacts / "candidate-1.native.json"
+    fresh_metadata = artifacts / "candidate-1.native.cache.json"
+    assert calls == [3]
+    assert first["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert first["reused_exact_native_paid_receipt"] is False
+    assert first["native_raw_receipt_file"] == str(fresh)
+    assert first["native_raw_receipt_sha256"] == hashlib.sha256(
+        fresh.read_bytes()).hexdigest()
+    assert original.read_text() == old_receipt
+    assert original_metadata.read_text() == old_metadata
+    assert fresh_metadata.is_file()
+    assert json.loads(fresh_metadata.read_text())[
+        "native_raw_receipt_sha256"] == first["native_raw_receipt_sha256"]
+
+    second = screen()
+    assert calls == [3]  # Same genuine receipt, no second paid world.
+    assert second["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+    assert second["reused_exact_native_paid_receipt"] is True
+    assert second["native_raw_receipt_file"] == str(fresh)
+    assert sorted(p.name for p in artifacts.glob("*.native.json")) == [
+        "candidate-1.native.json", "candidate.native.json"]
+    assert original.read_text() == old_receipt
