@@ -1911,3 +1911,80 @@ def test_adaptive_revisit_joint_gear_and_pet_keep_paid_survivor_build(
         row["source_request_sha256"],
         json.dumps(row["native_world_policy"], sort_keys=True)
     ) not in excluded for row in follow_up)
+
+
+def test_adaptive_undercompared_paid_survivor_pays_registered_apl_before_rolling(
+        tmp_path, monkeypatch):
+    """Original M0.6 paid all gear/pet but zero distinct APLs at L20/L40.
+
+    This synthetic native-API/2D transport test verifies only scheduling:
+    one registered source-rank APL gets the second adaptive slot. Real Rust
+    whole-build prepare, actual world ACK and paid recovery remain mandatory.
+    """
+    class RegisteredNativeSession(FakeSession):
+        def request(self, payload):
+            answer = super().request(payload)
+            if payload["op"] == "options":
+                answer["spells"] = [
+                    {"spell_id": 1088, "name": "Shadow Bolt", "rank": "Rank 2"},
+                    {"spell_id": 80003, "name": "Shadow Bolt", "rank": "Rank 4"},
+                ]
+            else:
+                answer["player"]["spells"] = [{
+                    "flags": ["SpellFlagAPL"],
+                    "action_id": {"spell_id": 80003},
+                }]
+            return answer
+
+    world_calls = []
+
+    def world(binary, prepared_path, **kwargs):
+        world_calls.append((kwargs["health_threshold"],
+                            kwargs.get("world_apl")))
+        # Fake transport cannot prove native 30% rest or rolling overlap.
+        # Preserve the scheduler's requested policy separately from the
+        # synthetic paid-world shape accepted by this fixture.
+        return paid_world(binary, prepared_path, **dict(
+            kwargs, health_threshold=1.0, mana_threshold=1.0))
+
+    FakeSession.instances.clear()
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"registered-apl-test-binary")
+    monkeypatch.setattr(api, "_exact_paid_cache_identity",
+                        lambda *args, **kwargs: None)
+    native = api.PersistentNativeEvaluator(
+        binary, Path("fixtures/warlock-l20-native-paid-30s.request.json"),
+        tmp_path / "paid", session_factory=RegisteredNativeSession,
+        run_world=world)
+    native.explore_world_policies = True
+    request = dict(level=20, parent=None, mob_count=2, rng_mode="balanced",
+                   iterations=1, recover_to_full=True)
+    try:
+        original = native(**request, budget=1)
+        assert len(original) == 1
+        assert original[0]["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+        selected = original[0]
+        excluded = {(selected["source_request_sha256"],
+                     json.dumps(selected["native_world_policy"], sort_keys=True))}
+        follow_up = native(
+            **request, budget=2,
+            candidate_hints=[{
+                "from_level": 20, "talents": selected["talents"],
+                "source_request_sha256": selected["source_request_sha256"],
+            }],
+            excluded_paid_source_policies=excluded)
+    finally:
+        native.close()
+
+    assert [row["proposal_axis"] for row in follow_up] == [
+        "world_rest_30pct", "survivor_apl"]
+    assert all(row["status"] == "MEASURED_NATIVE_FULLY_RECOVERED"
+               and row["native_full_recovery_paid"] for row in follow_up)
+    assert follow_up[0]["source_request_sha256"] == selected["source_request_sha256"]
+    assert follow_up[0]["native_world_policy"]["rest_when_mana_below"] == 0.3
+    assert follow_up[1]["source_request_sha256"] != selected["source_request_sha256"]
+    assert follow_up[1]["apl"]["priorityList"][-1]["action"][
+        "castSpell"]["spellId"]["spellId"] == 80003
+    assert follow_up[1]["native_world_policy"]["pull_mode"] == "serial"
+    assert len(world_calls) == 3  # old serial, unpaid rest, new APL; no replay
+    assert world_calls == [(1.0, None), (0.3, None), (1.0, None)]
