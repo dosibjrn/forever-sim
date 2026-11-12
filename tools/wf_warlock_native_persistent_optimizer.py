@@ -962,6 +962,22 @@ class PersistentNativeEvaluator:
             self.explore_world_policies
             and excluded_paid_source_policies is not None
         )
+        # The exact original-paid M0.6 run compared gear/pet and rest but
+        # paid no distinct combat APL at either sampled level. A later paid
+        # survivor with just one measured rotation should get one independently
+        # native-prepared APL challenger in a two-slot revisit; otherwise the
+        # fixed policy/gear queue can exhaust the entire paid search budget.
+        # Only same-session fully paid sources count as measured rotations.
+        paid_apls = {
+            json.dumps(paid["raid"]["parties"][0]["players"][0].get(
+                "rotation", {}), sort_keys=True)
+            for (paid_level, _), paid in self._paid_sources_by_sha.items()
+            if paid_level == level
+        }
+        prioritize_uncompared_apl = (
+            adaptive_policy_revisit and paid_survivor is not None
+            and budget >= 2 and len(paid_apls) == 1
+        )
         if adaptive_policy_revisit and mob_count == 2 and budget == 1:
             # When a revisit has just one paid slot, give the native two-live
             # rolling challenge a chance before the serial 30%-rest variant.
@@ -1061,6 +1077,21 @@ class PersistentNativeEvaluator:
                     # not a tail slot beyond the current paid budget.
                     apl_choices = list(islice(
                         _level_aware_apl_variants(source, prepared, options), 6))
+                    native_apl_spells = prepared["player"].get("spells", [])
+                    if (prioritize_uncompared_apl and apl_choices
+                            and isinstance(native_apl_spells, list)
+                            and any(isinstance(spell, dict)
+                                    and "SpellFlagAPL" in spell.get("flags", [])
+                                    for spell in native_apl_spells)):
+                        # Keep the first genuinely untried rest policy, then
+                        # let one *registered* APL variation compete before
+                        # another rolling attempt or repeated gear/pet axis.
+                        # Rust whole-build prepare and live world/ACK remain
+                        # the only legality and outcome authorities. No paid
+                        # receipt, refusal or policy identity is rewritten.
+                        sources.insert(
+                            min(len(sources), index + int(bool(policy_sources))),
+                            (apl_choices.pop(0), "survivor_apl"))
                     # Under the normal budget, first gear and pet attempts
                     # precede APL; with no source axes, APL follows the seed.
                     insert_at = min(len(sources), index + min(2, len(axis_sources)))
