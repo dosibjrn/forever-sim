@@ -340,7 +340,11 @@ def compare_prepared_candidates(*, binary: Path,
                        for c in candidate_id)):
             raise ValueError("INVALID_NATIVE_CANDIDATE_ID")
         try:
-            prepared = json.loads(path.read_text())
+            # Parse and fingerprint exactly the same prepared bytes. Native
+            # proposal generation may replace a file between separate reads;
+            # an ACK must never be keyed to a different actor payload.
+            prepared_bytes = path.read_bytes()
+            prepared = json.loads(prepared_bytes)
         except (OSError, ValueError, TypeError) as exc:
             rows.append({"candidate_id": candidate_id,
                          "status": "INVALID_NATIVE_PREPARED_PAYLOAD",
@@ -365,7 +369,7 @@ def compare_prepared_candidates(*, binary: Path,
                          "prepared_actor_level": player.get("level")})
             continue
         source_sha = prepared.get("request_sha256")
-        prepared_sha = _sha256(path)
+        prepared_sha = hashlib.sha256(prepared_bytes).hexdigest()
         row = {"candidate_id": candidate_id,
                "prepared_sha256": prepared_sha,
                "source_sha256": source_sha,
@@ -390,6 +394,18 @@ def compare_prepared_candidates(*, binary: Path,
             continue
         seen_source_requests[source_sha] = (candidate_id, prepared_sha)
         try:
+            # Reject a proposal rewritten after our snapshot, before paying
+            # a potentially different actor. Missing files are also changed
+            # inputs, not a reason to abort other source-valid candidates.
+            try:
+                input_unchanged = _sha256(path) == prepared_sha
+            except OSError:
+                input_unchanged = False
+            if not input_unchanged:
+                row.update(status="NATIVE_PREPARED_INPUT_CHANGED",
+                           elapsed_seconds=None)
+                rows.append(row)
+                continue
             native_receipt_path = (
                 artifact_dir / f"{candidate_id}.native.json"
                 if artifact_dir is not None else None)
@@ -473,6 +489,18 @@ def compare_prepared_candidates(*, binary: Path,
                 if native_receipt_path is not None:
                     native_receipt_path.write_text(
                         json.dumps(receipt, indent=2, allow_nan=False) + "\n")
+            # The native executor reopens the prepared path. Its bytes must
+            # still match the actor/source snapshot after payment or cache
+            # reuse; never rank or cache an ACK against a replaced payload.
+            try:
+                input_unchanged = _sha256(path) == prepared_sha
+            except OSError:
+                input_unchanged = False
+            if not input_unchanged:
+                row.update(status="NATIVE_PREPARED_INPUT_CHANGED",
+                           elapsed_seconds=None)
+                rows.append(row)
+                continue
             score, status = score_native_chain(receipt, prepared,
                                                mob_count=mob_count,
                                                expected_target_hp=target_hp)
