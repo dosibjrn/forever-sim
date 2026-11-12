@@ -767,6 +767,60 @@ def test_native_mage_spell_coefficients_enrich_only_exact_source_rank_actions():
 
 
 
+@pytest.mark.parametrize(
+    ("class_key", "level", "action_id", "spell_id", "coefficient"),
+    [
+        ("mage", 30, "fireball:8401", 8401, 0.857),
+        ("shaman", 20, "lightning_bolt:915", 915, 0.42),
+    ],
+)
+def test_native_p3_coefficient_supersedes_conflicting_legacy_ir(
+        class_key, level, action_id, spell_id, coefficient):
+    from dataclasses import replace
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.model.ir import DamageEffect
+
+    ir = build_game_ir_slice(class_key=class_key, level=level)
+    selected = next(action for action in ir.actions if action.id == action_id)
+    legacy = replace(selected, effects=tuple(
+        replace(effect, spell_power_coefficient=0.123)
+        if isinstance(effect, DamageEffect) else effect
+        for effect in selected.effects))
+    ir = replace(ir, actions=tuple(
+        legacy if action.id == action_id else action for action in ir.actions))
+    native = {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": "selected-native-revision",
+        "spell_power_coefficients": {spell_id: coefficient},
+    }
+
+    if class_key == "shaman":
+        enriched, applied = apply_native_shaman_lightning_bolt_coefficient(ir, native)
+    else:
+        enriched, applied = apply_native_mage_spell_coefficients(ir, native)
+
+    updated = next(action for action in enriched.actions if action.id == action_id)
+    effects = [effect for effect in updated.effects if isinstance(effect, DamageEffect)]
+    assert effects and all(effect.spell_power_coefficient == coefficient
+                           for effect in effects)
+    assert updated.metadata["native_spell_power_coefficient_verified"] is True
+    assert applied == [{
+        "action_id": action_id,
+        "spell_id": spell_id,
+        "spell_power_coefficient": coefficient,
+    }]
+    assert any(
+        fact.get("authority") == "mythicsim_rust_prepared_v2"
+        and fact.get("engine_revision") == "selected-native-revision"
+        and fact.get("spell_id") == spell_id
+        for fact in enriched.source_facts
+    )
+    assert all(
+        other is prior for other, prior in zip(enriched.actions, ir.actions)
+        if other.id != action_id
+    )
+
+
 def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
     prepared = {
         "contract": "forever-prepared",

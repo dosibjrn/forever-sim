@@ -328,10 +328,9 @@ def apply_native_mage_spell_coefficients(
         }
         for effect in tuple(getattr(action, "effects", ()) or ()):
             if isinstance(effect, DamageEffect):
-                current = float(effect.spell_power_coefficient)
-                if current > 1e-12 and abs(current - coefficient) > 1e-9:
-                    raise NativeItemOptionsError(
-                        "P3_NATIVE_SPELL_COEFFICIENT_CONFLICT:" + str(spell_id))
+                # The selected native PreparedV2 spellbook owns the value.
+                # A previously attached Python/GameIR estimate is not an
+                # independent veto on real native-backed P3 scoring.
                 field_provenance = dict(effect.field_provenance or {})
                 existing = tuple(field_provenance.get("spell_power_coefficient", ()) or ())
                 if fact not in existing:
