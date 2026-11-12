@@ -630,3 +630,61 @@ def test_native_paid_cache_identity_survives_workflow_only_git_commits(tmp_path,
     assert identity() is None
     dirty[0] = "shared-untracked"
     assert identity() is None
+
+
+def test_migrate_legacy_local_label_into_shared_paid_cache(tmp_path, monkeypatch):
+    """Adding the stable cache must reuse local ACK and seed future frontiers."""
+    from tools import wf_warlock_native_candidate_scoring as scorer
+
+    binary = tmp_path / "engine"
+    binary.write_bytes(b"selected-rust-engine")
+    prepared = tmp_path / "prepared.json"
+    prepared.write_text(json.dumps(_prepared("a" * 64)))
+    artifacts, shared = tmp_path / "local", tmp_path / "shared"
+    calls = []
+
+    def identity(engine, *, actor_level, mob_count, target_hp):
+        return {
+            "cache_schema": 2, "forever_paid_runtime_sha256": "f" * 64,
+            "native_binary_sha256": hashlib.sha256(engine.read_bytes()).hexdigest(),
+            "actor_level": actor_level, "mob_count": mob_count,
+            "target_hp": target_hp, "rng_mode": "balanced", "iterations": 1,
+            "recovery_policy": "decisions", "health_threshold": 1.0,
+            "mana_threshold": 1.0, "require_native_health_damage": False,
+        }
+
+    monkeypatch.setattr(scorer, "_exact_paid_cache_identity", identity)
+
+    def native(engine, request, **kwargs):
+        calls.append(kwargs["target_count"])
+        return _receipt("a" * 64)
+
+    def evaluate(label, folder, cache=None):
+        screen = compare_prepared_candidates(
+            binary=binary, prepared_paths={label: prepared}, actor_level=30,
+            mob_count=3, target_hp=1200., run_native=native,
+            artifact_dir=folder, paid_cache_dir=cache)
+        return screen["candidates"][0]
+
+    first = evaluate("original", artifacts)
+    assert calls == [3]
+    assert first["reused_exact_native_paid_receipt"] is False
+    local_receipt = artifacts / "original.native.json"
+    original_bytes = local_receipt.read_bytes()
+
+    # Same genuinely paid actor/scenario, new proposal label and cache mode.
+    migrated = evaluate("renamed", artifacts, shared)
+    assert calls == [3], "cache migration must never execute duplicate mobs"
+    assert migrated["reused_exact_native_paid_receipt"] is True
+    assert migrated["elapsed_seconds"] == 20.
+    shared_receipt = Path(migrated["native_raw_receipt_file"])
+    assert shared_receipt.parent == shared
+    assert shared_receipt.read_bytes() == original_bytes
+    assert local_receipt.read_bytes() == original_bytes
+    assert not (artifacts / "renamed.native.json").exists()
+
+    # Another frontier directory now resolves the promoted original ACK.
+    next_frontier = evaluate("new_frontier", tmp_path / "next", shared)
+    assert calls == [3]
+    assert next_frontier["reused_exact_native_paid_receipt"] is True
+    assert Path(next_frontier["native_raw_receipt_file"]) == shared_receipt

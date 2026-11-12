@@ -382,10 +382,13 @@ def compare_prepared_candidates(*, binary: Path,
             # and unchanged terminal-recovery scoring predicate.
             if (cache_identity is not None and native_receipt_path is not None
                     and metadata_path is not None):
+                # A newly enabled shared cache must not hide this output
+                # directory's authentic earlier local receipts. Search shared
+                # first, then local labels, before paying the same mobs again.
                 cache_entries = (
-                    [shared_metadata_path] if shared_metadata_path is not None
-                    else [metadata_path] + [
-                        p for p in existing_cache_files if p != metadata_path])
+                    ([shared_metadata_path] if shared_metadata_path is not None else [])
+                    + [metadata_path]
+                    + [p for p in existing_cache_files if p != metadata_path])
                 for cached_metadata_path in cache_entries:
                     cached_receipt_path = cached_metadata_path.with_name(
                         cached_metadata_path.name.removesuffix(
@@ -406,6 +409,24 @@ def compare_prepared_candidates(*, binary: Path,
                                 and old_status == "MEASURED_NATIVE_FULLY_RECOVERED"):
                             receipt, reused = old, True
                             paid_receipt_path = cached_receipt_path
+                            # Promote a verified local payment into the shared
+                            # content-addressed cache for future frontier dirs.
+                            # Copy the original ACK bytes; never re-run Rust
+                            # or overwrite a possibly concurrent/torn entry.
+                            if (shared_receipt_path is not None
+                                    and shared_metadata_path is not None
+                                    and cached_metadata_path != shared_metadata_path
+                                    and not shared_receipt_path.exists()
+                                    and not shared_metadata_path.exists()):
+                                try:
+                                    shared_receipt_path.write_bytes(
+                                        cached_receipt_path.read_bytes())
+                                    shared_metadata_path.write_text(
+                                        json.dumps(expected, indent=2,
+                                                   sort_keys=True) + "\n")
+                                    paid_receipt_path = shared_receipt_path
+                                except OSError:
+                                    pass
                             break
                     except (OSError, ValueError, TypeError):
                         continue
